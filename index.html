@@ -800,51 +800,6 @@ function signPost(cx, cy, plate, deco){
   px(cx - 5, cy - 9, 10, 1, sh(plate, 0.7));
   deco && deco(cx, cy);
 }
-/* 添付の駅ドット絵: 16px地形タイル + 64x40px透過アイコン */
-const STATION_ASSET_DATA = [
-  { name:'地方の木造駅舎', tile:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAARUlEQVR4nGO8fuYEA9GgPCONhYGB4dSe7cTrYSJeKZkaWBgYGG6cPUmaBg1jcyJVX72/ftQPxIBB6AcWBgaGtWvWE68BAKK5GE5rWc8EAAAAAElFTkSuQmCC', icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAoCAYAAABOzvzpAAAB2ElEQVR4nO2YvUoDQRCAx2ARTScH4eCwSHEQxAQbxdomtY2NYBVbuxQ+gIVPkfbeQDAiqTSiSA7EHy4JgvgbgiDIFepanSSa27vdnb2Nul9zITc7OzszO7O3ABqNRqPRaDSa5LEtg9iWQVTaMK5qYtsyyOa8CQAAWwDk6qY7psKOxCcNFv70cjvwf/PBh6PeBCTtiMQmC1v4d5J2hPRJzIortMfvtgtKtoYwtmWQ6vIsMSsu4cHzPGJWXLJayEgtlOhFsD/Vo9I9DsVsGopZAs2pDJGxNVJYioKIl/MkcuG5XI76HEYxm4ZyngB2RghnAE/E2+029UkDOyO4HcCy8FarxTtNKFiOYB4ULLzmRUcLAGCvdMBsVD9LO4uxZXkcEVtY9ZGVFannCNsyuFqbLM6PD7kLo1ARfO4+igwfCYS7wMLcDPV94/RspPWjHIR2L39mQqnuw/v6NIZ6qfrRToLVzlvou6gohtEfXZp+ERK7D/BTk0zy6Y9XSZYMouxCRAZhnYDWElEcUKr7GGpQ9O+vrH39dh0HNoA+FsUBWMUOS3+vVostK+wA0TakWj/a5/BvRTtAtQGq+fcO4C6CFycNTDuGcn/dYR7jOg6TPNc3s74b0Gj+DJ8+spViq3DgRAAAAABJRU5ErkJggg==' },
-  { name:'現代的な橋上駅舎', tile:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAV0lEQVR4nGM8f+MOA9Ggddo8FgYGhoNnLhGvh4l4pYNWAwsDA0O+7wkiVR85xcLCwMDw5/x2oi3wZWFgYPi1/xVpTpqtOp1Y5afODMJgpU/EHTl1hngNAP5DFJZgIU+JAAAAAElFTkSuQmCC', icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAoCAYAAABOzvzpAAABZ0lEQVR4nO2ZsUrDYBSFj+IgcekDdCx5gEyZfAsnwVVwdHDv0MXBMWMHUVHnzj8oFUSKQ5aiDj/4DoqDoFMcRJN7y725gdxvyZDD6eHw9+Y2BRzHcXrMmqRZmuVfkn7/8fx4L5Z7Q8qoYjhIpC1/CCEgzXJRT/ECACDGqGGrwrr2B8S7nT+vTfd/67QQnwHDQaJ2AmKMSLO82zMghCBtqUptk21NdW3qTkzjCbi6OJNN0yKTYopyXn8iSV+Bm0UpEqiLsGZAcXKslUOUg8MjspY9BHdPb0m6871tkpaio3qNZ0uMrvdJ+SpWegpcvn62rqN6cVFfhLqOF2AdwBovwDqANV6AdQBr2HvAeLYk6UYAnsoXER3VaxXYBXA2LaqWouNueFRYBVB3bK3fDJwdn4rKO0EA+Hh/E/XbTLZE/Sp6PwS9AOsA1ngB1gGs8QKsA1jTuAdMimkbOUjMHxbinr3/Y8Rxes436kdpt8ybY0UAAAAASUVORK5CYII=' },
-  { name:'都市部の高架駅', tile:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAZElEQVR4nGOsmDCHAQbCPRwOnrn04s07XCL7t29mYWBguHPvHkyBAyoXiwgTA4mAhYGB4dKRfVBeVhIKF0NEUFSchYGBQc/GCdkMNC6yyOObV0l20qgfhrAfHt+8iiyExkUTAQBmEUgqUuPA6wAAAABJRU5ErkJggg==', icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAoCAYAAABOzvzpAAABZUlEQVR4nO2YsUrDUBSG/0o7OEoLHbsVB6cu9hkc+wBOTq6KD1HUrZ0CBRHBxXfoFmraIQgtgkM7lDr5AA46VWqTewPpyTlp7vm25CTw54Pc+3MBRVEUhyltXjRb7R+pIJy8T/y/7y5vD7u3d7xpGOl5A8xnb//uRQQAgB9OWQLlgQPpANKoAOkA0jgvILII9ryBRA4xIgK2t4miU4q7WdRCtFmA1sT2AKBYhSiuAK0xCgCAm+urTAJx0zg+Mc6sAgDg+emRNAwnwyBE/75rfSZRAADMl58kgfKI8z3AeQGJv8AwCDlyiJEoIGkR2XesAjrnF1w5MmU88o0zq4DD0xV5GBFG5pFVwOsqoI4iRM04sQpYTBbkUSSopxVwVr0kDyPB+CPlGkDBy4O30/tZL8SZCwCA7690VbpyVCdOEsX5JqgCpANIowKkA0hj3AXycjxu6/EUGAVQHo/vsp25dkyvKMz8Asx8RyTyv/z3AAAAAElFTkSuQmCC' },
-  { name:'地下鉄出入口', tile:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAYklEQVR4nGM8f+MOAwZYueNAuIcDVnEWBgaGh89eYsphFWRgYGDCKooHsDAwMJy4dB1TAqsgVIOFniZEBYSBqRMufuLSdZKdRLIGxvM37qzccYB4DQg/IAM8/qG9H0ZkPAAAGaY4On76pe8AAAAASUVORK5CYII=', icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAoCAYAAABOzvzpAAABxklEQVR4nO2YMUvDQBTH/1HBqXNAl3To4uBa+iVcOnQRp7ZScG7TDyCNXVyEQm0X6ZJBFMVBBCdFuna0SuLgB8jSrcSpgqDJpffendD7jbnj5d2Pl7t3AQwGg8FgWFmsxMHKeSwSJPZriXH+MxtpE/aO9v8cuzkbkSajg1QBAHD7/MqdhzbWdCegGyMgy+R5axfz1i5XLloQ2gPS2D5whE4LLj4vwqVPoUwC1k8mvz6/9Pxl3y9F2a1IxyCpgLJbQdftjCliidL02sV6o4p+byAVh2QT7LqdcdNrFyliidD02kUq4akVINrsLCRwVwL1O0iPQe5K4BCcKCD2a1bs16zCdIirwx20ShZaJQtlO0BhOsTW5jFeTn8ei1wSuKqLpRGilsD5abF1glQSuPcV1lZYVoKKTZX9LrCsBBWLBxRdhrJKULV4gKATvP94AIDUxdUb1e/uLYl+b4B6o4q36F1JYyUtIGsrKjJftr3NgpSAxS0sn8/HjuOQJCRKGIYIgkD6XyTJZQgAoiiiCqUUI4AqkGoBuVyOJA6ZgNlsRhVKCCoB5qeo7gR0s/IChPeA0fUdZx7aEBYweXpMHLdtWzoZg8GgnC9BxaKyqpyP9QAAAABJRU5ErkJggg==' },
-  { name:'昭和レトロ風駅舎', tile:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAXklEQVR4nGO8fuYEAzbQVpJf1TMRU5CFgYFh26LZWPVgFWfCqhQPYGFgYLhw6QpWOaziLAwMDAZ6OnAVcDaaToj4hUtXSHYSxX4g6B8UP6CpwBQfED+gOQC7hqEeDwCZ9DuG53Il4QAAAABJRU5ErkJggg==', icon:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAoCAYAAABOzvzpAAABvElEQVR4nO2Zv0rDUBTGP0Xo0MeIEAft4CBOKaWDY2fpA/QZnDv0OfoIPkGJUyrWRYcWLBLJICLoYqFQiIst6W1Kcu6/E+H+tiT33O98300CNwEcDofDwUPge2ngeylnD0dcwoHvpbenZwCADpDezeYHHH1YF10bj8YPW+ejJMHI92A7CGti+4yL2A7CuEhZ4yK2gjA2uaxxEdNBaJ9Ul3ERU0Fom8yUcRHdQShPYsu4iK4gpIu5jIuoBkEuqopxEdkgSg+uqnERahCFg1SMD+o1ck0eNz9Lck3ZIPZe1LHig3oN4fRFun46GaPX7UoFsKYoiJ3NUHZ31nl+AjKr2JrNaeq+BwD4/vyg1QlESaJU35rN0QLSvCA2AQS+t9mRiau2Chto9xYY/RmyjW7drNdNADu3yNd1bjHllm6eHEs1KK0Z99G8GhY+99nrct8Dlm9SZdIY1MsNYBU2jAlWjdwA2r2F7T7Y2Akg+3xkXxbrYxWx84vLUuMe7yMVGRKH1pQqiguAuwFuXADcDXDjAuBugBsXAHcD3NA3Q3GfNHw6GZMl3uNX4cSQPEdZSB8QuX9ll4XrT7PD8Q/5Bfm56pJUoLG3AAAAAElFTkSuQmCC' }
-];
-let stationAssets = [];
-function loadRasterImage(src){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('station asset load failed'));
-    img.src = src;
-  });
-}
-async function loadStationAssets(){
-  stationAssets = await Promise.all(STATION_ASSET_DATA.map(async asset => ({
-    name: asset.name,
-    tile: await loadRasterImage(asset.tile),
-    icon: await loadRasterImage(asset.icon),
-  })));
-}
-function stationNameHash(props){
-  const text = props['name:ja'] || props.name || props.subclass || 'station';
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
-  return hash;
-}
-function stationAssetFor(props, size){
-  if (!stationAssets.length) return null;
-  const subclass = String(props.subclass || '').toLowerCase();
-  if (subclass.includes('subway')) return stationAssets[3];
-  const pool = size === 'L' ? [1, 2, 4] : size === 'S' ? [0, 4] : [0, 1, 4];
-  return stationAssets[pool[stationNameHash(props) % pool.length]];
-}
-function drawStationAsset(asset, x, y){
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  for (let ox = -32; ox < 32; ox += 16)
-    ctx.drawImage(asset.tile, x + ox, y - 3, 16, 16);
-  ctx.drawImage(asset.icon, x - 32, y - 36, 64, 40);
-  ctx.restore();
-}
 const SPRITES = {
   station:  { label:'鉄道駅',
     S:(x,y)=>{                                   // 小さな駅舎
@@ -1081,10 +1036,6 @@ const CLASS2SPRITE = {
 function spriteFor(props, size = 'M'){
   const key = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
   const e = SPRITES[key];
-  if (key === 'station'){
-    const asset = stationAssetFor(props, size);
-    if (asset) return { label:e.label, draw:(x,y)=>drawStationAsset(asset, x, y), stationAsset:true };
-  }
   const draw = e[size] || e.M || e.S || e.L || e.draw;
   return { label: e.label, draw };
 }
@@ -1265,17 +1216,8 @@ function render(){
     drawnIcons.sort((a, b) => a.pt[1] - b.pt[1]);
     for (const p of drawnIcons){
       p.size = poiSizeClass(p.pt);
-      const sprite = spriteFor(p.props, p.size);
-      drawSprite(sprite, p.pt[0], p.pt[1]);
-      const isStation = !!sprite.stationAsset;
-      hitAreas.push({
-        x: p.pt[0] - (isStation ? 96 : 30),
-        y: p.pt[1] - (isStation ? 108 : 54),
-        w: isStation ? 192 : 60,
-        h: isStation ? 120 : 62,
-        p: p.props,
-        kind:'poi'
-      });
+      drawSprite(spriteFor(p.props, p.size), p.pt[0], p.pt[1]);
+      hitAreas.push({ x: p.pt[0] - 30, y: p.pt[1] - 54, w: 60, h: 62, p: p.props, kind:'poi' });
     }
   }
 
@@ -1300,10 +1242,8 @@ function render(){
         return pr(a) - pr(b);
       })
       .slice(0, 22);
-    for (const p of labelTargets){
-      const isStation = p.props.class === 'railway';
-      labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (isStation ? 128 : 88), placedRects);
-    }
+    for (const p of labelTargets)
+      labelWindow(featureName(p.props), p.pt[0], p.pt[1] - 88, placedRects);
   }
   /* --- 地名・水域名 --- */
   if (o.labels){
@@ -1402,7 +1342,6 @@ async function loadTile(){
 }
 async function boot(){
   try { await document.fonts.load('17px DotGothic16'); } catch (e) {}
-  await loadStationAssets();
   buildTiles();
   try {
     await loadTile();
