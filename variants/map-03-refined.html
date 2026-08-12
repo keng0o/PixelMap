@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>カワサキタウン（レトロ版）</title>
+<title>カワサキタウン 改善案03</title>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <style>
   :root{ --ink:#181820; }
@@ -31,12 +31,9 @@
     width:min(92vw, 700px);
     aspect-ratio:1/1;
     image-rendering:pixelated;
-    cursor:grab;
+    cursor:crosshair;
     background:#78b850;
-    touch-action:none;
-    user-select:none;
   }
-  canvas.dragging{ cursor:grabbing; }
   #msg{ width:min(92vw, 700px); min-height:60px; font-size:14px; line-height:1.8; letter-spacing:1px; }
   #msg .cursor{ display:inline-block; margin-left:6px; animation:blink 1s steps(1) infinite; }
   @keyframes blink{ 50%{ opacity:0; } }
@@ -46,40 +43,26 @@
   #stats{ width:min(92vw,700px); font-size:11px; color:#a8a088; display:flex; flex-wrap:wrap; gap:4px 14px; }
   #attrib{ font-size:10px; color:#787460; padding:6px 12px; }
   #attrib a{ color:#88c860; }
-  .assets-link{
-    display:inline-flex; align-items:center; gap:7px;
-    color:#101018; background:#88c860; border:2px solid #f8f0d8;
-    padding:6px 12px; text-decoration:none; letter-spacing:1px;
-  }
-  .assets-link:hover{ background:#f8f0d8; }
   button.retry, label.retry{
     font-family:inherit; font-size:13px; letter-spacing:1px;
     background:#101018; color:#f8f0d8; border:2px solid #f8f0d8;
     padding:6px 18px; cursor:pointer; margin-top:8px;
   }
   button.retry:hover, label.retry:hover{ background:#282838; }
-  .assets-link{
-    color:#88c860; text-decoration:none; font-size:12px; letter-spacing:1px;
-    border-bottom:1px solid transparent; padding:3px 1px;
-  }
-  .assets-link:hover{ border-bottom-color:#88c860; }
   @media (prefers-reduced-motion: reduce){ #msg .cursor{ animation:none; } }
 </style>
 </head>
 <body>
 
-<h1 class="rpg-window">カワサキタウン<small id="mapPosition">OpenFreeMap z14 / 14549 / 6460 ─ レトロ版</small></h1>
-
-<a class="assets-link" href="variants/">品質改善 5案を くらべる →</a>
+<h1 class="rpg-window">カワサキタウン 改善案03<small>OpenFreeMap z14 / 14549 / 6460 ─ レトロRPGマップ</small></h1>
 
 <div class="rpg-window map-frame">
-  <canvas id="map" width="1536" height="1536" aria-label="川崎駅周辺のレトロRPG風マップ。ドラッグで移動できます"></canvas>
+  <canvas id="map" width="1536" height="1536" aria-label="川崎駅周辺のレトロRPG風マップ 改善案03"></canvas>
 </div>
 
 <div id="msg" class="rpg-window">マップデータを よみこんでいる……<span class="cursor">▼</span></div>
 
 <div id="toolbar" class="rpg-window">
-  <a class="assets-link" href="assets.html">アセット図鑑 100 →</a>
   <label><input type="checkbox" id="tglBuildings" checked>たてもの</label>
   <label><input type="checkbox" id="tglPoi" checked>施設アイコン</label>
   <label><input type="checkbox" id="tglStationNames" checked>駅名</label>
@@ -95,7 +78,8 @@
 <div id="attrib" class="rpg-window">
   地図データ: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors ／
   <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> ／
-  <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">© OpenMapTiles</a>
+  <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">© OpenMapTiles</a> ／
+  <a href="./index.html">5案の比較へ</a> ／ <a href="../index.html">元のマップへ</a>
 </div>
 
 <script>
@@ -287,8 +271,29 @@ function buildTiles(){
     q(7,11,2,3,P.trunk); q(6,11,1,1,'#583820');
     q(5,14,6,1,shadow); q(4,15,8,1,shadow);
   };
-  TILES.tree = T((g,q)=>treeArt(q, P.g1, P.gDk));
-  TILES.parkTree = T((g,q)=>treeArt(q, '#8cc864', '#78b452'));
+  TILES.tree0 = T((g,q)=>treeArt(q, P.g1, P.gDk));
+  TILES.tree1 = T((g,q)=>{                         // 横に広い若木
+    q(0,0,16,16,P.g1);
+    q(5,1,6,1,OUT); q(3,2,10,1,OUT); q(2,3,12,6,OUT); q(4,9,8,2,OUT);
+    q(5,2,6,1,P.treeLt); q(3,3,10,5,P.treeMd); q(2,5,4,3,P.treeLt);
+    q(9,5,4,4,P.treeDk); q(5,8,7,2,P.treeDk);
+    q(7,10,2,4,P.trunk); q(6,14,5,1,P.gDk);
+  });
+  TILES.tree2 = T((g,q)=>{                         // 背の高い街路樹
+    q(0,0,16,16,P.g1);
+    q(6,0,4,1,OUT); q(4,1,8,2,OUT); q(3,3,10,5,OUT); q(5,8,6,2,OUT);
+    q(6,1,4,1,P.treeLt); q(4,2,8,5,P.treeMd); q(5,2,4,3,P.treeLt);
+    q(8,5,4,3,P.treeDk); q(6,7,5,2,P.treeDk);
+    q(7,9,2,5,P.trunk); q(8,9,1,5,'#583820'); q(5,14,7,1,P.gDk);
+  });
+  TILES.parkTree0 = T((g,q)=>treeArt(q, '#8cc864', '#78b452'));
+  TILES.parkTree1 = T((g,q)=>{                     // 公園の丸い低木
+    q(0,0,16,16,'#8cc864');
+    q(4,3,8,1,OUT); q(2,4,12,6,OUT); q(4,10,8,1,OUT);
+    q(4,4,8,1,P.treeLt); q(3,5,10,4,P.treeMd);
+    q(3,5,4,3,P.treeLt); q(9,7,4,3,P.treeDk); q(5,9,7,1,P.treeDk);
+    q(7,10,2,3,P.trunk); q(5,13,6,1,'#78b452');
+  });
   TILES.lawn = T((g,q)=>{ q(0,0,16,16,'#8cc864');       // 公園の芝生
     q(3,5,1,2,'#78b452'); q(5,4,1,3,'#78b452'); q(10,9,1,2,'#78b452'); q(13,3,1,1,'#a4dc7c'); });
   TILES.parkFlower = T((g,q)=>{ q(0,0,16,16,'#8cc864'); // 花だん
@@ -366,6 +371,21 @@ function buildTiles(){
         q(10,8,4,7,OUT); q(11,9,2,6,P.door);
         q(11,10,1,1,'#e8c878');
       });
+      TILES['frontAlt' + i] = T((g,q)=>{                 // 小窓・雨戸つきの正面
+        q(0,0,16,16,P.wall);
+        q(0,0,16,2,pal[2]); q(0,2,16,5,pal[0]); q(0,6,16,2,pal[1]);
+        q(0,14,16,2,P.wallDk);
+        q(2,9,4,4,OUT); q(3,10,2,2,P.win); q(6,9,1,4,pal[1]);
+        q(9,9,4,4,OUT); q(10,10,2,2,P.win); q(13,9,1,4,pal[1]);
+      });
+      TILES['frontDoorAlt' + i] = T((g,q)=>{             // 中央玄関・左右窓の正面
+        q(0,0,16,16,P.wall);
+        q(0,0,16,2,pal[2]); q(0,2,16,5,pal[0]); q(0,6,16,2,pal[1]);
+        q(0,14,16,2,P.wallDk);
+        q(1,9,4,4,OUT); q(2,10,2,2,P.win);
+        q(6,8,4,7,OUT); q(7,9,2,6,P.door); q(8,11,1,1,'#e8c878');
+        q(11,9,4,4,OUT); q(12,10,2,2,P.win);
+      });
     }
   });
   TILES.wallTower = T((g,q)=>{ q(0,0,16,16,'#a2aab8');    // ビルの壁面(窓帯)
@@ -408,35 +428,32 @@ function styleOfBuilding(f, areaCells){
 }
 
 function rasterizeGrid(layers, withBuildings){
-  const RG = GRID + 2;                           // 移動時に端が空かないよう外周も描画
-  const grid = new Uint8Array(RG * RG);          // 0 = GRASS
+  const grid = new Uint8Array(GRID * GRID);      // 0 = GRASS
   const oc = document.createElement('canvas');
-  oc.width = oc.height = RG;
+  oc.width = oc.height = GRID;
   const c = oc.getContext('2d', { willReadFrequently: true });
   const extent = layers.transportation?.extent || layers.building?.extent || 4096;
   const S = GRID / extent;
   const L = n => (layers[n] ? layers[n].features : []);
-  const gx = x => x * S - gridOriginX;
-  const gy = y => y * S - gridOriginY;
 
   function polyPath(rings){
     c.beginPath();
     for (const ring of rings){
-      ring.forEach((pt, i) => i ? c.lineTo(gx(pt[0]), gy(pt[1])) : c.moveTo(gx(pt[0]), gy(pt[1])));
+      ring.forEach((pt, i) => i ? c.lineTo(pt[0]*S, pt[1]*S) : c.moveTo(pt[0]*S, pt[1]*S));
     }
   }
   function linePath(lines){
     c.beginPath();
     for (const ln of lines)
-      ln.forEach((pt, i) => i ? c.lineTo(gx(pt[0]), gy(pt[1])) : c.moveTo(gx(pt[0]), gy(pt[1])));
+      ln.forEach((pt, i) => i ? c.lineTo(pt[0]*S, pt[1]*S) : c.moveTo(pt[0]*S, pt[1]*S));
   }
   function stamp(id, drawFn){
-    c.clearRect(0, 0, RG, RG);
+    c.clearRect(0, 0, GRID, GRID);
     c.fillStyle = '#000'; c.strokeStyle = '#000';
     c.lineCap = 'round'; c.lineJoin = 'round';
     drawFn();
-    const d = c.getImageData(0, 0, RG, RG).data;
-    for (let i = 0; i < RG * RG; i++)
+    const d = c.getImageData(0, 0, GRID, GRID).data;
+    for (let i = 0; i < GRID * GRID; i++)
       if (d[i * 4 + 3] > 100) grid[i] = id;
   }
 
@@ -471,23 +488,23 @@ function rasterizeGrid(layers, withBuildings){
     stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
   // 建物: 表示の有無にかかわらず面積を計算し、POIのサイズ判定に使う
   const bldFeats = L('building').filter(f => f.type === 3);
-  const bldGrid = new Uint16Array(RG * RG);
+  const bldGrid = new Uint16Array(GRID * GRID);
   const bldArea = new Uint16Array(bldFeats.length + 1);
   function fillPolyCells(rings, visit){
     let minY = Infinity, maxY = -Infinity;
     for (const r of rings) for (const p of r){
-      const y = gy(p[1]);
+      const y = p[1] * S;
       if (y < minY) minY = y;
       if (y > maxY) maxY = y;
     }
-    const y0 = Math.max(0, Math.floor(minY)), y1 = Math.min(RG - 1, Math.ceil(maxY));
+    const y0 = Math.max(0, Math.floor(minY)), y1 = Math.min(GRID - 1, Math.ceil(maxY));
     for (let cy = y0; cy <= y1; cy++){
       const yc = cy + 0.5, xs = [];
       for (const r of rings){
         for (let i = 0; i + 1 < r.length; i++){
-          const ya = gy(r[i][1]), yb = gy(r[i+1][1]);
+          const ya = r[i][1] * S, yb = r[i+1][1] * S;
           if ((ya <= yc) !== (yb <= yc)){
-            const xa = gx(r[i][0]), xb = gx(r[i+1][0]);
+            const xa = r[i][0] * S, xb = r[i+1][0] * S;
             xs.push(xa + (yc - ya) * (xb - xa) / (yb - ya));
           }
         }
@@ -495,7 +512,7 @@ function rasterizeGrid(layers, withBuildings){
       xs.sort((a, b) => a - b);
       for (let k = 0; k + 1 < xs.length; k += 2){
         const cx0 = Math.max(0, Math.ceil(xs[k] - 0.5));
-        const cx1 = Math.min(RG - 1, Math.floor(xs[k+1] - 0.5));
+        const cx1 = Math.min(GRID - 1, Math.floor(xs[k+1] - 0.5));
         for (let cx = cx0; cx <= cx1; cx++) visit(cx, cy);
       }
     }
@@ -503,8 +520,8 @@ function rasterizeGrid(layers, withBuildings){
   bldFeats.forEach((f, i) => {
     let cnt = 0;
     fillPolyCells(f.geom, (cx, cy) => {
-      if (withBuildings) grid[cy * RG + cx] = ID.BLD;
-      bldGrid[cy * RG + cx] = i + 1;
+      if (withBuildings) grid[cy * GRID + cx] = ID.BLD;
+      bldGrid[cy * GRID + cx] = i + 1;
       cnt++;
     });
     if (!cnt){                                   // セル中心を1つも拾えない極小建物は重心に1マス
@@ -512,10 +529,10 @@ function rasterizeGrid(layers, withBuildings){
       let sx = 0, sy = 0;
       r.forEach(p => { sx += p[0]; sy += p[1]; });
       if (r.length){
-        const cx = Math.floor(gx(sx / r.length)), cy = Math.floor(gy(sy / r.length));
-        if (cx >= 0 && cy >= 0 && cx < RG && cy < RG){
-          if (withBuildings) grid[cy * RG + cx] = ID.BLD;
-          bldGrid[cy * RG + cx] = i + 1;
+        const cx = Math.floor(sx / r.length * S), cy = Math.floor(sy / r.length * S);
+        if (cx >= 0 && cy >= 0 && cx < GRID && cy < GRID){
+          if (withBuildings) grid[cy * GRID + cx] = ID.BLD;
+          bldGrid[cy * GRID + cx] = i + 1;
           cnt = 1;
         }
       }
@@ -524,7 +541,7 @@ function rasterizeGrid(layers, withBuildings){
   });
   /* --- 道・線路: セル走査で必ず4連結にする（斜めは階段状） --- */
   const setCell = (cx, cy, id) => {
-    if (cx >= 0 && cy >= 0 && cx < RG && cy < RG) grid[cy * RG + cx] = id;
+    if (cx >= 0 && cy >= 0 && cx < GRID && cy < GRID) grid[cy * GRID + cx] = id;
   };
   // Amanatides–Woo のボクセル走査。1ステップで進むのは必ず1軸だけなので
   // 斜め線も自動的に「ギザギザの階段」になり、タイルが途切れない。
@@ -539,7 +556,7 @@ function rasterizeGrid(layers, withBuildings){
     let tMY = dy !== 0 ? (dy > 0 ? (cy + 1 - y0) : (y0 - cy)) * tDY : Infinity;
     visit(cx, cy);
     let guard = 0;
-    while ((cx !== ex || cy !== ey) && guard++ < RG * 4){
+    while ((cx !== ex || cy !== ey) && guard++ < GRID * 4){
       if (tMX < tMY){ cx += stepX; tMX += tDX; }
       else          { cy += stepY; tMY += tDY; }
       visit(cx, cy);
@@ -549,7 +566,7 @@ function rasterizeGrid(layers, withBuildings){
     for (const f of fs){
       for (const ln of f.geom){
         for (let i = 0; i + 1 < ln.length; i++){
-          traverse(gx(ln[i][0]), gy(ln[i][1]), gx(ln[i+1][0]), gy(ln[i+1][1]), (cx, cy) => {
+          traverse(ln[i][0]*S, ln[i][1]*S, ln[i+1][0]*S, ln[i+1][1]*S, (cx, cy) => {
             setCell(cx, cy, id);
             if (thick){ setCell(cx + 1, cy, id); setCell(cx, cy + 1, id); }
           });
@@ -569,15 +586,15 @@ function rasterizeGrid(layers, withBuildings){
       const own = new Set();                       // この線が自分で置いたセル
       for (const ln of f.geom){
         for (let i = 0; i + 1 < ln.length; i++){
-          traverse(gx(ln[i][0]), gy(ln[i][1]), gx(ln[i+1][0]), gy(ln[i+1][1]), (cx, cy) => {
-            if (cx < 0 || cy < 0 || cx >= RG || cy >= RG) return;
-            const idx = cy * RG + cx;
+          traverse(ln[i][0]*S, ln[i][1]*S, ln[i+1][0]*S, ln[i+1][1]*S, (cx, cy) => {
+            if (cx < 0 || cy < 0 || cx >= GRID || cy >= GRID) return;
+            const idx = cy * GRID + cx;
             if (grid[idx] === ID.RAIL && !own.has(idx)) return;   // 既存の他線には触れない
             let foreign = false;
             for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
               const nx = cx + dx, ny = cy + dy;
-              if (nx < 0 || ny < 0 || nx >= RG || ny >= RG) continue;
-              const j = ny * RG + nx;
+              if (nx < 0 || ny < 0 || nx >= GRID || ny >= GRID) continue;
+              const j = ny * GRID + nx;
               if (grid[j] === ID.RAIL && !own.has(j)){ foreign = true; break; }
             }
             if (foreign){
@@ -592,33 +609,29 @@ function rasterizeGrid(layers, withBuildings){
     }
   }
   railStamp(roadFeats(['rail']));
-  return { grid, bldGrid, bldFeats, bldArea, size:RG };
+  return { grid, bldGrid, bldFeats, bldArea };
 }
 
 /* =====================================================
    5. グリッド描画（オートタイリング）
    ===================================================== */
-const cellHash = (x, y) => {
-  const wx = gridOriginX + x, wy = gridOriginY + y;
-  return ((wx * 7349 + wy * 9151 + TILE.x) % 97 + 97) % 97;
-};
+const cellHash = (x, y) => ((x * 7349 + y * 9151 + TILE.x) % 97 + 97) % 97;
 
-function drawGrid(grid, bldGrid, bldStyle){
-  const RG = GRID + 2;
-  const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
-  const bAt = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? 0 : bldGrid[y * RG + x];
-  const put = (name, x, y) => ctx.drawImage(TILES[name], gridShiftX + x * CPX, gridShiftY + y * CPX);
+function drawGrid(grid, bldGrid, bldStyle, bldArea){
+  const at = (x, y) => (x < 0 || y < 0 || x >= GRID || y >= GRID) ? ID.GRASS : grid[y * GRID + x];
+  const bAt = (x, y) => (x < 0 || y < 0 || x >= GRID || y >= GRID) ? 0 : bldGrid[y * GRID + x];
+  const put = (name, x, y) => ctx.drawImage(TILES[name], x * CPX, y * CPX);
   const edge = (x, y, dir, color, t = 2) => {
     ctx.fillStyle = color;
-    const px = gridShiftX + x * CPX, py = gridShiftY + y * CPX;
+    const px = x * CPX, py = y * CPX;
     if (dir === 'L') ctx.fillRect(px, py, t, CPX);
     if (dir === 'R') ctx.fillRect(px + CPX - t, py, t, CPX);
     if (dir === 'U') ctx.fillRect(px, py, CPX, t);
     if (dir === 'D') ctx.fillRect(px, py + CPX - t, CPX, t);
   };
 
-  for (let y = 0; y < RG; y++){
-    for (let x = 0; x < RG; x++){
+  for (let y = 0; y < GRID; y++){
+    for (let x = 0; x < GRID; x++){
       const id = at(x, y), h = cellHash(x, y);
       switch (id){
         case ID.GRASS: {
@@ -629,9 +642,9 @@ function drawGrid(grid, bldGrid, bldStyle){
           else put('grass2', x, y);
           break;
         }
-        case ID.TREE: put('tree', x, y); break;
+        case ID.TREE: put('tree' + (h % 3), x, y); break;
         case ID.PARK: {
-          if (h < 34) put('parkTree', x, y);              // 木を主役に
+          if (h < 34) put('parkTree' + (h % 2), x, y);    // 樹形を交互にせず座標で自然に選ぶ
           else if (h < 40) put('parkFlower', x, y);
           else if (h < 43) put('bench', x, y);
           else put('lawn', x, y);
@@ -660,9 +673,30 @@ function drawGrid(grid, bldGrid, bldStyle){
         case ID.PATH: put('path', x, y); break;
         case ID.ROAD: {
           put('road', x, y);
+          const con = {
+            L: at(x-1, y) === ID.ROAD, R: at(x+1, y) === ID.ROAD,
+            U: at(x, y-1) === ID.ROAD, D: at(x, y+1) === ID.ROAD,
+          };
           for (const [d, nx, ny] of [['L',x-1,y],['R',x+1,y],['U',x,y-1],['D',x,y+1]]){
             const n = at(nx, ny);
             if (n !== ID.ROAD && n !== ID.PAVE) edge(x, y, d, P.roadDk, 2);
+          }
+          const degree = Number(con.L) + Number(con.R) + Number(con.U) + Number(con.D);
+          const bx = x * CPX, by = y * CPX;
+          if (degree >= 3 && h < 26){                       // 交差点の短い横断歩道
+            ctx.fillStyle = '#f8f0d8';
+            if (con.L && con.R){
+              for (let k = 3; k <= 11; k += 4) ctx.fillRect(bx + k, by + 2, 2, 4);
+            } else {
+              for (let k = 3; k <= 11; k += 4) ctx.fillRect(bx + 2, by + k, 4, 2);
+            }
+          } else if (degree === 2 && h < 7){                // まばらなマンホール
+            ctx.fillStyle = P.roadDk; ctx.fillRect(bx + 6, by + 6, 5, 5);
+            ctx.fillStyle = P.roadDot; ctx.fillRect(bx + 7, by + 7, 3, 3);
+          } else if (degree <= 2 && h >= 90){               // 側溝の格子
+            ctx.fillStyle = P.roadDk; ctx.fillRect(bx + 3, by + 12, 7, 2);
+            ctx.fillStyle = P.roadDot;
+            for (let k = 4; k < 10; k += 2) ctx.fillRect(bx + k, by + 12, 1, 2);
           }
           break;
         }
@@ -673,7 +707,7 @@ function drawGrid(grid, bldGrid, bldStyle){
             U: at(x, y-1) === ID.RAIL, D: at(x, y+1) === ID.RAIL,
           };
           if (!con.L && !con.R && !con.U && !con.D){ con.L = con.R = true; }
-          const bx = gridShiftX + x * CPX, by = gridShiftY + y * CPX;
+          const bx = x * CPX, by = y * CPX;
           const R = (rx, ry, rw, rh) => { ctx.fillStyle = P.rail; ctx.fillRect(bx+rx, by+ry, rw, rh); };
           const TIE = (rx, ry, rw, rh) => { ctx.fillStyle = P.tie; ctx.fillRect(bx+rx, by+ry, rw, rh); };
           if (con.L) TIE(2, 3, 2, 10);
@@ -691,12 +725,23 @@ function drawGrid(grid, bldGrid, bldStyle){
           const st = bldStyle[bi] || 0;
           const same = (nx, ny) => at(nx, ny) === ID.BLD && bAt(nx, ny) === bi;
           const above = same(x, y - 1), below = same(x, y + 1);
-          const right = same(x + 1, y);
+          const left = same(x - 1, y), right = same(x + 1, y);
           const isHouse = st <= 5 || st === 9;
-          const bx = gridShiftX + x * CPX, by = gridShiftY + y * CPX;
+          const area = bldArea[bi] || 1;
+          const bx = x * CPX, by = y * CPX;
           if (!below && isHouse){
             // 低層建物の南面には窓と玄関を出し、塊ではなく家として読めるようにする
-            put((!right ? 'frontDoor' : 'front') + st, x, y);
+            if (!right){
+              put(((bi + st + area) % 3 === 0 ? 'frontDoorAlt' : 'frontDoor') + st, x, y);
+            } else {
+              put(((bi + x + y) % 4 === 0 ? 'frontAlt' : 'front') + st, x, y);
+            }
+            // 一軒幅の建物には玄関灯、長い正面には小さな庇を決定的に加える
+            if (!left && !right){
+              ctx.fillStyle = '#f8d038'; ctx.fillRect(bx + 12, by + 9, 1, 1);
+            } else if (left && right && (bi + x) % 4 === 0){
+              ctx.fillStyle = ROOFPAL[st][2]; ctx.fillRect(bx + 4, by + 8, 8, 1);
+            }
           } else if (!below && above){
             // 2マス以上の高さがある建物の最下段だけ壁面（1マスの建物は屋根を見せる）
             if (st === 6 || st === 7) put('wallTower', x, y);
@@ -742,7 +787,7 @@ function drawGrid(grid, bldGrid, bldStyle){
       // 建物の南側に落ちる影（ドット絵らしい奥行き）
       if (id !== ID.BLD && at(x, y - 1) === ID.BLD){
         ctx.fillStyle = 'rgba(24,32,20,.28)';
-        ctx.fillRect(gridShiftX + x * CPX, gridShiftY + y * CPX, CPX, 4);
+        ctx.fillRect(x * CPX, y * CPX, CPX, 4);
       }
     }
   }
@@ -782,14 +827,16 @@ function sign(x, y, w){                         // 看板
   px(x, y, w, 2, '#f8f0d8');
   px(x, y + 2, w, 1, sh('#f8f0d8', 0.65));
 }
+let spriteVariant = 0;
 function yard(cx, cy, w){
   // 建物のまわりの庭: 芝生 + 植えこみ + 花
   px(cx - w, cy - 2, w * 2, 5, '#8cc864');
   px(cx - w, cy + 2, w * 2, 1, '#78b452');
-  for (let i = -w; i < w - 1; i += 3)
+  const step = spriteVariant % 3 === 1 ? 4 : 3;
+  for (let i = -w + (spriteVariant % 2); i < w - 1; i += step)
     px(cx + i, cy + 1, 2, 2, P.treeMd);
-  px(cx - w + 2, cy - 1, 1, 1, '#f87890');
-  px(cx + w - 4, cy - 1, 1, 1, '#f8f8f8');
+  px(cx - w + 2 + spriteVariant, cy - 1, 1, 1, '#f87890');
+  px(cx + w - 4 - (spriteVariant % 2), cy - 1, 1, 1, '#f8f8f8');
   px(cx - 1, cy + 3, 2, 1, '#f8d038');
 }
 function house(cx, cy, roof, wall = P.wall, wide = false){
@@ -802,7 +849,18 @@ function house(cx, cy, roof, wall = P.wall, wide = false){
   px(x + 2, y + 5, hw*2 - 4, 1, sh(wall, 0.7)); // 壁に落ちる軒の影
   winF(x + 3, y + 7, 3, 3);
   winF(x + hw*2 - 6, y + 7, 3, 3);
-  winF(x + hw - 2, y + 8, 4, 4);
+  if (spriteVariant % 3 === 0){                    // 玄関位置も施設ごとに変える
+    px(x + hw - 2, y + 8, 4, 7, OUT);
+    px(x + hw - 1, y + 9, 2, 6, P.door);
+    px(x + hw, y + 11, 1, 1, '#e8c878');
+  } else {
+    winF(x + hw - 2, y + 8, 4, 4);
+    px(x + (spriteVariant % 2 ? 2 : hw*2 - 5), y + 11, 3, 4, P.door);
+  }
+  if (spriteVariant % 3 === 2){                    // 小さな煙突
+    px(x + hw*2 - 5, y - 2, 3, 4, P.wallDk);
+    px(x + hw*2 - 6, y - 2, 5, 1, P.outline);
+  }
   return { x, y, w: hw*2, h: 15 };
 }
 function stall(cx, cy, awn, deco){
@@ -813,6 +871,12 @@ function stall(cx, cy, awn, deco){
   px(x - 1, y + 2, 1, 2, awn);
   px(x + 14, y + 2, 1, 2, awn);
   px(x + 2, y + 5, 10, 1, sh(P.wall, 0.7));
+  winF(x + 3, y + 7, spriteVariant % 2 ? 5 : 3, 4);
+  px(x + 9, y + 7, 3, 6, P.door);
+  px(x + 9, y + 9, 1, 1, '#e8c878');
+  if (spriteVariant % 3 === 1){                    // 縞ひさしで店先の反復感を抑える
+    for (let i = 0; i < 4; i++) px(x + 1 + i*4, y + 2, 2, 2, '#f8f0d8');
+  }
   deco && deco(x, y);
 }
 function signPost(cx, cy, plate, deco){
@@ -1063,7 +1127,8 @@ function spriteFor(props, size = 'M'){
   const draw = e[size] || e.M || e.S || e.L || e.draw;
   return { label: e.label, draw };
 }
-function drawSprite(sp, cx, cy){
+function drawSprite(sp, cx, cy, variant = 0){
+  spriteVariant = variant % 3;
   ctx.save();
   ctx.translate(Math.round(cx), Math.round(cy));
   ctx.scale(3, 3);
@@ -1071,6 +1136,7 @@ function drawSprite(sp, cx, cy){
   ctx.fillRect(-7, -1, 14, 3);
   sp.draw(0, 0);
   ctx.restore();
+  spriteVariant = 0;
 }
 /* 文字もドット絵に: 半分のサイズで描いて2倍に最近傍拡大する */
 function makePixelText(text, size, color, outline){
@@ -1095,11 +1161,18 @@ function makePixelText(text, size, color, outline){
 function labelWindow(text, cx, topY, placedRects){
   const img = makePixelText(text, 24, '#f8f0d8');
   const w = img.width * 2 + 8, h = img.height * 2 + 4;
-  let x = Math.max(4, Math.min(W - w - 4, Math.round(cx - w / 2)));
-  let rect = { x, y: Math.max(4, Math.min(H - h - 4, Math.round(topY))), w, h };
+  const baseX = Math.max(4, Math.min(W - w - 4, Math.round(cx - w / 2)));
   const hits = r => placedRects.some(o => !(r.x + r.w < o.x || o.x + o.w < r.x || r.y + r.h < o.y || o.y + o.h < r.y));
-  if (hits(rect)) rect.y += 92;
-  if (hits(rect)) return null;
+  const candidates = [
+    { x:baseX, y:Math.round(topY), w, h },
+    { x:baseX, y:Math.round(topY - h - 12), w, h },
+    { x:Math.max(4, Math.min(W - w - 4, baseX + 48)), y:Math.round(topY + h + 12), w, h },
+    { x:Math.max(4, Math.min(W - w - 4, baseX - 48)), y:Math.round(topY + h + 12), w, h },
+  ];
+  const rect = candidates
+    .map(r => ({ ...r, y:Math.max(4, Math.min(H - h - 4, r.y)) }))
+    .find(r => !hits(r));
+  if (!rect) return null;
   px(rect.x - 3, rect.y - 3, w + 6, h + 6, '#f8f0d8');
   px(rect.x - 1, rect.y - 1, w + 2, h + 2, OUT);
   px(rect.x, rect.y, w, h, '#101018');
@@ -1108,14 +1181,19 @@ function labelWindow(text, cx, topY, placedRects){
   placedRects.push(rect);
   return rect;
 }
-function outlinedText(text, cx, cy, size, color){
+function outlinedText(text, cx, cy, size, color, placedRects = null){
   const img = makePixelText(text, size, color, OUT);
   const w = img.width * 2, h = img.height * 2;
   const x = Math.max(6, Math.min(W - w - 6, Math.round(cx - w / 2)));
   const y = Math.round(cy - h + 6);
+  const rect = { x, y, w, h };
+  if (placedRects && placedRects.some(o =>
+    !(rect.x + rect.w + 8 < o.x || o.x + o.w + 8 < rect.x ||
+      rect.y + rect.h + 6 < o.y || o.y + o.h + 6 < rect.y))) return null;
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(img, x, y, w, h);
-  return { x, y, w, h };
+  if (placedRects) placedRects.push(rect);
+  return rect;
 }
 
 /* =====================================================
@@ -1124,12 +1202,8 @@ function outlinedText(text, cx, cy, size, color){
 let tileLayers = null;
 let hitAreas = [];
 let SCALE = 1;
-const viewOffset = { x:0, y:0 };
-let gridOriginX = -1, gridOriginY = -1;
-let gridShiftX = -CPX, gridShiftY = -CPX;
-const tp = ([x, y]) => [x * SCALE - viewOffset.x, y * SCALE - viewOffset.y];
-const snapX = v => (Math.floor((v + viewOffset.x) / CPX) + 0.5) * CPX - viewOffset.x;
-const snapY = v => (Math.floor((v + viewOffset.y) / CPX) + 0.5) * CPX - viewOffset.y;
+const tp = ([x, y]) => [x * SCALE, y * SCALE];
+const snap = v => (Math.floor(v / CPX) + 0.5) * CPX;   // マス目に吸着
 
 const opts = () => ({
   buildings: document.getElementById('tglBuildings').checked,
@@ -1142,6 +1216,18 @@ const opts = () => ({
   boundary:  document.getElementById('tglBoundary').checked,
 });
 const featureName = p => p['name:ja'] || p.name || null;
+const stableTextHash = value => {
+  let h = 2166136261;
+  for (const ch of String(value || '')) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return h >>> 0;
+};
+const isStationPoi = p => p.class === 'railway' || p.subclass === 'railway' || p.subclass === 'station';
+const poiPriority = p => {
+  if (isStationPoi(p.props)) return -100 + p.rank;
+  if (['town_hall','hospital','police','fire_station'].includes(p.props.class) ||
+      ['town_hall','hospital','police','fire_station'].includes(p.props.subclass)) return -30 + p.rank;
+  return p.rank;
+};
 const centroid = rings => {
   const ring = rings[0] || [];
   let sx = 0, sy = 0;
@@ -1155,28 +1241,22 @@ function render(){
   hitAreas = [];
   const L = n => (tileLayers[n] ? tileLayers[n].features : []);
   SCALE = W / (tileLayers.transportation?.extent || tileLayers.building?.extent || 4096);
-  gridOriginX = Math.floor(viewOffset.x / CPX) - 1;
-  gridOriginY = Math.floor(viewOffset.y / CPX) - 1;
-  gridShiftX = gridOriginX * CPX - viewOffset.x;
-  gridShiftY = gridOriginY * CPX - viewOffset.y;
 
   /* --- 地形グリッド + 建物情報 --- */
   const { grid, bldGrid, bldFeats, bldArea } = rasterizeGrid(tileLayers, o.buildings);
   const bldStyle = new Uint8Array(bldFeats.length + 1);
   bldFeats.forEach((f, i) => { bldStyle[i + 1] = styleOfBuilding(f, bldArea[i + 1]); });
-  drawGrid(grid, bldGrid, bldStyle);
+  drawGrid(grid, bldGrid, bldStyle, bldArea);
 
   // POIの位置にある建物の面積(マス数)から施設のサイズ級を決める
   function poiSizeClass(pt){
-    const RG = GRID + 2;
-    const cx0 = Math.floor((pt[0] - gridShiftX) / CPX);
-    const cy0 = Math.floor((pt[1] - gridShiftY) / CPX);
+    const cx0 = Math.floor(pt[0] / CPX), cy0 = Math.floor(pt[1] / CPX);
     let best = 0;
     for (let dy = -2; dy <= 2; dy++){
       for (let dx = -2; dx <= 2; dx++){
         const cx = cx0 + dx, cy = cy0 + dy;
-        if (cx < 0 || cy < 0 || cx >= RG || cy >= RG) continue;
-        const bi = bldGrid[cy * RG + cx];
+        if (cx < 0 || cy < 0 || cx >= GRID || cy >= GRID) continue;
+        const bi = bldGrid[cy * GRID + cx];
         if (bi) best = Math.max(best, bldArea[bi]);
       }
     }
@@ -1223,34 +1303,59 @@ function render(){
     .filter(f => f.type === 1 && f.geom[0] && f.geom[0][0])
     .map(f => {
       const [x, y] = tp(f.geom[0][0]);
-      return { props: f.props, pt: [snapX(x), snapY(y)], rank: f.props.rank ?? 30 };
+      const name = featureName(f.props) || `${f.props.class || ''}:${f.props.subclass || ''}`;
+      return {
+        props: f.props,
+        pt: [snap(x), snap(y)],
+        rank: f.props.rank ?? 30,
+        variant: stableTextHash(`${name}:${Math.round(x / CPX)}:${Math.round(y / CPX)}`) % 3,
+      };
     })
-    .sort((a, b) => a.rank - b.rank);
+    .sort((a, b) => poiPriority(a) - poiPriority(b));
 
   const drawnIcons = [], hiddenPois = [];
   if (o.poi){
+    const stationNames = new Map();
     for (const p of pois){
       const [x, y] = p.pt;
       if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
-      const near = drawnIcons.some(d => Math.hypot(d.pt[0] - x, d.pt[1] - y) < 66);
-      if (!near && drawnIcons.length < 90) drawnIcons.push(p);
-      else hiddenPois.push(p);
+      const station = isStationPoi(p.props);
+      const stationName = station ? featureName(p.props) : null;
+      // 同じ駅名のMVT点は一つの駅舎にまとめ、黄色点としても重ねない
+      if (stationName && stationNames.has(stationName)) continue;
+      const near = drawnIcons.some(d => {
+        const bothImportant = station || isStationPoi(d.props);
+        return Math.hypot(d.pt[0] - x, d.pt[1] - y) < (bothImportant ? 92 : 72);
+      });
+      if (!near && drawnIcons.length < 64){
+        drawnIcons.push(p);
+        if (stationName) stationNames.set(stationName, p);
+      } else if (!station) hiddenPois.push(p);
     }
     // 小さな施設(点)を先に描く = 常にアイコンの背面
     if (o.dots){
+      const drawnDots = [];
       for (const p of hiddenPois){
         const [x, y] = p.pt;
         if (x < 0 || y < 0 || x > W || y > H) continue;
-        px(x - 4, y - 4, 8, 8, OUT);
-        px(x - 3, y - 3, 6, 6, '#f8d038');
-        hitAreas.push({ x: x - 9, y: y - 9, w: 18, h: 18, p: p.props, kind:'dot' });
+        if (drawnIcons.some(d => Math.hypot(d.pt[0] - x, d.pt[1] - y) < 42)) continue;
+        if (drawnDots.some(d => Math.hypot(d[0] - x, d[1] - y) < 34) || drawnDots.length >= 96) continue;
+        const key = CLASS2SPRITE[p.props.subclass] || CLASS2SPRITE[p.props.class] || 'generic';
+        const dotColor = ['park','grocery'].includes(key) ? P.treeMd :
+          ['station','bus','parking'].includes(key) ? P.roofB :
+          ['restaurant','fast_food','cafe','bar'].includes(key) ? P.roofA : '#f8d038';
+        px(x - 3, y - 3, 6, 6, OUT);
+        px(x - 2, y - 2, 4, 4, dotColor);
+        px(x - 2, y - 2, 2, 1, '#f8f0d8');
+        drawnDots.push([x, y]);
+        hitAreas.push({ x: x - 8, y: y - 8, w: 16, h: 16, p: p.props, kind:'dot' });
       }
     }
     // Y座標昇順に描く = 画面の下にある施設ほど手前に重なる
     drawnIcons.sort((a, b) => a.pt[1] - b.pt[1]);
     for (const p of drawnIcons){
       p.size = poiSizeClass(p.pt);
-      drawSprite(spriteFor(p.props, p.size), p.pt[0], p.pt[1]);
+      drawSprite(spriteFor(p.props, p.size), p.pt[0], p.pt[1], p.variant);
       hitAreas.push({ x: p.pt[0] - 30, y: p.pt[1] - 54, w: 60, h: 62, p: p.props, kind:'poi' });
     }
   }
@@ -1270,25 +1375,48 @@ function render(){
   if (o.labels || o.stationNames){
     const labelTargets = drawnIcons
       .filter(p => featureName(p.props) &&
+        !/[\[\]{}<>]/.test(featureName(p.props)) &&
         (p.props.class === 'railway' ? o.stationNames : o.labels))
       .sort((a, b) => {
         const pr = q => (q.props.class === 'railway' ? -10 : q.rank);
         return pr(a) - pr(b);
       })
-      .slice(0, 22);
+      .slice(0, 18);
     for (const p of labelTargets)
-      labelWindow(featureName(p.props), p.pt[0], p.pt[1] - 88, placedRects);
+      labelWindow(
+        featureName(p.props),
+        p.pt[0],
+        p.pt[1] - (isStationPoi(p.props) ? (p.size === 'L' ? 126 : p.size === 'M' ? 108 : 92) : 88),
+        placedRects
+      );
   }
   /* --- 地名・水域名 --- */
   if (o.labels){
-    for (const f of L('place')){
-      if (f.type !== 1 || !f.geom[0]) continue;
-      const name = featureName(f.props);
-      if (!name) continue;
+    const placeWeight = { city:0, town:1, village:2, suburb:3, quarter:4, neighbourhood:5 };
+    const placeTargets = L('place')
+      .filter(f => {
+        const name = featureName(f.props) || '';
+        const latinCount = (name.match(/[A-Za-z]/g) || []).length;
+        return f.type === 1 && f.geom[0] && placeWeight[f.props.class] !== undefined &&
+          /[\u3040-\u30ff\u3400-\u9fff]/.test(name) && latinCount <= 2 && !/[\[\]{}<>]/.test(name);
+      })
+      .sort((a, b) => (placeWeight[a.props.class] - placeWeight[b.props.class]) ||
+        ((a.props.rank ?? 99) - (b.props.rank ?? 99)));
+    const placePoints = [];
+    let placeCount = 0;
+    for (const f of placeTargets){
       const [x, y] = tp(f.geom[0][0]);
+      if (x < 0 || y < 0 || x > W || y > H) continue;
       const big = f.props.class === 'city' || f.props.class === 'town';
-      const r = outlinedText(name, x, y, big ? 46 : 28, big ? '#f8f0d8' : '#f8e8a8');
+      const minGap = big ? 170 : (f.props.class === 'suburb' ? 128 : 104);
+      if (placePoints.some(p => Math.hypot(p[0] - x, p[1] - y) < minGap)) continue;
+      const name = featureName(f.props);
+      const r = outlinedText(name, x, y, big ? 46 : 28, big ? '#f8f0d8' : '#f8e8a8', placedRects);
+      if (!r) continue;
+      placePoints.push([x, y]);
+      placeCount++;
       hitAreas.push({ ...r, p: { ...f.props }, kind:'place' });
+      if (placeCount >= 24) break;
     }
     for (const f of L('water_name')){
       if (!f.geom[0]) continue;
@@ -1346,91 +1474,8 @@ function render(){
    8. データ取得
    ===================================================== */
 const msg = document.getElementById('msg');
-const mapPosition = document.getElementById('mapPosition');
-const DEFAULT_MSG = 'ドラッグで マップを いどう。アイコンや点も しらべられるよ。';
+const DEFAULT_MSG = 'フィールドを しらべてみよう。（アイコンや点に カーソルをあわせる）';
 function setMsg(t){ msg.innerHTML = `${t}<span class="cursor">▼</span>`; }
-
-let tileTemplate = FALLBACK_TILE_URL;
-let networkTilesEnabled = true;
-const tileCache = new Map();
-const tileLoads = new Map();
-const tileKey = (x, y) => `${x}/${y}`;
-
-function offsetTileLayers(layers, tileX, tileY){
-  const dx = tileX - TILE.x, dy = tileY - TILE.y;
-  for (const layer of Object.values(layers)){
-    const ox = dx * layer.extent, oy = dy * layer.extent;
-    for (const f of layer.features)
-      for (const line of f.geom)
-        for (const pt of line){ pt[0] += ox; pt[1] += oy; }
-  }
-  return layers;
-}
-
-function rebuildTileLayers(){
-  const merged = {};
-  const pad = 96;
-  const minDx = Math.floor((viewOffset.x - pad) / W);
-  const maxDx = Math.floor((viewOffset.x + W + pad) / W);
-  const minDy = Math.floor((viewOffset.y - pad) / H);
-  const maxDy = Math.floor((viewOffset.y + H + pad) / H);
-  for (let dy = minDy; dy <= maxDy; dy++){
-    for (let dx = minDx; dx <= maxDx; dx++){
-      const cached = tileCache.get(tileKey(TILE.x + dx, TILE.y + dy));
-      if (!cached) continue;
-      for (const [name, layer] of Object.entries(cached)){
-        if (!merged[name]) merged[name] = { name, extent:layer.extent, features:[] };
-        merged[name].features.push(...layer.features);
-      }
-    }
-  }
-  if (Object.keys(merged).length) tileLayers = merged;
-}
-
-async function fetchMapTile(x, y){
-  const key = tileKey(x, y);
-  if (tileCache.has(key)) return tileCache.get(key);
-  if (tileLoads.has(key)) return tileLoads.get(key);
-  const max = 2 ** TILE.z;
-  if (y < 0 || y >= max) return null;
-  const request = (async () => {
-    const wrappedX = ((x % max) + max) % max;
-    const url = tileTemplate.replace('{z}', TILE.z).replace('{x}', wrappedX).replace('{y}', y);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`tile fetch ${res.status}: ${x}/${y}`);
-    const layers = offsetTileLayers(parseTile(await maybeGunzip(await res.arrayBuffer())), x, y);
-    tileCache.set(key, layers);
-    return layers;
-  })();
-  tileLoads.set(key, request);
-  try { return await request; }
-  finally { tileLoads.delete(key); }
-}
-
-function centerTile(){
-  return {
-    x: TILE.x + Math.floor((viewOffset.x + W / 2) / W),
-    y: TILE.y + Math.floor((viewOffset.y + H / 2) / H),
-  };
-}
-
-function updateMapPosition(){
-  const t = centerTile();
-  mapPosition.textContent = `OpenFreeMap z${TILE.z} / ${t.x} / ${t.y} ─ レトロ版`;
-}
-
-async function ensureTilesAround(){
-  if (!networkTilesEnabled) return;
-  const center = centerTile();
-  const requests = [];
-  for (let dy = -1; dy <= 1; dy++)
-    for (let dx = -1; dx <= 1; dx++)
-      requests.push(fetchMapTile(center.x + dx, center.y + dy));
-  await Promise.allSettled(requests);
-  rebuildTileLayers();
-  render();
-  updateMapPosition();
-}
 
 async function maybeGunzip(buf){
   const b = new Uint8Array(buf);
@@ -1441,33 +1486,28 @@ async function maybeGunzip(buf){
   return buf;
 }
 async function loadFromBuffer(buf){
-  networkTilesEnabled = false;
-  tileCache.clear();
-  tileLayers = null;
-  viewOffset.x = 0;
-  viewOffset.y = 0;
-  tileCache.set(tileKey(TILE.x, TILE.y), offsetTileLayers(parseTile(await maybeGunzip(buf)), TILE.x, TILE.y));
-  rebuildTileLayers();
+  tileLayers = parseTile(await maybeGunzip(buf));
   render();
-  updateMapPosition();
   setMsg(DEFAULT_MSG);
 }
 async function loadTile(){
   setMsg('マップデータを よみこんでいる……');
-  if (!networkTilesEnabled){ tileCache.clear(); tileLayers = null; }
+  let template = FALLBACK_TILE_URL;
   try {
     const tj = await (await fetch(TILEJSON_URL)).json();
-    if (tj.tiles && tj.tiles[0]) tileTemplate = tj.tiles[0];
+    if (tj.tiles && tj.tiles[0]) template = tj.tiles[0];
   } catch (e) {}
-  networkTilesEnabled = true;
-  await fetchMapTile(TILE.x, TILE.y);             // 中心タイルの失敗だけは起動エラーにする
-  await ensureTilesAround();                      // ドラッグ先が空かないよう周囲を先読み
+  const url = template.replace('{z}', TILE.z).replace('{x}', TILE.x).replace('{y}', TILE.y);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`tile fetch ${res.status}`);
+  tileLayers = parseTile(await maybeGunzip(await res.arrayBuffer()));
 }
 async function boot(){
   try { await document.fonts.load('17px DotGothic16'); } catch (e) {}
   buildTiles();
   try {
     await loadTile();
+    render();
     setMsg(DEFAULT_MSG);
   } catch (e) {
     console.error(e);
@@ -1528,68 +1568,14 @@ function hitTest(ev){
   }
   return null;
 }
-let drag = null;
-let suppressClick = false;
-let renderFrame = 0;
-function scheduleRender(){
-  if (renderFrame) return;
-  renderFrame = requestAnimationFrame(() => {
-    renderFrame = 0;
-    render();
-    updateMapPosition();
-  });
-}
-cv.addEventListener('pointerdown', ev => {
-  if (!tileLayers || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
-  const r = cv.getBoundingClientRect();
-  drag = {
-    id:ev.pointerId, x:ev.clientX, y:ev.clientY,
-    offsetX:viewOffset.x, offsetY:viewOffset.y,
-    scaleX:W / r.width, scaleY:H / r.height,
-    moved:false,
-  };
-  suppressClick = false;
-  cv.setPointerCapture(ev.pointerId);
-  cv.classList.add('dragging');
-  cv.style.cursor = 'grabbing';
-});
-cv.addEventListener('pointermove', ev => {
+cv.addEventListener('mousemove', ev => {
   if (!tileLayers) return;
-  if (drag && ev.pointerId === drag.id){
-    const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
-    if (Math.hypot(dx, dy) > 4) drag.moved = true;
-    viewOffset.x = drag.offsetX - dx * drag.scaleX;
-    viewOffset.y = drag.offsetY - dy * drag.scaleY;
-    const maxTile = 2 ** TILE.z;
-    viewOffset.y = Math.max(-TILE.y * H, Math.min((maxTile - TILE.y - 1) * H, viewOffset.y));
-    scheduleRender();
-    if (drag.moved) setMsg('マップを いどうしている……');
-    return;
-  }
-  if (ev.pointerType === 'touch') return;
   const hit = hitTest(ev);
-  cv.style.cursor = hit ? 'pointer' : 'grab';
+  cv.style.cursor = hit ? 'pointer' : 'crosshair';
   setMsg(hit ? describe(hit.p) : DEFAULT_MSG);
 });
-function finishDrag(ev, cancelled = false){
-  if (!drag || ev.pointerId !== drag.id) return;
-  suppressClick = drag.moved || cancelled;
-  drag = null;
-  cv.classList.remove('dragging');
-  cv.style.cursor = 'grab';
-  setMsg(DEFAULT_MSG);
-  rebuildTileLayers();
-  render();
-  updateMapPosition();
-  if (!cancelled) ensureTilesAround().catch(console.error);
-}
-cv.addEventListener('pointerup', ev => finishDrag(ev));
-cv.addEventListener('pointercancel', ev => finishDrag(ev, true));
-cv.addEventListener('mouseleave', () => {
-  if (!drag && tileLayers) setMsg(DEFAULT_MSG);
-});
+cv.addEventListener('mouseleave', () => tileLayers && setMsg(DEFAULT_MSG));
 cv.addEventListener('click', ev => {
-  if (suppressClick){ suppressClick = false; return; }
   const hit = hitTest(ev);
   if (hit) setMsg(describe(hit.p));
 });

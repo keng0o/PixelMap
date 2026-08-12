@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>カワサキタウン｜ドット絵品質改善 5案</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{min-height:100vh;background:#181820;color:#f8f0d8;font-family:'DotGothic16',monospace;padding:20px 12px 36px}
+  header,main,footer{width:min(1180px,96vw);margin-inline:auto}
+  header{margin-bottom:18px;text-align:center}
+  .window{background:#101018;border:2px solid #f8f0d8;box-shadow:0 0 0 2px #101018,0 0 0 4px #f8f0d8,0 0 0 6px #101018}
+  h1{display:inline-block;padding:9px 28px;font-size:20px;font-weight:400;letter-spacing:3px}
+  h1 small{display:block;color:#88c860;font-size:11px;letter-spacing:1px;margin-top:4px}
+  .intro{max-width:780px;margin:16px auto 0;color:#d8d0b8;font-size:13px;line-height:1.8}
+  .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+  .tab{font:inherit;color:#d8d0b8;background:#101018;border:2px solid #686858;padding:10px 7px;cursor:pointer;min-height:62px}
+  .tab:hover,.tab[aria-selected="true"]{color:#f8f0d8;border-color:#88c860;background:#202818}
+  .tab b{display:block;color:#88c860;font-size:12px;font-weight:400;margin-bottom:3px}
+  .tab span{font-size:11px}
+  .preview{padding:6px}
+  .preview-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;color:#b8b098;font-size:12px;line-height:1.4}
+  .preview-bar a{color:#88c860;text-decoration:none;white-space:nowrap}
+  iframe{display:block;width:100%;height:min(78vh,900px);min-height:620px;border:0;background:#181820}
+  .review{margin-top:18px;padding:16px}
+  .review h2{font-size:16px;font-weight:400;letter-spacing:2px;margin-bottom:12px}
+  .scroll{overflow-x:auto}
+  table{width:100%;min-width:760px;border-collapse:collapse;font-size:12px}
+  th,td{padding:10px;border-top:1px solid #484840;text-align:center}
+  th:first-child,td:first-child{text-align:left}
+  thead th{color:#a8a088;font-weight:400}
+  tbody th{color:#88c860;font-weight:400}
+  .note{color:#b8b098;text-align:left}
+  footer{color:#787460;font-size:10px;text-align:center;margin-top:16px}
+  @media(max-width:760px){.tabs{grid-template-columns:1fr}.tab{min-height:0}.tab b,.tab span{display:inline}.tab b{margin-right:8px}.preview-bar{align-items:start}iframe{min-height:540px;height:72vh}}
+</style>
+</head>
+<body>
+<header>
+  <h1 class="window">カワサキタウン 品質改善 5案<small>同じ世界観・同じ地理範囲・同じGB風パレット</small></h1>
+  <p class="intro">特殊なテーマ変更は行わず、元のレトロRPG風マップの品質だけを5通りに改善しています。4つの評価基準で見比べてください。</p>
+</header>
+<main>
+  <nav class="tabs" aria-label="改善案を選択">
+    <button class="tab" data-src="map-01-refined.html" aria-selected="true"><b>改善案 01</b><span>総合バランス</span></button>
+    <button class="tab" data-src="map-02-refined.html" aria-selected="false"><b>改善案 02</b><span>地理の読みやすさ</span></button>
+    <button class="tab" data-src="map-03-refined.html" aria-selected="false"><b>改善案 03</b><span>ドット絵造形</span></button>
+    <button class="tab" data-src="map-04-refined.html" aria-selected="false"><b>改善案 04</b><span>自然な街並み</span></button>
+    <button class="tab" data-src="map-05-refined.html" aria-selected="false"><b>改善案 05</b><span>縮尺と配置</span></button>
+  </nav>
+  <section class="preview window">
+    <div class="preview-bar"><span id="current">改善案 01 — 総合バランス</span><a id="open" href="map-01-refined.html" target="_blank" rel="noopener">単体で開く →</a></div>
+    <iframe id="mapPreview" src="map-01-refined.html" title="選択中のカワサキタウン改善案"></iframe>
+  </section>
+  <section class="review window" aria-labelledby="review-title">
+    <h2 id="review-title">評価基準 / 10点</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>改善案</th><th>街の再現度</th><th>可愛さ・玩具感</th><th>大きさ・形・位置</th><th>自然な多様性</th><th>重点</th></tr></thead>
+      <tbody>
+        <tr><th>01 総合バランス</th><td>9.2</td><td>8.9</td><td>9.2</td><td>9.3</td><td class="note">全項目を均等に改善</td></tr>
+        <tr><th>02 地理の読みやすさ</th><td>9.2</td><td>8.9</td><td>9.2</td><td>9.1</td><td class="note">駅・鉄道・道路・地名</td></tr>
+        <tr><th>03 ドット絵造形</th><td>8.8</td><td>9.2</td><td>9.1</td><td>9.2</td><td class="note">建物・樹木・小物</td></tr>
+        <tr><th>04 自然な街並み</th><td>9.2</td><td>9.1</td><td>9.1</td><td>9.5</td><td class="note">疎密・色形のばらつき</td></tr>
+        <tr><th>05 縮尺と配置</th><td>9.2</td><td>8.9</td><td>9.4</td><td>9.1</td><td class="note">寸法・階層・可読性</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+</main>
+<footer>MAP DATA © OPENSTREETMAP CONTRIBUTORS / OPENFREEMAP / OPENMAPTILES</footer>
+<script>
+  const tabs=[...document.querySelectorAll('.tab')],preview=document.getElementById('mapPreview'),current=document.getElementById('current'),open=document.getElementById('open');
+  tabs.forEach(tab=>tab.addEventListener('click',()=>{tabs.forEach(t=>t.setAttribute('aria-selected',String(t===tab)));preview.src=tab.dataset.src;open.href=tab.dataset.src;current.textContent=`${tab.querySelector('b').textContent} — ${tab.querySelector('span').textContent}`}));
+</script>
+</body>
+</html>
