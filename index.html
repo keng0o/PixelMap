@@ -43,6 +43,13 @@
   #toolbar{ width:min(92vw,700px); font-size:12px; display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; }
   #toolbar label{ display:inline-flex; gap:6px; align-items:center; cursor:pointer; color:#d8d0b8; }
   #toolbar input{ accent-color:#88c860; }
+  .location-btn{
+    font:inherit; letter-spacing:1px; color:#101018; background:#88c860;
+    border:2px solid #f8f0d8; padding:5px 10px; cursor:pointer;
+  }
+  .location-btn:hover{ background:#f8f0d8; }
+  .location-btn:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
+  .location-btn:disabled{ cursor:wait; opacity:.65; }
   #stats{ width:min(92vw,700px); font-size:11px; color:#a8a088; display:flex; flex-wrap:wrap; gap:4px 14px; }
   #attrib{ font-size:10px; color:#787460; padding:6px 12px; }
   #attrib a{ color:#88c860; }
@@ -73,13 +80,14 @@
 <a class="assets-link" href="variants/">品質改善 5案を くらべる →</a>
 
 <div class="rpg-window map-frame">
-  <canvas id="map" width="1536" height="1536" aria-label="川崎駅周辺のレトロRPG風マップ。ドラッグで移動できます"></canvas>
+  <canvas id="map" width="1536" height="1536" aria-label="レトロRPG風マップ。ドラッグで移動できます" aria-describedby="msg"></canvas>
 </div>
 
-<div id="msg" class="rpg-window">マップデータを よみこんでいる……<span class="cursor">▼</span></div>
+<div id="msg" class="rpg-window" aria-live="polite">マップデータを よみこんでいる……<span class="cursor">▼</span></div>
 
 <div id="toolbar" class="rpg-window">
-  <a class="assets-link" href="assets.html">アセット図鑑 100 →</a>
+  <a class="assets-link" href="assets.html">アセット図鑑 110 →</a>
+  <button id="locateBtn" class="location-btn" type="button" disabled>◎ 現在地へ</button>
   <label><input type="checkbox" id="tglBuildings" checked>たてもの</label>
   <label><input type="checkbox" id="tglPoi" checked>施設アイコン</label>
   <label><input type="checkbox" id="tglStationNames" checked>駅名</label>
@@ -1125,11 +1133,16 @@ let tileLayers = null;
 let hitAreas = [];
 let SCALE = 1;
 const viewOffset = { x:0, y:0 };
+let currentLocation = null;
 let gridOriginX = -1, gridOriginY = -1;
 let gridShiftX = -CPX, gridShiftY = -CPX;
 const tp = ([x, y]) => [x * SCALE - viewOffset.x, y * SCALE - viewOffset.y];
 const snapX = v => (Math.floor((v + viewOffset.x) / CPX) + 0.5) * CPX - viewOffset.x;
 const snapY = v => (Math.floor((v + viewOffset.y) / CPX) + 0.5) * CPX - viewOffset.y;
+const locationCanvasPoint = () => currentLocation ? [
+  (currentLocation.tileX - TILE.x) * W - viewOffset.x,
+  (currentLocation.tileY - TILE.y) * H - viewOffset.y,
+] : null;
 
 const opts = () => ({
   buildings: document.getElementById('tglBuildings').checked,
@@ -1148,6 +1161,31 @@ const centroid = rings => {
   ring.forEach(([x, y]) => { sx += x; sy += y; });
   return ring.length ? tp([sx / ring.length, sy / ring.length]) : [0, 0];
 };
+
+function drawCurrentLocation(){
+  const pt = locationCanvasPoint();
+  if (!pt) return;
+  const [x, y] = pt;
+  if (x < -200 || y < -200 || x > W + 200 || y > H + 200) return;
+
+  const metersPerTile = 40075016.686 * Math.cos(currentLocation.latitude * Math.PI / 180) / (2 ** TILE.z);
+  const radius = Math.max(18, Math.min(180, currentLocation.accuracy / metersPerTile * W));
+  ctx.save();
+  ctx.fillStyle = 'rgba(72,144,224,.18)';
+  ctx.strokeStyle = 'rgba(248,240,216,.9)';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // 現在地は背景に埋もれない、地図と同じ荒いドットで描く。
+  px(Math.round(x) - 11, Math.round(y) - 11, 22, 22, OUT);
+  px(Math.round(x) - 8, Math.round(y) - 8, 16, 16, '#4890e0');
+  px(Math.round(x) - 3, Math.round(y) - 3, 6, 6, '#f8f0d8');
+  hitAreas.push({
+    x:x - 18, y:y - 18, w:36, h:36,
+    p:{ name:'現在地', class:'current_location' }, kind:'location',
+  });
+}
 
 function render(){
   if (!tileLayers) return;
@@ -1340,6 +1378,7 @@ function render(){
         p: { name: `番地 ${f.props.housenumber}`, class:'housenumber' }, kind:'dot' });
     }
   }
+  drawCurrentLocation();
 }
 
 /* =====================================================
@@ -1347,17 +1386,19 @@ function render(){
    ===================================================== */
 const msg = document.getElementById('msg');
 const mapPosition = document.getElementById('mapPosition');
+const locateBtn = document.getElementById('locateBtn');
 const DEFAULT_MSG = 'ドラッグで マップを いどう。アイコンや点も しらべられるよ。';
 function setMsg(t){ msg.innerHTML = `${t}<span class="cursor">▼</span>`; }
 
 let tileTemplate = FALLBACK_TILE_URL;
 let networkTilesEnabled = true;
+let tileGeneration = 0;
 const tileCache = new Map();
 const tileLoads = new Map();
 const tileKey = (x, y) => `${x}/${y}`;
 
-function offsetTileLayers(layers, tileX, tileY){
-  const dx = tileX - TILE.x, dy = tileY - TILE.y;
+function offsetTileLayers(layers, tileX, tileY, originX = TILE.x, originY = TILE.y){
+  const dx = tileX - originX, dy = tileY - originY;
   for (const layer of Object.values(layers)){
     const ox = dx * layer.extent, oy = dy * layer.extent;
     for (const f of layer.features)
@@ -1390,7 +1431,10 @@ function rebuildTileLayers(){
 async function fetchMapTile(x, y){
   const key = tileKey(x, y);
   if (tileCache.has(key)) return tileCache.get(key);
-  if (tileLoads.has(key)) return tileLoads.get(key);
+  const generation = tileGeneration;
+  const loadKey = `${generation}:${key}`;
+  if (tileLoads.has(loadKey)) return tileLoads.get(loadKey);
+  const originX = TILE.x, originY = TILE.y;
   const max = 2 ** TILE.z;
   if (y < 0 || y >= max) return null;
   const request = (async () => {
@@ -1398,13 +1442,14 @@ async function fetchMapTile(x, y){
     const url = tileTemplate.replace('{z}', TILE.z).replace('{x}', wrappedX).replace('{y}', y);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`tile fetch ${res.status}: ${x}/${y}`);
-    const layers = offsetTileLayers(parseTile(await maybeGunzip(await res.arrayBuffer())), x, y);
+    const layers = offsetTileLayers(parseTile(await maybeGunzip(await res.arrayBuffer())), x, y, originX, originY);
+    if (generation !== tileGeneration) return null;
     tileCache.set(key, layers);
     return layers;
   })();
-  tileLoads.set(key, request);
+  tileLoads.set(loadKey, request);
   try { return await request; }
-  finally { tileLoads.delete(key); }
+  finally { tileLoads.delete(loadKey); }
 }
 
 function centerTile(){
@@ -1416,7 +1461,12 @@ function centerTile(){
 
 function updateMapPosition(){
   const t = centerTile();
-  mapPosition.textContent = `OpenFreeMap z${TILE.z} / ${t.x} / ${t.y} ─ レトロ版`;
+  const pt = locationCanvasPoint();
+  const atLocation = pt && Math.hypot(pt[0] - W / 2, pt[1] - H / 2) < 2;
+  const prefix = atLocation
+    ? `現在地 ${currentLocation.latitude.toFixed(5)}, ${currentLocation.longitude.toFixed(5)} / `
+    : '';
+  mapPosition.textContent = `${prefix}OpenFreeMap z${TILE.z} / ${t.x} / ${t.y} ─ レトロ版`;
 }
 
 async function ensureTilesAround(){
@@ -1441,9 +1491,11 @@ async function maybeGunzip(buf){
   return buf;
 }
 async function loadFromBuffer(buf){
+  tileGeneration++;
   networkTilesEnabled = false;
   tileCache.clear();
   tileLayers = null;
+  currentLocation = null;
   viewOffset.x = 0;
   viewOffset.y = 0;
   tileCache.set(tileKey(TILE.x, TILE.y), offsetTileLayers(parseTile(await maybeGunzip(buf)), TILE.x, TILE.y));
@@ -1464,6 +1516,7 @@ async function loadTile(){
   await ensureTilesAround();                      // ドラッグ先が空かないよう周囲を先読み
 }
 async function boot(){
+  locateBtn.disabled = true;
   try { await document.fonts.load('17px DotGothic16'); } catch (e) {}
   buildTiles();
   try {
@@ -1482,6 +1535,8 @@ async function boot(){
       '<label class="retry" style="display:inline-block">PBFをひらく<input type="file" accept=".pbf,.mvt" ' +
       'style="display:none" onchange="pickPbf(this)"></label>'
     );
+  } finally {
+    locateBtn.disabled = false;
   }
 }
 async function pickPbf(input){
@@ -1493,6 +1548,108 @@ async function pickPbf(input){
   } catch (e) {
     console.error(e);
     setMsg('このファイルは よめなかった……（gzip/生PBFの両対応です。z14タイルか確認してください）');
+  }
+}
+
+function tilePointFromCoordinates(latitude, longitude){
+  const maxLat = 85.05112878;
+  const lat = Math.max(-maxLat, Math.min(maxLat, latitude));
+  const n = 2 ** TILE.z;
+  const wrappedLon = ((longitude + 180) % 360 + 360) % 360 - 180;
+  const tileX = (wrappedLon + 180) / 360 * n;
+  const rad = lat * Math.PI / 180;
+  const projectedY = (1 - Math.asinh(Math.tan(rad)) / Math.PI) / 2 * n;
+  const tileY = Math.max(0, Math.min(n - 1e-7, projectedY));
+  return { tileX, tileY };
+}
+
+function geolocationErrorMessage(error){
+  if (error?.code === 1) return '現在地の使用が 許可されていないよ。ブラウザの設定で 位置情報を許可してね。';
+  if (error?.code === 2) return '現在地を みつけられなかった……電波のよい場所で もういちど試してね。';
+  if (error?.code === 3) return '現在地の取得が タイムアウトした……もういちど試してね。';
+  return '現在地を 取得できなかった……';
+}
+
+function getCurrentPosition(){
+  return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {
+    enableHighAccuracy:true,
+    timeout:15000,
+    maximumAge:30000,
+  }));
+}
+
+async function showCurrentPosition(position){
+  const { latitude, longitude, accuracy } = position.coords;
+  const point = tilePointFromCoordinates(latitude, longitude);
+  const maxTile = 2 ** TILE.z;
+  const baseX = Math.max(0, Math.min(maxTile - 1, Math.floor(point.tileX)));
+  const baseY = Math.max(0, Math.min(maxTile - 1, Math.floor(point.tileY)));
+  const previous = {
+    tileX:TILE.x, tileY:TILE.y, offsetX:viewOffset.x, offsetY:viewOffset.y,
+    location:currentLocation, layers:tileLayers, networkTilesEnabled,
+    cache:new Map(tileCache),
+  };
+
+  tileGeneration++;
+  tileCache.clear();
+  tileLayers = null;
+  networkTilesEnabled = true;
+  TILE.x = baseX; TILE.y = baseY;
+  viewOffset.x = (point.tileX - baseX) * W - W / 2;
+  viewOffset.y = (point.tileY - baseY) * H - H / 2;
+  currentLocation = {
+    latitude, longitude,
+    accuracy:Number.isFinite(accuracy) ? Math.max(0, accuracy) : 0,
+    ...point,
+  };
+  updateMapPosition();
+
+  try {
+    await fetchMapTile(baseX, baseY);
+    await ensureTilesAround();
+  } catch (error) {
+    // 取得済みの地図を戻し、通信失敗で画面が空のままにならないようにする。
+    tileGeneration++;
+    TILE.x = previous.tileX; TILE.y = previous.tileY;
+    viewOffset.x = previous.offsetX; viewOffset.y = previous.offsetY;
+    currentLocation = previous.location;
+    networkTilesEnabled = previous.networkTilesEnabled;
+    tileCache.clear();
+    for (const [key, layers] of previous.cache) tileCache.set(key, layers);
+    tileLayers = previous.layers;
+    render();
+    updateMapPosition();
+    throw error;
+  }
+}
+
+async function locateMe(){
+  if (!('geolocation' in navigator)){
+    setMsg('このブラウザでは 現在地を取得できないよ。');
+    return;
+  }
+  if (!window.isSecureContext){
+    setMsg('現在地の取得には HTTPS または localhost で開く必要があるよ。');
+    return;
+  }
+
+  locateBtn.disabled = true;
+  locateBtn.textContent = '◎ さがしている…';
+  setMsg('現在地を さがしている……');
+  try {
+    const position = await getCurrentPosition();
+    setMsg('現在地の マップを よみこんでいる……');
+    await showCurrentPosition(position);
+    setMsg(`現在地に いどうしたよ。（精度 約${Math.round(position.coords.accuracy)}m）`);
+  } catch (error) {
+    console.error(error);
+    const isPositionError = Number.isInteger(error?.code) && error.code >= 1 && error.code <= 3;
+    setMsg(isPositionError
+      ? geolocationErrorMessage(error)
+      : '現在地は取得できたけれど、マップを よみこめなかった……');
+  } finally {
+    locateBtn.disabled = false;
+    locateBtn.textContent = '◎ 現在地へ';
   }
 }
 
@@ -1510,7 +1667,7 @@ const CLASS_JP = {
   parking:'駐車場', fuel:'ガソリンスタンド', charging_station:'充電スタンド', clothing_store:'衣料品店',
   alcohol_shop:'酒屋', bakery:'パン屋', ice_cream:'アイス', entertainment:'娯楽', music:'音楽',
   city:'市', town:'町', suburb:'地区', quarter:'地区', neighbourhood:'町名', village:'村',
-  housenumber:'番地',
+  housenumber:'番地', current_location:'測位結果',
 };
 function describe(p){
   const name = p['name:ja'] || p.name || 'なまえのない場所';
@@ -1595,6 +1752,7 @@ cv.addEventListener('click', ev => {
 });
 for (const id of ['tglBuildings','tglPoi','tglStationNames','tglLabels','tglDots','tglRoadNames','tglHouse','tglBoundary'])
   document.getElementById(id).addEventListener('change', render);
+locateBtn.addEventListener('click', locateMe);
 
 boot();
 </script>

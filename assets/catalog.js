@@ -30,6 +30,10 @@
       [2,2],[2.5,2],[2.5,2.5],[3,2.5],[3,2],
       [2.5,3],[3,3],[3,3],[3,3],[1.5,4]
     ],
+    stations: [
+      [2,1.5],[3,2],[4,2],[3.5,3.5],[4,3],
+      [4,3],[3,2.5],[3.5,2.5],[3.5,2.5],[4,3.5]
+    ],
     nature: [
       [1.5,2],[1.25,2],[2,2],[3,2.5],[1.5,2],
       [1,2],[1,1],[1.5,1.25],[2,1.5],[2.5,2],
@@ -242,6 +246,7 @@
   });
 
   totalCount.textContent=String(allAssets.length);
+  document.getElementById('collectionCount').textContent=String(groups.length);
   renderFilters();renderGrid();
   window.PixelAssetCatalog={groups,assets:allAssets,colors,render,makeMapAsset};
 })();
