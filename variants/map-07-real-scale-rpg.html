@@ -239,11 +239,11 @@ const P = {
   outline:'#302838',
   g1:'#7cbc54', g2:'#7cbc54', gDk:'#619c42', gLt:'#98d470',
   treeDk:'#2c6030', treeMd:'#3e8840', treeLt:'#5cb050', trunk:'#785030',
-  road:'#c6c6c0', roadDk:'#8e8e88', roadDot:'#b4b4ae',
-  trail:'#dcc890', trailDot:'#c4ac70',
-  dirt:'#d0b078', dirtDk:'#b09058',
-  pave:'#c0c0c8', paveDk:'#989ca8',
-  gravel:'#a8a098', gravelDk:'#888078', gravelLt:'#c0b8b0',
+  road:'#d8c894', roadDk:'#9c875b', roadDot:'#c1ad76',
+  trail:'#e4c77f', trailDot:'#b99450',
+  dirt:'#d8b46c', dirtDk:'#a77e3d',
+  pave:'#cdbc91', paveDk:'#97825c',
+  gravel:'#aa9b78', gravelDk:'#75684f', gravelLt:'#cec29f',
   farm:'#d8c078', farmDk:'#b09850',
   sand:'#e8d8a0', sandDk:'#c8b478',
   field:'#68b058', fieldAlt:'#5ca050',
@@ -413,7 +413,7 @@ function styleOfBuilding(f, areaM2){
   if (h >= 35) return 7;                        // 高層: 高さは平面寸法と分けて表現
   if (h >= 12) return 6;                        // 中層
   if (areaM2 >= 2500) return 8;                 // 大きな低層建築
-  const pick = [0,1,2,3,4,5,9];                // 低層はランダム
+  const pick = [0,0,1,2,3,5,9];                // 赤屋根を中心に、RPGの町らしい強い色へ寄せる
   return pick[((f.id || 1) + Math.round(areaM2 / 50)) % pick.length];
 }
 
@@ -440,20 +440,35 @@ function rasterizeGrid(layers){
     for (const ln of lines)
       ln.forEach((pt, i) => i ? c.lineTo(gx(pt[0]), gy(pt[1])) : c.moveTo(gx(pt[0]), gy(pt[1])));
   }
+  const maskColors=Array.from({length:14},(_,id)=>[
+    (id*67+31)%251,(id*113+47)%251,(id*173+59)%251
+  ]);
   function stamp(id, drawFn){
-    c.clearRect(0, 0, RG, RG);
-    c.fillStyle = '#000'; c.strokeStyle = '#000';
+    const color=maskColors[id];
+    c.fillStyle=`rgb(${color[0]},${color[1]},${color[2]})`;
+    c.strokeStyle=c.fillStyle;
     c.lineCap = 'round'; c.lineJoin = 'round';
     drawFn();
+  }
+  function applyTerrainMask(){
     const d = c.getImageData(0, 0, RG, RG).data;
-    for (let i = 0; i < RG * RG; i++)
-      if (d[i * 4 + 3] > 100) grid[i] = id;
+    for(let i=0;i<RG*RG;i++){
+      if(d[i*4+3]<=100) continue;
+      let best=1,bestDistance=Infinity;
+      for(let id=1;id<=ID.WATER;id++){
+        const color=maskColors[id];
+        const dr=d[i*4]-color[0],dg=d[i*4+1]-color[1],db=d[i*4+2]-color[2];
+        const distance=dr*dr+dg*dg+db*db;
+        if(distance<bestDistance){bestDistance=distance;best=id;}
+      }
+      grid[i]=best;
+    }
   }
 
   const LANDCOVER = { wood:ID.TREE, forest:ID.TREE, farmland:ID.FARM, sand:ID.SAND,
                       grass:ID.GRASS, meadow:ID.GRASS, wetland:ID.GRASS };
   const LANDUSE = {
-    residential:ID.DIRT, suburb:ID.DIRT, neighbourhood:ID.DIRT,
+    residential:ID.GRASS, suburb:ID.GRASS, neighbourhood:ID.GRASS,
     commercial:ID.PAVE, retail:ID.PAVE, bus_station:ID.PAVE,
     school:ID.PAVE, college:ID.PAVE, university:ID.PAVE, kindergarten:ID.PAVE, hospital:ID.PAVE,
     industrial:ID.GRAVEL, garages:ID.GRAVEL, quarry:ID.GRAVEL, military:ID.GRAVEL, railway:ID.GRAVEL, dam:ID.GRAVEL,
@@ -468,7 +483,7 @@ function rasterizeGrid(layers){
   }
   for (const f of L('landuse')){
     const id = LANDUSE[f.props.class] ?? ID.DIRT;
-    if (f.type === 3) stamp(id, () => { polyPath(f.geom); c.fill('evenodd'); });
+    if (f.type === 3&&id!==ID.GRASS) stamp(id, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   for (const f of L('park')) if (f.type === 3)
     stamp(ID.PARK, () => { polyPath(f.geom); c.fill('evenodd'); });
@@ -479,6 +494,7 @@ function rasterizeGrid(layers){
     stamp(ID.WATER, () => { polyPath(f.geom); c.fill('evenodd'); });
   for (const f of L('waterway')) if (f.type === 2)
     stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
+  applyTerrainMask();
   // 建物は後段の4pxサブグリッドで描く。ここでは地形を汚さず形状だけ渡す。
   const bldFeats = L('building').filter(f => f.type === 3);
   const bldGrid = new Uint16Array(RG * RG);
@@ -553,6 +569,14 @@ function rasterizeGrid(layers){
   }
   railStamp(roadFeats(['rail']));
   return { grid, bldGrid, bldFeats, size:RG };
+}
+
+let rasterGridCache={layers:null,originX:null,originY:null,result:null};
+function getRasterizedGrid(layers){
+  if(rasterGridCache.layers!==layers||rasterGridCache.originX!==gridOriginX||rasterGridCache.originY!==gridOriginY){
+    rasterGridCache={layers,originX:gridOriginX,originY:gridOriginY,result:rasterizeGrid(layers)};
+  }
+  return rasterGridCache.result;
 }
 
 /* =====================================================
@@ -1244,9 +1268,9 @@ const WALLPAL=[
   ['#bfc5ca','#818a94'],['#929cab','#596473'],['#d8d6ce','#9d9d99'],['#d8c5a0','#aa9068']
 ];
 function facadeDepthFor(model){
-  if(model.height>=35) return 5;
-  if(model.height>=12) return 3;
-  return model.areaM2>=2500?3:2;
+  if(model.height>=35) return 7;
+  if(model.height>=12) return 5;
+  return model.areaM2>=2500?5:3;
 }
 function buildingDetailTier(model){return sizeForArea(model.areaM2);}
 
@@ -1288,7 +1312,7 @@ function drawRealBuildings(scene, facilityByBuilding){
     const [x0,y0]=lowPoint([model.minX,model.minY]),[x1,y1]=lowPoint([model.maxX,model.maxY]);
     const depth=facadeDepthFor(model),tier=buildingDetailTier(model);
     if(x1-x0<1||y1-y0<1){
-      const bw=Math.max(1,Math.round(x1-x0)),bh=Math.max(1,Math.round(y1-y0));
+      const bw=Math.max(2,Math.round(x1-x0)),bh=Math.max(2,Math.round(y1-y0));
       const bx=Math.round((x0+x1-bw)/2),by=Math.round((y0+y1-bh)/2);
       g.fillStyle=wall[0];g.fillRect(bx+1,by+depth,bw,bh);
       g.fillStyle=roof;g.fillRect(bx,by,bw,bh);
@@ -1367,15 +1391,16 @@ function drawRealBuildings(scene, facilityByBuilding){
 function drawFacilityMarker(p){
   const [cx,cy]=p.pt,color=FACILITY_COLORS[p.key]||FACILITY_COLORS.generic;
   const x=Math.round(cx),y=Math.round(cy);
-  px(x-1,y-7,2,7,P.trunk);
-  px(x-7,y-17,14,10,OUT);
-  px(x-5,y-15,10,6,color);
-  px(x-5,y-15,10,2,hi(color));
-  if(p.key==='hospital'){px(x-1,y-14,2,4,'#48a050');px(x-2,y-13,4,2,'#48a050');}
-  else if(p.key==='parking'){px(x-2,y-14,2,4,'#f8f0d8');px(x,y-14,2,2,'#f8f0d8');}
-  else if(p.key==='station'){px(x-3,y-14,6,1,'#f8f0d8');px(x-3,y-11,6,1,'#f8f0d8');}
-  else px(x-2,y-13,4,2,'#f8f0d8');
-  return {x:x-9,y:y-20,w:18,h:22};
+  px(x-2,y-10,4,10,P.trunk);
+  px(x-12,y-28,24,18,OUT);
+  px(x-10,y-26,20,14,color);
+  px(x-10,y-26,20,3,hi(color));
+  px(x-10,y-14,20,2,sh(color,.65));
+  if(p.key==='hospital'){px(x-2,y-23,4,8,'#48a050');px(x-4,y-21,8,4,'#48a050');}
+  else if(p.key==='parking'){px(x-4,y-23,4,8,'#f8f0d8');px(x,y-23,5,4,'#f8f0d8');}
+  else if(p.key==='station'){px(x-6,y-22,12,2,'#f8f0d8');px(x-6,y-17,12,2,'#f8f0d8');}
+  else px(x-4,y-21,8,4,'#f8f0d8');
+  return {x:x-14,y:y-30,w:28,h:32};
 }
 
 function drawCurrentLocation(){
@@ -1415,14 +1440,20 @@ function render(){
   gridShiftY = gridOriginY * CPX - viewOffset.y;
 
   /* --- 地形は16px、建物は4pxの独立レイヤー --- */
-  const { grid, bldGrid, bldFeats } = rasterizeGrid(tileLayers);
+  const { grid, bldGrid, bldFeats } = getRasterizedGrid(tileLayers);
   drawGrid(grid,bldGrid,new Uint8Array(bldFeats.length+1));
   const extent=tileLayers.building?.extent||tileLayers.transportation?.extent||4096;
   const buildingScene=getBuildingScene(tileLayers.building||tileLayers,bldFeats,extent);
 
   // POIはスナップ前の座標で「内包建物 → 15m以内の最近傍建物」の順に結びつける。
+  const minPoiX=(viewOffset.x-96)/SCALE,maxPoiX=(viewOffset.x+W+96)/SCALE;
+  const minPoiY=(viewOffset.y-96)/SCALE,maxPoiY=(viewOffset.y+H+96)/SCALE;
   const pois=L('poi')
-    .filter(f=>f.type===1&&f.geom[0]&&f.geom[0][0])
+    .filter(f=>{
+      if(f.type!==1||!f.geom[0]||!f.geom[0][0]) return false;
+      const [x,y]=f.geom[0][0];
+      return x>=minPoiX&&x<=maxPoiX&&y>=minPoiY&&y<=maxPoiY;
+    })
     .map(f=>{
       const rawGeom=f.geom[0][0];
       const rawPt=tp(rawGeom);
@@ -1478,7 +1509,7 @@ function render(){
   document.getElementById('stats').innerHTML =
     `<span>建物1px: ${buildingScene.metersPerPixel.toFixed(2)}m</span>`+
     `<span>建物刻み: ${(buildingScene.metersPerPixel*BUILDING_PIXEL).toFixed(1)}m</span>`+
-    `<span>RPG壁面: 低8px / 中12px / 高20px</span>`+
+    `<span>RPG壁面: 低12px / 中20px / 高28px</span>`+
     Object.entries(stats).map(([k, v]) => `<span>${k}: ${v}</span>`).join('');
 
   /* --- POI: 建物型は屋根記号、テナント・点設備・面施設は固定サイズの標識 --- */
@@ -1618,7 +1649,7 @@ function render(){
 const msg = document.getElementById('msg');
 const mapPosition = document.getElementById('mapPosition');
 const locateBtn = document.getElementById('locateBtn');
-const DEFAULT_MSG = 'ドラッグで いどう。実寸の屋根に、南面の壁・窓・玄関をRPG風に描いているよ。';
+const DEFAULT_MSG = 'ドラッグで いどう。草原・石畳・切妻屋根で、現実の町をRPGフィールドにしているよ。';
 function setMsg(t){ msg.innerHTML = `${t}<span class="cursor">▼</span>`; }
 
 let tileTemplate = FALLBACK_TILE_URL;
@@ -1641,11 +1672,10 @@ function offsetTileLayers(layers, tileX, tileY, originX = TILE.x, originY = TILE
 
 function rebuildTileLayers(){
   const merged = {};
-  const pad = 96;
-  const minDx = Math.floor((viewOffset.x - pad) / W);
-  const maxDx = Math.floor((viewOffset.x + W + pad) / W);
-  const minDy = Math.floor((viewOffset.y - pad) / H);
-  const maxDy = Math.floor((viewOffset.y + H + pad) / H);
+  const minDx = Math.floor(viewOffset.x / W);
+  const maxDx = Math.floor((viewOffset.x + W - 1) / W);
+  const minDy = Math.floor(viewOffset.y / H);
+  const maxDy = Math.floor((viewOffset.y + H - 1) / H);
   for (let dy = minDy; dy <= maxDy; dy++){
     for (let dx = minDx; dx <= maxDx; dx++){
       const cached = tileCache.get(tileKey(TILE.x + dx, TILE.y + dy));
@@ -1702,11 +1732,14 @@ function updateMapPosition(){
 
 async function ensureTilesAround(){
   if (!networkTilesEnabled) return;
-  const center = centerTile();
   const requests = [];
-  for (let dy = -1; dy <= 1; dy++)
-    for (let dx = -1; dx <= 1; dx++)
-      requests.push(fetchMapTile(center.x + dx, center.y + dy));
+  const minDx = Math.floor(viewOffset.x / W);
+  const maxDx = Math.floor((viewOffset.x + W - 1) / W);
+  const minDy = Math.floor(viewOffset.y / H);
+  const maxDy = Math.floor((viewOffset.y + H - 1) / H);
+  for (let dy = minDy; dy <= maxDy; dy++)
+    for (let dx = minDx; dx <= maxDx; dx++)
+      requests.push(fetchMapTile(TILE.x + dx, TILE.y + dy));
   await Promise.allSettled(requests);
   rebuildTileLayers();
   render();
@@ -1744,7 +1777,9 @@ async function loadTile(){
   } catch (e) {}
   networkTilesEnabled = true;
   await fetchMapTile(TILE.x, TILE.y);             // 中心タイルの失敗だけは起動エラーにする
-  await ensureTilesAround();                      // ドラッグ先が空かないよう周囲を先読み
+  rebuildTileLayers();                            // まず中心1枚だけで即座に表示する
+  render();
+  updateMapPosition();
 }
 async function boot(){
   locateBtn.disabled = true;
