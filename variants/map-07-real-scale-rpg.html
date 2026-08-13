@@ -1957,22 +1957,17 @@ function hitTest(ev){
 }
 let drag = null;
 let suppressClick = false;
-let renderFrame = 0;
-function scheduleRender(){
-  if (renderFrame) return;
-  renderFrame = requestAnimationFrame(() => {
-    renderFrame = 0;
-    render();
-    updateMapPosition();
-  });
-}
 cv.addEventListener('pointerdown', ev => {
   if (!tileLayers || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
   const r = cv.getBoundingClientRect();
+  const snapshot=document.createElement('canvas');
+  snapshot.width=W;snapshot.height=H;
+  snapshot.getContext('2d').drawImage(cv,0,0);
   drag = {
     id:ev.pointerId, x:ev.clientX, y:ev.clientY,
     offsetX:viewOffset.x, offsetY:viewOffset.y,
     scaleX:W / r.width, scaleY:H / r.height,
+    snapshot,
     moved:false,
   };
   suppressClick = false;
@@ -1989,8 +1984,9 @@ cv.addEventListener('pointermove', ev => {
     viewOffset.y = drag.offsetY - dy * drag.scaleY;
     const maxTile = 2 ** TILE.z;
     viewOffset.y = Math.max(-TILE.y * H, Math.min((maxTile - TILE.y - 1) * H, viewOffset.y));
-    scheduleRender();
-    if (drag.moved) setMsg('マップを いどうしている……');
+    ctx.fillStyle=P.g1;ctx.fillRect(0,0,W,H);
+    ctx.drawImage(drag.snapshot,Math.round(drag.offsetX-viewOffset.x),Math.round(drag.offsetY-viewOffset.y));
+    if (drag.moved) setMsg('マップを いどうしている…… はなすと地形を かきなおすよ。');
     return;
   }
   if (ev.pointerType === 'touch') return;
@@ -2004,11 +2000,15 @@ function finishDrag(ev, cancelled = false){
   drag = null;
   cv.classList.remove('dragging');
   cv.style.cursor = 'grab';
-  setMsg(DEFAULT_MSG);
-  rebuildTileLayers();
-  render();
-  updateMapPosition();
-  if (!cancelled) ensureTilesAround().catch(console.error);
+  if (!cancelled && networkTilesEnabled){
+    setMsg('あたらしい地形を しらべている……');
+    ensureTilesAround().catch(console.error).finally(()=>setMsg(DEFAULT_MSG));
+  }else{
+    rebuildTileLayers();
+    render();
+    updateMapPosition();
+    setMsg(DEFAULT_MSG);
+  }
 }
 cv.addEventListener('pointerup', ev => finishDrag(ev));
 cv.addEventListener('pointercancel', ev => finishDrag(ev, true));
