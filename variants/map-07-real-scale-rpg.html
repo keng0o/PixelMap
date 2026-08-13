@@ -28,19 +28,20 @@
   h1 small{ font-size:11px; color:#88c860; display:block; letter-spacing:1px; margin-top:3px; }
   .map-frame{ padding:6px; line-height:0; }
   canvas{
-    width:min(92vw, 700px);
+    width:min(94vw, 920px);
     aspect-ratio:1/1;
     image-rendering:pixelated;
+    filter:saturate(1.16) contrast(1.05);
     cursor:grab;
     background:#78b850;
     touch-action:none;
     user-select:none;
   }
   canvas.dragging{ cursor:grabbing; }
-  #msg{ width:min(92vw, 700px); min-height:60px; font-size:14px; line-height:1.8; letter-spacing:1px; }
+  #msg{ width:min(94vw, 920px); min-height:60px; font-size:14px; line-height:1.8; letter-spacing:1px; }
   #msg .cursor{ display:inline-block; margin-left:6px; animation:blink 1s steps(1) infinite; }
   @keyframes blink{ 50%{ opacity:0; } }
-  #toolbar{ width:min(92vw,700px); font-size:12px; display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; }
+  #toolbar{ width:min(94vw,920px); font-size:12px; display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; }
   #toolbar label{ display:inline-flex; gap:6px; align-items:center; cursor:pointer; color:#d8d0b8; }
   #toolbar input{ accent-color:#88c860; }
   .location-btn{
@@ -50,7 +51,7 @@
   .location-btn:hover{ background:#f8f0d8; }
   .location-btn:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
   .location-btn:disabled{ cursor:wait; opacity:.65; }
-  #stats{ width:min(92vw,700px); font-size:11px; color:#a8a088; display:flex; flex-wrap:wrap; gap:4px 14px; }
+  #stats{ width:min(94vw,920px); font-size:11px; color:#a8a088; display:flex; flex-wrap:wrap; gap:4px 14px; }
   #attrib{ font-size:10px; color:#787460; padding:6px 12px; }
   #attrib a{ color:#88c860; }
   .assets-link{
@@ -397,23 +398,23 @@ const ID = { GRASS:0, TREE:1, PARK:2, DIRT:3, PAVE:4, GRAVEL:5, FARM:6, SAND:7, 
 const isBld = id => id === ID.BLD;
 /* 建物10スタイルのパレット [屋根, 濃, ハイライト] */
 const ROOFPAL = [
-  ['#e05038','#b03828','#f87858'],  // 0 赤い切妻
-  ['#5078d8','#3858b0','#88a0f0'],  // 1 青
-  ['#48a058','#357f42','#70c078'],  // 2 緑
-  ['#e08038','#b06028','#f8a860'],  // 3 だいだい
+  ['#e84830','#9c281c','#ff8060'],  // 0 勇者の町らしい赤い切妻
+  ['#386bd0','#203f90','#79a0f0'],  // 1 青
+  ['#3f9b50','#246733','#72ca7d'],  // 2 緑
+  ['#ed842d','#a84e1d','#ffb05d'],  // 3 だいだい
   ['#8890a0','#687080','#a8b0c0'],  // 4 スレート
   ['#a07850','#805838','#c09868'],  // 5 こげ茶
   ['#707c90','#525c70','#8a96ac'],  // 6 中層ビル屋上
   ['#3c4454','#2a3040','#546078'],  // 7 高層ビル
-  ['#b4b4b0','#909090','#d0d0cc'],  // 8 大型商業屋根
-  ['#c8a878','#a08858','#e0c898'],  // 9 アパート
+  ['#7250b8','#49327b','#ae8ce8'],  // 8 大型施設は城・ギルド風の紫屋根
+  ['#d6a044','#95652a','#f4cd69'],  // 9 アパートは宿屋風の金茶
 ];
 function styleOfBuilding(f, areaM2){
   const h = Number(f.props.render_height) || 0;
-  if (h >= 35) return 7;                        // 高層: 高さは平面寸法と分けて表現
-  if (h >= 12) return 6;                        // 中層
+  if (h >= 80) return 7;                        // 本当に高い塔だけを現代ビル色に残す
+  if (h >= 35) return 6;                        // 中高層も町の屋根色に埋もれない範囲へ絞る
   if (areaM2 >= 2500) return 8;                 // 大きな低層建築
-  const pick = [0,0,1,2,3,5,9];                // 赤屋根を中心に、RPGの町らしい強い色へ寄せる
+  const pick = [0,0,0,1,2,3,3,9];              // 赤・橙を主役にして住宅街をRPGの町並みにする
   return pick[((f.id || 1) + Math.round(areaM2 / 50)) % pick.length];
 }
 
@@ -1316,7 +1317,7 @@ function drawRealBuildings(scene, facilityByBuilding){
       const bx=Math.round((x0+x1-bw)/2),by=Math.round((y0+y1-bh)/2);
       g.fillStyle=wall[0];g.fillRect(bx+1,by+depth,bw,bh);
       g.fillStyle=roof;g.fillRect(bx,by,bw,bh);
-      g.strokeStyle=palette[1];g.lineWidth=1;g.strokeRect(bx+.5,by+.5,Math.max(0,bw-1),Math.max(0,bh-1));
+      g.strokeStyle=P.outline;g.lineWidth=1;g.strokeRect(bx+.5,by+.5,Math.max(0,bw-1),Math.max(0,bh-1));
       if(binding){g.fillStyle='#f8d038';g.fillRect(bx,by,1,1);}
       continue;
     }
@@ -1324,7 +1325,7 @@ function drawRealBuildings(scene, facilityByBuilding){
     // 接地形状は変えず、南東へずらした同形状を壁面として背後に置く。
     pathFor(model,2,depth+2);g.fillStyle='rgba(24,32,20,.34)';g.fill('evenodd');
     pathFor(model,1,depth);g.fillStyle=wall[0];g.fill('evenodd');
-    pathFor(model,1,depth);g.strokeStyle=wall[1];g.lineWidth=1;g.stroke();
+    pathFor(model,1,depth);g.strokeStyle=P.outline;g.lineWidth=1;g.stroke();
 
     // 最も南向きの辺に窓と玄関を置く。後から屋根を重ね、壁から出た部分だけを見せる。
     const front=frontEdge(model);
@@ -1351,7 +1352,7 @@ function drawRealBuildings(scene, facilityByBuilding){
 
     // 屋根面は実寸ポリゴンそのもの。
     pathFor(model);g.fillStyle=roof;g.fill('evenodd');
-    pathFor(model);g.strokeStyle=palette[1];g.lineWidth=1;g.stroke();
+    pathFor(model);g.strokeStyle=P.outline;g.lineWidth=1;g.stroke();
 
     // 切妻の棟・瓦・屋上設備は屋根内にクリップし、輪郭を膨らませない。
     g.save();pathFor(model);g.clip('evenodd');
@@ -1525,7 +1526,7 @@ function render(){
       const primaryBinding=p.match&&facilityByBuilding.get(p.match.model.index)===p;
       if(p.role==='building'&&p.match&&!primaryBinding){hiddenPois.push(p);continue;}
       const near=drawnIcons.some(d=>Math.hypot(d.pt[0]-x,d.pt[1]-y)<radius(p)+radius(d));
-      if(!near&&!seenNames.has(nameKey)&&drawnIcons.length<90){drawnIcons.push(p);if(nameKey)seenNames.add(nameKey);}
+      if(!near&&!seenNames.has(nameKey)&&drawnIcons.length<42){drawnIcons.push(p);if(nameKey)seenNames.add(nameKey);}
       else hiddenPois.push(p);
     }
     // 小さな施設(点)を先に描く = 常にアイコンの背面
