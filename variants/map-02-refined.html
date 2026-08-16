@@ -666,7 +666,23 @@ const ROOFPAL = [
   ['#b4b4b0','#909090','#d0d0cc'],  // 8 大型商業屋根
   ['#c8a878','#a08858','#e0c898'],  // 9 アパート
 ];
-function styleOfBuilding(f, areaCells){
+function buildingPoiType(props){
+  const types = [props.class, props.subclass].filter(Boolean);
+  if (types.includes('hospital')) return 'hospital';
+  if (types.includes('convenience')) return 'convenience';
+  return 'other';
+}
+function buildingKindFromPois(poiKeys, poiTypes){
+  if (poiKeys.size > 1) return 'mixed';
+  if (poiTypes.has('hospital')) return 'hospital';
+  if (poiTypes.has('convenience')) return 'convenience';
+  if (poiKeys.size === 1) return 'poi';
+  return 'normal';
+}
+function styleOfBuilding(f, areaCells, kind = 'normal'){
+  if (kind === 'hospital') return 8;            // 白い大屋根 + 医療サイン
+  if (kind === 'convenience') return 4;         // 明るい陸屋根 + 店舗帯
+  if (kind === 'mixed') return 6;               // 中層の雑居ビル
   const h = f.props.render_height || 0;
   if (h >= 60) return 7;                       // 超高層
   if (h >= 31) return 6;                       // 中層ビル
@@ -879,7 +895,9 @@ function rasterizeGrid(layers, options){
     }
   }
   const roadFeats = cls => L('transportation').filter(f =>
-    f.type === 2 && cls.includes(f.props.class) && f.props.brunnel !== 'tunnel');
+    f.type === 2 && cls.includes(f.props.class) && !['tunnel','bridge'].includes(f.props.brunnel));
+  const bridgeFeats = cls => L('transportation').filter(f =>
+    f.type === 2 && cls.includes(f.props.class) && f.props.brunnel === 'bridge');
   if (options.paths)         lineStamp('paths', roadFeats(['path']),                         ID.PATH, false);
   if (options.tracks)        lineStamp('tracks', roadFeats(['track']),                        ID.PATH, false);
   if (options.piers)         lineStamp('piers', roadFeats(['pier']),                         ID.PATH, false);
@@ -887,6 +905,12 @@ function rasterizeGrid(layers, options){
   if (options.regionalRoads) lineStamp('regionalRoads', roadFeats(['tertiary','secondary']),  ID.ROAD_MAJOR, false);
   if (options.majorRoads)    lineStamp('majorRoads', roadFeats(['primary','trunk','primary_construction']), ID.HIGHWAY, true);
   if (options.motorways)     lineStamp('motorways', roadFeats(['motorway']),                  ID.HIGHWAY, true);
+  if (options.paths)         lineStamp('bridge:paths', bridgeFeats(['path']),                         ID.PATH, false);
+  if (options.tracks)        lineStamp('bridge:tracks', bridgeFeats(['track']),                        ID.PATH, false);
+  if (options.localRoads)    lineStamp('bridge:localRoads', bridgeFeats(['service','minor','busway']), ID.ROAD, false);
+  if (options.regionalRoads) lineStamp('bridge:regionalRoads', bridgeFeats(['tertiary','secondary']),  ID.ROAD_MAJOR, false);
+  if (options.majorRoads)    lineStamp('bridge:majorRoads', bridgeFeats(['primary','trunk','primary_construction']), ID.HIGHWAY, true);
+  if (options.motorways)     lineStamp('bridge:motorways', bridgeFeats(['motorway']),                  ID.HIGHWAY, true);
   // 線路: 別の線路のセルと辺で隣接するなら砂利にして、レール面同士が接しないように配置
   function railStamp(option, fs){
     const grid = layerGrid(option);
@@ -917,6 +941,7 @@ function rasterizeGrid(layers, options){
     }
   }
   if (options.rail) railStamp('rail', roadFeats(['rail']));
+  if (options.rail) railStamp('bridge:rail', bridgeFeats(['rail']));
   return { grids, bldGrid, bldFeats, bldArea, size:RG };
 }
 
@@ -1027,6 +1052,7 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
         case ID.BLD: {
           const bi = bAt(x, y);
           const st = bldStyle[bi] || 0;
+          const kind = options.buildingKinds?.[bi] || 'normal';
           const same = (nx, ny) => at(nx, ny) === ID.BLD && bAt(nx, ny) === bi;
           const above = same(x, y - 1), below = same(x, y + 1);
           const right = same(x + 1, y);
@@ -1067,6 +1093,42 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
             } else if (st === 7 && hh < 8){                  // 屋上の赤色灯
               ctx.fillStyle = '#f05038';
               ctx.fillRect(bx + 7, by + 7, 2, 2);
+            }
+          }
+          // POIを内包する建物は、屋根・店先の記号で用途を直接読めるようにする。
+          if (kind === 'hospital'){
+            if (!above){
+              ctx.fillStyle = '#48a050';
+              ctx.fillRect(bx + 7, by + 3, 3, 10);
+              ctx.fillRect(bx + 3, by + 7, 11, 3);
+            }
+            if (!below){
+              ctx.fillStyle = '#f8f8f0'; ctx.fillRect(bx + 2, by + 11, 12, 4);
+              ctx.fillStyle = '#48a050'; ctx.fillRect(bx + 7, by + 11, 2, 4);
+            }
+          } else if (kind === 'convenience'){
+            if (!above){
+              ctx.fillStyle = '#48a058'; ctx.fillRect(bx + 1, by + 3, 14, 2);
+              ctx.fillStyle = '#f8d038'; ctx.fillRect(bx + 1, by + 5, 14, 2);
+              ctx.fillStyle = '#5078d8'; ctx.fillRect(bx + 1, by + 7, 14, 2);
+            }
+            if (!below){
+              ctx.fillStyle = '#f8f8f0'; ctx.fillRect(bx + 2, by + 10, 12, 5);
+              ctx.fillStyle = '#5078d8'; ctx.fillRect(bx + 3, by + 11, 4, 3);
+              ctx.fillRect(bx + 9, by + 11, 4, 3);
+            }
+          } else if (kind === 'mixed'){
+            if (!below){
+              const signs = ['#e05038','#f8d038','#5078d8'];
+              signs.forEach((color, i) => {
+                ctx.fillStyle = color;
+                ctx.fillRect(bx + 2 + i * 4, by + 10, 3, 4);
+              });
+            }
+            if (!above && !right){
+              ctx.fillStyle = P.outline; ctx.fillRect(bx + 8, by + 1, 7, 6);
+              ctx.fillStyle = '#f8d038'; ctx.fillRect(bx + 9, by + 2, 5, 2);
+              ctx.fillStyle = '#e05038'; ctx.fillRect(bx + 9, by + 4, 5, 2);
             }
           }
           for (const [d, nx, ny] of [['L',x-1,y],['R',x+1,y],['U',x,y-1],['D',x,y+1]]){
@@ -1382,7 +1444,7 @@ const SPRITES = {
 };
 const CLASS2SPRITE = {
   railway:'station', bus:'bus', tram:'station', ferry:'station', aerialway:'station', harbor:'station',
-  shop:'shop', clothing_store:'shop', alcohol_shop:'shop', bakery:'grocery', grocery:'grocery',
+  shop:'shop', clothing_store:'shop', alcohol_shop:'shop', convenience:'grocery', bakery:'grocery', grocery:'grocery',
   restaurant:'restaurant', fast_food:'fast_food', cafe:'cafe', bar:'bar', beer:'bar', ice_cream:'cafe',
   lodging:'hotel', hotel:'hotel',
   hospital:'hospital', doctors:'hospital', dentist:'hospital', veterinary:'hospital', pharmacy:'pharmacy',
@@ -1600,8 +1662,63 @@ function render(){
 
   /* --- 地形グリッド + 建物情報 --- */
   const { grids, bldGrid, bldFeats, bldArea } = rasterizeGrid(tileLayers, o);
+  const poiFeatures = L('poi').filter(f => f.type === 1 && f.geom[0] && f.geom[0][0]);
+  const RG = GRID + 2;
+  const gridExtent = tileLayers.transportation?.extent || tileLayers.building?.extent || 4096;
+  const gridScale = GRID / gridExtent;
+  const buildingPoiKeys = Array.from({ length:bldFeats.length + 1 }, () => new Set());
+  const buildingPoiTypes = Array.from({ length:bldFeats.length + 1 }, () => new Set());
+  const pointInPolygon = ([px0, py0], rings) => {
+    let inside = false;
+    for (const ring of rings){
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++){
+        const [xi, yi] = ring[i], [xj, yj] = ring[j];
+        if ((yi > py0) !== (yj > py0) && px0 < (xj - xi) * (py0 - yi) / (yj - yi) + xi)
+          inside = !inside;
+      }
+    }
+    return inside;
+  };
+  const buildingAtPoint = point => {
+    const cx0 = Math.floor(point[0] * gridScale - gridOriginX);
+    const cy0 = Math.floor(point[1] * gridScale - gridOriginY);
+    const candidates = new Set();
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){
+      const cx = cx0 + dx, cy = cy0 + dy;
+      if (cx < 0 || cy < 0 || cx >= RG || cy >= RG) continue;
+      const bi = bldGrid[cy * RG + cx];
+      if (bi) candidates.add(bi);
+    }
+    for (const bi of candidates)
+      if (pointInPolygon(point, bldFeats[bi - 1].geom)) return bi;
+    return 0;
+  };
+  for (const feature of poiFeatures){
+    const point = feature.geom[0][0];
+    const bi = buildingAtPoint(point);
+    if (!bi) continue;
+    const props = feature.props;
+    const key = feature.id != null
+      ? `id:${feature.id}`
+      : `${props.name || props['name:ja'] || ''}|${props.class || ''}|${props.subclass || ''}|${point[0]}|${point[1]}`;
+    buildingPoiKeys[bi].add(key);
+    buildingPoiTypes[bi].add(buildingPoiType(props));
+  }
+  const buildingKinds = Array(bldFeats.length + 1).fill('normal');
+  for (let bi = 1; bi < buildingKinds.length; bi++)
+    buildingKinds[bi] = buildingKindFromPois(buildingPoiKeys[bi], buildingPoiTypes[bi]);
   const bldStyle = new Uint8Array(bldFeats.length + 1);
-  bldFeats.forEach((f, i) => { bldStyle[i + 1] = styleOfBuilding(f, bldArea[i + 1]); });
+  bldFeats.forEach((f, i) => { bldStyle[i + 1] = styleOfBuilding(f, bldArea[i + 1], buildingKinds[i + 1]); });
+  const buildingGrid = grids.get('buildings');
+  const normalBuildingGrid = new Uint8Array(RG * RG);
+  const poiBuildingGrid = new Uint8Array(RG * RG);
+  if (buildingGrid){
+    for (let i = 0; i < buildingGrid.length; i++){
+      if (buildingGrid[i] !== ID.BLD) continue;
+      const target = buildingKinds[bldGrid[i]] === 'normal' ? normalBuildingGrid : poiBuildingGrid;
+      target[i] = ID.BLD;
+    }
+  }
   const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
   drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
@@ -1668,12 +1785,20 @@ function render(){
   /* --- レイヤー統計 --- */
   const stats = {};
   for (const n in tileLayers) stats[n] = tileLayers[n].features.length;
+  const buildingKindCounts = buildingKinds.slice(1).reduce((counts, kind) => {
+    counts[kind] = (counts[kind] || 0) + 1;
+    return counts;
+  }, {});
   document.getElementById('stats').innerHTML =
+    `<span>普通建物: ${buildingKindCounts.normal || 0}</span>`+
+    `<span>病院: ${buildingKindCounts.hospital || 0}</span>`+
+    `<span>コンビニ: ${buildingKindCounts.convenience || 0}</span>`+
+    `<span>雑居ビル: ${buildingKindCounts.mixed || 0}</span>`+
+    `<span>その他POI建物: ${buildingKindCounts.poi || 0}</span>`+
     Object.entries(stats).map(([k, v]) => `<span>${k}: ${v}</span>`).join('');
 
   /* --- POI --- */
-  const pois = L('poi')
-    .filter(f => f.type === 1 && f.geom[0] && f.geom[0][0])
+  const pois = poiFeatures
     .map(f => {
       const [x, y] = tp(f.geom[0][0]);
       const props = f.props;
@@ -1827,13 +1952,20 @@ function render(){
     }
   }
 
-  const rasterOptions = new Set([
-    'grass','forest','farmland','sand','parks','waterAreas','rivers','streams','canals','drains',
+  const z0Ground = new Set([
+    'grass','forest','farmland','sand','parks',
     'landuseResidential','landuseCommercial','landuseRetail','landuseSchool','landuseHigherEducation',
     'landuseMedical','landuseCivic','landuseIndustrial','landuseGarages','landuseMilitary',
     'landuseBusStation','landuseRailway','landuseCemetery','landuseStadium','landusePitchTrack',
-    'landusePlayground','landuseAmusement','landuseZoo','landuseAirport','landuseHelipad','landuseOther',
-    'localRoads','regionalRoads','majorRoads','motorways','paths','tracks','piers','rail','buildings',
+    'landusePlayground','landuseAmusement','landuseZoo','landuseOther',
+  ]);
+  const z1Water = new Set(['waterAreas','rivers','streams','canals','drains']);
+  const z2Routes = new Set([
+    'landuseAirport','landuseHelipad','localRoads','regionalRoads','majorRoads','motorways',
+    'paths','tracks','piers','rail','subway','roadTunnels','pathTunnels','railTunnels',
+  ]);
+  const bridgeOptions = new Set([
+    'localRoads','regionalRoads','majorRoads','motorways','paths','tracks','rail',
   ]);
   const tunnelOptions = new Set(['subway','roadTunnels','pathTunnels','railTunnels']);
   const boundaryOptions = new Set(['prefectureBoundary','municipalBoundary','localBoundary']);
@@ -1851,10 +1983,10 @@ function render(){
     house:drawHouseNumbers,
   };
 
-  // 古いチェックから順に描き、最後にチェックしたレイヤーを最前面にする。
-  for (const option of layerOrder){
-    if (!o[option]) continue;
-    if (rasterOptions.has(option)){
+  const renderOrder = [];
+  const drawRasterGroup = (z, options) => {
+    for (const option of layerOrder){
+      if (!o[option] || !options.has(option)) continue;
       if (option === 'grass'){
         drawGrid(emptyGrid, bldGrid, bldStyle, { grass:true });
         hitAreas = [];
@@ -1862,15 +1994,51 @@ function render(){
         const grid = grids.get(option);
         if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false }, true);
       }
-    }else if (tunnelOptions.has(option)){
-      drawTunnelLayer(option);
-    }else if (boundaryOptions.has(option)){
-      drawBoundaryLayer(option);
-    }else{
-      drawers[option]?.();
+      renderOrder.push(`${z}:${option}`);
     }
+  };
+
+  // Z0〜Z4を固定し、同じZ階層内だけチェック順（後にチェックしたものほど前面）にする。
+  drawRasterGroup('Z0', z0Ground);
+  drawRasterGroup('Z1', z1Water);
+  for (const option of layerOrder){
+    if (!o[option] || !z2Routes.has(option)) continue;
+    if (tunnelOptions.has(option)) drawTunnelLayer(option);
+    else {
+      const grid = grids.get(option);
+      if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false }, true);
+    }
+    renderOrder.push(`Z2:${option}`);
   }
+
+  if (o.buildings){
+    drawGrid(normalBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds }, true);
+    renderOrder.push('Z3:building');
+  }
+  for (const option of layerOrder){
+    if (!o[option] || !bridgeOptions.has(option)) continue;
+    const grid = grids.get(`bridge:${option}`);
+    if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false }, true);
+    renderOrder.push(`Z3:bridge:${option}`);
+  }
+  if (o.buildings){
+    drawGrid(poiBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds }, true);
+    renderOrder.push('Z3:poiBuilding');
+  }
+
+  for (const option of layerOrder){
+    if (!o[option]) continue;
+    if (boundaryOptions.has(option)) drawBoundaryLayer(option);
+    else if (drawers[option]) drawers[option]();
+    else continue;
+    renderOrder.push(`Z4:${option}`);
+  }
+  document.getElementById('toolbar').dataset.renderOrder = renderOrder.join(',');
   drawCurrentLocation();
+  if (currentLocation){
+    renderOrder.push('Z4:currentLocation');
+    document.getElementById('toolbar').dataset.renderOrder = renderOrder.join(',');
+  }
 }
 
 /* =====================================================
@@ -2155,7 +2323,7 @@ async function locateMe(){
    ===================================================== */
 const CLASS_JP = {
   railway:'鉄道', bus:'バス', shop:'店', grocery:'食料品', restaurant:'レストラン', fast_food:'ファストフード',
-  cafe:'カフェ', bar:'バー', beer:'居酒屋', lodging:'宿', hospital:'病院', pharmacy:'薬局', dentist:'歯科',
+  cafe:'カフェ', bar:'バー', beer:'居酒屋', lodging:'宿', hospital:'病院', convenience:'コンビニ', pharmacy:'薬局', dentist:'歯科',
   doctors:'医院', school:'学校', college:'専門・大学', university:'大学', kindergarten:'幼稚園・保育園',
   library:'図書館', bank:'銀行', atm:'ATM', post:'郵便', police:'警察', fire_station:'消防',
   town_hall:'役所', place_of_worship:'神社・寺・教会', attraction:'名所', monument:'記念碑', museum:'博物館',
