@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>カワサキタウン（レトロ版）</title>
+<title>カワサキタウン｜地理の読みやすさ</title>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <style>
   :root{ --ink:#181820; }
@@ -74,6 +74,13 @@
 </style>
 </head>
 <body>
+<iframe
+  src="variants/map-02-refined.html"
+  title="カワサキタウン｜地理の読みやすさ"
+  allow="geolocation"
+  style="position:fixed;inset:0;z-index:9999;width:100%;height:100%;border:0;display:block;background:#78b850"
+></iframe>
+<template id="legacyDefaultMap">
 
 <h1 class="rpg-window">カワサキタウン<small id="mapPosition">OpenFreeMap z14 / 14549 / 6460 ─ レトロ版</small></h1>
 
@@ -1756,5 +1763,6 @@ locateBtn.addEventListener('click', locateMe);
 
 boot();
 </script>
+</template>
 </body>
 </html>
