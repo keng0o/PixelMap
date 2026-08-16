@@ -249,8 +249,13 @@
       <label class="category-master"><input type="checkbox" data-category-toggle>一括</label>
     </div>
     <div class="category-items">
-      <label><input type="checkbox" id="tglNature" data-category-item>自然・公園</label>
-      <label><input type="checkbox" id="tglWater" data-category-item>水域</label>
+      <label><input type="checkbox" id="tglGrass" data-category-item>草地(背景)</label>
+      <label><input type="checkbox" id="tglForest" data-category-item>森林</label>
+      <label><input type="checkbox" id="tglFarmland" data-category-item>農地</label>
+      <label><input type="checkbox" id="tglSand" data-category-item>砂地</label>
+      <label><input type="checkbox" id="tglParks" data-category-item>公園</label>
+      <label><input type="checkbox" id="tglWaterAreas" data-category-item>水面</label>
+      <label><input type="checkbox" id="tglWaterways" data-category-item>河川・水路</label>
     </div>
   </section>
 
@@ -261,10 +266,13 @@
     </div>
     <div class="category-items">
       <label><input type="checkbox" id="tglLanduseResidential" data-category-item>住宅地</label>
-      <label><input type="checkbox" id="tglLanduseCommercial" data-category-item>商業・公共用地</label>
-      <label><input type="checkbox" id="tglLanduseIndustrial" data-category-item>工業・交通用地</label>
+      <label><input type="checkbox" id="tglLanduseCommercial" data-category-item>商業用地</label>
+      <label><input type="checkbox" id="tglLandusePublic" data-category-item>公共・教育・医療用地</label>
+      <label><input type="checkbox" id="tglLanduseIndustrial" data-category-item>工業用地</label>
+      <label><input type="checkbox" id="tglLanduseTransport" data-category-item>交通・鉄道用地</label>
       <label><input type="checkbox" id="tglLanduseCemetery" data-category-item>墓地</label>
-      <label><input type="checkbox" id="tglLanduseSports" data-category-item>スポーツ・遊園地</label>
+      <label><input type="checkbox" id="tglLanduseSports" data-category-item>スポーツ施設</label>
+      <label><input type="checkbox" id="tglLanduseAmusement" data-category-item>遊園地</label>
       <label><input type="checkbox" id="tglLanduseAirport" data-category-item>空港</label>
       <label><input type="checkbox" id="tglLanduseOther" data-category-item>その他</label>
     </div>
@@ -279,7 +287,8 @@
       <label><input type="checkbox" id="tglRoads" data-category-item>道路</label>
       <label><input type="checkbox" id="tglPaths" data-category-item>歩道</label>
       <label><input type="checkbox" id="tglRail" data-category-item>鉄道</label>
-      <label><input type="checkbox" id="tglTransit" data-category-item>地下交通(破線)</label>
+      <label><input type="checkbox" id="tglSubway" data-category-item>地下鉄(破線)</label>
+      <label><input type="checkbox" id="tglTunnels" data-category-item>その他トンネル(破線)</label>
     </div>
   </section>
 
@@ -302,7 +311,10 @@
     </div>
     <div class="category-items">
       <label><input type="checkbox" id="tglStationNames" data-category-item>駅名</label>
-      <label><input type="checkbox" id="tglLabels" data-category-item>なまえ</label>
+      <label><input type="checkbox" id="tglParkNames" data-category-item>公園名</label>
+      <label><input type="checkbox" id="tglPoiNames" data-category-item>施設名</label>
+      <label><input type="checkbox" id="tglPlaceNames" data-category-item>地名・地形名</label>
+      <label><input type="checkbox" id="tglWaterNames" data-category-item>水域名</label>
       <label><input type="checkbox" id="tglRoadNames" data-category-item>道路名</label>
       <label><input type="checkbox" id="tglHouse" data-category-item>番地</label>
       <label><input type="checkbox" id="tglBoundary" data-category-item>市境(黄の破線)</label>
@@ -667,48 +679,50 @@ function rasterizeGrid(layers, options){
       if (d[i * 4 + 3] > 100) grid[i] = id;
   }
 
-  const LANDCOVER = { wood:ID.TREE, forest:ID.TREE, farmland:ID.FARM, sand:ID.SAND,
-                      grass:ID.GRASS, meadow:ID.GRASS, wetland:ID.GRASS };
+  const LANDCOVER = {
+    wood:{ id:ID.TREE, option:'forest' },
+    forest:{ id:ID.TREE, option:'forest' },
+    farmland:{ id:ID.FARM, option:'farmland' },
+    sand:{ id:ID.SAND, option:'sand' },
+  };
   const LANDUSE = {
     residential:{ id:ID.DIRT, option:'landuseResidential' },
     suburb:{ id:ID.DIRT, option:'landuseResidential' },
     neighbourhood:{ id:ID.DIRT, option:'landuseResidential' },
     commercial:{ id:ID.PAVE, option:'landuseCommercial' },
     retail:{ id:ID.PAVE, option:'landuseCommercial' },
-    bus_station:{ id:ID.PAVE, option:'landuseCommercial' },
-    school:{ id:ID.PAVE, option:'landuseCommercial' },
-    college:{ id:ID.PAVE, option:'landuseCommercial' },
-    university:{ id:ID.PAVE, option:'landuseCommercial' },
-    kindergarten:{ id:ID.PAVE, option:'landuseCommercial' },
-    hospital:{ id:ID.PAVE, option:'landuseCommercial' },
+    bus_station:{ id:ID.PAVE, option:'landuseTransport' },
+    school:{ id:ID.PAVE, option:'landusePublic' },
+    college:{ id:ID.PAVE, option:'landusePublic' },
+    university:{ id:ID.PAVE, option:'landusePublic' },
+    kindergarten:{ id:ID.PAVE, option:'landusePublic' },
+    hospital:{ id:ID.PAVE, option:'landusePublic' },
     industrial:{ id:ID.GRAVEL, option:'landuseIndustrial' },
     garages:{ id:ID.GRAVEL, option:'landuseIndustrial' },
     quarry:{ id:ID.GRAVEL, option:'landuseIndustrial' },
     military:{ id:ID.GRAVEL, option:'landuseIndustrial' },
-    railway:{ id:ID.GRAVEL, option:'landuseIndustrial' },
     dam:{ id:ID.GRAVEL, option:'landuseIndustrial' },
+    railway:{ id:ID.GRAVEL, option:'landuseTransport' },
     cemetery:{ id:ID.PARK, option:'landuseCemetery' },
     grave_yard:{ id:ID.PARK, option:'landuseCemetery' },
     stadium:{ id:ID.FIELD, option:'landuseSports' },
     pitch:{ id:ID.FIELD, option:'landuseSports' },
     playground:{ id:ID.FIELD, option:'landuseSports' },
     track:{ id:ID.FIELD, option:'landuseSports' },
-    theme_park:{ id:ID.FIELD, option:'landuseSports' },
+    theme_park:{ id:ID.FIELD, option:'landuseAmusement' },
   };
   // 面
-  if (options.nature){
-    for (const f of L('landcover')){
-      const id = LANDCOVER[f.props.class];
-      if (f.type === 3 && id !== undefined && id !== ID.GRASS)
-        stamp(id, () => { polyPath(f.geom); c.fill('evenodd'); });
-    }
+  for (const f of L('landcover')){
+    const style = LANDCOVER[f.props.class];
+    if (style && options[style.option] && f.type === 3)
+      stamp(style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   for (const f of L('landuse')){
     const style = LANDUSE[f.props.class] || { id:ID.DIRT, option:'landuseOther' };
     if (options[style.option] && f.type === 3)
       stamp(style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
-  if (options.nature){
+  if (options.parks){
     for (const f of L('park')) if (f.type === 3)
       stamp(ID.PARK, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
@@ -717,9 +731,11 @@ function rasterizeGrid(layers, options){
       stamp(ID.PAVE, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   // 水
-  if (options.water){
+  if (options.waterAreas){
     for (const f of L('water')) if (f.type === 3)
       stamp(ID.WATER, () => { polyPath(f.geom); c.fill('evenodd'); });
+  }
+  if (options.waterways){
     for (const f of L('waterway')) if (f.type === 2)
       stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
   }
@@ -879,7 +895,7 @@ function drawGrid(grid, bldGrid, bldStyle, options){
       const id = at(x, y), h = cellHash(x, y);
       switch (id){
         case ID.GRASS: {
-          if (!options.nature) put('grassPlain', x, y);
+          if (!options.grass) put('grassPlain', x, y);
           else if (h < 5) put('tuft', x, y);
           else if (h < 8) put('flower', x, y);
           else if (h < 34) put('grass0', x, y);
@@ -1476,23 +1492,35 @@ const locationCanvasPoint = () => currentLocation ? [
 ] : null;
 
 const opts = () => ({
-  nature:    document.getElementById('tglNature').checked,
+  grass:     document.getElementById('tglGrass').checked,
+  forest:    document.getElementById('tglForest').checked,
+  farmland:  document.getElementById('tglFarmland').checked,
+  sand:      document.getElementById('tglSand').checked,
+  parks:     document.getElementById('tglParks').checked,
+  waterAreas: document.getElementById('tglWaterAreas').checked,
+  waterways:  document.getElementById('tglWaterways').checked,
   landuseResidential: document.getElementById('tglLanduseResidential').checked,
   landuseCommercial:  document.getElementById('tglLanduseCommercial').checked,
+  landusePublic:      document.getElementById('tglLandusePublic').checked,
   landuseIndustrial:  document.getElementById('tglLanduseIndustrial').checked,
+  landuseTransport:   document.getElementById('tglLanduseTransport').checked,
   landuseCemetery:    document.getElementById('tglLanduseCemetery').checked,
   landuseSports:      document.getElementById('tglLanduseSports').checked,
+  landuseAmusement:   document.getElementById('tglLanduseAmusement').checked,
   landuseAirport:     document.getElementById('tglLanduseAirport').checked,
   landuseOther:       document.getElementById('tglLanduseOther').checked,
-  water:     document.getElementById('tglWater').checked,
   roads:     document.getElementById('tglRoads').checked,
   paths:     document.getElementById('tglPaths').checked,
   rail:      document.getElementById('tglRail').checked,
-  transit:   document.getElementById('tglTransit').checked,
+  subway:    document.getElementById('tglSubway').checked,
+  tunnels:   document.getElementById('tglTunnels').checked,
   buildings: document.getElementById('tglBuildings').checked,
   poi:       document.getElementById('tglPoi').checked,
   stationNames: document.getElementById('tglStationNames').checked,
-  labels:    document.getElementById('tglLabels').checked,
+  parkNames: document.getElementById('tglParkNames').checked,
+  poiNames:  document.getElementById('tglPoiNames').checked,
+  placeNames: document.getElementById('tglPlaceNames').checked,
+  waterNames: document.getElementById('tglWaterNames').checked,
   dots:      document.getElementById('tglDots').checked,
   roadNames: document.getElementById('tglRoadNames').checked,
   house:     document.getElementById('tglHouse').checked,
@@ -1566,15 +1594,17 @@ function render(){
     return 'S';
   }
 
-  /* --- 地下鉄・トンネル（うっすら破線オーバーレイ） --- */
-  if (o.transit){
+  /* --- 地下鉄・その他トンネル（うっすら破線オーバーレイ） --- */
+  if (o.subway || o.tunnels){
     ctx.globalAlpha = .3;
     ctx.lineCap = 'round';
     for (const f of L('transportation')){
       if (f.type !== 2) continue;
       const isTunnel = f.props.brunnel === 'tunnel';
-      const isTransit = f.props.class === 'transit' || f.props.class === 'subway';
-      if (!isTunnel && !isTransit) continue;
+      const isSubway = f.props.class === 'transit' || f.props.class === 'subway';
+      const showSubway = o.subway && isSubway;
+      const showOtherTunnel = o.tunnels && isTunnel && !isSubway;
+      if (!showSubway && !showOtherTunnel) continue;
       ctx.strokeStyle = '#282838'; ctx.lineWidth = 5; ctx.setLineDash([10, 10]);
       ctx.beginPath();
       for (const ln of f.geom)
@@ -1620,36 +1650,36 @@ function render(){
     .sort((a, b) => a.importance - b.importance || a.rank - b.rank);
 
   const drawnIcons = [], hiddenPois = [];
-  if (o.poi){
-    for (const p of pois){
+  for (const p of pois){
+    const [x, y] = p.pt;
+    if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
+    p.size = poiSizeClass(p.pt);
+    const pName = featureName(p.props);
+    const duplicate = pName && drawnIcons.some(d =>
+      featureName(d.props) === pName && d.spriteKey === p.spriteKey &&
+      Math.hypot(d.pt[0] - x, d.pt[1] - y) < 112);
+    const near = drawnIcons.some(d => {
+      const sameKind = d.spriteKey === p.spriteKey;
+      const important = isStationProps(d.props) || isStationProps(p.props) || d.size === 'L' || p.size === 'L';
+      const minGap = important ? 86 : sameKind ? 74 : 56;
+      return Math.hypot(d.pt[0] - x, d.pt[1] - y) < minGap;
+    });
+    if (!duplicate && !near && drawnIcons.length < 64) drawnIcons.push(p);
+    else hiddenPois.push(p);
+  }
+  // 小さな施設(点)は施設アイコンと独立して切り替えられる。
+  if (o.dots){
+    for (const p of hiddenPois){
       const [x, y] = p.pt;
-      if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
-      p.size = poiSizeClass(p.pt);
-      const pName = featureName(p.props);
-      const duplicate = pName && drawnIcons.some(d =>
-        featureName(d.props) === pName && d.spriteKey === p.spriteKey &&
-        Math.hypot(d.pt[0] - x, d.pt[1] - y) < 112);
-      const near = drawnIcons.some(d => {
-        const sameKind = d.spriteKey === p.spriteKey;
-        const important = isStationProps(d.props) || isStationProps(p.props) || d.size === 'L' || p.size === 'L';
-        const minGap = important ? 86 : sameKind ? 74 : 56;
-        return Math.hypot(d.pt[0] - x, d.pt[1] - y) < minGap;
-      });
-      if (!duplicate && !near && drawnIcons.length < 64) drawnIcons.push(p);
-      else hiddenPois.push(p);
+      if (x < 0 || y < 0 || x > W || y > H) continue;
+      px(x - 4, y - 4, 8, 8, OUT);
+      px(x - 3, y - 3, 6, 6, '#f8d038');
+      hitAreas.push({ x: x - 9, y: y - 9, w: 18, h: 18, p: p.props, kind:'dot' });
     }
-    // 小さな施設(点)を先に描く = 常にアイコンの背面
-    if (o.dots){
-      for (const p of hiddenPois){
-        const [x, y] = p.pt;
-        if (x < 0 || y < 0 || x > W || y > H) continue;
-        px(x - 4, y - 4, 8, 8, OUT);
-        px(x - 3, y - 3, 6, 6, '#f8d038');
-        hitAreas.push({ x: x - 9, y: y - 9, w: 18, h: 18, p: p.props, kind:'dot' });
-      }
-    }
-    // Y座標昇順に描く = 画面の下にある施設ほど手前に重なる
-    drawnIcons.sort((a, b) => a.pt[1] - b.pt[1]);
+  }
+  // Y座標昇順に描く = 画面の下にある施設ほど手前に重なる
+  drawnIcons.sort((a, b) => a.pt[1] - b.pt[1]);
+  if (o.poi){
     for (const p of drawnIcons){
       drawSprite(spriteFor(p.props, p.size, p.variant), p.pt[0], p.pt[1]);
       hitAreas.push({ x: p.pt[0] - 30, y: p.pt[1] - 54, w: 60, h: 62, p: p.props, kind:'poi' });
@@ -1657,7 +1687,7 @@ function render(){
   }
 
   // 大きい施設の実体をラベル衝突判定へ入れ、文字が駅舎や病院を覆わないようにする。
-  const placedRects = drawnIcons.map(p => ({
+  const placedRects = (o.poi ? drawnIcons : []).map(p => ({
     x:p.pt[0]-(p.size === 'L' ? 72 : 52),
     y:p.pt[1]-(p.size === 'L' ? 104 : 82),
     w:p.size === 'L' ? 144 : 104,
@@ -1672,7 +1702,7 @@ function render(){
       labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 154 : 130), placedRects);
   }
   /* --- 公園名 --- */
-  if (o.labels){
+  if (o.parkNames){
     for (const f of L('park')){
       const name = featureName(f.props);
       if (!name || f.type !== 3) continue;
@@ -1682,7 +1712,7 @@ function render(){
     }
   }
   /* --- POIラベル --- */
-  if (o.labels){
+  if (o.poiNames){
     const labelTargets = drawnIcons
       .filter(p => featureName(p.props) && !isStationProps(p.props))
       .sort((a, b) => a.importance - b.importance || a.rank - b.rank)
@@ -1690,8 +1720,8 @@ function render(){
     for (const p of labelTargets)
       labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 142 : 116), placedRects);
   }
-  /* --- 地名・水域名 --- */
-  if (o.labels){
+  /* --- 地名・地形名 --- */
+  if (o.placeNames){
     const placeWeight = { city:0, town:1, suburb:2, quarter:3, neighbourhood:4, village:4 };
     const seenPlaces = new Set();
     const placeFeatures = L('place')
@@ -1711,11 +1741,6 @@ function render(){
         seenPlaces.add(name); placeCount++;
       }
     }
-    for (const f of L('water_name')){
-      if (!f.geom[0]) continue;
-      const name = featureName(f.props);
-      if (name) outlinedTextPlaced(name, ...tp(f.geom[0][0]), 26, '#b8d8f8', placedRects);
-    }
     for (const f of L('mountain_peak')){
       if (!f.geom[0]) continue;
       const name = featureName(f.props);
@@ -1725,6 +1750,14 @@ function render(){
       if (!f.geom[0]) continue;
       const name = featureName(f.props);
       if (name) outlinedTextPlaced(name, ...tp(f.geom[0][0]), 26, '#d8d0c0', placedRects);
+    }
+  }
+  /* --- 水域名 --- */
+  if (o.waterNames){
+    for (const f of L('water_name')){
+      if (!f.geom[0]) continue;
+      const name = featureName(f.props);
+      if (name) outlinedTextPlaced(name, ...tp(f.geom[0][0]), 26, '#b8d8f8', placedRects);
     }
   }
   /* --- 道路名 --- */
