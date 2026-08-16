@@ -276,7 +276,8 @@
       <label class="category-master"><input type="checkbox" data-category-toggle>一括</label>
     </div>
     <div class="category-items">
-      <label><input type="checkbox" id="tglRoads" data-category-item>道路・歩道</label>
+      <label><input type="checkbox" id="tglRoads" data-category-item>道路</label>
+      <label><input type="checkbox" id="tglPaths" data-category-item>歩道</label>
       <label><input type="checkbox" id="tglRail" data-category-item>鉄道</label>
       <label><input type="checkbox" id="tglTransit" data-category-item>地下交通(破線)</label>
     </div>
@@ -812,8 +813,9 @@ function rasterizeGrid(layers, options){
   }
   const roadFeats = cls => L('transportation').filter(f =>
     f.type === 2 && cls.includes(f.props.class) && f.props.brunnel !== 'tunnel');
-  if (options.roads){
+  if (options.paths)
     lineStamp(roadFeats(['path','track','pier']),          ID.PATH, false);
+  if (options.roads){
     lineStamp(roadFeats(['service','minor','busway']),     ID.ROAD, false);
     lineStamp(roadFeats(['tertiary','secondary']),         ID.ROAD_MAJOR, false);
     lineStamp(roadFeats(['primary','trunk','motorway']),   ID.HIGHWAY, true);
@@ -1484,6 +1486,7 @@ const opts = () => ({
   landuseOther:       document.getElementById('tglLanduseOther').checked,
   water:     document.getElementById('tglWater').checked,
   roads:     document.getElementById('tglRoads').checked,
+  paths:     document.getElementById('tglPaths').checked,
   rail:      document.getElementById('tglRail').checked,
   transit:   document.getElementById('tglTransit').checked,
   buildings: document.getElementById('tglBuildings').checked,
