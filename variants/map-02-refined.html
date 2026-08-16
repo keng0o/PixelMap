@@ -24,8 +24,6 @@
     position:relative;
     image-rendering:pixelated;
   }
-  h1.rpg-window{ font-size:18px; font-weight:normal; letter-spacing:3px; padding:8px 26px; text-align:center; }
-  h1 small{ font-size:11px; color:#88c860; display:block; letter-spacing:1px; margin-top:3px; }
   .map-frame{ padding:6px; line-height:0; }
   canvas{
     width:min(92vw, 700px);
@@ -76,7 +74,7 @@
       padding:0;
       background:#78b850;
     }
-    h1.rpg-window, #stats, #attrib{ display:none; }
+    #stats, #attrib{ display:none; }
     .map-frame{
       position:fixed;
       inset:0;
@@ -168,7 +166,7 @@
 </head>
 <body>
 
-<h1 class="rpg-window">カワサキタウン<small id="mapPosition">OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ</small></h1>
+<p id="mapPosition" hidden>OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ</p>
 
 <div class="rpg-window map-frame">
   <canvas id="map" width="1536" height="1536" aria-label="川崎駅周辺の読みやすいレトロRPG風マップ。ドラッグで移動できます" aria-describedby="msg"></canvas>
