@@ -2176,6 +2176,7 @@ function render(){
     Object.entries(tileLayers).map(([name, layer]) => [name, layer.features.length])
   );
   toolbar.dataset.renderMs = (performance.now() - renderStartedAt).toFixed(1);
+  toolbar.dataset.renderCount = renderCount;
   window.PixelMapDiagnostics = {
     retainedSourceLayers:[...RETAINED_SOURCE_LAYERS],
     loadedSourceLayers:Object.keys(tileLayers),
@@ -2319,10 +2320,12 @@ async function ensureTilesAround(){
   if (!networkTilesEnabled) return;
   const center = centerTile();
   const requests = [];
+  const cacheSizeBefore = tileCache.size;
   for (let dy = -1; dy <= 1; dy++)
     for (let dx = -1; dx <= 1; dx++)
       requests.push(fetchMapTile(center.x + dx, center.y + dy));
   await Promise.allSettled(requests);
+  if (tileCache.size === cacheSizeBefore) return;
   rebuildTileLayers();
   render();
   updateMapPosition();
@@ -2641,7 +2644,8 @@ cv.addEventListener('pointermove', ev => {
   if (!tileLayers) return;
   if (drag && ev.pointerId === drag.id){
     const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
-    if (Math.hypot(dx, dy) > 4) drag.moved = true;
+    if (!drag.moved && Math.hypot(dx, dy) <= 4) return;
+    drag.moved = true;
     viewOffset.x = drag.offsetX - dx * drag.scaleX;
     viewOffset.y = drag.offsetY - dy * drag.scaleY;
     const maxTile = 2 ** TILE.z;
