@@ -255,7 +255,8 @@
       <label><input type="checkbox" id="tglSand" data-category-item>砂地</label>
       <label><input type="checkbox" id="tglParks" data-category-item>公園</label>
       <label><input type="checkbox" id="tglWaterAreas" data-category-item>水面</label>
-      <label><input type="checkbox" id="tglWaterways" data-category-item>河川・水路</label>
+      <label><input type="checkbox" id="tglRivers" data-category-item>河川</label>
+      <label><input type="checkbox" id="tglChannels" data-category-item>水路</label>
     </div>
   </section>
 
@@ -735,10 +736,13 @@ function rasterizeGrid(layers, options){
     for (const f of L('water')) if (f.type === 3)
       stamp(ID.WATER, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
-  if (options.waterways){
-    for (const f of L('waterway')) if (f.type === 2)
+  const waterways = L('waterway').filter(f => f.type === 2);
+  if (options.rivers)
+    for (const f of waterways.filter(f => ['river','stream'].includes(f.props.class)))
       stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
-  }
+  if (options.channels)
+    for (const f of waterways.filter(f => ['canal','ditch','drain'].includes(f.props.class)))
+      stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
   // 建物: 表示の有無にかかわらず面積を計算し、POIのサイズ判定に使う
   const bldFeats = L('building').filter(f => f.type === 3);
   const bldGrid = new Uint16Array(RG * RG);
@@ -1498,7 +1502,8 @@ const opts = () => ({
   sand:      document.getElementById('tglSand').checked,
   parks:     document.getElementById('tglParks').checked,
   waterAreas: document.getElementById('tglWaterAreas').checked,
-  waterways:  document.getElementById('tglWaterways').checked,
+  rivers:     document.getElementById('tglRivers').checked,
+  channels:   document.getElementById('tglChannels').checked,
   landuseResidential: document.getElementById('tglLanduseResidential').checked,
   landuseCommercial:  document.getElementById('tglLanduseCommercial').checked,
   landusePublic:      document.getElementById('tglLandusePublic').checked,
