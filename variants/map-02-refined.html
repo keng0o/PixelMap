@@ -677,7 +677,13 @@ function styleOfBuilding(f, areaCells){
 
 function rasterizeGrid(layers, options){
   const RG = GRID + 2;                           // 移動時に端が空かないよう外周も描画
-  const grid = new Uint8Array(RG * RG);          // 0 = GRASS
+  // レイヤーごとに独立したグリッドを持ち、チェック順に合成できるようにする。
+  // 0 = GRASS は未描画セルも兼ねるため、grass 以外は drawGrid の transparent で読み分ける。
+  const grids = new Map();
+  const layerGrid = option => {
+    if (!grids.has(option)) grids.set(option, new Uint8Array(RG * RG));
+    return grids.get(option);
+  };
   const oc = document.createElement('canvas');
   oc.width = oc.height = RG;
   const c = oc.getContext('2d', { willReadFrequently: true });
@@ -698,12 +704,13 @@ function rasterizeGrid(layers, options){
     for (const ln of lines)
       ln.forEach((pt, i) => i ? c.lineTo(gx(pt[0]), gy(pt[1])) : c.moveTo(gx(pt[0]), gy(pt[1])));
   }
-  function stamp(id, drawFn){
+  function stamp(option, id, drawFn){
     c.clearRect(0, 0, RG, RG);
     c.fillStyle = '#000'; c.strokeStyle = '#000';
     c.lineCap = 'round'; c.lineJoin = 'round';
     drawFn();
     const d = c.getImageData(0, 0, RG, RG).data;
+    const grid = layerGrid(option);
     for (let i = 0; i < RG * RG; i++)
       if (d[i * 4 + 3] > 100) grid[i] = id;
   }
@@ -747,44 +754,45 @@ function rasterizeGrid(layers, options){
   for (const f of L('landcover')){
     const style = LANDCOVER[f.props.class];
     if (style && options[style.option] && f.type === 3)
-      stamp(style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
+      stamp(style.option, style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   for (const f of L('landuse')){
     const style = LANDUSE[f.props.class] || { id:ID.DIRT, option:'landuseOther' };
     if (options[style.option] && f.type === 3)
-      stamp(style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
+      stamp(style.option, style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   if (options.parks){
     for (const f of L('park')) if (f.type === 3)
-      stamp(ID.PARK, () => { polyPath(f.geom); c.fill('evenodd'); });
+      stamp('parks', ID.PARK, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   for (const f of L('aeroway')){
     const option = f.props.class === 'helipad' ? 'landuseHelipad' : 'landuseAirport';
     if (options[option] && f.type === 3)
-      stamp(ID.PAVE, () => { polyPath(f.geom); c.fill('evenodd'); });
+      stamp(option, ID.PAVE, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   // 水
   if (options.waterAreas){
     for (const f of L('water')) if (f.type === 3)
-      stamp(ID.WATER, () => { polyPath(f.geom); c.fill('evenodd'); });
+      stamp('waterAreas', ID.WATER, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   const waterways = L('waterway').filter(f => f.type === 2);
   if (options.rivers)
     for (const f of waterways.filter(f => f.props.class === 'river'))
-      stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
+      stamp('rivers', ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
   if (options.streams)
     for (const f of waterways.filter(f => f.props.class === 'stream'))
-      stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = .65; c.stroke(); });
+      stamp('streams', ID.WATER, () => { linePath(f.geom); c.lineWidth = .65; c.stroke(); });
   if (options.canals)
     for (const f of waterways.filter(f => f.props.class === 'canal'))
-      stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
+      stamp('canals', ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
   if (options.drains)
     for (const f of waterways.filter(f => ['ditch','drain'].includes(f.props.class)))
-      stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
+      stamp('drains', ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
   // 建物: 表示の有無にかかわらず面積を計算し、POIのサイズ判定に使う
   const bldFeats = L('building').filter(f => f.type === 3);
   const bldGrid = new Uint16Array(RG * RG);
   const bldArea = new Uint16Array(bldFeats.length + 1);
+  const buildingGrid = options.buildings ? layerGrid('buildings') : null;
   function fillPolyCells(rings, visit){
     let minY = Infinity, maxY = -Infinity;
     for (const r of rings) for (const p of r){
@@ -815,7 +823,7 @@ function rasterizeGrid(layers, options){
   bldFeats.forEach((f, i) => {
     let cnt = 0;
     fillPolyCells(f.geom, (cx, cy) => {
-      if (options.buildings) grid[cy * RG + cx] = ID.BLD;
+      if (buildingGrid) buildingGrid[cy * RG + cx] = ID.BLD;
       bldGrid[cy * RG + cx] = i + 1;
       cnt++;
     });
@@ -826,7 +834,7 @@ function rasterizeGrid(layers, options){
       if (r.length){
         const cx = Math.floor(gx(sx / r.length)), cy = Math.floor(gy(sy / r.length));
         if (cx >= 0 && cy >= 0 && cx < RG && cy < RG){
-          if (options.buildings) grid[cy * RG + cx] = ID.BLD;
+          if (buildingGrid) buildingGrid[cy * RG + cx] = ID.BLD;
           bldGrid[cy * RG + cx] = i + 1;
           cnt = 1;
         }
@@ -835,7 +843,7 @@ function rasterizeGrid(layers, options){
     bldArea[i + 1] = cnt;
   });
   /* --- 道・線路: セル走査で必ず4連結にする（斜めは階段状） --- */
-  const setCell = (cx, cy, id) => {
+  const setCell = (grid, cx, cy, id) => {
     if (cx >= 0 && cy >= 0 && cx < RG && cy < RG) grid[cy * RG + cx] = id;
   };
   // Amanatides–Woo のボクセル走査。1ステップで進むのは必ず1軸だけなので
@@ -857,13 +865,14 @@ function rasterizeGrid(layers, options){
       visit(cx, cy);
     }
   }
-  function lineStamp(fs, id, thick){
+  function lineStamp(option, fs, id, thick){
+    const grid = layerGrid(option);
     for (const f of fs){
       for (const ln of f.geom){
         for (let i = 0; i + 1 < ln.length; i++){
           traverse(gx(ln[i][0]), gy(ln[i][1]), gx(ln[i+1][0]), gy(ln[i+1][1]), (cx, cy) => {
-            setCell(cx, cy, id);
-            if (thick){ setCell(cx + 1, cy, id); setCell(cx, cy + 1, id); }
+            setCell(grid, cx, cy, id);
+            if (thick){ setCell(grid, cx + 1, cy, id); setCell(grid, cx, cy + 1, id); }
           });
         }
       }
@@ -871,15 +880,16 @@ function rasterizeGrid(layers, options){
   }
   const roadFeats = cls => L('transportation').filter(f =>
     f.type === 2 && cls.includes(f.props.class) && f.props.brunnel !== 'tunnel');
-  if (options.paths)         lineStamp(roadFeats(['path']),                         ID.PATH, false);
-  if (options.tracks)        lineStamp(roadFeats(['track']),                        ID.PATH, false);
-  if (options.piers)         lineStamp(roadFeats(['pier']),                         ID.PATH, false);
-  if (options.localRoads)    lineStamp(roadFeats(['service','minor','busway']),      ID.ROAD, false);
-  if (options.regionalRoads) lineStamp(roadFeats(['tertiary','secondary']),          ID.ROAD_MAJOR, false);
-  if (options.majorRoads)    lineStamp(roadFeats(['primary','trunk','primary_construction']), ID.HIGHWAY, true);
-  if (options.motorways)     lineStamp(roadFeats(['motorway']),                     ID.HIGHWAY, true);
+  if (options.paths)         lineStamp('paths', roadFeats(['path']),                         ID.PATH, false);
+  if (options.tracks)        lineStamp('tracks', roadFeats(['track']),                        ID.PATH, false);
+  if (options.piers)         lineStamp('piers', roadFeats(['pier']),                         ID.PATH, false);
+  if (options.localRoads)    lineStamp('localRoads', roadFeats(['service','minor','busway']), ID.ROAD, false);
+  if (options.regionalRoads) lineStamp('regionalRoads', roadFeats(['tertiary','secondary']),  ID.ROAD_MAJOR, false);
+  if (options.majorRoads)    lineStamp('majorRoads', roadFeats(['primary','trunk','primary_construction']), ID.HIGHWAY, true);
+  if (options.motorways)     lineStamp('motorways', roadFeats(['motorway']),                  ID.HIGHWAY, true);
   // 線路: 別の線路のセルと辺で隣接するなら砂利にして、レール面同士が接しないように配置
-  function railStamp(fs){
+  function railStamp(option, fs){
+    const grid = layerGrid(option);
     for (const f of fs){
       const own = new Set();                       // この線が自分で置いたセル
       for (const ln of f.geom){
@@ -906,8 +916,8 @@ function rasterizeGrid(layers, options){
       }
     }
   }
-  if (options.rail) railStamp(roadFeats(['rail']));
-  return { grid, bldGrid, bldFeats, bldArea, size:RG };
+  if (options.rail) railStamp('rail', roadFeats(['rail']));
+  return { grids, bldGrid, bldFeats, bldArea, size:RG };
 }
 
 /* =====================================================
@@ -918,7 +928,7 @@ const cellHash = (x, y) => {
   return ((wx * 7349 + wy * 9151 + TILE.x) % 97 + 97) % 97;
 };
 
-function drawGrid(grid, bldGrid, bldStyle, options){
+function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
   const RG = GRID + 2;
   const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
   const bAt = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? 0 : bldGrid[y * RG + x];
@@ -937,6 +947,7 @@ function drawGrid(grid, bldGrid, bldStyle, options){
       const id = at(x, y), h = cellHash(x, y);
       switch (id){
         case ID.GRASS: {
+          if (transparent) break;
           if (!options.grass) put('grassPlain', x, y);
           else if (h < 5) put('tuft', x, y);
           else if (h < 8) put('flower', x, y);
@@ -1533,66 +1544,17 @@ const locationCanvasPoint = () => currentLocation ? [
   (currentLocation.tileY - TILE.y) * H - viewOffset.y,
 ] : null;
 
-const opts = () => ({
-  grass:     document.getElementById('tglGrass').checked,
-  forest:    document.getElementById('tglForest').checked,
-  farmland:  document.getElementById('tglFarmland').checked,
-  sand:      document.getElementById('tglSand').checked,
-  parks:     document.getElementById('tglParks').checked,
-  waterAreas: document.getElementById('tglWaterAreas').checked,
-  rivers:     document.getElementById('tglRivers').checked,
-  streams:    document.getElementById('tglStreams').checked,
-  canals:     document.getElementById('tglCanals').checked,
-  drains:     document.getElementById('tglDrains').checked,
-  landuseResidential: document.getElementById('tglLanduseResidential').checked,
-  landuseCommercial:  document.getElementById('tglLanduseCommercial').checked,
-  landuseRetail:      document.getElementById('tglLanduseRetail').checked,
-  landuseSchool:      document.getElementById('tglLanduseSchool').checked,
-  landuseHigherEducation: document.getElementById('tglLanduseHigherEducation').checked,
-  landuseMedical:     document.getElementById('tglLanduseMedical').checked,
-  landuseCivic:       document.getElementById('tglLanduseCivic').checked,
-  landuseIndustrial:  document.getElementById('tglLanduseIndustrial').checked,
-  landuseGarages:     document.getElementById('tglLanduseGarages').checked,
-  landuseMilitary:    document.getElementById('tglLanduseMilitary').checked,
-  landuseBusStation:  document.getElementById('tglLanduseBusStation').checked,
-  landuseRailway:     document.getElementById('tglLanduseRailway').checked,
-  landuseCemetery:    document.getElementById('tglLanduseCemetery').checked,
-  landuseStadium:     document.getElementById('tglLanduseStadium').checked,
-  landusePitchTrack:  document.getElementById('tglLandusePitchTrack').checked,
-  landusePlayground:  document.getElementById('tglLandusePlayground').checked,
-  landuseAmusement:   document.getElementById('tglLanduseAmusement').checked,
-  landuseZoo:         document.getElementById('tglLanduseZoo').checked,
-  landuseAirport:     document.getElementById('tglLanduseAirport').checked,
-  landuseHelipad:     document.getElementById('tglLanduseHelipad').checked,
-  landuseOther:       document.getElementById('tglLanduseOther').checked,
-  localRoads:    document.getElementById('tglLocalRoads').checked,
-  regionalRoads: document.getElementById('tglRegionalRoads').checked,
-  majorRoads:    document.getElementById('tglMajorRoads').checked,
-  motorways:     document.getElementById('tglMotorways').checked,
-  paths:         document.getElementById('tglPaths').checked,
-  tracks:        document.getElementById('tglTracks').checked,
-  piers:         document.getElementById('tglPiers').checked,
-  rail:          document.getElementById('tglRail').checked,
-  subway:        document.getElementById('tglSubway').checked,
-  roadTunnels:   document.getElementById('tglRoadTunnels').checked,
-  pathTunnels:   document.getElementById('tglPathTunnels').checked,
-  railTunnels:   document.getElementById('tglRailTunnels').checked,
-  buildings: document.getElementById('tglBuildings').checked,
-  poi:       document.getElementById('tglPoi').checked,
-  stationNames: document.getElementById('tglStationNames').checked,
-  parkNames: document.getElementById('tglParkNames').checked,
-  poiNames:  document.getElementById('tglPoiNames').checked,
-  placeNames: document.getElementById('tglPlaceNames').checked,
-  terrainNames: document.getElementById('tglTerrainNames').checked,
-  aerodromeNames: document.getElementById('tglAerodromeNames').checked,
-  waterNames: document.getElementById('tglWaterNames').checked,
-  dots:      document.getElementById('tglDots').checked,
-  roadNames: document.getElementById('tglRoadNames').checked,
-  house:     document.getElementById('tglHouse').checked,
-  prefectureBoundary: document.getElementById('tglPrefectureBoundary').checked,
-  municipalBoundary: document.getElementById('tglMunicipalBoundary').checked,
-  localBoundary: document.getElementById('tglLocalBoundary').checked,
-});
+const layerInputs = [...document.querySelectorAll('[data-category-item]')];
+const optionForInput = input => input.id.slice(3).replace(/^./, c => c.toLowerCase());
+let layerOrder = layerInputs.filter(input => input.checked).map(optionForInput);
+const opts = () => Object.fromEntries(layerInputs.map(input => [optionForInput(input), input.checked]));
+function updateLayerOrder(input){
+  const option = optionForInput(input);
+  layerOrder = layerOrder.filter(item => item !== option);
+  if (input.checked) layerOrder.push(option);
+  document.getElementById('toolbar').dataset.layerOrder = layerOrder.join(',');
+}
+document.getElementById('toolbar').dataset.layerOrder = layerOrder.join(',');
 const featureName = p => p['name:ja'] || p.name || null;
 const centroid = rings => {
   const ring = rings[0] || [];
@@ -1637,10 +1599,11 @@ function render(){
   gridShiftY = gridOriginY * CPX - viewOffset.y;
 
   /* --- 地形グリッド + 建物情報 --- */
-  const { grid, bldGrid, bldFeats, bldArea } = rasterizeGrid(tileLayers, o);
+  const { grids, bldGrid, bldFeats, bldArea } = rasterizeGrid(tileLayers, o);
   const bldStyle = new Uint8Array(bldFeats.length + 1);
   bldFeats.forEach((f, i) => { bldStyle[i + 1] = styleOfBuilding(f, bldArea[i + 1]); });
-  drawGrid(grid, bldGrid, bldStyle, o);
+  const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
+  drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
   // POIの位置にある建物の面積(マス数)から施設のサイズ級を決める
   function poiSizeClass(pt){
@@ -1661,19 +1624,18 @@ function render(){
     return 'S';
   }
 
-  /* --- 地下鉄・種類別トンネル（うっすら破線オーバーレイ） --- */
-  if (o.subway || o.roadTunnels || o.pathTunnels || o.railTunnels){
+  function drawTunnelLayer(option){
     ctx.globalAlpha = .3;
     ctx.lineCap = 'round';
     for (const f of L('transportation')){
       if (f.type !== 2) continue;
       const isTunnel = f.props.brunnel === 'tunnel';
       const isSubway = f.props.class === 'transit' || f.props.class === 'subway';
-      const showSubway = o.subway && isSubway;
-      const showRoadTunnel = o.roadTunnels && isTunnel &&
+      const showSubway = option === 'subway' && isSubway;
+      const showRoadTunnel = option === 'roadTunnels' && isTunnel &&
         ['service','minor','busway','tertiary','secondary','primary','primary_construction','trunk','motorway'].includes(f.props.class);
-      const showPathTunnel = o.pathTunnels && isTunnel && ['path','track'].includes(f.props.class);
-      const showRailTunnel = o.railTunnels && isTunnel && f.props.class === 'rail';
+      const showPathTunnel = option === 'pathTunnels' && isTunnel && ['path','track'].includes(f.props.class);
+      const showRailTunnel = option === 'railTunnels' && isTunnel && f.props.class === 'rail';
       if (!showSubway && !showRoadTunnel && !showPathTunnel && !showRailTunnel) continue;
       ctx.strokeStyle = '#282838'; ctx.lineWidth = 5; ctx.setLineDash([10, 10]);
       ctx.beginPath();
@@ -1684,22 +1646,23 @@ function render(){
     ctx.setLineDash([]); ctx.globalAlpha = 1;
   }
 
-  /* --- 行政境界（段階別） --- */
-  for (const f of L('boundary')){
-    if (f.type !== 2) continue;
-    const level = Number(f.props.admin_level);
-    const isPrefecture = o.prefectureBoundary && level === 4;
-    const isMunicipal = o.municipalBoundary && [7, 8].includes(level);
-    const isLocal = o.localBoundary && [9, 10].includes(level);
-    if (!isPrefecture && !isMunicipal && !isLocal) continue;
-    ctx.strokeStyle = isLocal ? '#e8b858' : '#f8d038';
-    ctx.lineWidth = isPrefecture ? 4 : isMunicipal ? 3 : 2;
-    ctx.setLineDash(isPrefecture ? [18, 10] : isMunicipal ? [14, 10] : [6, 8]);
-    ctx.beginPath();
-    for (const ln of f.geom)
-      ln.forEach((pt, i) => { const [x, y] = tp(pt); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
-    ctx.stroke();
-    ctx.setLineDash([]);
+  function drawBoundaryLayer(option){
+    for (const f of L('boundary')){
+      if (f.type !== 2) continue;
+      const level = Number(f.props.admin_level);
+      const isPrefecture = option === 'prefectureBoundary' && level === 4;
+      const isMunicipal = option === 'municipalBoundary' && [7, 8].includes(level);
+      const isLocal = option === 'localBoundary' && [9, 10].includes(level);
+      if (!isPrefecture && !isMunicipal && !isLocal) continue;
+      ctx.strokeStyle = isLocal ? '#e8b858' : '#f8d038';
+      ctx.lineWidth = isPrefecture ? 4 : isMunicipal ? 3 : 2;
+      ctx.setLineDash(isPrefecture ? [18, 10] : isMunicipal ? [14, 10] : [6, 8]);
+      ctx.beginPath();
+      for (const ln of f.geom)
+        ln.forEach((pt, i) => { const [x, y] = tp(pt); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
   }
 
   /* --- レイヤー統計 --- */
@@ -1744,8 +1707,7 @@ function render(){
     if (!duplicate && !near && drawnIcons.length < 64) drawnIcons.push(p);
     else hiddenPois.push(p);
   }
-  // 小さな施設(点)は施設アイコンと独立して切り替えられる。
-  if (o.dots){
+  function drawDots(){
     for (const p of hiddenPois){
       const [x, y] = p.pt;
       if (x < 0 || y < 0 || x > W || y > H) continue;
@@ -1756,30 +1718,23 @@ function render(){
   }
   // Y座標昇順に描く = 画面の下にある施設ほど手前に重なる
   drawnIcons.sort((a, b) => a.pt[1] - b.pt[1]);
-  if (o.poi){
+  function drawPoi(){
     for (const p of drawnIcons){
       drawSprite(spriteFor(p.props, p.size, p.variant), p.pt[0], p.pt[1]);
       hitAreas.push({ x: p.pt[0] - 30, y: p.pt[1] - 54, w: 60, h: 62, p: p.props, kind:'poi' });
     }
   }
 
-  // 大きい施設の実体をラベル衝突判定へ入れ、文字が駅舎や病院を覆わないようにする。
-  const placedRects = (o.poi ? drawnIcons : []).map(p => ({
-    x:p.pt[0]-(p.size === 'L' ? 72 : 52),
-    y:p.pt[1]-(p.size === 'L' ? 104 : 82),
-    w:p.size === 'L' ? 144 : 104,
-    h:p.size === 'L' ? 116 : 94,
-  }));
-  /* --- 駅名: 街の骨格なので最優先 --- */
-  if (o.stationNames){
+  function drawStationNames(){
+    const placedRects = [];
     const stationTargets = drawnIcons
       .filter(p => isStationProps(p.props) && featureName(p.props))
       .sort((a,b) => a.rank - b.rank);
     for (const p of stationTargets)
       labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 154 : 130), placedRects);
   }
-  /* --- 公園名 --- */
-  if (o.parkNames){
+  function drawParkNames(){
+    const placedRects = [];
     for (const f of L('park')){
       const name = featureName(f.props);
       if (!name || f.type !== 3) continue;
@@ -1788,8 +1743,8 @@ function render(){
       labelWindow(name, cx, cy - 40, placedRects);
     }
   }
-  /* --- POIラベル --- */
-  if (o.poiNames){
+  function drawPoiNames(){
+    const placedRects = [];
     const labelTargets = drawnIcons
       .filter(p => featureName(p.props) && !isStationProps(p.props))
       .sort((a, b) => a.importance - b.importance || a.rank - b.rank)
@@ -1797,8 +1752,8 @@ function render(){
     for (const p of labelTargets)
       labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 142 : 116), placedRects);
   }
-  /* --- 地名 --- */
-  if (o.placeNames){
+  function drawPlaceNames(){
+    const placedRects = [];
     const placeWeight = { city:0, town:1, suburb:2, quarter:3, neighbourhood:4, village:4 };
     const seenPlaces = new Set();
     const placeFeatures = L('place')
@@ -1819,32 +1774,32 @@ function render(){
       }
     }
   }
-  /* --- 山・地形名 --- */
-  if (o.terrainNames){
+  function drawTerrainNames(){
+    const placedRects = [];
     for (const f of L('mountain_peak')){
       if (!f.geom[0]) continue;
       const name = featureName(f.props);
       if (name) outlinedTextPlaced(name, ...tp(f.geom[0][0]), 26, '#e8d8b0', placedRects);
     }
   }
-  /* --- 空港名 --- */
-  if (o.aerodromeNames){
+  function drawAerodromeNames(){
+    const placedRects = [];
     for (const f of L('aerodrome_label')){
       if (!f.geom[0]) continue;
       const name = featureName(f.props);
       if (name) outlinedTextPlaced(name, ...tp(f.geom[0][0]), 26, '#d8d0c0', placedRects);
     }
   }
-  /* --- 水域名 --- */
-  if (o.waterNames){
+  function drawWaterNames(){
+    const placedRects = [];
     for (const f of L('water_name')){
       if (!f.geom[0]) continue;
       const name = featureName(f.props);
       if (name) outlinedTextPlaced(name, ...tp(f.geom[0][0]), 26, '#b8d8f8', placedRects);
     }
   }
-  /* --- 道路名 --- */
-  if (o.roadNames){
+  function drawRoadNames(){
+    const placedRects = [];
     const seen = new Set();
     const nameFeats = L('transportation_name')
       .filter(f => f.type === 2 && featureName(f.props) &&
@@ -1861,8 +1816,7 @@ function render(){
       if (r) seen.add(name);
     }
   }
-  /* --- 番地 --- */
-  if (o.house){
+  function drawHouseNumbers(){
     for (const f of L('housenumber')){
       if (f.type !== 1 || !f.geom[0]) continue;
       const [x, y] = tp(f.geom[0][0]);
@@ -1870,6 +1824,50 @@ function render(){
       px(x - 2, y - 2, 4, 4, '#583820');
       hitAreas.push({ x: x - 7, y: y - 7, w: 14, h: 14,
         p: { name: `番地 ${f.props.housenumber}`, class:'housenumber' }, kind:'dot' });
+    }
+  }
+
+  const rasterOptions = new Set([
+    'grass','forest','farmland','sand','parks','waterAreas','rivers','streams','canals','drains',
+    'landuseResidential','landuseCommercial','landuseRetail','landuseSchool','landuseHigherEducation',
+    'landuseMedical','landuseCivic','landuseIndustrial','landuseGarages','landuseMilitary',
+    'landuseBusStation','landuseRailway','landuseCemetery','landuseStadium','landusePitchTrack',
+    'landusePlayground','landuseAmusement','landuseZoo','landuseAirport','landuseHelipad','landuseOther',
+    'localRoads','regionalRoads','majorRoads','motorways','paths','tracks','piers','rail','buildings',
+  ]);
+  const tunnelOptions = new Set(['subway','roadTunnels','pathTunnels','railTunnels']);
+  const boundaryOptions = new Set(['prefectureBoundary','municipalBoundary','localBoundary']);
+  const drawers = {
+    dots:drawDots,
+    poi:drawPoi,
+    stationNames:drawStationNames,
+    parkNames:drawParkNames,
+    poiNames:drawPoiNames,
+    placeNames:drawPlaceNames,
+    terrainNames:drawTerrainNames,
+    aerodromeNames:drawAerodromeNames,
+    waterNames:drawWaterNames,
+    roadNames:drawRoadNames,
+    house:drawHouseNumbers,
+  };
+
+  // 古いチェックから順に描き、最後にチェックしたレイヤーを最前面にする。
+  for (const option of layerOrder){
+    if (!o[option]) continue;
+    if (rasterOptions.has(option)){
+      if (option === 'grass'){
+        drawGrid(emptyGrid, bldGrid, bldStyle, { grass:true });
+        hitAreas = [];
+      }else{
+        const grid = grids.get(option);
+        if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false }, true);
+      }
+    }else if (tunnelOptions.has(option)){
+      drawTunnelLayer(option);
+    }else if (boundaryOptions.has(option)){
+      drawBoundaryLayer(option);
+    }else{
+      drawers[option]?.();
     }
   }
   drawCurrentLocation();
@@ -2323,11 +2321,16 @@ for (const panel of document.querySelectorAll('.layer-category')){
   const master = panel.querySelector('[data-category-toggle]');
   const items = [...panel.querySelectorAll('[data-category-item]')];
   master.addEventListener('change', () => {
-    for (const item of items) item.checked = master.checked;
+    for (const item of items){
+      if (item.checked === master.checked) continue;
+      item.checked = master.checked;
+      updateLayerOrder(item);
+    }
     syncCategoryMaster(panel);
     render();
   });
   for (const item of items) item.addEventListener('change', () => {
+    updateLayerOrder(item);
     syncCategoryMaster(panel);
     render();
   });
