@@ -256,7 +256,9 @@
       <label><input type="checkbox" id="tglParks" data-category-item>公園</label>
       <label><input type="checkbox" id="tglWaterAreas" data-category-item>水面</label>
       <label><input type="checkbox" id="tglRivers" data-category-item>河川</label>
-      <label><input type="checkbox" id="tglChannels" data-category-item>水路</label>
+      <label><input type="checkbox" id="tglStreams" data-category-item>小川</label>
+      <label><input type="checkbox" id="tglCanals" data-category-item>運河</label>
+      <label><input type="checkbox" id="tglDrains" data-category-item>排水路</label>
     </div>
   </section>
 
@@ -267,14 +269,25 @@
     </div>
     <div class="category-items">
       <label><input type="checkbox" id="tglLanduseResidential" data-category-item>住宅地</label>
-      <label><input type="checkbox" id="tglLanduseCommercial" data-category-item>商業用地</label>
-      <label><input type="checkbox" id="tglLandusePublic" data-category-item>公共・教育・医療用地</label>
+      <label><input type="checkbox" id="tglLanduseCommercial" data-category-item>業務・商業用地</label>
+      <label><input type="checkbox" id="tglLanduseRetail" data-category-item>小売用地</label>
+      <label><input type="checkbox" id="tglLanduseSchool" data-category-item>学校・幼稚園用地</label>
+      <label><input type="checkbox" id="tglLanduseHigherEducation" data-category-item>大学・高等教育用地</label>
+      <label><input type="checkbox" id="tglLanduseMedical" data-category-item>病院・医療用地</label>
+      <label><input type="checkbox" id="tglLanduseCivic" data-category-item>公共施設用地</label>
       <label><input type="checkbox" id="tglLanduseIndustrial" data-category-item>工業用地</label>
-      <label><input type="checkbox" id="tglLanduseTransport" data-category-item>交通・鉄道用地</label>
+      <label><input type="checkbox" id="tglLanduseGarages" data-category-item>車庫・ガレージ用地</label>
+      <label><input type="checkbox" id="tglLanduseMilitary" data-category-item>軍事用地</label>
+      <label><input type="checkbox" id="tglLanduseBusStation" data-category-item>バスターミナル用地</label>
+      <label><input type="checkbox" id="tglLanduseRailway" data-category-item>鉄道用地</label>
       <label><input type="checkbox" id="tglLanduseCemetery" data-category-item>墓地</label>
-      <label><input type="checkbox" id="tglLanduseSports" data-category-item>スポーツ施設</label>
+      <label><input type="checkbox" id="tglLanduseStadium" data-category-item>スタジアム</label>
+      <label><input type="checkbox" id="tglLandusePitchTrack" data-category-item>球技場・競技トラック</label>
+      <label><input type="checkbox" id="tglLandusePlayground" data-category-item>遊び場</label>
       <label><input type="checkbox" id="tglLanduseAmusement" data-category-item>遊園地</label>
-      <label><input type="checkbox" id="tglLanduseAirport" data-category-item>空港</label>
+      <label><input type="checkbox" id="tglLanduseZoo" data-category-item>動物園</label>
+      <label><input type="checkbox" id="tglLanduseAirport" data-category-item>空港施設</label>
+      <label><input type="checkbox" id="tglLanduseHelipad" data-category-item>ヘリポート</label>
       <label><input type="checkbox" id="tglLanduseOther" data-category-item>その他</label>
     </div>
   </section>
@@ -285,11 +298,18 @@
       <label class="category-master"><input type="checkbox" data-category-toggle>一括</label>
     </div>
     <div class="category-items">
-      <label><input type="checkbox" id="tglRoads" data-category-item>道路</label>
-      <label><input type="checkbox" id="tglPaths" data-category-item>歩道</label>
+      <label><input type="checkbox" id="tglLocalRoads" data-category-item>生活道路</label>
+      <label><input type="checkbox" id="tglRegionalRoads" data-category-item>地区幹線道路</label>
+      <label><input type="checkbox" id="tglMajorRoads" data-category-item>主要道路</label>
+      <label><input type="checkbox" id="tglMotorways" data-category-item>高速道路</label>
+      <label><input type="checkbox" id="tglPaths" data-category-item>歩道・小径</label>
+      <label><input type="checkbox" id="tglTracks" data-category-item>作業道・未舗装路</label>
+      <label><input type="checkbox" id="tglPiers" data-category-item>桟橋</label>
       <label><input type="checkbox" id="tglRail" data-category-item>鉄道</label>
       <label><input type="checkbox" id="tglSubway" data-category-item>地下鉄(破線)</label>
-      <label><input type="checkbox" id="tglTunnels" data-category-item>その他トンネル(破線)</label>
+      <label><input type="checkbox" id="tglRoadTunnels" data-category-item>道路トンネル(破線)</label>
+      <label><input type="checkbox" id="tglPathTunnels" data-category-item>歩道トンネル(破線)</label>
+      <label><input type="checkbox" id="tglRailTunnels" data-category-item>鉄道トンネル(破線)</label>
     </div>
   </section>
 
@@ -314,11 +334,15 @@
       <label><input type="checkbox" id="tglStationNames" data-category-item>駅名</label>
       <label><input type="checkbox" id="tglParkNames" data-category-item>公園名</label>
       <label><input type="checkbox" id="tglPoiNames" data-category-item>施設名</label>
-      <label><input type="checkbox" id="tglPlaceNames" data-category-item>地名・地形名</label>
+      <label><input type="checkbox" id="tglPlaceNames" data-category-item>地名</label>
+      <label><input type="checkbox" id="tglTerrainNames" data-category-item>山・地形名</label>
+      <label><input type="checkbox" id="tglAerodromeNames" data-category-item>空港名</label>
       <label><input type="checkbox" id="tglWaterNames" data-category-item>水域名</label>
       <label><input type="checkbox" id="tglRoadNames" data-category-item>道路名</label>
       <label><input type="checkbox" id="tglHouse" data-category-item>番地</label>
-      <label><input type="checkbox" id="tglBoundary" data-category-item>市境(黄の破線)</label>
+      <label><input type="checkbox" id="tglPrefectureBoundary" data-category-item>都道府県境(黄の破線)</label>
+      <label><input type="checkbox" id="tglMunicipalBoundary" data-category-item>市区境(黄の破線)</label>
+      <label><input type="checkbox" id="tglLocalBoundary" data-category-item>町丁目境(黄の破線)</label>
     </div>
   </section>
 </div>
@@ -689,28 +713,31 @@ function rasterizeGrid(layers, options){
   const LANDUSE = {
     residential:{ id:ID.DIRT, option:'landuseResidential' },
     suburb:{ id:ID.DIRT, option:'landuseResidential' },
+    quarter:{ id:ID.DIRT, option:'landuseResidential' },
     neighbourhood:{ id:ID.DIRT, option:'landuseResidential' },
     commercial:{ id:ID.PAVE, option:'landuseCommercial' },
-    retail:{ id:ID.PAVE, option:'landuseCommercial' },
-    bus_station:{ id:ID.PAVE, option:'landuseTransport' },
-    school:{ id:ID.PAVE, option:'landusePublic' },
-    college:{ id:ID.PAVE, option:'landusePublic' },
-    university:{ id:ID.PAVE, option:'landusePublic' },
-    kindergarten:{ id:ID.PAVE, option:'landusePublic' },
-    hospital:{ id:ID.PAVE, option:'landusePublic' },
+    retail:{ id:ID.PAVE, option:'landuseRetail' },
+    school:{ id:ID.PAVE, option:'landuseSchool' },
+    kindergarten:{ id:ID.PAVE, option:'landuseSchool' },
+    college:{ id:ID.PAVE, option:'landuseHigherEducation' },
+    university:{ id:ID.PAVE, option:'landuseHigherEducation' },
+    hospital:{ id:ID.PAVE, option:'landuseMedical' },
+    library:{ id:ID.PAVE, option:'landuseCivic' },
     industrial:{ id:ID.GRAVEL, option:'landuseIndustrial' },
-    garages:{ id:ID.GRAVEL, option:'landuseIndustrial' },
     quarry:{ id:ID.GRAVEL, option:'landuseIndustrial' },
-    military:{ id:ID.GRAVEL, option:'landuseIndustrial' },
     dam:{ id:ID.GRAVEL, option:'landuseIndustrial' },
-    railway:{ id:ID.GRAVEL, option:'landuseTransport' },
+    garages:{ id:ID.GRAVEL, option:'landuseGarages' },
+    military:{ id:ID.GRAVEL, option:'landuseMilitary' },
+    bus_station:{ id:ID.PAVE, option:'landuseBusStation' },
+    railway:{ id:ID.GRAVEL, option:'landuseRailway' },
     cemetery:{ id:ID.PARK, option:'landuseCemetery' },
     grave_yard:{ id:ID.PARK, option:'landuseCemetery' },
-    stadium:{ id:ID.FIELD, option:'landuseSports' },
-    pitch:{ id:ID.FIELD, option:'landuseSports' },
-    playground:{ id:ID.FIELD, option:'landuseSports' },
-    track:{ id:ID.FIELD, option:'landuseSports' },
+    stadium:{ id:ID.FIELD, option:'landuseStadium' },
+    pitch:{ id:ID.FIELD, option:'landusePitchTrack' },
+    track:{ id:ID.FIELD, option:'landusePitchTrack' },
+    playground:{ id:ID.FIELD, option:'landusePlayground' },
     theme_park:{ id:ID.FIELD, option:'landuseAmusement' },
+    zoo:{ id:ID.FIELD, option:'landuseZoo' },
   };
   // 面
   for (const f of L('landcover')){
@@ -727,8 +754,9 @@ function rasterizeGrid(layers, options){
     for (const f of L('park')) if (f.type === 3)
       stamp(ID.PARK, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
-  if (options.landuseAirport){
-    for (const f of L('aeroway')) if (f.type === 3)
+  for (const f of L('aeroway')){
+    const option = f.props.class === 'helipad' ? 'landuseHelipad' : 'landuseAirport';
+    if (options[option] && f.type === 3)
       stamp(ID.PAVE, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   // 水
@@ -738,10 +766,16 @@ function rasterizeGrid(layers, options){
   }
   const waterways = L('waterway').filter(f => f.type === 2);
   if (options.rivers)
-    for (const f of waterways.filter(f => ['river','stream'].includes(f.props.class)))
+    for (const f of waterways.filter(f => f.props.class === 'river'))
       stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
-  if (options.channels)
-    for (const f of waterways.filter(f => ['canal','ditch','drain'].includes(f.props.class)))
+  if (options.streams)
+    for (const f of waterways.filter(f => f.props.class === 'stream'))
+      stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
+  if (options.canals)
+    for (const f of waterways.filter(f => f.props.class === 'canal'))
+      stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
+  if (options.drains)
+    for (const f of waterways.filter(f => ['ditch','drain'].includes(f.props.class)))
       stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
   // 建物: 表示の有無にかかわらず面積を計算し、POIのサイズ判定に使う
   const bldFeats = L('building').filter(f => f.type === 3);
@@ -833,13 +867,13 @@ function rasterizeGrid(layers, options){
   }
   const roadFeats = cls => L('transportation').filter(f =>
     f.type === 2 && cls.includes(f.props.class) && f.props.brunnel !== 'tunnel');
-  if (options.paths)
-    lineStamp(roadFeats(['path','track','pier']),          ID.PATH, false);
-  if (options.roads){
-    lineStamp(roadFeats(['service','minor','busway']),     ID.ROAD, false);
-    lineStamp(roadFeats(['tertiary','secondary']),         ID.ROAD_MAJOR, false);
-    lineStamp(roadFeats(['primary','trunk','motorway']),   ID.HIGHWAY, true);
-  }
+  if (options.paths)         lineStamp(roadFeats(['path']),                         ID.PATH, false);
+  if (options.tracks)        lineStamp(roadFeats(['track']),                        ID.PATH, false);
+  if (options.piers)         lineStamp(roadFeats(['pier']),                         ID.PATH, false);
+  if (options.localRoads)    lineStamp(roadFeats(['service','minor','busway']),      ID.ROAD, false);
+  if (options.regionalRoads) lineStamp(roadFeats(['tertiary','secondary']),          ID.ROAD_MAJOR, false);
+  if (options.majorRoads)    lineStamp(roadFeats(['primary','trunk','primary_construction']), ID.HIGHWAY, true);
+  if (options.motorways)     lineStamp(roadFeats(['motorway']),                     ID.HIGHWAY, true);
   // 線路: 別の線路のセルと辺で隣接するなら砂利にして、レール面同士が接しないように配置
   function railStamp(fs){
     for (const f of fs){
@@ -1503,33 +1537,57 @@ const opts = () => ({
   parks:     document.getElementById('tglParks').checked,
   waterAreas: document.getElementById('tglWaterAreas').checked,
   rivers:     document.getElementById('tglRivers').checked,
-  channels:   document.getElementById('tglChannels').checked,
+  streams:    document.getElementById('tglStreams').checked,
+  canals:     document.getElementById('tglCanals').checked,
+  drains:     document.getElementById('tglDrains').checked,
   landuseResidential: document.getElementById('tglLanduseResidential').checked,
   landuseCommercial:  document.getElementById('tglLanduseCommercial').checked,
-  landusePublic:      document.getElementById('tglLandusePublic').checked,
+  landuseRetail:      document.getElementById('tglLanduseRetail').checked,
+  landuseSchool:      document.getElementById('tglLanduseSchool').checked,
+  landuseHigherEducation: document.getElementById('tglLanduseHigherEducation').checked,
+  landuseMedical:     document.getElementById('tglLanduseMedical').checked,
+  landuseCivic:       document.getElementById('tglLanduseCivic').checked,
   landuseIndustrial:  document.getElementById('tglLanduseIndustrial').checked,
-  landuseTransport:   document.getElementById('tglLanduseTransport').checked,
+  landuseGarages:     document.getElementById('tglLanduseGarages').checked,
+  landuseMilitary:    document.getElementById('tglLanduseMilitary').checked,
+  landuseBusStation:  document.getElementById('tglLanduseBusStation').checked,
+  landuseRailway:     document.getElementById('tglLanduseRailway').checked,
   landuseCemetery:    document.getElementById('tglLanduseCemetery').checked,
-  landuseSports:      document.getElementById('tglLanduseSports').checked,
+  landuseStadium:     document.getElementById('tglLanduseStadium').checked,
+  landusePitchTrack:  document.getElementById('tglLandusePitchTrack').checked,
+  landusePlayground:  document.getElementById('tglLandusePlayground').checked,
   landuseAmusement:   document.getElementById('tglLanduseAmusement').checked,
+  landuseZoo:         document.getElementById('tglLanduseZoo').checked,
   landuseAirport:     document.getElementById('tglLanduseAirport').checked,
+  landuseHelipad:     document.getElementById('tglLanduseHelipad').checked,
   landuseOther:       document.getElementById('tglLanduseOther').checked,
-  roads:     document.getElementById('tglRoads').checked,
-  paths:     document.getElementById('tglPaths').checked,
-  rail:      document.getElementById('tglRail').checked,
-  subway:    document.getElementById('tglSubway').checked,
-  tunnels:   document.getElementById('tglTunnels').checked,
+  localRoads:    document.getElementById('tglLocalRoads').checked,
+  regionalRoads: document.getElementById('tglRegionalRoads').checked,
+  majorRoads:    document.getElementById('tglMajorRoads').checked,
+  motorways:     document.getElementById('tglMotorways').checked,
+  paths:         document.getElementById('tglPaths').checked,
+  tracks:        document.getElementById('tglTracks').checked,
+  piers:         document.getElementById('tglPiers').checked,
+  rail:          document.getElementById('tglRail').checked,
+  subway:        document.getElementById('tglSubway').checked,
+  roadTunnels:   document.getElementById('tglRoadTunnels').checked,
+  pathTunnels:   document.getElementById('tglPathTunnels').checked,
+  railTunnels:   document.getElementById('tglRailTunnels').checked,
   buildings: document.getElementById('tglBuildings').checked,
   poi:       document.getElementById('tglPoi').checked,
   stationNames: document.getElementById('tglStationNames').checked,
   parkNames: document.getElementById('tglParkNames').checked,
   poiNames:  document.getElementById('tglPoiNames').checked,
   placeNames: document.getElementById('tglPlaceNames').checked,
+  terrainNames: document.getElementById('tglTerrainNames').checked,
+  aerodromeNames: document.getElementById('tglAerodromeNames').checked,
   waterNames: document.getElementById('tglWaterNames').checked,
   dots:      document.getElementById('tglDots').checked,
   roadNames: document.getElementById('tglRoadNames').checked,
   house:     document.getElementById('tglHouse').checked,
-  boundary:  document.getElementById('tglBoundary').checked,
+  prefectureBoundary: document.getElementById('tglPrefectureBoundary').checked,
+  municipalBoundary: document.getElementById('tglMunicipalBoundary').checked,
+  localBoundary: document.getElementById('tglLocalBoundary').checked,
 });
 const featureName = p => p['name:ja'] || p.name || null;
 const centroid = rings => {
@@ -1599,8 +1657,8 @@ function render(){
     return 'S';
   }
 
-  /* --- 地下鉄・その他トンネル（うっすら破線オーバーレイ） --- */
-  if (o.subway || o.tunnels){
+  /* --- 地下鉄・種類別トンネル（うっすら破線オーバーレイ） --- */
+  if (o.subway || o.roadTunnels || o.pathTunnels || o.railTunnels){
     ctx.globalAlpha = .3;
     ctx.lineCap = 'round';
     for (const f of L('transportation')){
@@ -1608,8 +1666,11 @@ function render(){
       const isTunnel = f.props.brunnel === 'tunnel';
       const isSubway = f.props.class === 'transit' || f.props.class === 'subway';
       const showSubway = o.subway && isSubway;
-      const showOtherTunnel = o.tunnels && isTunnel && !isSubway;
-      if (!showSubway && !showOtherTunnel) continue;
+      const showRoadTunnel = o.roadTunnels && isTunnel &&
+        ['service','minor','busway','tertiary','secondary','primary','primary_construction','trunk','motorway'].includes(f.props.class);
+      const showPathTunnel = o.pathTunnels && isTunnel && ['path','track'].includes(f.props.class);
+      const showRailTunnel = o.railTunnels && isTunnel && f.props.class === 'rail';
+      if (!showSubway && !showRoadTunnel && !showPathTunnel && !showRailTunnel) continue;
       ctx.strokeStyle = '#282838'; ctx.lineWidth = 5; ctx.setLineDash([10, 10]);
       ctx.beginPath();
       for (const ln of f.geom)
@@ -1619,10 +1680,17 @@ function render(){
     ctx.setLineDash([]); ctx.globalAlpha = 1;
   }
 
-  /* --- 行政境界（市境） --- */
+  /* --- 行政境界（段階別） --- */
   for (const f of L('boundary')){
-    if (!o.boundary || f.type !== 2) continue;
-    ctx.strokeStyle = '#f8d038'; ctx.lineWidth = 3; ctx.setLineDash([14, 10]);
+    if (f.type !== 2) continue;
+    const level = Number(f.props.admin_level);
+    const isPrefecture = o.prefectureBoundary && level === 4;
+    const isMunicipal = o.municipalBoundary && [7, 8].includes(level);
+    const isLocal = o.localBoundary && [9, 10].includes(level);
+    if (!isPrefecture && !isMunicipal && !isLocal) continue;
+    ctx.strokeStyle = isLocal ? '#e8b858' : '#f8d038';
+    ctx.lineWidth = isPrefecture ? 4 : isMunicipal ? 3 : 2;
+    ctx.setLineDash(isPrefecture ? [18, 10] : isMunicipal ? [14, 10] : [6, 8]);
     ctx.beginPath();
     for (const ln of f.geom)
       ln.forEach((pt, i) => { const [x, y] = tp(pt); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
@@ -1725,7 +1793,7 @@ function render(){
     for (const p of labelTargets)
       labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 142 : 116), placedRects);
   }
-  /* --- 地名・地形名 --- */
+  /* --- 地名 --- */
   if (o.placeNames){
     const placeWeight = { city:0, town:1, suburb:2, quarter:3, neighbourhood:4, village:4 };
     const seenPlaces = new Set();
@@ -1746,11 +1814,17 @@ function render(){
         seenPlaces.add(name); placeCount++;
       }
     }
+  }
+  /* --- 山・地形名 --- */
+  if (o.terrainNames){
     for (const f of L('mountain_peak')){
       if (!f.geom[0]) continue;
       const name = featureName(f.props);
       if (name) outlinedTextPlaced(name, ...tp(f.geom[0][0]), 26, '#e8d8b0', placedRects);
     }
+  }
+  /* --- 空港名 --- */
+  if (o.aerodromeNames){
     for (const f of L('aerodrome_label')){
       if (!f.geom[0]) continue;
       const name = featureName(f.props);
