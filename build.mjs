@@ -3,7 +3,7 @@ import { extname, join, relative } from 'node:path';
 
 const root = new URL('.', import.meta.url).pathname;
 const output = join(root, 'dist', 'server');
-const sources = ['index.html', 'assets.html', 'assets', 'variants'];
+const sources = ['index.html', 'assets.html', 'assets', 'variants', 'v2'];
 const mime = {
   '.css':'text/css; charset=utf-8',
   '.html':'text/html; charset=utf-8',
