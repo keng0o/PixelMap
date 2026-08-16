@@ -38,11 +38,52 @@
   #msg{ width:min(92vw, 700px); min-height:60px; font-size:14px; line-height:1.8; letter-spacing:1px; }
   #msg .cursor{ display:inline-block; margin-left:6px; animation:blink 1s steps(1) infinite; }
   @keyframes blink{ 50%{ opacity:0; } }
-  #toolbar{ width:min(92vw,700px); font-size:12px; display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; }
+  #toolbar{
+    width:min(92vw,700px);
+    font-size:12px;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:10px;
+    align-items:start;
+  }
   #toolbar label{ display:inline-flex; gap:6px; align-items:center; cursor:pointer; color:#d8d0b8; }
   #toolbar input{ accent-color:#88c860; }
-  #toolbar .toolbar-group{ display:contents; }
-  #toolbar .toolbar-group-title{ color:#f8d038; white-space:nowrap; }
+  #toolbar .toolbar-actions{ grid-column:1 / -1; display:flex; }
+  #toolbar .layer-category{
+    min-width:0;
+    padding:8px;
+    border:1px solid #585848;
+    background:#181820;
+  }
+  #toolbar .landuse-category{ grid-column:1 / -1; }
+  #toolbar .category-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    padding-bottom:7px;
+    border-bottom:1px solid #484838;
+  }
+  #toolbar .category-title{
+    color:#f8d038;
+    font-size:13px;
+    font-weight:normal;
+    letter-spacing:1px;
+    white-space:nowrap;
+  }
+  #toolbar .category-master{
+    padding:3px 6px;
+    border:1px solid #686858;
+    background:#101018;
+    white-space:nowrap;
+  }
+  #toolbar .category-items{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 12px;
+    padding-top:8px;
+  }
+  #toolbar label:has(input:checked){ color:#f8f0d8; }
   .location-btn{
     flex:0 0 auto;
     min-height:34px;
@@ -106,15 +147,18 @@
     }
     #msg{
       position:fixed;
-      top:max(8px, env(safe-area-inset-top, 0px));
-      left:8px;
-      right:8px;
+      top:auto;
+      bottom:0;
+      left:0;
+      right:0;
       z-index:20;
       width:auto;
-      min-height:0;
-      padding:7px 10px;
+      height:calc(56px + env(safe-area-inset-bottom, 0px));
+      min-height:56px;
+      padding:7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
       border:0;
-      box-shadow:0 2px 0 #f8f0d8, 0 5px 18px #101018aa;
+      border-top:2px solid #f8f0d8;
+      box-shadow:0 -2px 0 #101018, 0 -5px 18px #101018aa;
       background:#101018dc;
       font-size:11px;
       line-height:1.5;
@@ -124,11 +168,13 @@
       position:fixed;
       left:0;
       right:0;
-      bottom:0;
+      bottom:calc(56px + env(safe-area-inset-bottom, 0px));
       z-index:30;
       width:100%;
       max-width:none;
-      padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+      display:flex;
+      align-items:flex-start;
+      padding:8px 10px;
       flex-wrap:nowrap;
       gap:8px;
       overflow-x:auto;
@@ -141,6 +187,23 @@
       box-shadow:0 -2px 0 #101018, 0 -10px 28px #101018aa;
       background:#101018ee;
     }
+    #toolbar .toolbar-actions{
+      flex:0 0 auto;
+      grid-column:auto;
+      display:flex;
+      align-items:flex-start;
+      scroll-snap-align:start;
+    }
+    #toolbar .layer-category{
+      flex:0 0 min(82vw, 320px);
+      grid-column:auto;
+      max-height:min(38vh, 280px);
+      overflow-y:auto;
+      scroll-snap-align:start;
+      scrollbar-width:thin;
+    }
+    #toolbar .category-items{ gap:6px; }
+    #toolbar .category-items label{ min-height:32px; padding:5px 7px; }
     #toolbar label{
       flex:0 0 auto;
       min-height:38px;
@@ -151,12 +214,7 @@
       scroll-snap-align:start;
       white-space:nowrap;
     }
-    #toolbar .toolbar-group{ display:contents; }
-    #toolbar .toolbar-group-title{
-      flex:0 0 auto;
-      align-self:center;
-      padding:0 2px 0 6px;
-    }
+    #toolbar .category-master{ min-height:32px; padding:5px 8px; }
     #toolbar .location-btn{
       min-height:38px;
       padding:8px 12px;
@@ -180,34 +238,78 @@
   <canvas id="map" width="1536" height="1536" aria-label="川崎駅周辺の読みやすいレトロRPG風マップ。ドラッグで移動できます" aria-describedby="msg"></canvas>
 </div>
 
-<div id="msg" class="rpg-window">マップデータを よみこんでいる……<span class="cursor">▼</span></div>
-
-<div id="toolbar" class="rpg-window">
-  <button id="locateBtn" class="location-btn" type="button" disabled>◎ 現在地へ</button>
-  <label><input type="checkbox" id="tglNature" checked>自然・公園</label>
-  <div class="toolbar-group" role="group" aria-labelledby="landuseGroupLabel">
-    <span id="landuseGroupLabel" class="toolbar-group-title">土地利用：</span>
-    <label><input type="checkbox" id="tglLanduseResidential" checked>住宅地</label>
-    <label><input type="checkbox" id="tglLanduseCommercial" checked>商業・公共用地</label>
-    <label><input type="checkbox" id="tglLanduseIndustrial" checked>工業・交通用地</label>
-    <label><input type="checkbox" id="tglLanduseCemetery" checked>墓地</label>
-    <label><input type="checkbox" id="tglLanduseSports" checked>スポーツ・遊園地</label>
-    <label><input type="checkbox" id="tglLanduseAirport" checked>空港</label>
-    <label><input type="checkbox" id="tglLanduseOther" checked>その他</label>
+<div id="toolbar" class="rpg-window" aria-label="地図レイヤーの表示設定">
+  <div class="toolbar-actions">
+    <button id="locateBtn" class="location-btn" type="button" disabled>◎ 現在地へ</button>
   </div>
-  <label><input type="checkbox" id="tglWater" checked>水域</label>
-  <label><input type="checkbox" id="tglRoads" checked>道路・歩道</label>
-  <label><input type="checkbox" id="tglRail" checked>鉄道</label>
-  <label><input type="checkbox" id="tglTransit" checked>地下交通(破線)</label>
-  <label><input type="checkbox" id="tglBuildings" checked>たてもの</label>
-  <label><input type="checkbox" id="tglPoi" checked>施設アイコン</label>
-  <label><input type="checkbox" id="tglStationNames" checked>駅名</label>
-  <label><input type="checkbox" id="tglLabels">なまえ</label>
-  <label><input type="checkbox" id="tglDots">小さな施設(点)</label>
-  <label><input type="checkbox" id="tglRoadNames" checked>道路名</label>
-  <label><input type="checkbox" id="tglHouse">番地</label>
-  <label><input type="checkbox" id="tglBoundary">市境(黄の破線)</label>
+
+  <section class="layer-category" role="group" aria-labelledby="natureCategoryTitle">
+    <div class="category-header">
+      <h2 id="natureCategoryTitle" class="category-title">自然・水域</h2>
+      <label class="category-master"><input type="checkbox" data-category-toggle>一括</label>
+    </div>
+    <div class="category-items">
+      <label><input type="checkbox" id="tglNature" data-category-item>自然・公園</label>
+      <label><input type="checkbox" id="tglWater" data-category-item>水域</label>
+    </div>
+  </section>
+
+  <section class="layer-category landuse-category" role="group" aria-labelledby="landuseCategoryTitle">
+    <div class="category-header">
+      <h2 id="landuseCategoryTitle" class="category-title">土地利用</h2>
+      <label class="category-master"><input type="checkbox" data-category-toggle>一括</label>
+    </div>
+    <div class="category-items">
+      <label><input type="checkbox" id="tglLanduseResidential" data-category-item>住宅地</label>
+      <label><input type="checkbox" id="tglLanduseCommercial" data-category-item>商業・公共用地</label>
+      <label><input type="checkbox" id="tglLanduseIndustrial" data-category-item>工業・交通用地</label>
+      <label><input type="checkbox" id="tglLanduseCemetery" data-category-item>墓地</label>
+      <label><input type="checkbox" id="tglLanduseSports" data-category-item>スポーツ・遊園地</label>
+      <label><input type="checkbox" id="tglLanduseAirport" data-category-item>空港</label>
+      <label><input type="checkbox" id="tglLanduseOther" data-category-item>その他</label>
+    </div>
+  </section>
+
+  <section class="layer-category" role="group" aria-labelledby="transportCategoryTitle">
+    <div class="category-header">
+      <h2 id="transportCategoryTitle" class="category-title">交通</h2>
+      <label class="category-master"><input type="checkbox" data-category-toggle>一括</label>
+    </div>
+    <div class="category-items">
+      <label><input type="checkbox" id="tglRoads" data-category-item>道路・歩道</label>
+      <label><input type="checkbox" id="tglRail" data-category-item>鉄道</label>
+      <label><input type="checkbox" id="tglTransit" data-category-item>地下交通(破線)</label>
+    </div>
+  </section>
+
+  <section class="layer-category" role="group" aria-labelledby="facilityCategoryTitle">
+    <div class="category-header">
+      <h2 id="facilityCategoryTitle" class="category-title">建物・施設</h2>
+      <label class="category-master"><input type="checkbox" data-category-toggle>一括</label>
+    </div>
+    <div class="category-items">
+      <label><input type="checkbox" id="tglBuildings" data-category-item>たてもの</label>
+      <label><input type="checkbox" id="tglPoi" data-category-item>施設アイコン</label>
+      <label><input type="checkbox" id="tglDots" data-category-item>小さな施設(点)</label>
+    </div>
+  </section>
+
+  <section class="layer-category" role="group" aria-labelledby="annotationCategoryTitle">
+    <div class="category-header">
+      <h2 id="annotationCategoryTitle" class="category-title">注記・境界</h2>
+      <label class="category-master"><input type="checkbox" data-category-toggle>一括</label>
+    </div>
+    <div class="category-items">
+      <label><input type="checkbox" id="tglStationNames" data-category-item>駅名</label>
+      <label><input type="checkbox" id="tglLabels" data-category-item>なまえ</label>
+      <label><input type="checkbox" id="tglRoadNames" data-category-item>道路名</label>
+      <label><input type="checkbox" id="tglHouse" data-category-item>番地</label>
+      <label><input type="checkbox" id="tglBoundary" data-category-item>市境(黄の破線)</label>
+    </div>
+  </section>
 </div>
+
+<div id="msg" class="rpg-window">マップデータを よみこんでいる……<span class="cursor">▼</span></div>
 
 <div id="stats" class="rpg-window">レイヤー情報 読込待ち…</div>
 
@@ -2025,11 +2127,27 @@ cv.addEventListener('click', ev => {
   const hit = hitTest(ev);
   if (hit) setMsg(describe(hit.p));
 });
-for (const id of ['tglNature','tglLanduseResidential','tglLanduseCommercial','tglLanduseIndustrial',
-  'tglLanduseCemetery','tglLanduseSports','tglLanduseAirport','tglLanduseOther',
-  'tglWater','tglRoads','tglRail','tglTransit',
-  'tglBuildings','tglPoi','tglStationNames','tglLabels','tglDots','tglRoadNames','tglHouse','tglBoundary'])
-  document.getElementById(id).addEventListener('change', render);
+function syncCategoryMaster(panel){
+  const master = panel.querySelector('[data-category-toggle]');
+  const items = [...panel.querySelectorAll('[data-category-item]')];
+  const checkedCount = items.filter(item => item.checked).length;
+  master.checked = checkedCount === items.length;
+  master.indeterminate = checkedCount > 0 && checkedCount < items.length;
+}
+for (const panel of document.querySelectorAll('.layer-category')){
+  const master = panel.querySelector('[data-category-toggle]');
+  const items = [...panel.querySelectorAll('[data-category-item]')];
+  master.addEventListener('change', () => {
+    for (const item of items) item.checked = master.checked;
+    syncCategoryMaster(panel);
+    render();
+  });
+  for (const item of items) item.addEventListener('change', () => {
+    syncCategoryMaster(panel);
+    render();
+  });
+  syncCategoryMaster(panel);
+}
 locateBtn.addEventListener('click', locateMe);
 
 const mapFrame = document.querySelector('.map-frame');
