@@ -3,102 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>カワサキタウン｜ドット絵マップ 12案</title>
-<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{min-height:100vh;background:#181820;color:#f8f0d8;font-family:'DotGothic16',monospace;padding:20px 12px 36px}
-  header,main,footer{width:min(1180px,96vw);margin-inline:auto}
-  header{margin-bottom:18px;text-align:center}
-  .window{background:#101018;border:2px solid #f8f0d8;box-shadow:0 0 0 2px #101018,0 0 0 4px #f8f0d8,0 0 0 6px #101018}
-  h1{display:inline-block;padding:9px 28px;font-size:20px;font-weight:400;letter-spacing:3px}
-  h1 small{display:block;color:#88c860;font-size:11px;letter-spacing:1px;margin-top:4px}
-  .intro{max-width:780px;margin:16px auto 0;color:#d8d0b8;font-size:13px;line-height:1.8}
-  .picker{display:grid;gap:12px;margin-bottom:12px}
-  .tab-group{padding:12px}
-  .tab-heading{color:#a8a088;font-size:11px;letter-spacing:2px;margin-bottom:9px}
-  .tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px}
-  .tab{font:inherit;color:#d8d0b8;background:#101018;border:2px solid #686858;padding:10px 7px;cursor:pointer;min-height:62px}
-  .tab:hover,.tab[aria-selected="true"]{color:#f8f0d8;border-color:#88c860;background:#202818}
-  .tab b{display:block;color:#88c860;font-size:12px;font-weight:400;margin-bottom:3px}
-  .tab span{font-size:11px}
-  .preview{padding:6px}
-  .preview-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;color:#b8b098;font-size:12px;line-height:1.4}
-  .preview-bar a{color:#88c860;text-decoration:none;white-space:nowrap}
-  iframe{display:block;width:100%;height:min(78vh,900px);min-height:620px;border:0;background:#181820}
-  .review{margin-top:18px;padding:16px}
-  .review h2{font-size:16px;font-weight:400;letter-spacing:2px;margin-bottom:12px}
-  .scroll{overflow-x:auto}
-  table{width:100%;min-width:760px;border-collapse:collapse;font-size:12px}
-  th,td{padding:10px;border-top:1px solid #484840;text-align:center}
-  th:first-child,td:first-child{text-align:left}
-  thead th{color:#a8a088;font-weight:400}
-  tbody th{color:#88c860;font-weight:400}
-  .note{color:#b8b098;text-align:left}
-  footer{color:#787460;font-size:10px;text-align:center;margin-top:16px}
-  @media(max-width:760px){.tabs{grid-template-columns:repeat(2,1fr)}.tab{min-height:54px}.preview-bar{align-items:start}iframe{min-height:540px;height:72vh}}
-  @media(max-width:440px){.tabs{grid-template-columns:1fr}.tab{min-height:0}.tab b,.tab span{display:inline}.tab b{margin-right:8px}}
-</style>
+<title>カワサキタウン｜地理の読みやすさ</title>
+<meta http-equiv="refresh" content="0; url=map-02-refined.html">
+<script>location.replace('map-02-refined.html');</script>
 </head>
 <body>
-<header>
-  <h1 class="window">カワサキタウン ドット絵マップ 12案<small>7つの品質改善 ＋ 5つのオリジナルテーマ</small></h1>
-  <p class="intro">同じ川崎の実地図データを、地理や縮尺を磨いた7つの改善版と、江戸・ネオン・携帯ゲーム機・祭り・交通管制の5つの世界観で見比べられます。</p>
-</header>
-<main>
-  <nav class="picker" aria-label="マップを選択">
-    <div class="tab-group window">
-      <p class="tab-heading">QUALITY STUDIES / 品質改善</p>
-      <div class="tabs">
-        <button class="tab" data-src="map-01-refined.html" aria-selected="true"><b>MAP 01</b><span>総合バランス</span></button>
-        <button class="tab" data-src="map-02-refined.html" aria-selected="false"><b>MAP 02</b><span>地理の読みやすさ</span></button>
-        <button class="tab" data-src="map-03-refined.html" aria-selected="false"><b>MAP 03</b><span>ドット絵造形</span></button>
-        <button class="tab" data-src="map-04-refined.html" aria-selected="false"><b>MAP 04</b><span>自然な街並み</span></button>
-        <button class="tab" data-src="map-05-refined.html" aria-selected="false"><b>MAP 05</b><span>縮尺と配置</span></button>
-        <button class="tab" data-src="map-06-real-scale.html" aria-selected="false"><b>MAP 06</b><span>実寸ロジック</span></button>
-        <button class="tab" data-src="map-07-real-scale-rpg.html" aria-selected="false"><b>MAP 07</b><span>実寸＋RPG立体</span></button>
-      </div>
-    </div>
-    <div class="tab-group window">
-      <p class="tab-heading">ORIGINAL WORLDS / オリジナル世界観</p>
-      <div class="tabs">
-        <button class="tab" data-src="map-01-edo-night.html" aria-selected="false"><b>MAP 08</b><span>江戸・夜行切絵図</span></button>
-        <button class="tab" data-src="map-02-neon-rain.html" aria-selected="false"><b>MAP 09</b><span>ネオン雨夜</span></button>
-        <button class="tab" data-src="map-03-pocket-explorer.html" aria-selected="false"><b>MAP 10</b><span>ポケット探検地図</span></button>
-        <button class="tab" data-src="map-04-matsuri-diorama.html" aria-selected="false"><b>MAP 11</b><span>夕涼み祭絵図</span></button>
-        <button class="tab" data-src="map-05-transit-blueprint.html" aria-selected="false"><b>MAP 12</b><span>交通管制図</span></button>
-      </div>
-    </div>
-  </nav>
-  <section class="preview window">
-    <div class="preview-bar"><span id="current">MAP 01 — 総合バランス</span><a id="open" href="map-01-refined.html" target="_blank" rel="noopener">単体で開く →</a></div>
-    <iframe id="mapPreview" src="map-01-refined.html" title="選択中のカワサキタウンドット絵マップ"></iframe>
-  </section>
-  <section class="review window" aria-labelledby="review-title">
-    <h2 id="review-title">12案の見どころ</h2>
-    <div class="scroll"><table>
-      <thead><tr><th>改善案</th><th>街の再現度</th><th>可愛さ・玩具感</th><th>大きさ・形・位置</th><th>自然な多様性</th><th>重点</th></tr></thead>
-      <tbody>
-        <tr><th>01 総合バランス</th><td>9.2</td><td>8.9</td><td>9.2</td><td>9.3</td><td class="note">全項目を均等に改善</td></tr>
-        <tr><th>02 地理の読みやすさ</th><td>9.2</td><td>8.9</td><td>9.2</td><td>9.1</td><td class="note">駅・鉄道・道路・地名</td></tr>
-        <tr><th>03 ドット絵造形</th><td>8.8</td><td>9.2</td><td>9.1</td><td>9.2</td><td class="note">建物・樹木・小物</td></tr>
-        <tr><th>04 自然な街並み</th><td>9.2</td><td>9.1</td><td>9.1</td><td>9.5</td><td class="note">疎密・色形のばらつき</td></tr>
-        <tr><th>05 縮尺と配置</th><td>9.2</td><td>8.9</td><td>9.4</td><td>9.1</td><td class="note">寸法・階層・可読性</td></tr>
-        <tr><th>06 実寸ロジック</th><td>9.5</td><td>8.7</td><td>9.8</td><td>9.4</td><td class="note">実面積・高さ・POI対応</td></tr>
-        <tr><th>07 実寸＋RPG立体</th><td>9.5</td><td>9.4</td><td>9.7</td><td>9.5</td><td class="note">実寸屋根・南面壁・建物記号</td></tr>
-        <tr><th>08 江戸・夜行切絵図</th><td>—</td><td>—</td><td>—</td><td>—</td><td class="note">夜藍・朱印・角行灯・青海波</td></tr>
-        <tr><th>09 ネオン雨夜</th><td>—</td><td>—</td><td>—</td><td>—</td><td class="note">サイバーパンク・発光道路・雨</td></tr>
-        <tr><th>10 ポケット探検地図</th><td>—</td><td>—</td><td>—</td><td>—</td><td class="note">4階調LCD・ディザ・携帯ゲーム機</td></tr>
-        <tr><th>11 夕涼み祭絵図</th><td>—</td><td>—</td><td>—</td><td>—</td><td class="note">提灯・屋台・流し灯籠・箱庭</td></tr>
-        <tr><th>12 交通管制図</th><td>—</td><td>—</td><td>—</td><td>—</td><td class="note">ブループリント・HUD・交通グリッド</td></tr>
-      </tbody>
-    </table></div>
-  </section>
-</main>
-<footer>MAP DATA © OPENSTREETMAP CONTRIBUTORS / OPENFREEMAP / OPENMAPTILES</footer>
-<script>
-  const tabs=[...document.querySelectorAll('.tab')],preview=document.getElementById('mapPreview'),current=document.getElementById('current'),open=document.getElementById('open');
-  tabs.forEach(tab=>tab.addEventListener('click',()=>{tabs.forEach(t=>t.setAttribute('aria-selected',String(t===tab)));preview.src=tab.dataset.src;open.href=tab.dataset.src;current.textContent=`${tab.querySelector('b').textContent} — ${tab.querySelector('span').textContent}`}));
-</script>
+<p><a href="map-02-refined.html">カワサキタウンを表示する</a></p>
 </body>
 </html>
