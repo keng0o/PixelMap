@@ -41,6 +41,8 @@
   #toolbar{ width:min(92vw,700px); font-size:12px; display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; }
   #toolbar label{ display:inline-flex; gap:6px; align-items:center; cursor:pointer; color:#d8d0b8; }
   #toolbar input{ accent-color:#88c860; }
+  #toolbar .toolbar-group{ display:contents; }
+  #toolbar .toolbar-group-title{ color:#f8d038; white-space:nowrap; }
   .location-btn{
     flex:0 0 auto;
     min-height:34px;
@@ -149,6 +151,12 @@
       scroll-snap-align:start;
       white-space:nowrap;
     }
+    #toolbar .toolbar-group{ display:contents; }
+    #toolbar .toolbar-group-title{
+      flex:0 0 auto;
+      align-self:center;
+      padding:0 2px 0 6px;
+    }
     #toolbar .location-btn{
       min-height:38px;
       padding:8px 12px;
@@ -177,7 +185,16 @@
 <div id="toolbar" class="rpg-window">
   <button id="locateBtn" class="location-btn" type="button" disabled>◎ 現在地へ</button>
   <label><input type="checkbox" id="tglNature" checked>自然・公園</label>
-  <label><input type="checkbox" id="tglLanduse" checked>土地利用</label>
+  <div class="toolbar-group" role="group" aria-labelledby="landuseGroupLabel">
+    <span id="landuseGroupLabel" class="toolbar-group-title">土地利用：</span>
+    <label><input type="checkbox" id="tglLanduseResidential" checked>住宅地</label>
+    <label><input type="checkbox" id="tglLanduseCommercial" checked>商業・公共用地</label>
+    <label><input type="checkbox" id="tglLanduseIndustrial" checked>工業・交通用地</label>
+    <label><input type="checkbox" id="tglLanduseCemetery" checked>墓地</label>
+    <label><input type="checkbox" id="tglLanduseSports" checked>スポーツ・遊園地</label>
+    <label><input type="checkbox" id="tglLanduseAirport" checked>空港</label>
+    <label><input type="checkbox" id="tglLanduseOther" checked>その他</label>
+  </div>
   <label><input type="checkbox" id="tglWater" checked>水域</label>
   <label><input type="checkbox" id="tglRoads" checked>道路・歩道</label>
   <label><input type="checkbox" id="tglRail" checked>鉄道</label>
@@ -550,12 +567,30 @@ function rasterizeGrid(layers, options){
   const LANDCOVER = { wood:ID.TREE, forest:ID.TREE, farmland:ID.FARM, sand:ID.SAND,
                       grass:ID.GRASS, meadow:ID.GRASS, wetland:ID.GRASS };
   const LANDUSE = {
-    residential:ID.DIRT, suburb:ID.DIRT, neighbourhood:ID.DIRT,
-    commercial:ID.PAVE, retail:ID.PAVE, bus_station:ID.PAVE,
-    school:ID.PAVE, college:ID.PAVE, university:ID.PAVE, kindergarten:ID.PAVE, hospital:ID.PAVE,
-    industrial:ID.GRAVEL, garages:ID.GRAVEL, quarry:ID.GRAVEL, military:ID.GRAVEL, railway:ID.GRAVEL, dam:ID.GRAVEL,
-    cemetery:ID.PARK, grave_yard:ID.PARK,
-    stadium:ID.FIELD, pitch:ID.FIELD, playground:ID.FIELD, track:ID.FIELD, theme_park:ID.FIELD,
+    residential:{ id:ID.DIRT, option:'landuseResidential' },
+    suburb:{ id:ID.DIRT, option:'landuseResidential' },
+    neighbourhood:{ id:ID.DIRT, option:'landuseResidential' },
+    commercial:{ id:ID.PAVE, option:'landuseCommercial' },
+    retail:{ id:ID.PAVE, option:'landuseCommercial' },
+    bus_station:{ id:ID.PAVE, option:'landuseCommercial' },
+    school:{ id:ID.PAVE, option:'landuseCommercial' },
+    college:{ id:ID.PAVE, option:'landuseCommercial' },
+    university:{ id:ID.PAVE, option:'landuseCommercial' },
+    kindergarten:{ id:ID.PAVE, option:'landuseCommercial' },
+    hospital:{ id:ID.PAVE, option:'landuseCommercial' },
+    industrial:{ id:ID.GRAVEL, option:'landuseIndustrial' },
+    garages:{ id:ID.GRAVEL, option:'landuseIndustrial' },
+    quarry:{ id:ID.GRAVEL, option:'landuseIndustrial' },
+    military:{ id:ID.GRAVEL, option:'landuseIndustrial' },
+    railway:{ id:ID.GRAVEL, option:'landuseIndustrial' },
+    dam:{ id:ID.GRAVEL, option:'landuseIndustrial' },
+    cemetery:{ id:ID.PARK, option:'landuseCemetery' },
+    grave_yard:{ id:ID.PARK, option:'landuseCemetery' },
+    stadium:{ id:ID.FIELD, option:'landuseSports' },
+    pitch:{ id:ID.FIELD, option:'landuseSports' },
+    playground:{ id:ID.FIELD, option:'landuseSports' },
+    track:{ id:ID.FIELD, option:'landuseSports' },
+    theme_park:{ id:ID.FIELD, option:'landuseSports' },
   };
   // 面
   if (options.nature){
@@ -565,17 +600,16 @@ function rasterizeGrid(layers, options){
         stamp(id, () => { polyPath(f.geom); c.fill('evenodd'); });
     }
   }
-  if (options.landuse){
-    for (const f of L('landuse')){
-      const id = LANDUSE[f.props.class] ?? ID.DIRT;
-      if (f.type === 3) stamp(id, () => { polyPath(f.geom); c.fill('evenodd'); });
-    }
+  for (const f of L('landuse')){
+    const style = LANDUSE[f.props.class] || { id:ID.DIRT, option:'landuseOther' };
+    if (options[style.option] && f.type === 3)
+      stamp(style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   if (options.nature){
     for (const f of L('park')) if (f.type === 3)
       stamp(ID.PARK, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
-  if (options.landuse){
+  if (options.landuseAirport){
     for (const f of L('aeroway')) if (f.type === 3)
       stamp(ID.PAVE, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
@@ -1339,7 +1373,13 @@ const locationCanvasPoint = () => currentLocation ? [
 
 const opts = () => ({
   nature:    document.getElementById('tglNature').checked,
-  landuse:   document.getElementById('tglLanduse').checked,
+  landuseResidential: document.getElementById('tglLanduseResidential').checked,
+  landuseCommercial:  document.getElementById('tglLanduseCommercial').checked,
+  landuseIndustrial:  document.getElementById('tglLanduseIndustrial').checked,
+  landuseCemetery:    document.getElementById('tglLanduseCemetery').checked,
+  landuseSports:      document.getElementById('tglLanduseSports').checked,
+  landuseAirport:     document.getElementById('tglLanduseAirport').checked,
+  landuseOther:       document.getElementById('tglLanduseOther').checked,
   water:     document.getElementById('tglWater').checked,
   roads:     document.getElementById('tglRoads').checked,
   rail:      document.getElementById('tglRail').checked,
@@ -1985,7 +2025,9 @@ cv.addEventListener('click', ev => {
   const hit = hitTest(ev);
   if (hit) setMsg(describe(hit.p));
 });
-for (const id of ['tglNature','tglLanduse','tglWater','tglRoads','tglRail','tglTransit',
+for (const id of ['tglNature','tglLanduseResidential','tglLanduseCommercial','tglLanduseIndustrial',
+  'tglLanduseCemetery','tglLanduseSports','tglLanduseAirport','tglLanduseOther',
+  'tglWater','tglRoads','tglRail','tglTransit',
   'tglBuildings','tglPoi','tglStationNames','tglLabels','tglDots','tglRoadNames','tglHouse','tglBoundary'])
   document.getElementById(id).addEventListener('change', render);
 locateBtn.addEventListener('click', locateMe);
