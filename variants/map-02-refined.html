@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>カワサキタウン｜地理の読みやすさ</title>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
-<script>if(new URLSearchParams(location.search).get('mode')==='v2')document.documentElement.classList.add('v2-mode');</script>
 <style>
   :root{ --ink:#181820; }
   *{ box-sizing:border-box; margin:0; padding:0; }
@@ -100,31 +99,6 @@
   .location-btn:hover{ background:#f8f0d8; }
   .location-btn:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
   .location-btn:disabled{ cursor:wait; opacity:.65; }
-  .version-link{
-    display:inline-flex;
-    align-items:center;
-    min-height:34px;
-    margin-left:8px;
-    padding:5px 10px;
-    border:2px solid #88c860;
-    color:#88c860;
-    text-decoration:none;
-    letter-spacing:1px;
-    white-space:nowrap;
-  }
-  .version-link:hover{ background:#202818; color:#f8f0d8; }
-  .version-link:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
-  .v2-banner{
-    display:none;
-    width:min(92vw,700px);
-    line-height:1.7;
-  }
-  .v2-banner strong{ color:#f8d038; font-size:16px; letter-spacing:2px; }
-  .v2-banner span{ display:block; color:#a8a088; font-size:11px; }
-  html.v2-mode .v2-banner{ display:block; }
-  html.v2-mode #toolbar{ display:block; }
-  html.v2-mode #toolbar .toolbar-actions{ display:flex; }
-  html.v2-mode #toolbar .layer-category{ display:none; }
   #stats{ width:min(92vw,700px); font-size:11px; color:#a8a088; display:flex; flex-wrap:wrap; gap:4px 14px; }
   #attrib{ font-size:10px; color:#787460; padding:6px 12px; }
   #attrib a{ color:#88c860; }
@@ -246,14 +220,12 @@
       padding:8px 12px;
       scroll-snap-align:start;
     }
-    #toolbar .version-link{ min-height:38px; padding:8px 12px; }
     #toolbar label:has(input:checked){
       border-color:#88c860;
       background:#202818;
       color:#f8f0d8;
     }
     #toolbar input{ width:18px; height:18px; }
-    html.v2-mode .v2-banner{ display:none; }
   }
   @media (prefers-reduced-motion: reduce){ #msg .cursor{ animation:none; } }
 </style>
@@ -262,11 +234,6 @@
 
 <p id="mapPosition" hidden>OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ</p>
 
-<section class="v2-banner rpg-window" aria-label="V2の表示内容">
-  <strong>PIXELMAP V2</strong>
-  <span>地形面 5種 ／ 骨格線 2種 ／ 町 + 駅・寺社・学校・城・灯台</span>
-</section>
-
 <div class="rpg-window map-frame">
   <canvas id="map" width="1536" height="1536" aria-label="川崎駅周辺の読みやすいレトロRPG風マップ。ドラッグで移動できます" aria-describedby="msg"></canvas>
 </div>
@@ -274,7 +241,6 @@
 <div id="toolbar" class="rpg-window" aria-label="地図レイヤーの表示設定">
   <div class="toolbar-actions">
     <button id="locateBtn" class="location-btn" type="button" disabled>◎ 現在地へ</button>
-    <a id="versionLink" class="version-link" href="../v2/">V2をひらく →</a>
   </div>
 
   <section class="layer-category" role="group" aria-labelledby="natureCategoryTitle">
@@ -391,7 +357,6 @@
   <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">© OpenMapTiles</a>
 </div>
 
-<script src="../v2/rules.js"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -507,16 +472,10 @@ function parseTile(buf){
 /* =====================================================
    2. セットアップ
    ===================================================== */
-const V2_MODE = new URLSearchParams(location.search).get('mode') === 'v2';
-const V2_RULES = window.PixelMapV2;
-if (V2_MODE){
-  document.title = 'PixelMap V2｜地形・骨格・場所';
-  document.getElementById('versionLink').textContent = '旧MAPへ →';
-  document.getElementById('versionLink').href = '../variants/map-02-refined.html';
-  document.getElementById('versionLink').target = '_top';
-  document.getElementById('toolbar').setAttribute('aria-label', 'V2マップ操作');
-  document.getElementById('map').setAttribute('aria-label', 'PixelMap V2。地形、鉄道と主要道路、町と5種類のランドマークを表示します。ドラッグで移動できます');
-}
+const PAGE_PARAMS = new URLSearchParams(location.search);
+const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
+const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
 const cv = document.getElementById('map');
 const ctx = cv.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -784,30 +743,16 @@ function rasterizeGrid(layers, options){
     theme_park:{ id:ID.FIELD, option:'landuseAmusement' },
     zoo:{ id:ID.FIELD, option:'landuseZoo' },
   };
-  // 面。V2 は低い優先度から刻み、水 > 森 > 農地 > 砂浜 > 草原を固定する。
-  if (V2_MODE){
-    const surfaceFeatures = [...L('landcover'), ...L('landuse')].filter(f => f.type === 3);
-    const surfaceClass = f => String(f.props.subclass || f.props.class || '').toLowerCase();
-    const passes = [
-      { id:ID.SAND, values:['beach','sand'] },
-      { id:ID.FARM, values:['farmland','farmyard','orchard','vineyard','greenhouse_horticulture'] },
-      { id:ID.TREE, values:['wood','forest'] },
-    ];
-    for (const pass of passes){
-      for (const f of surfaceFeatures.filter(item => pass.values.includes(surfaceClass(item))))
-        stamp(pass.id, () => { polyPath(f.geom); c.fill('evenodd'); });
-    }
-  } else {
-    for (const f of L('landcover')){
-      const style = LANDCOVER[f.props.class];
-      if (style && options[style.option] && f.type === 3)
-        stamp(style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
-    }
-    for (const f of L('landuse')){
-      const style = LANDUSE[f.props.class] || { id:ID.DIRT, option:'landuseOther' };
-      if (options[style.option] && f.type === 3)
-        stamp(style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
-    }
+  // 面
+  for (const f of L('landcover')){
+    const style = LANDCOVER[f.props.class];
+    if (style && options[style.option] && f.type === 3)
+      stamp(style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
+  }
+  for (const f of L('landuse')){
+    const style = LANDUSE[f.props.class] || { id:ID.DIRT, option:'landuseOther' };
+    if (options[style.option] && f.type === 3)
+      stamp(style.id, () => { polyPath(f.geom); c.fill('evenodd'); });
   }
   if (options.parks){
     for (const f of L('park')) if (f.type === 3)
@@ -829,7 +774,7 @@ function rasterizeGrid(layers, options){
       stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
   if (options.streams)
     for (const f of waterways.filter(f => f.props.class === 'stream'))
-      stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
+      stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = .65; c.stroke(); });
   if (options.canals)
     for (const f of waterways.filter(f => f.props.class === 'canal'))
       stamp(ID.WATER, () => { linePath(f.geom); c.lineWidth = 1.4; c.stroke(); });
@@ -931,12 +876,7 @@ function rasterizeGrid(layers, options){
   if (options.piers)         lineStamp(roadFeats(['pier']),                         ID.PATH, false);
   if (options.localRoads)    lineStamp(roadFeats(['service','minor','busway']),      ID.ROAD, false);
   if (options.regionalRoads) lineStamp(roadFeats(['tertiary','secondary']),          ID.ROAD_MAJOR, false);
-  if (options.majorRoads){
-    const roads = V2_MODE
-      ? L('transportation').filter(f => f.type === 2 && V2_RULES.isVisibleRoadFeature(f.props))
-      : roadFeats(['primary','trunk','primary_construction']);
-    lineStamp(roads, ID.HIGHWAY, true);
-  }
+  if (options.majorRoads)    lineStamp(roadFeats(['primary','trunk','primary_construction']), ID.HIGHWAY, true);
   if (options.motorways)     lineStamp(roadFeats(['motorway']),                     ID.HIGHWAY, true);
   // 線路: 別の線路のセルと辺で隣接するなら砂利にして、レール面同士が接しないように配置
   function railStamp(fs){
@@ -966,12 +906,7 @@ function rasterizeGrid(layers, options){
       }
     }
   }
-  if (options.rail){
-    const rails = V2_MODE
-      ? L('transportation').filter(f => f.type === 2 && V2_RULES.isVisibleRailFeature(f.props))
-      : roadFeats(['rail']);
-    railStamp(rails);
-  }
+  if (options.rail) railStamp(roadFeats(['rail']));
   return { grid, bldGrid, bldFeats, bldArea, size:RG };
 }
 
@@ -1409,33 +1344,6 @@ const SPRITES = {
     px(x-6, y-1, 2, 1, sh(P.roofADk, 0.5));
     px(x+4, y-1, 2, 1, sh(P.roofADk, 0.5));
   }},
-  worship_shinto:{label:'神社', draw:(x,y)=>{
-    px(x-9,y-16,18,2,P.roofA); px(x-9,y-16,18,1,hi(P.roofA));
-    px(x-6,y-12,12,2,P.roofADk); px(x-6,y-10,2,10,P.roofADk); px(x+4,y-10,2,10,P.roofADk);
-  }},
-  worship_buddhist:{label:'寺院', draw:(x,y)=>{
-    yard(x,y,13); block(x-8,y-9,16,9,P.wall);
-    roofBar(x-11,y-13,22,3,'#786048'); roofBar(x-8,y-18,16,3,'#a07850');
-    px(x-1,y-22,2,4,'#e8b048'); px(x-3,y-21,6,1,'#e8b048');
-  }},
-  worship_christian:{label:'教会', draw:(x,y)=>{
-    yard(x,y,13); block(x-8,y-13,16,13,P.wall); roofBar(x-10,y-17,20,4,P.roofB);
-    px(x-1,y-25,2,8,'#f8d038'); px(x-4,y-22,8,2,'#f8d038');
-    winF(x-3,y-9,6,6);
-  }},
-  castle:{label:'城', draw:(x,y)=>{
-    yard(x,y,18); block(x-13,y-10,26,10,'#d8d0c0');
-    for (const bx of [-13,-5,3,11]) px(x+bx,y-14,4,4,'#9098a8');
-    px(x-14,y-15,30,2,'#687080');
-    block(x-7,y-21,14,11,'#f0e4c8'); roofBar(x-9,y-24,18,3,'#405068');
-    px(x-2,y-7,4,7,P.door);
-  }},
-  lighthouse:{label:'灯台', draw:(x,y)=>{
-    yard(x,y,12); px(x-5,y-15,10,15,'#f8f0d8'); px(x+3,y-15,2,15,'#c8b490');
-    px(x-7,y-19,14,4,P.roofA); px(x-7,y-19,14,1,hi(P.roofA));
-    px(x-4,y-17,8,2,'#f8d038'); px(x-1,y-25,2,6,'#f8d038');
-    px(x-6,y-24,12,1,'#f8d038');
-  }},
   attraction:{label:'名所',        draw:(x,y)=>signPost(x,y,'#f8d038', (cx,cy)=>{ px(cx-1,cy-13,2,2,P.roofA); px(cx-3,cy-11,6,1,P.roofA); }) },
   museum:   { label:'博物館',      draw:(x,y)=>{ const r = house(x,y,'#a0a070'); px(r.x+3,r.y+6,2,8,'#e0d8c0'); px(r.x+7,r.y+6,2,8,'#e0d8c0'); px(r.x+11,r.y+6,2,8,'#e0d8c0'); } },
   cinema:   { label:'劇場・映画館', draw:(x,y)=>stall(x,y,'#a04878', (sx,sy)=>{ px(sx+4,sy+7,2,2,'#f8d038'); px(sx+8,sy+8,2,2,'#f8d038'); }) },
@@ -1471,7 +1379,7 @@ const CLASS2SPRITE = {
   bank:'bank', atm:'bank', money:'bank',
   post:'post', police:'police', fire_station:'fire_station', town_hall:'townhall', townhall:'townhall',
   place_of_worship:'place_of_worship',
-  attraction:'attraction', monument:'attraction', castle:'castle', lighthouse:'lighthouse', art_gallery:'museum', museum:'museum',
+  attraction:'attraction', monument:'attraction', castle:'attraction', art_gallery:'museum', museum:'museum',
   theatre:'cinema', cinema:'cinema', music:'cinema', entertainment:'cinema',
   park:'park', garden:'park', playground:'park', dog_park:'park', pitch:'park', stadium:'park', golf:'park', swimming:'park', zoo:'park',
   parking:'parking', fuel:'parking', charging_station:'parking',
@@ -1482,7 +1390,6 @@ const isStationProps = props => {
     s === 'halt' || s === 'tram_stop';
 };
 const poiImportance = props => {
-  if (V2_MODE) return -V2_RULES.importance(props).score;
   if (isStationProps(props)) return 0;
   const k = props.subclass || props.class || '';
   const priority = {
@@ -1494,9 +1401,7 @@ const poiImportance = props => {
   return (priority[k] ?? 24) + Math.min(20, Number(props.rank ?? 20)) * .15;
 };
 function spriteFor(props, size = 'M', variant = 0){
-  const key = V2_MODE
-    ? (V2_RULES.spriteKey(props) || 'generic')
-    : (CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic');
+  const key = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
   const e = SPRITES[key];
   const baseDraw = e[size] || e.M || e.S || e.L || e.draw;
   let draw = baseDraw;
@@ -1512,13 +1417,13 @@ function spriteFor(props, size = 'M', variant = 0){
       px(x+16,y-22,1,5,sh(tone,.75));
       px(x+11,y-20,4,1,'#f8f0d8');
     };
-  } else if (!V2_MODE && variant === 1){
+  } else if (variant === 1){
     draw = (x,y) => {                              // 植木鉢つき
       baseDraw(x,y);
       px(x-11,y-4,4,3,P.treeMd); px(x-10,y-5,2,2,P.treeLt);
       px(x-11,y-1,4,1,P.dirtDk); px(x-9,y-5,1,1,'#f87890');
     };
-  } else if (!V2_MODE && variant === 2){
+  } else if (variant === 2){
     draw = (x,y) => {                              // 小さな袖看板つき
       baseDraw(x,y);
       px(x+9,y-13,1,12,P.trunk); px(x+10,y-13,5,4,'#e8b048');
@@ -1556,7 +1461,7 @@ function makePixelText(text, size, color, outline){
   g.fillText(text, 2, 2);
   return c;
 }
-function labelWindow(text, cx, topY, placedRects, force = false){
+function labelWindow(text, cx, topY, placedRects){
   const img = makePixelText(text, 24, '#f8f0d8');
   const w = img.width * 2 + 8, h = img.height * 2 + 4;
   const hits = r => placedRects.some(o => !(r.x + r.w < o.x || o.x + o.w < r.x || r.y + r.h < o.y || o.y + o.h < r.y));
@@ -1572,7 +1477,7 @@ function labelWindow(text, cx, topY, placedRects, force = false){
     clampRect(cx + 32, topY + 18),
     clampRect(cx - w - 32, topY + 18),
   ];
-  const rect = candidates.find(r => !hits(r)) || (force ? candidates[0] : null);
+  const rect = candidates.find(r => !hits(r));
   if (!rect) return null;
   px(rect.x - 3, rect.y - 3, w + 6, h + 6, '#f8f0d8');
   px(rect.x - 1, rect.y - 1, w + 2, h + 2, OUT);
@@ -1591,7 +1496,7 @@ function outlinedText(text, cx, cy, size, color){
   ctx.drawImage(img, x, y, w, h);
   return { x, y, w, h };
 }
-function outlinedTextPlaced(text, cx, cy, size, color, placedRects, force = false){
+function outlinedTextPlaced(text, cx, cy, size, color, placedRects){
   const img = makePixelText(text, size, color, OUT);
   const w = img.width * 2, h = img.height * 2;
   const x0 = Math.max(6, Math.min(W - w - 6, Math.round(cx - w / 2)));
@@ -1602,7 +1507,7 @@ function outlinedTextPlaced(text, cx, cy, size, color, placedRects, force = fals
     {x:Math.max(6,Math.min(W-w-6,x0+w/2+26)),y:y0,w,h},
     {x:Math.max(6,Math.min(W-w-6,x0-w/2-26)),y:y0,w,h},
   ];
-  const r = candidates.find(q => !hits(q)) || (force ? candidates[0] : null);
+  const r = candidates.find(q => !hits(q));
   if (!r) return null;
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(img, r.x, r.y, w, h);
@@ -1628,19 +1533,7 @@ const locationCanvasPoint = () => currentLocation ? [
   (currentLocation.tileY - TILE.y) * H - viewOffset.y,
 ] : null;
 
-const opts = () => V2_MODE ? ({
-  grass:true,
-  forest:true,
-  farmland:true,
-  sand:true,
-  waterAreas:true,
-  majorRoads:true,
-  rail:true,
-  poi:true,
-  stationNames:true,
-  poiNames:true,
-  placeNames:true,
-}) : ({
+const opts = () => ({
   grass:     document.getElementById('tglGrass').checked,
   forest:    document.getElementById('tglForest').checked,
   farmland:  document.getElementById('tglFarmland').checked,
@@ -1707,24 +1600,6 @@ const centroid = rings => {
   ring.forEach(([x, y]) => { sx += x; sy += y; });
   return ring.length ? tp([sx / ring.length, sy / ring.length]) : [0, 0];
 };
-function drawTownSymbol(props, x, y){
-  const character = String(props.town_character || 'settlement');
-  const colors = {
-    industrial:'#8890a0', commercial:'#f8d038', port:'#4890e0',
-    rail_hub:'#e05038', settlement:'#f8f0d8',
-  };
-  const color = colors[character] || colors.settlement;
-  const city = props.class === 'city';
-  ctx.save();
-  ctx.translate(Math.round(x), Math.round(y));
-  ctx.scale(2, 2);
-  px(-6,-5,12,5,OUT);
-  px(-5,-4,10,4,color);
-  px(-3,city ? -11 : -8,6,city ? 7 : 4,OUT);
-  px(-2,city ? -10 : -7,4,city ? 6 : 3,color);
-  px(-1,city ? -8 : -6,2,2,P.win);
-  ctx.restore();
-}
 
 function drawCurrentLocation(){
   const pt = locationCanvasPoint();
@@ -1767,8 +1642,8 @@ function render(){
   bldFeats.forEach((f, i) => { bldStyle[i + 1] = styleOfBuilding(f, bldArea[i + 1]); });
   drawGrid(grid, bldGrid, bldStyle, o);
 
-  // POIの位置にある建物の面積(マス数)を、ランドマークの重要度判定にだけ使う。
-  function nearbyBuildingArea(pt){
+  // POIの位置にある建物の面積(マス数)から施設のサイズ級を決める
+  function poiSizeClass(pt){
     const RG = GRID + 2;
     const cx0 = Math.floor((pt[0] - gridShiftX) / CPX);
     const cy0 = Math.floor((pt[1] - gridShiftY) / CPX);
@@ -1781,36 +1656,9 @@ function render(){
         if (bi) best = Math.max(best, bldArea[bi]);
       }
     }
-    return best;
-  }
-  function poiProfile(pt, props){
-    const areaCells = nearbyBuildingArea(pt);
-    if (V2_MODE) return V2_RULES.importance(props, areaCells * 625);
-    return {
-      size:areaCells >= 35 ? 'L' : areaCells >= 6 ? 'M' : 'S',
-      label:'auto',
-    };
-  }
-  function snapStationToRail(pt){
-    const RG = GRID + 2;
-    const cx0 = Math.floor((pt[0] - gridShiftX) / CPX);
-    const cy0 = Math.floor((pt[1] - gridShiftY) / CPX);
-    let best = null;
-    for (let radius = 0; radius <= 6; radius++){
-      for (let dy = -radius; dy <= radius; dy++){
-        for (let dx = -radius; dx <= radius; dx++){
-          if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
-          const cx = cx0 + dx, cy = cy0 + dy;
-          if (cx < 0 || cy < 0 || cx >= RG || cy >= RG || grid[cy * RG + cx] !== ID.RAIL) continue;
-          const distance = dx * dx + dy * dy;
-          if (!best || distance < best.distance) best = { cx, cy, distance };
-        }
-      }
-      if (best) break;
-    }
-    return best
-      ? [gridShiftX + (best.cx + .5) * CPX, gridShiftY + (best.cy + .5) * CPX]
-      : null;
+    if (best >= 35) return 'L';       // 大規模施設だけをLにする
+    if (best >= 6)  return 'M';
+    return 'S';
   }
 
   /* --- 地下鉄・種類別トンネル（うっすら破線オーバーレイ） --- */
@@ -1855,20 +1703,14 @@ function render(){
   }
 
   /* --- レイヤー統計 --- */
-  if (V2_MODE){
-    document.getElementById('stats').innerHTML =
-      '<span>表示: 地形面5種</span><span>骨格線2種</span><span>町 + ランドマーク5種</span>';
-  } else {
-    const stats = {};
-    for (const n in tileLayers) stats[n] = tileLayers[n].features.length;
-    document.getElementById('stats').innerHTML =
-      Object.entries(stats).map(([k, v]) => `<span>${k}: ${v}</span>`).join('');
-  }
+  const stats = {};
+  for (const n in tileLayers) stats[n] = tileLayers[n].features.length;
+  document.getElementById('stats').innerHTML =
+    Object.entries(stats).map(([k, v]) => `<span>${k}: ${v}</span>`).join('');
 
   /* --- POI --- */
   const pois = L('poi')
     .filter(f => f.type === 1 && f.geom[0] && f.geom[0][0])
-    .filter(f => !V2_MODE || V2_RULES.poiKind(f.props))
     .map(f => {
       const [x, y] = tp(f.geom[0][0]);
       const props = f.props;
@@ -1878,9 +1720,7 @@ function render(){
       return {
         props, pt: [snapX(x), snapY(y)], rank: Number(props.rank ?? 30),
         importance: poiImportance(props),
-        spriteKey: V2_MODE
-          ? V2_RULES.spriteKey(props)
-          : (CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic'),
+        spriteKey: CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic',
         variant: Math.abs((Number.isFinite(idNum) ? idNum : 0) + nameSeed) % 3,
       };
     })
@@ -1888,15 +1728,9 @@ function render(){
 
   const drawnIcons = [], hiddenPois = [];
   for (const p of pois){
-    if (V2_MODE && V2_RULES.poiKind(p.props) === 'station'){
-      const railPoint = snapStationToRail(p.pt);
-      if (!railPoint) continue;
-      p.pt = railPoint;
-    }
     const [x, y] = p.pt;
     if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
-    p.profile = poiProfile(p.pt, p.props);
-    p.size = p.profile.size;
+    p.size = poiSizeClass(p.pt);
     const pName = featureName(p.props);
     const duplicate = pName && drawnIcons.some(d =>
       featureName(d.props) === pName && d.spriteKey === p.spriteKey &&
@@ -1940,13 +1774,9 @@ function render(){
   if (o.stationNames){
     const stationTargets = drawnIcons
       .filter(p => isStationProps(p.props) && featureName(p.props))
-      .filter(p => !V2_MODE || p.profile.label !== 'hover')
       .sort((a,b) => a.rank - b.rank);
     for (const p of stationTargets)
-      labelWindow(
-        featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 154 : 130),
-        placedRects, V2_MODE && p.profile.label === 'always'
-      );
+      labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 154 : 130), placedRects);
   }
   /* --- 公園名 --- */
   if (o.parkNames){
@@ -1962,36 +1792,27 @@ function render(){
   if (o.poiNames){
     const labelTargets = drawnIcons
       .filter(p => featureName(p.props) && !isStationProps(p.props))
-      .filter(p => !V2_MODE || p.profile.label !== 'hover')
       .sort((a, b) => a.importance - b.importance || a.rank - b.rank)
       .slice(0, 16);
     for (const p of labelTargets)
-      labelWindow(
-        featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 142 : 116),
-        placedRects, V2_MODE && p.profile.label === 'always'
-      );
+      labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 142 : 116), placedRects);
   }
   /* --- 地名 --- */
   if (o.placeNames){
     const placeWeight = { city:0, town:1, suburb:2, quarter:3, neighbourhood:4, village:4 };
     const seenPlaces = new Set();
-    const namedPlaces = L('place').filter(f => f.type === 1 && f.geom[0] && featureName(f.props));
-    const placeFeatures = V2_MODE
-      ? V2_RULES.selectPlaces(namedPlaces, tileLayers.place?.extent || 4096)
-      : namedPlaces.sort((a,b) => (placeWeight[a.props.class] ?? 8) - (placeWeight[b.props.class] ?? 8) ||
+    const placeFeatures = L('place')
+      .filter(f => f.type === 1 && f.geom[0] && featureName(f.props))
+      .sort((a,b) => (placeWeight[a.props.class] ?? 8) - (placeWeight[b.props.class] ?? 8) ||
         Number(a.props.rank ?? 30) - Number(b.props.rank ?? 30));
     let placeCount = 0;
     for (const f of placeFeatures){
       const name = featureName(f.props);
-      if (seenPlaces.has(name) || (!V2_MODE && placeCount >= 12)) continue;
+      if (seenPlaces.has(name) || placeCount >= 12) continue;
       const [x, y] = tp(f.geom[0][0]);
       if (x < 0 || y < 0 || x > W || y > H) continue;
       const big = f.props.class === 'city' || f.props.class === 'town';
-      if (V2_MODE && big) drawTownSymbol(f.props, x, y);
-      const r = outlinedTextPlaced(
-        name, x, y - (V2_MODE && big ? 26 : 0), big ? 42 : 26,
-        big ? '#f8f0d8' : '#f8e8a8', placedRects, V2_MODE && big
-      );
+      const r = outlinedTextPlaced(name, x, y, big ? 42 : 26, big ? '#f8f0d8' : '#f8e8a8', placedRects);
       if (r){
         hitAreas.push({ ...r, p: { ...f.props }, kind:'place' });
         seenPlaces.add(name); placeCount++;
@@ -2061,13 +1882,9 @@ const msg = document.getElementById('msg');
 const mapPosition = document.getElementById('mapPosition');
 const locateBtn = document.getElementById('locateBtn');
 const MOBILE_QUERY = '(max-width:760px), (max-height:500px)';
-const DEFAULT_MSG = V2_MODE
-  ? (window.matchMedia(MOBILE_QUERY).matches
-    ? 'V2：ドラッグで いどう。町やランドマークを タップして しらべよう。'
-    : 'V2：地形・骨格・場所だけを表示。ドラッグで移動できます。')
-  : (window.matchMedia(MOBILE_QUERY).matches
-    ? 'ドラッグで マップをいどう。ばしょを タップして しらべよう。'
-    : 'ドラッグで マップをいどう。アイコンや点も しらべられるよ。');
+const DEFAULT_MSG = window.matchMedia(MOBILE_QUERY).matches
+  ? 'ドラッグで マップをいどう。ばしょを タップして しらべよう。'
+  : 'ドラッグで マップをいどう。アイコンや点も しらべられるよ。';
 function setMsg(t){ msg.innerHTML = `${t}<span class="cursor">▼</span>`; }
 
 let tileTemplate = FALLBACK_TILE_URL;
@@ -2146,7 +1963,9 @@ function updateMapPosition(){
   const prefix = atLocation
     ? `現在地 ${currentLocation.latitude.toFixed(5)}, ${currentLocation.longitude.toFixed(5)} / `
     : '';
-  mapPosition.textContent = `${prefix}OpenFreeMap z${TILE.z} / ${t.x} / ${t.y} ─ ${V2_MODE ? 'PixelMap V2' : '地理の読みやすさ'}`;
+  mapPosition.dataset.offsetX = viewOffset.x.toFixed(3);
+  mapPosition.dataset.offsetY = viewOffset.y.toFixed(3);
+  mapPosition.textContent = `${prefix}OpenFreeMap z${TILE.z} / ${t.x} / ${t.y} ─ 地理の読みやすさ`;
 }
 
 async function ensureTilesAround(){
@@ -2287,6 +2106,7 @@ async function showCurrentPosition(position){
   try {
     await fetchMapTile(baseX, baseY);
     await ensureTilesAround();
+    publishViewport();
   } catch (error) {
     tileGeneration++;
     TILE.x = previous.tileX; TILE.y = previous.tileY;
@@ -2340,7 +2160,7 @@ const CLASS_JP = {
   cafe:'カフェ', bar:'バー', beer:'居酒屋', lodging:'宿', hospital:'病院', pharmacy:'薬局', dentist:'歯科',
   doctors:'医院', school:'学校', college:'専門・大学', university:'大学', kindergarten:'幼稚園・保育園',
   library:'図書館', bank:'銀行', atm:'ATM', post:'郵便', police:'警察', fire_station:'消防',
-  town_hall:'役所', place_of_worship:'神社・寺・教会', castle:'城', lighthouse:'灯台', attraction:'名所', monument:'記念碑', museum:'博物館',
+  town_hall:'役所', place_of_worship:'神社・寺・教会', attraction:'名所', monument:'記念碑', museum:'博物館',
   art_gallery:'ギャラリー', theatre:'劇場', cinema:'映画館', park:'公園', garden:'庭園', playground:'遊び場',
   stadium:'スタジアム', pitch:'グラウンド', golf:'ゴルフ', swimming:'プール', zoo:'動物園',
   parking:'駐車場', fuel:'ガソリンスタンド', charging_station:'充電スタンド', clothing_store:'衣料品店',
@@ -2375,6 +2195,67 @@ function scheduleRender(){
     updateMapPosition();
   });
 }
+function viewportState(){
+  return {
+    tileX:TILE.x,
+    tileY:TILE.y,
+    offsetX:viewOffset.x,
+    offsetY:viewOffset.y,
+    currentLocation,
+  };
+}
+function publishViewport(){
+  if (!EMBEDDED) return;
+  window.parent.postMessage({
+    type:'pixelmap:viewport',
+    mapId:MAP_ID,
+    state:viewportState(),
+  }, MESSAGE_ORIGIN);
+}
+async function applySharedViewport(state){
+  if (!state || ![state.tileX, state.tileY, state.offsetX, state.offsetY].every(Number.isFinite)) return;
+  const tileX = Math.trunc(state.tileX);
+  const tileY = Math.trunc(state.tileY);
+  const tileChanged = tileX !== TILE.x || tileY !== TILE.y;
+
+  viewOffset.x = state.offsetX;
+  viewOffset.y = state.offsetY;
+  currentLocation = state.currentLocation &&
+    Number.isFinite(state.currentLocation.latitude) &&
+    Number.isFinite(state.currentLocation.longitude)
+      ? { ...state.currentLocation }
+      : null;
+
+  if (!tileChanged){
+    scheduleRender();
+    updateMapPosition();
+    return;
+  }
+
+  tileGeneration++;
+  tileCache.clear();
+  tileLayers = null;
+  networkTilesEnabled = true;
+  TILE.x = tileX;
+  TILE.y = tileY;
+  updateMapPosition();
+  setMsg('もう一方のマップと 位置をそろえている……');
+  try {
+    await fetchMapTile(tileX, tileY);
+    await ensureTilesAround();
+    setMsg(DEFAULT_MSG);
+  } catch (error) {
+    console.error(error);
+    setMsg('同期した位置のマップを よみこめなかった……');
+  }
+}
+if (EMBEDDED){
+  window.addEventListener('message', ev => {
+    if (ev.source !== window.parent) return;
+    if (location.origin !== 'null' && ev.origin !== location.origin) return;
+    if (ev.data?.type === 'pixelmap:set-viewport') applySharedViewport(ev.data.state);
+  });
+}
 cv.addEventListener('pointerdown', ev => {
   if (!tileLayers || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
   const r = cv.getBoundingClientRect();
@@ -2399,6 +2280,7 @@ cv.addEventListener('pointermove', ev => {
     const maxTile = 2 ** TILE.z;
     viewOffset.y = Math.max(-TILE.y * H, Math.min((maxTile - TILE.y - 1) * H, viewOffset.y));
     scheduleRender();
+    publishViewport();
     if (drag.moved) setMsg('マップを いどうしている……');
     return;
   }
@@ -2417,6 +2299,7 @@ function finishDrag(ev, cancelled = false){
   rebuildTileLayers();
   render();
   updateMapPosition();
+  publishViewport();
   if (!cancelled) ensureTilesAround().catch(console.error);
 }
 cv.addEventListener('pointerup', ev => finishDrag(ev));
@@ -2461,7 +2344,11 @@ function centerMobileMap(){
 window.addEventListener('load', () => requestAnimationFrame(centerMobileMap));
 window.addEventListener('resize', () => requestAnimationFrame(centerMobileMap), { passive:true });
 
-boot();
+boot().finally(() => {
+  if (EMBEDDED){
+    window.parent.postMessage({ type:'pixelmap:ready', mapId:MAP_ID }, MESSAGE_ORIGIN);
+  }
+});
 </script>
 </body>
 </html>
