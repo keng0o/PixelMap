@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-17T07:10:07.168Z",
+  "generatedAt": "2026-08-17T07:46:22.625Z",
   "source": "variants/map-02-refined.html",
   "tileSource": "https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf",
   "zoom": 14,
@@ -155,9 +155,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "dd7ed8f80a3c7aa2dab329c9aad082d670a2be02a9090f068976929721e09d44",
+      "sha256": "47ea261a46dcc3c86ab891a172473c59d5880ace2e8aca072b52746a6e3284b4",
       "renderCount": 1,
-      "renderMs": 1979.6,
+      "renderMs": 1818.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -237,9 +237,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "b844df6555cb3a24c0f4da2f74110adeb684a8e104d3ab6c5d715102d7261d65",
+      "sha256": "44ed7385274f28aee3d869c52a17a37078da14a209324ac8e1ef76234b45da19",
       "renderCount": 1,
-      "renderMs": 197.2,
+      "renderMs": 183.3,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -318,9 +318,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "432d08e19676ed38199881f24cd56f3875ebf5c26ed3e463dce86a5e370a4cd0",
+      "sha256": "c9b088f37d3b3c709a7cde76f5f7d9743ad7d95a070f099077768ca69fbee393",
       "renderCount": 1,
-      "renderMs": 437.6,
+      "renderMs": 394.7,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -398,9 +398,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "04f647dbe4f8fe7c679632d252ac74dc914a6cce3c3d76d126dc635909ba91ce",
+      "sha256": "c74c25d5009e8b7457e9a0ca2d901907c84be4c13ce0a8d09550c7f59eced270",
       "renderCount": 1,
-      "renderMs": 1044.5,
+      "renderMs": 919.7,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -479,9 +479,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "b5b54722d6f6a523fd985faca790b068980a56879b092f9236549c4a7e72db67",
+      "sha256": "fc0838a7180304959f1ebf159d9cf33fbcbf30533c7af6fe7358df8a3d79d230",
       "renderCount": 1,
-      "renderMs": 242.1,
+      "renderMs": 219.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -560,9 +560,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "beb5aff74193c55538121001d1711ea4759757e93bacf03200503ea0e00f43c2",
+      "sha256": "2a7135b775ba5ea653d9c6f110657ab8602f433106bca419a026fa533bd503e6",
       "renderCount": 1,
-      "renderMs": 855.6,
+      "renderMs": 745.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -642,9 +642,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "2c16de67ac31a966f8e8aef1b8c491d38b4a5c4ee036753fe69d2aab3e5c89fa",
+      "sha256": "1483926fb32045f2f487f0fc1757d59b17d093e28a11ab5e88b74c752173c8fe",
       "renderCount": 1,
-      "renderMs": 786.9,
+      "renderMs": 725.2,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -719,9 +719,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "08afaf6d977645450a0b3fce7048012a4dae6653ea10cdff6c818d92d7f5666d",
+      "sha256": "ef89548dc04fa4a02e24079940ad86309d91d7b7b28253d606389dc47350f57d",
       "renderCount": 1,
-      "renderMs": 104.6,
+      "renderMs": 91.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -799,9 +799,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "777c436047331bfe3ae748e76c92f9a1a5f66158a2e3efaa9c5f61898bb67de1",
+      "sha256": "3a63da4bb77c16f70df8cc7d2a456e7ee49f4edf5c85a4a1194dc1a97c98caad",
       "renderCount": 1,
-      "renderMs": 190.1,
+      "renderMs": 147.2,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -879,7 +879,7 @@
       },
       "sha256": "631fa5f44afc1419afb7a72e177cf6e8004f427b85f2cb5978f4875f27ab5dba",
       "renderCount": 1,
-      "renderMs": 207.1,
+      "renderMs": 182.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -957,9 +957,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "6ec54ff8fe9b6131cadc64a74ccffb2eb1e38067ba0c16742869380728cfc3b7",
+      "sha256": "ca68ac42f21dbcbf28e95ccc1245c27f897360e3e7abcf3bf1ce8b877e6d5816",
       "renderCount": 1,
-      "renderMs": 1991.2,
+      "renderMs": 1776.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1039,9 +1039,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "93bb9b0d4231bb408d3bddca6408827113c9ecd8c8a1a604297bd07901217179",
+      "sha256": "2f56a5848dba046e7d2af383c02d519d166d03f5e940708ed838afbfea72ffc7",
       "renderCount": 1,
-      "renderMs": 191.5,
+      "renderMs": 175.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1121,9 +1121,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "74d2d42f431c01476e68100b256d03728c0aa90032793abb629948ae390e9d9b",
+      "sha256": "735d168cf27de27dfab1d830c88b8e6ec2dbe6e4e4d908291ed386b999dfa184",
       "renderCount": 1,
-      "renderMs": 408.8,
+      "renderMs": 369.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1201,9 +1201,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "81a2639855dbda7b8211d17b520b7e85f8503190936ddea13b2b6eef62f32f40",
+      "sha256": "0ebd5e1cd6228874d76909115f7e71d539ff2e6c491d3f577c08f1223678d7dd",
       "renderCount": 1,
-      "renderMs": 1084.1,
+      "renderMs": 921,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1283,9 +1283,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "d428c4d560054cc508113d46828978f3d78754eff857eb67163d0dc2ae024dd7",
+      "sha256": "a68daa77f8814ffd8390421a4148781ea592ab1b5987756c90acdd03c109200e",
       "renderCount": 1,
-      "renderMs": 239,
+      "renderMs": 224.7,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1364,9 +1364,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "47b1e3681035530cd1bdb96eaf7b6a9891c6d82c25f6d5f9a9aa24bfe4fa87fe",
+      "sha256": "7e2376e632485ffb4f471585bdf769589d07661c770961752aea15a9202c2ffc",
       "renderCount": 1,
-      "renderMs": 897.1,
+      "renderMs": 749.3,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1446,9 +1446,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "080cdf48bfb117e1fe83ba381a669e98b396edbed1651ee9d6df0b29d63b47c3",
+      "sha256": "0c6d251eda273d8eecd915e2a878eeea8555925ee4c82c6d8bfa68370fd62ca6",
       "renderCount": 1,
-      "renderMs": 791.5,
+      "renderMs": 749.2,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1523,9 +1523,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "3a1ad868f3ec6d69ad28a9600a32ef351a93dd6c5a17e683906fe88524a6e120",
+      "sha256": "87852ba4e7ef8dccfb9a9a871b0b6d787b0b30850da2f9d801446b63882592ed",
       "renderCount": 1,
-      "renderMs": 101.9,
+      "renderMs": 92.1,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1602,9 +1602,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "97522b938bf21a5a8463e1e8e9c5e0883ccd9d876e2daf6690fbabd873e69893",
+      "sha256": "c0f7e5772103544a7e7728a496e5e196f27b474a6d777a713841128a7c395e6b",
       "renderCount": 1,
-      "renderMs": 162.7,
+      "renderMs": 146,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1682,7 +1682,7 @@
       },
       "sha256": "0bebc1fafa0164c16e97b2e8c483c228865501481b58b632c9bcaf821f9d9c45",
       "renderCount": 1,
-      "renderMs": 201.2,
+      "renderMs": 177.2,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1760,9 +1760,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "0ebe159d8deb555a54dfc2dbeb675a63f9f903c6f6287c0149a4e340d03e9fab",
+      "sha256": "1a9f6161f3075f4e6a81147f40114c442244a23b42566f7bd73c328e051d61c8",
       "renderCount": 1,
-      "renderMs": 1961.2,
+      "renderMs": 1794.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1842,9 +1842,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "1150d15f8c9df7c64c65d3558f0c655463960d24addff4816fbdcf63a1259eed",
+      "sha256": "736c37b5f3b99cda6f87bdd0e2ae6efb4da2661e95b7ab483c2c800332374dc2",
       "renderCount": 1,
-      "renderMs": 204.5,
+      "renderMs": 173.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -1924,9 +1924,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "d06e7937833ba18fd29b4b674a08e5174bd7b86d1fb2982126ad0246635c92cd",
+      "sha256": "6dc1f1be1779988382667b2ed686812d8dc0e5af6dfd89d84bab1f6483953527",
       "renderCount": 1,
-      "renderMs": 414,
+      "renderMs": 373.1,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2004,9 +2004,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "61613a06bc1d5ef2a93c82f36eaae8126a095ec01d2e9bd68e06c845dbcd303f",
+      "sha256": "2209cfe4b14172e6ce00265197f92da71fd61197db1a387e39e50bdb39739f25",
       "renderCount": 1,
-      "renderMs": 1031.3,
+      "renderMs": 905.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2085,9 +2085,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "7e8445d8eaa851cfa29e6e690cf3962d73e3995fa92c829ba3000c71a2d6d693",
+      "sha256": "6c4c7913e5302ed97cbb17f185cf94af104e466fe1ae4a44c3e95e6905b7652e",
       "renderCount": 1,
-      "renderMs": 237.8,
+      "renderMs": 220.8,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2166,9 +2166,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "6ff295d65408a494c1e5f920ca2fb6b1be2772c0def8480e5c3a6ef04e17e600",
+      "sha256": "d6cfede6beb8d63e818578f1f75590d76e0a73ef8fdd35befd023ad51ccc8a6d",
       "renderCount": 1,
-      "renderMs": 846.4,
+      "renderMs": 767,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2248,9 +2248,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "3057a1ed1273ca6fa2c1d9c4c708b3fa061cae79f7acd15ffac68ad8fa1bfbc7",
+      "sha256": "aa3a1efb17d95828ee62a07cbd6fb1cd0edc157011f23226126600c1449850e2",
       "renderCount": 1,
-      "renderMs": 788,
+      "renderMs": 761.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2326,9 +2326,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "17560e785795bfca01aa31d87f72280ca4274bb5e28c43d58a09d3723aae4bb2",
+      "sha256": "4c3e71d836de17607a9158f5cffafe22457b5b019bc7190bb1d85821d32ac6d9",
       "renderCount": 1,
-      "renderMs": 113.9,
+      "renderMs": 106,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2405,9 +2405,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "e4e63870e7c7433604f5a1e9646b27331e1b35e864a58ca380a8a2ad231df40f",
+      "sha256": "1b24c937370ab4481f27a2beef812c469869fbd3b6df3c9ad9cab285415e81d2",
       "renderCount": 1,
-      "renderMs": 174.2,
+      "renderMs": 159.7,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2485,7 +2485,7 @@
       },
       "sha256": "b3c23ac13fccd389ac436f78965abd1e0e1b726cb9e2662a377b21a85041ded2",
       "renderCount": 1,
-      "renderMs": 202.9,
+      "renderMs": 191.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2562,9 +2562,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "d6115972ed507f9bd4702e9ce5591a316e747bc2830a4efd56f96ec49ac37a05",
+      "sha256": "978bf475853195fce90d57904626272c9bc20d7c58b78c97b0602b6f5166d9a1",
       "renderCount": 1,
-      "renderMs": 1973.5,
+      "renderMs": 1872.7,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2644,9 +2644,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "c0f1e2bd61aa062688f09591ba7d9f17a8cd31cf626ecc5ebe3e23537b9e499f",
+      "sha256": "0e9ca6a47c54b1a61282f6d8a8a869d81ceab3f67797ee8ce152ca588e23c87f",
       "renderCount": 1,
-      "renderMs": 214.1,
+      "renderMs": 190,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2726,9 +2726,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "ab58632aed47d8db2533ac5670f6576ba98abeca48d3884f1c39b696c44e0b20",
+      "sha256": "77b481a48ad8d05dd9de13073af4fa27efc9c0fbb2280a5ecf5b9bf3cfec0ff7",
       "renderCount": 1,
-      "renderMs": 411,
+      "renderMs": 408.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2805,9 +2805,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "b0b1bbb289760972b0bae3f5882b2390d562de0eb02e55daacb87019ceea7e35",
+      "sha256": "efc5baa8936531cb31760650645710485c64982c31b37379a746eda05a5436ed",
       "renderCount": 1,
-      "renderMs": 1041,
+      "renderMs": 989.1,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2887,9 +2887,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "5b91ed88b23f049970dc5fa4f28c932c1d6c5cecd5f14ca27a5f812fd60b1261",
+      "sha256": "e3ec71f9a4fee6575d6e6eca77856c7b02cf9f9560bf8850a8062dc25769c0b7",
       "renderCount": 1,
-      "renderMs": 252.4,
+      "renderMs": 242.8,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -2967,9 +2967,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "52bca7efeaf9dcc52472539939002f0f256c4cd92ba3a614d38497408cdc7abb",
+      "sha256": "7bcba4e32d8ad1ff42e17e4efb1ca0e4c7562cae091d3b793df7e2f7df12301c",
       "renderCount": 1,
-      "renderMs": 832.4,
+      "renderMs": 782.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3050,9 +3050,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "5b6f8b6ad3ebbcfeccf5853749d12fff34450745cf54e2a129d11d7bb3c71e7d",
+      "sha256": "798778d6fdf601ed624a9ac37f2735edebdb6f250cabd8d1165b1ac8d2a2cb91",
       "renderCount": 1,
-      "renderMs": 806.1,
+      "renderMs": 743,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3127,9 +3127,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "52a7ac8aecca0c6ae45af0110a234d74ec279beda7c51ea5a35dc2b19554bbd3",
+      "sha256": "2ac79b969d770a76f5e0a3335e039df3e803037d29ea4193f9a2c38f1638cbca",
       "renderCount": 1,
-      "renderMs": 100.9,
+      "renderMs": 97.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3206,9 +3206,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "7f4bb12ad6f6f1db05899b93889f60e9635816d645b9a96eb7185938768f9c4f",
+      "sha256": "b63809ff239466539013426615bb85b051213109aa7049f98e9ca111b2a02abf",
       "renderCount": 1,
-      "renderMs": 188.9,
+      "renderMs": 146.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3288,7 +3288,7 @@
       },
       "sha256": "8ff1683f9b1558848175f75243fa69f1b7b13531f710aa2106f431a10d69c3a4",
       "renderCount": 1,
-      "renderMs": 210.3,
+      "renderMs": 191.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3366,9 +3366,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "f8b20a949ec7a8b76dbf322f71ceaa9ca2511a8e97e0e642fbe9dfa62b80bf26",
+      "sha256": "ab34290dba3b0051dbdfa9030fe32d52ca62326c44e8e1de3ea215e87e47c7af",
       "renderCount": 1,
-      "renderMs": 1950.1,
+      "renderMs": 1832.8,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3446,9 +3446,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "7385c4170cab1a47d145366a899d736a74b442025cc44044a3033acad073ed68",
+      "sha256": "335cae6b77996da6a984242416390311c5d8db14f67f7a15b82f7402180a1118",
       "renderCount": 1,
-      "renderMs": 187.2,
+      "renderMs": 183.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3527,9 +3527,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "ea599b4c2a0d2eba6e7a0ce7c5e22164f2c846db2239c883e7159af87cb740c4",
+      "sha256": "0e105f02b7fd1dc1aea6d049d46e0a8a1ed5ddd4ee341b000cac2a0f7d0aa0b4",
       "renderCount": 1,
-      "renderMs": 406.7,
+      "renderMs": 383.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3603,9 +3603,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "713be6a2ad60d8adb39f150f615660c37e4c6502f200bd202aa5ba4418c794cf",
+      "sha256": "ecb771ed549c676add3be2ad45f7fb9eb4017539092f88bb77f7060292bf3cf8",
       "renderCount": 1,
-      "renderMs": 1027.1,
+      "renderMs": 981.8,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3682,9 +3682,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "6367b772094c9fc3ed478526b7ac830a50e4f5d4da537c937a54988a78e2d205",
+      "sha256": "7253b8b1705d21f31a6e80a1a5c944753da6a24b8c448b4cc862363811c17fda",
       "renderCount": 1,
-      "renderMs": 238.8,
+      "renderMs": 226.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3761,9 +3761,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "c35006034245a09866ed35bc75bbe9aad3a6592bd3ed5f812bf3b36126434c9f",
+      "sha256": "0f0757995c16fe6b790ad3aab16dd4bd121d59c512704bd7cd7828f09af842f2",
       "renderCount": 1,
-      "renderMs": 825.5,
+      "renderMs": 778,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3841,9 +3841,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "89f3ea5ebe800c0acae712fb480dbe1a7e90e07fb2eacffca892e77520ec73d8",
+      "sha256": "24914ef340852cf531bc858e21a9b749df6ae5149acec2a15c86cca57bb3146b",
       "renderCount": 1,
-      "renderMs": 795,
+      "renderMs": 744.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3917,9 +3917,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "fa865c30ca220b988cfaa452b5428bdc758bcb5dc29d43d0a53efa1eb63f92bf",
+      "sha256": "0f2f4457cee5209661b8ff1e49fd4da2739426e48f20188fe27a6d43644a979d",
       "renderCount": 1,
-      "renderMs": 104.5,
+      "renderMs": 96.1,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -3995,9 +3995,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "24bda945caaf30a7544b46c76c27fc34988cc8a39108a49a3ca5c725a25f2620",
+      "sha256": "8984a60a98fa7643b1c8d08ce18528d64fd293ec26b91e0c7efea82a4b163019",
       "renderCount": 1,
-      "renderMs": 172.2,
+      "renderMs": 147.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4074,7 +4074,7 @@
       },
       "sha256": "137dae098bf27868ade5e68e300a631f8fc06bb27f7abe0b8a3090532f14d1cb",
       "renderCount": 1,
-      "renderMs": 184.2,
+      "renderMs": 199.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4151,9 +4151,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "0aaf82bea2c4d7a51e60a6d629f47889a6e66b243b7b07a6982dda41a0cb1bb7",
+      "sha256": "bbf866e374882d984c9be488e217bcd71537c9676ceb5fa76bbc308dd8864707",
       "renderCount": 1,
-      "renderMs": 1969.5,
+      "renderMs": 1838.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4232,9 +4232,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "dd8233ab32c7f0d0709a3c2a69582407dfb342d9a2ff6eb9cefc33acd975d25b",
+      "sha256": "39e5b2217a06980f9953495c9ceb541d0848752fc77c0ae3a4b080d0bcd91c4e",
       "renderCount": 1,
-      "renderMs": 217.6,
+      "renderMs": 200.2,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4313,9 +4313,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "f77672ae48b1fcf2d389a06ce58c0eb25c7b5b45e5c2c1ed02b1404c1daf6638",
+      "sha256": "a67b591bde0ad19574e3b921fefddbadb6e7fe668dd004b85ab45c4914f9feed",
       "renderCount": 1,
-      "renderMs": 491.2,
+      "renderMs": 440.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4393,9 +4393,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "a662c149dcf889a029d8317dfdd3a3a17a651a3d27dd1e7651f4ea4bd4f2fa9e",
+      "sha256": "88c478d2d2c71c91eb85463b043d8224d67c02ec8bb1fc1d95aea59e4305b9c0",
       "renderCount": 1,
-      "renderMs": 1162.8,
+      "renderMs": 1075.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4474,9 +4474,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "25afd437870c2cc8a7b33de8020ca71c38cd9fb7cfd37b2b9c244a3d9d2b0f3b",
+      "sha256": "a2c8b454d2e67ab25522157231106a675200edd6ce588c551babb35e58637bb6",
       "renderCount": 1,
-      "renderMs": 305.9,
+      "renderMs": 240.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4555,9 +4555,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "29d4d89c351394f3dcc77a594544b180d5117d3d6df54f020fdfc9b7735be38e",
+      "sha256": "a163a4bb7eb0c0eb01e33f36cd695f4bb7ed30b71803417f93485fb3fd0607ed",
       "renderCount": 1,
-      "renderMs": 862.6,
+      "renderMs": 866.7,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4636,9 +4636,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "d387657492e1b133ec64101b8a534841ce4ffd211505e47aac1a97e0abc06c86",
+      "sha256": "50daf5444365618a66eb791074d9f1af0f507a7ae3c9314ed7099a3e68af00a2",
       "renderCount": 1,
-      "renderMs": 838,
+      "renderMs": 760.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4714,9 +4714,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "07cbe820b7cce7d2b19a03b678b59686b188f08220b361deb91d16a1d889af71",
+      "sha256": "ee3b80a8d1e403e755754db67be8daad10b5e1599d66aa35321d895b77082fb3",
       "renderCount": 1,
-      "renderMs": 130.2,
+      "renderMs": 107.7,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4793,9 +4793,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "be7cff3c2a8d85983e0453f39eb7829ed70dff8d249a8e6007b056c7a7519a38",
+      "sha256": "972c8d002655529e87dec57fe96fe7cd600a50080863885f5a9c15263626e1b4",
       "renderCount": 1,
-      "renderMs": 192.8,
+      "renderMs": 149,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4873,7 +4873,7 @@
       },
       "sha256": "f9328a03d30321f11acfef5774f7a90123f483d772edc121f036583d4ac7531c",
       "renderCount": 1,
-      "renderMs": 217.3,
+      "renderMs": 213.1,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -4951,9 +4951,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "4df221f8587db14febf32c3369b0535fe03f52f63c70b50f6528325653ee6e57",
+      "sha256": "5d929a3df7c7a0bb3fb8343a2cfeaffa39652a1249b39975577b81fd6cc2b1f1",
       "renderCount": 1,
-      "renderMs": 2098.7,
+      "renderMs": 1846,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5034,9 +5034,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "9986ad2b771417ec5df02cd0f0f382d34c6ce75394f1d0ba66c41605b27fae73",
+      "sha256": "bfb4a4bb4272d0ad7f189140e1027710e057d09cbfaacd0de14b9c7ea4373d23",
       "renderCount": 1,
-      "renderMs": 199,
+      "renderMs": 210.3,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5117,9 +5117,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "7aa79f45850568ed98661ac6dbe6975b14bd03c8c51f8b04576838cfc6f59369",
+      "sha256": "3694692f818c9fb662917f6225495f3a926b7a4726805c35a904f53e6b3a0370",
       "renderCount": 1,
-      "renderMs": 407.9,
+      "renderMs": 386.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5199,9 +5199,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "8da0e15513e0b9dc86ca14cf5335b2d1f192c87f48760d7d3421d4d14c38fca1",
+      "sha256": "b33cda1463e0bdf128c91dffb741c4ae7dbf880d12a166b05de73365bc9a7c23",
       "renderCount": 1,
-      "renderMs": 1032.1,
+      "renderMs": 996.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5280,9 +5280,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "93f0c7d3a2858be494fb75f6da23274bf4ab4a0ca7b281c091039ddb386d33d9",
+      "sha256": "83d87dbcfc134582cbeda7bc7d1927d737f10dc379134c997665cd26b11470b3",
       "renderCount": 1,
-      "renderMs": 254.1,
+      "renderMs": 240.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5362,9 +5362,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "150c6d8fdc84b4e9e81017f0b5bef669da92668b16d14c6877877e47ab12eb92",
+      "sha256": "8e36330f8e78555fee0174c52bf5e831f6c1c4ea41bbfec96af162bff7a66f4e",
       "renderCount": 1,
-      "renderMs": 837.3,
+      "renderMs": 784.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5446,9 +5446,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "525e389f4123b0f1a1c371ee5f6cce50c054a1ff004b25cef3bcfc48231643a9",
+      "sha256": "3e3b9688b6bc5fea1e5ef03e000ea5df630fdcf67a4d032ff17ad4e450a4d820",
       "renderCount": 1,
-      "renderMs": 794,
+      "renderMs": 745.2,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5522,9 +5522,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "29c9d99a18d193469f1549bc1684c808c3287e541aae499d1a2c9aa361311ee0",
+      "sha256": "9352397eddddc21d618dfe5af960e01069dda40dfd1c3f0804ba2679a07e4077",
       "renderCount": 1,
-      "renderMs": 108,
+      "renderMs": 103.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5604,9 +5604,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "dd3a9c348d7a8b38a1aefd93ec90fd556bfd598ba4b23ed3ac3de23dd1b01b19",
+      "sha256": "adfc24e5c69a35f1cfaa4067e934fe597520b096adcdd8dfe4ebd30f2d57d399",
       "renderCount": 1,
-      "renderMs": 164.9,
+      "renderMs": 185.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5687,7 +5687,7 @@
       },
       "sha256": "91a38aa644efcc16e9d009903db4dc5ac886a83023798752c9e8df0ddab924b6",
       "renderCount": 1,
-      "renderMs": 210,
+      "renderMs": 212.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5766,9 +5766,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "09aa5ded90c6a6b8d9572d09eef8274ffba18441a17bf8e1c0030036ac6c0554",
+      "sha256": "4f47827445a5cdd544706ab130e16321a7b8daeab907d5c35f10a221d03b39f2",
       "renderCount": 1,
-      "renderMs": 2000.5,
+      "renderMs": 1872.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5848,9 +5848,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "66ac3e1031195e78365a5aa6a95d8ac00292137b20dc10e229527c01ea6eb8da",
+      "sha256": "462457aa9cc196566476f9cfa02fbad2a12dbaf90d459d4cecc520f1dd420811",
       "renderCount": 1,
-      "renderMs": 218.4,
+      "renderMs": 198.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -5930,9 +5930,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "d94d58a0712d000d89c781e8698b5c317b33060a6bfa8d06e36174781eff05f9",
+      "sha256": "41c0524ecd9e831882711dff75fbae5b0614305ae9dbcc68402dc5263fb5a9d9",
       "renderCount": 1,
-      "renderMs": 449.8,
+      "renderMs": 467.1,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6011,9 +6011,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "1a0992c41fab7b83f96e8b9269efa83315bb7500390725d6250d85c8e340f102",
+      "sha256": "a86b1b26bfaba00644cc110728c5527210d12428a34b464add56df36228a766c",
       "renderCount": 1,
-      "renderMs": 1066.1,
+      "renderMs": 971.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6093,9 +6093,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "5700501800c1c1fd808f5b060a0a16b854f59074392b0458be7592ae32c64e06",
+      "sha256": "6ac51304180488b0ae018a2f013c7b207433745238c0dee2cef744ca5d555e84",
       "renderCount": 1,
-      "renderMs": 258.3,
+      "renderMs": 227.1,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6174,9 +6174,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "fbafe76f1eecb21175ea80f651d694e97c6e4f6bee5179a23f65c3963f650391",
+      "sha256": "420dfea311fedecdac96af3d7b84559fee6bb0da219e80a63ce8999fe46a7075",
       "renderCount": 1,
-      "renderMs": 841.3,
+      "renderMs": 754.1,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6257,9 +6257,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "6df5be997360ae4739d767e20f16fa5a99d7a8d220342a4b9462dd00b7f790f8",
+      "sha256": "a835dbec9fc0346a8d46bbb505c6835e89ce2ca0021bafe99ecfba0ea9010322",
       "renderCount": 1,
-      "renderMs": 804.2,
+      "renderMs": 763.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6335,9 +6335,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "d093be173f79542065661802f6398a4504e33df037edc97f0d4d180b172852e5",
+      "sha256": "658940885f4c1ce034f4395efb6986feccfdee28ed9aec19cc27da73625a7d60",
       "renderCount": 1,
-      "renderMs": 110.1,
+      "renderMs": 99.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6414,9 +6414,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "5273fb4f8281d548b8525b1f84a306717726065974a805cbdc0699cafdc54cb1",
+      "sha256": "0570d8275b82d35430c26cf7c1293a90d8929e92a771b5ef852cb10f09e1d049",
       "renderCount": 1,
-      "renderMs": 159.9,
+      "renderMs": 159.2,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6496,7 +6496,7 @@
       },
       "sha256": "a46f3d0465a112355b0c9ca07b2822ed4014091e1be9145b1eae27001737947f",
       "renderCount": 1,
-      "renderMs": 227,
+      "renderMs": 204.8,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6575,9 +6575,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "bb43793b855ba86a034a900fbacbcd386e75e8a042ae04ce8199c679dfb97254",
+      "sha256": "e0dcd6d50cc63ec1c6e1451bf01697a4e06cb7237334cdc5f8ad2ff5f6ff3dcc",
       "renderCount": 1,
-      "renderMs": 1971.9,
+      "renderMs": 1826.2,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6657,9 +6657,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "1340653c937659221fb8daa6f8d08e3eb09c7c260656575dda14edf189de2563",
+      "sha256": "35ea336723a0381444171b1b90a9d55ffb178c9b4856787f6d542dc3b1819a77",
       "renderCount": 1,
-      "renderMs": 192.6,
+      "renderMs": 179.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6738,9 +6738,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "047a2b144f95ae9b795c7cc597f0ab65239a677f5e51b835422ebd6210d7e062",
+      "sha256": "9c91a8a7aad8eb9828221bca30f9a8a9f40269acd9bcfa6deb5a4edf131bb73a",
       "renderCount": 1,
-      "renderMs": 424,
+      "renderMs": 444.3,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6818,9 +6818,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "1a6b36f113d20c0817a5df9f2fa141eb17a8f62c0b95cdd433952c49796d55e0",
+      "sha256": "dab95fb279a1ccd9b7d7335e4d51318501a6f58a0dc0e340307bdf55d41e2df4",
       "renderCount": 1,
-      "renderMs": 1049.6,
+      "renderMs": 958.3,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6899,9 +6899,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "4ced00d7b95c23767aabce7fdd2d3f588a6c8142dc2187181e65314d363046fc",
+      "sha256": "3c4a835dc8133a633eb15db15c8cc6ff125da225151b0149b3c110c60ef0395b",
       "renderCount": 1,
-      "renderMs": 264,
+      "renderMs": 223.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -6980,9 +6980,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "e0ed1e340ecc039a50ab31016ec163e39134332d181bd4dd34d763c48d4a89a1",
+      "sha256": "ca4ec23aed2dbbebdcf0df7a3b0e5359fbc4209632942187757332dd7cafc496",
       "renderCount": 1,
-      "renderMs": 833.5,
+      "renderMs": 779.3,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7062,9 +7062,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "c3cc29685a27f8409ac0eb5592bc0f8ec46a8361d34643f5875f512e688087d8",
+      "sha256": "017d149a5f40cb4310d0c5dc5088e9dea9a6680bc97c8994951a17543d62e07e",
       "renderCount": 1,
-      "renderMs": 801.1,
+      "renderMs": 765.3,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7139,9 +7139,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "df6767d1e6ee50744e064ce4b62bdf69f029237ab380f849731423996de3fe3a",
+      "sha256": "120340e4f9906a3250c795d925820a223500d04b7d98540de7df373a20a4d050",
       "renderCount": 1,
-      "renderMs": 106.8,
+      "renderMs": 97.7,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7219,9 +7219,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "94470d13ca270b31ef614effcf1afd60f4bea554da43bd08dfcd6c0ec85c2f18",
+      "sha256": "afa6e6d01fea0193c6adb4b52e74dfed04def3891a2c2fd37fd906d8145f7b7c",
       "renderCount": 1,
-      "renderMs": 163,
+      "renderMs": 147.9,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7299,7 +7299,7 @@
       },
       "sha256": "1e652bd48af5efba0000bc0ee9f0a08ed53d796efef78bcb7974b5958cd8f898",
       "renderCount": 1,
-      "renderMs": 234.8,
+      "renderMs": 186.8,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7377,9 +7377,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "80c63516b603003b2b67a30574fdeb5f5277c9b3a93efbc8ef90f66aaa1900bc",
+      "sha256": "a3a3be38c6b547d6c0435ffd713456034d4bec6a875fbe06e64066d0859550f1",
       "renderCount": 1,
-      "renderMs": 1970.4,
+      "renderMs": 1894.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7460,9 +7460,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "ae20546ef931677614f7e2a3009d187ef1dab4ca135c66b1dc36be563a68767d",
+      "sha256": "ae81a9e8fd0f997bfd343420a7d29dcc98931970e8b3a681b1569e457ac86c38",
       "renderCount": 1,
-      "renderMs": 198.3,
+      "renderMs": 179,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7543,9 +7543,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "b44dc77faffd0336bdf58dcdb69e262c4d5052649c76ae7931e9ab53f2309e22",
+      "sha256": "3953503a3e74238c2919562185110f9f0b33503f75567cf237f32a9a8567b8e3",
       "renderCount": 1,
-      "renderMs": 425,
+      "renderMs": 399.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7623,9 +7623,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "02f7e301d119521a90acf9039ea6657e353dfcb801356778929ca9b4395edcee",
+      "sha256": "10ef7471b982f2fd719b07fcb70b42ebd2fc1a3c562c58179cd7f23283a2fca4",
       "renderCount": 1,
-      "renderMs": 1016.7,
+      "renderMs": 1003,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7704,9 +7704,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "390136c69393e18aef1fd0c2d27b5cb1d04c37e55a826ef7f7a138efba57292e",
+      "sha256": "eea7718f5e3f69b8d4425f960adb792562fc5b17034e396a7ccf8063bd0dd7c0",
       "renderCount": 1,
-      "renderMs": 248.3,
+      "renderMs": 268.4,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7785,9 +7785,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "6ebc763ec3310f1e27616ec230f74169b7ee094c5febe54e9c426dbaf2408fc5",
+      "sha256": "5593a7d27b591b05f2b8176f1fe0c2e15aeb8313c095932f7ae36f470c82dd74",
       "renderCount": 1,
-      "renderMs": 873.2,
+      "renderMs": 837.8,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7868,9 +7868,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "89011a02bb7c4c771e73f7196b91b742e06ccbf59a5cb225cd258ce8e9ce927c",
+      "sha256": "e8873075ed0cdb1e85a98dd323813a85d5df1b64c7c6338763934fd15268f232",
       "renderCount": 1,
-      "renderMs": 806.3,
+      "renderMs": 778.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -7946,9 +7946,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "464569ff9a53c7db1d97e6dc64ee7b93134bc4a64e98a0e8544dbb44b0b725b9",
+      "sha256": "82c0629c5b0d9b9b1815061b8bea37d7bdb90f6f6c8251a1e850d1aed5e75387",
       "renderCount": 1,
-      "renderMs": 134.5,
+      "renderMs": 106.8,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -8026,9 +8026,9 @@
         "x": 220,
         "y": 26
       },
-      "sha256": "b52e97e0f6d30f230ab47df2bc69586c1c413c2d9285f797757737935e978b01",
+      "sha256": "07914f51bbb32ff75f6649963cacc11b951703ed168128c65c50312e66d00228",
       "renderCount": 1,
-      "renderMs": 160.9,
+      "renderMs": 166.5,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
@@ -8107,7 +8107,7 @@
       },
       "sha256": "51348d7829f9decca7c83b7d9ca203a17348fd0bf65fdff8d11ad1c2b8fbbfd6",
       "renderCount": 1,
-      "renderMs": 207.7,
+      "renderMs": 206.6,
       "tileCacheSize": 9,
       "poi": {
         "assetCounts": {
