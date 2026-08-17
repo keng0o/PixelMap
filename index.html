@@ -11,9 +11,7 @@
     --bg:#181820;
     --panel:#101018;
     --ink:#f8f0d8;
-    --muted:#a8a088;
     --accent:#88c860;
-    --gold:#f8d038;
   }
   *{ box-sizing:border-box; margin:0; padding:0; }
   html, body{ width:100%; min-height:100%; }
@@ -28,27 +26,6 @@
     background:var(--bg);
     color:var(--ink);
     font-family:'DotGothic16', monospace;
-  }
-  .page-header{
-    flex:0 0 auto;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:18px;
-    min-height:58px;
-    padding:9px 15px;
-    border:2px solid var(--ink);
-    box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--ink);
-    background:var(--panel);
-  }
-  h1{ font-size:17px; font-weight:normal; letter-spacing:2px; }
-  .help{ margin-top:3px; color:var(--accent); font-size:11px; letter-spacing:1px; }
-  #syncStatus{
-    flex:0 0 auto;
-    color:var(--muted);
-    font-size:11px;
-    text-align:right;
-    white-space:nowrap;
   }
   .comparison{
     min-height:0;
@@ -67,24 +44,6 @@
     background:var(--panel);
     overflow:hidden;
   }
-  .map-title{
-    flex:0 0 36px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    padding:7px 11px;
-    border-bottom:2px solid var(--ink);
-    color:var(--gold);
-    font-size:13px;
-    font-weight:normal;
-    letter-spacing:2px;
-  }
-  .map-title span{
-    color:var(--muted);
-    font-size:9px;
-    letter-spacing:0;
-  }
   iframe{
     display:block;
     flex:1 1 auto;
@@ -102,37 +61,21 @@
   footer a{ color:var(--accent); }
   @media (max-width:680px){
     body{ gap:6px; padding:7px; }
-    .page-header{ min-height:50px; padding:7px 9px; }
-    h1{ font-size:13px; letter-spacing:1px; }
-    .help{ font-size:9px; }
-    #syncStatus{ display:none; }
     .comparison{ gap:5px; }
-    .map-title{ flex-basis:32px; padding:6px; font-size:11px; }
-    .map-title span{ display:none; }
     footer{ font-size:8px; }
   }
 </style>
 </head>
 <body>
-<header class="page-header">
-  <div>
-    <h1>PIXELMAP 2画面比較</h1>
-    <p class="help">位置は共通・表示レイヤーは左右で個別。どちらかをドラッグすると両方が動きます。</p>
-  </div>
-  <p id="syncStatus" aria-live="polite">OpenFreeMap z14 / 14549 / 6460</p>
-</header>
-
 <main class="comparison">
-  <section class="map-panel" aria-labelledby="leftTitle">
-    <h2 id="leftTitle" class="map-title">MAP A <span>個別レイヤー設定</span></h2>
+  <section class="map-panel" aria-label="MAP A">
     <iframe
       src="variants/map-02-refined.html?embedded=1&amp;map=left"
       title="MAP A。レイヤー設定は左側の地図だけに反映されます"
       allow="geolocation"
     ></iframe>
   </section>
-  <section class="map-panel" aria-labelledby="rightTitle">
-    <h2 id="rightTitle" class="map-title">MAP B <span>個別レイヤー設定</span></h2>
+  <section class="map-panel" aria-label="MAP B">
     <iframe
       src="variants/map-02-refined.html?embedded=1&amp;map=right"
       title="MAP B。レイヤー設定は右側の地図だけに反映されます"
@@ -150,7 +93,6 @@
 <script>
 'use strict';
 const frames = [...document.querySelectorAll('iframe')];
-const syncStatus = document.getElementById('syncStatus');
 const targetOrigin = location.origin === 'null' ? '*' : location.origin;
 let latestViewport = null;
 
@@ -174,10 +116,6 @@ window.addEventListener('message', event => {
   if (event.data?.type !== 'pixelmap:viewport') return;
 
   latestViewport = event.data.state;
-  if (latestViewport && Number.isFinite(latestViewport.tileX) && Number.isFinite(latestViewport.tileY)){
-    syncStatus.textContent =
-      `同期中 OpenFreeMap z14 / ${Math.trunc(latestViewport.tileX)} / ${Math.trunc(latestViewport.tileY)}`;
-  }
   for (const frame of frames){
     if (frame.contentWindow !== event.source) sendViewport(frame, latestViewport);
   }
