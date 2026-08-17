@@ -335,6 +335,41 @@
     #toolbar input{ width:18px; height:18px; }
   }
   body.embedded #patternBar{ display:none; }
+  body.shared-controls{
+    display:block;
+    min-height:100vh;
+    min-height:100dvh;
+    padding:0;
+    overflow:hidden;
+    background:#78b850;
+  }
+  body.shared-controls #patternBar,
+  body.shared-controls #toolbar,
+  body.shared-controls #msg,
+  body.shared-controls #stats,
+  body.shared-controls #attrib{ display:none; }
+  body.shared-controls .map-frame{
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    padding:0;
+    overflow:auto;
+    scrollbar-width:none;
+    border:0;
+    box-shadow:none;
+    background:#78b850;
+  }
+  body.shared-controls .map-frame::-webkit-scrollbar{ display:none; }
+  body.shared-controls canvas{
+    display:block;
+    width:max(100vw, 100vh);
+    height:max(100vw, 100vh);
+    width:max(100dvw, 100dvh);
+    height:max(100dvw, 100dvh);
+    max-width:none;
+  }
   body.capture-mode{
     display:flex;
     min-height:100vh;
@@ -638,6 +673,7 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
 const ICON_PATTERNS = Array.isArray(window.PixelMapIconPatterns) ? window.PixelMapIconPatterns : [];
@@ -666,6 +702,7 @@ document.getElementById('map').setAttribute(
 );
 
 document.body.classList.toggle('embedded', EMBEDDED);
+document.body.classList.toggle('shared-controls', SHARED_CONTROLS);
 document.body.classList.toggle('capture-mode', CAPTURE_MODE);
 document.documentElement.style.setProperty('--pattern-accent', ACTIVE_PATTERN.palette.transit || ACTIVE_PATTERN.palette.generic);
 document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.palette.generic || '#78828a');
@@ -3233,6 +3270,50 @@ function publishViewport(){
     state:viewportState(),
   }, MESSAGE_ORIGIN);
 }
+function layerSnapshot(){
+  return {
+    activeOptions:layerInputs.filter(input => input.checked).map(optionForInput),
+    layerOrder:[...layerOrder],
+    catalog:[...document.querySelectorAll('.layer-category')].map(panel => ({
+      title:panel.querySelector('.category-title')?.textContent?.trim() || '',
+      items:[...panel.querySelectorAll('[data-category-item]')].map(input => ({
+        option:optionForInput(input),
+        label:input.parentElement?.textContent?.trim() || optionForInput(input),
+        checked:input.checked,
+      })),
+    })),
+  };
+}
+function publishLayerState(){
+  if (!EMBEDDED) return;
+  window.parent.postMessage({
+    type:'pixelmap:layers',
+    mapId:MAP_ID,
+    layers:layerSnapshot(),
+  }, MESSAGE_ORIGIN);
+}
+function applySharedLayers(state){
+  if (!state || !Array.isArray(state.activeOptions)) return;
+  const allowed = new Set(layerInputs.map(optionForInput));
+  const active = new Set(state.activeOptions.filter(option => allowed.has(option)));
+  for (const input of layerInputs) input.checked = active.has(optionForInput(input));
+
+  const requestedOrder = Array.isArray(state.layerOrder) ? state.layerOrder : [];
+  const seen = new Set();
+  layerOrder = requestedOrder.filter(option => active.has(option) && !seen.has(option) && seen.add(option));
+  for (const input of layerInputs){
+    const option = optionForInput(input);
+    if (active.has(option) && !seen.has(option)){
+      seen.add(option);
+      layerOrder.push(option);
+    }
+  }
+  document.getElementById('toolbar').dataset.layerOrder = layerOrder.join(',');
+  for (const panel of document.querySelectorAll('.layer-category')) syncCategoryMaster(panel);
+  syncAllLayersToggle();
+  render();
+  publishLayerState();
+}
 async function applySharedViewport(state){
   if (!state || ![state.tileX, state.tileY, state.offsetX, state.offsetY].every(Number.isFinite)) return;
   const tileX = Math.trunc(state.tileX);
@@ -3275,6 +3356,7 @@ if (EMBEDDED){
     if (ev.source !== window.parent) return;
     if (location.origin !== 'null' && ev.origin !== location.origin) return;
     if (ev.data?.type === 'pixelmap:set-viewport') applySharedViewport(ev.data.state);
+    if (ev.data?.type === 'pixelmap:set-layers') applySharedLayers(ev.data.layers);
   });
 }
 cv.addEventListener('pointerdown', ev => {
@@ -3401,12 +3483,14 @@ for (const panel of document.querySelectorAll('.layer-category')){
     syncCategoryMaster(panel);
     syncAllLayersToggle();
     render();
+    publishLayerState();
   });
   for (const item of items) item.addEventListener('change', () => {
     updateLayerOrder(item);
     syncCategoryMaster(panel);
     syncAllLayersToggle();
     render();
+    publishLayerState();
   });
   syncCategoryMaster(panel);
 }
@@ -3419,13 +3503,14 @@ allLayersToggle.addEventListener('change', () => {
   for (const panel of document.querySelectorAll('.layer-category')) syncCategoryMaster(panel);
   syncAllLayersToggle();
   render();
+  publishLayerState();
 });
 syncAllLayersToggle();
 locateBtn.addEventListener('click', locateMe);
 
 const mapFrame = document.querySelector('.map-frame');
 function centerMobileMap(){
-  if (!window.matchMedia(MOBILE_QUERY).matches) return;
+  if (!SHARED_CONTROLS && !window.matchMedia(MOBILE_QUERY).matches) return;
   mapFrame.scrollLeft = Math.max(0, (mapFrame.scrollWidth - mapFrame.clientWidth) / 2);
   mapFrame.scrollTop = Math.max(0, (mapFrame.scrollHeight - mapFrame.clientHeight) / 2);
 }
@@ -3454,7 +3539,11 @@ boot().finally(async () => {
     else document.documentElement.dataset.captureError = ready ? `tile-cache-${tileCache.size}` : 'map-not-ready';
   }
   if (EMBEDDED){
-    window.parent.postMessage({ type:'pixelmap:ready', mapId:MAP_ID }, MESSAGE_ORIGIN);
+    window.parent.postMessage({
+      type:'pixelmap:ready',
+      mapId:MAP_ID,
+      layers:layerSnapshot(),
+    }, MESSAGE_ORIGIN);
   }
 });
 </script>

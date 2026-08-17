@@ -76,6 +76,9 @@
     card.style.setProperty('--accent', pattern.palette.transit || pattern.palette.generic);
     const swatches = ['transit','health','civic','food','commerce','landmark','nature']
       .map(key => `<i class="swatch" style="background:${pattern.palette[key]}" title="${key}"></i>`).join('');
+    const fourMapAction = pattern.id === '07'
+      ? '<a class="button" href="height-stack-four-map.html">4地点を同時表示</a>'
+      : '';
     card.innerHTML = `
       <a class="card-media" href="map-02-refined.html?pattern=${pattern.id}&${places.kawasaki}">
         <img src="../screenshots/icon-patterns/contact-sheets/pattern-${pattern.id}.webp" alt="${pattern.name}の10地点比較" loading="lazy">
@@ -93,6 +96,7 @@
         <div class="actions">
           <a class="button primary" href="map-02-refined.html?pattern=${pattern.id}&${places.kawasaki}">川崎駅で開く</a>
           <a class="button" href="map-02-refined.html?pattern=${pattern.id}&${places.tokyo}">東京駅で開く</a>
+          ${fourMapAction}
           <a class="button" href="../screenshots/icon-patterns/index.html#pattern-${pattern.id}">撮影を見る</a>
         </div>
       </div>`;

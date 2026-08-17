@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PixelMap｜高さスタック 4地点比較</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#181820;
+    --panel:#101018;
+    --panel-2:#202028;
+    --ink:#f8f0d8;
+    --muted:#b8b09c;
+    --accent:#6f8fb8;
+    --focus:#f8d038;
+  }
+  *{ box-sizing:border-box; }
+  html, body{ width:100%; height:100%; margin:0; overflow:hidden; }
+  body{
+    display:grid;
+    grid-template-columns:clamp(270px,24vw,340px) minmax(0,1fr);
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'DotGothic16',monospace;
+  }
+  button, input{ font:inherit; }
+  a{ color:inherit; }
+  .shared-panel{
+    min-height:0;
+    overflow:auto;
+    border-right:3px solid var(--ink);
+    background:var(--panel);
+    scrollbar-width:thin;
+  }
+  .panel-header{
+    position:sticky;
+    top:0;
+    z-index:3;
+    padding:16px 15px 13px;
+    border-bottom:2px solid #585848;
+    background:#101018f2;
+    backdrop-filter:blur(8px);
+  }
+  .kicker{ margin:0; color:#d8e7ff; font-size:10px; letter-spacing:2px; }
+  h1{ margin:5px 0 7px; font-size:22px; font-weight:normal; line-height:1.3; }
+  .lead{ margin:0; color:var(--muted); font-size:11px; line-height:1.65; }
+  .status-row{ display:flex; align-items:center; justify-content:space-between; gap:9px; margin-top:12px; }
+  #syncStatus{ color:#d8e7ff; font-size:10px; }
+  #syncStatus::before{
+    content:'';
+    display:inline-block;
+    width:8px;
+    height:8px;
+    margin-right:6px;
+    border:1px solid var(--ink);
+    background:#d89b46;
+  }
+  html[data-four-map-ready="1"] #syncStatus::before{ background:#88c860; }
+  .small-button{
+    min-height:30px;
+    padding:5px 8px;
+    border:1px solid #686858;
+    background:#181820;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .small-button:hover{ border-color:var(--accent); }
+  .small-button:focus-visible, .layer-label:has(input:focus-visible){ outline:3px solid var(--focus); outline-offset:2px; }
+  .all-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:11px 14px;
+    border-bottom:1px solid #383830;
+    background:#181820;
+  }
+  .all-row label{ display:flex; align-items:center; gap:7px; font-size:12px; cursor:pointer; }
+  .all-row output{ color:var(--muted); font-size:10px; }
+  #layerGroups{ display:grid; gap:9px; padding:10px; }
+  .layer-group{ margin:0; padding:0; border:1px solid #484840; background:#181820; }
+  .group-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:8px 9px;
+    border-bottom:1px solid #484840;
+    background:#202028;
+  }
+  .group-header h2{ margin:0; color:#f8d038; font-size:12px; font-weight:normal; }
+  .group-toggle{ display:flex; align-items:center; gap:5px; color:var(--muted); font-size:9px; cursor:pointer; }
+  .group-items{ display:flex; flex-wrap:wrap; gap:5px; padding:7px; }
+  .layer-label{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    min-height:30px;
+    padding:5px 7px;
+    border:1px solid #484840;
+    color:#b8b09c;
+    font-size:9px;
+    line-height:1.35;
+    cursor:pointer;
+  }
+  .layer-label:has(input:checked){ border-color:var(--accent); background:#222b38; color:var(--ink); }
+  input{ accent-color:var(--accent); }
+  .map-grid{
+    min-width:0;
+    min-height:0;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:repeat(2,minmax(0,1fr));
+    gap:7px;
+    padding:7px;
+    background:#282830;
+  }
+  .map-card{
+    position:relative;
+    min-width:0;
+    min-height:0;
+    overflow:hidden;
+    border:2px solid var(--ink);
+    outline:2px solid var(--panel);
+    background:#78b850;
+  }
+  .map-card h2{
+    position:absolute;
+    top:9px;
+    left:9px;
+    z-index:2;
+    max-width:calc(100% - 18px);
+    margin:0;
+    padding:6px 8px;
+    border:2px solid var(--ink);
+    outline:2px solid #101018;
+    background:#101018e8;
+    color:var(--ink);
+    font-size:12px;
+    font-weight:normal;
+    line-height:1.25;
+    pointer-events:none;
+  }
+  .map-card h2 small{ display:block; margin-top:2px; color:#b8b09c; font-size:8px; }
+  iframe{ display:block; width:100%; height:100%; border:0; background:#78b850; }
+  @media (max-width:900px){
+    body{ grid-template-columns:1fr; grid-template-rows:auto minmax(0,1fr); }
+    .shared-panel{ max-height:34dvh; border-right:0; border-bottom:3px solid var(--ink); }
+    .panel-header{ padding:9px 11px; }
+    .panel-header h1{ display:inline; margin-right:8px; font-size:17px; }
+    .lead{ display:inline; }
+    #layerGroups{ grid-template-columns:repeat(5,minmax(210px,1fr)); overflow-x:auto; }
+    .layer-group{ min-width:210px; }
+    .group-items{ max-height:112px; overflow:auto; }
+  }
+  @media (max-width:560px){
+    .shared-panel{ max-height:38dvh; }
+    .lead{ display:none; }
+    .map-grid{ gap:4px; padding:4px; }
+    .map-card h2{ top:5px; left:5px; padding:4px 5px; font-size:9px; }
+    .map-card h2 small{ display:none; }
+  }
+  @media (prefers-reduced-motion:reduce){ *{ scroll-behavior:auto !important; } }
+</style>
+</head>
+<body>
+<aside class="shared-panel" aria-label="4地図共通のレイヤー設定">
+  <header class="panel-header">
+    <p class="kicker">PATTERN 07 / HEIGHT STACK</p>
+    <h1>高さスタック・4地点</h1>
+    <p class="lead">川崎駅・北鎌倉・箱根・石垣島を同時表示。ここで選んだレイヤーが4枚すべてに反映されます。</p>
+    <div class="status-row">
+      <span id="syncStatus" role="status" aria-live="polite">4地点を読み込み中…</span>
+      <button id="resetLayers" class="small-button" type="button">初期設定</button>
+    </div>
+  </header>
+  <div class="all-row">
+    <label><input id="allLayers" type="checkbox">全レイヤー</label>
+    <output id="activeCount">読込中</output>
+  </div>
+  <div id="layerGroups" aria-label="共通レイヤー"></div>
+</aside>
+
+<main class="map-grid" aria-label="高さスタックによる4地点比較">
+  <section class="map-card">
+    <h2>川崎駅<small>35.5314, 139.6969</small></h2>
+    <iframe data-map-id="kawasaki" title="高さスタック・川崎駅" loading="eager"
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kawasaki&amp;lat=35.5314&amp;lon=139.6969&amp;place=%E5%B7%9D%E5%B4%8E%E9%A7%85"></iframe>
+  </section>
+  <section class="map-card">
+    <h2>北鎌倉<small>北鎌倉駅</small></h2>
+    <iframe data-map-id="kita-kamakura" title="高さスタック・北鎌倉" loading="eager"
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kita-kamakura&amp;lat=35.3372&amp;lon=139.5451&amp;place=%E5%8C%97%E9%8E%8C%E5%80%89%E9%A7%85"></iframe>
+  </section>
+  <section class="map-card">
+    <h2>箱根<small>箱根湯本駅</small></h2>
+    <iframe data-map-id="hakone" title="高さスタック・箱根" loading="eager"
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=hakone&amp;lat=35.2333&amp;lon=139.1069&amp;place=%E7%AE%B1%E6%A0%B9%E6%B9%AF%E6%9C%AC%E9%A7%85"></iframe>
+  </section>
+  <section class="map-card">
+    <h2>石垣島<small>石垣港離島ターミナル</small></h2>
+    <iframe data-map-id="ishigaki" title="高さスタック・石垣島" loading="eager"
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=ishigaki&amp;lat=24.3367&amp;lon=124.1557&amp;place=%E7%9F%B3%E5%9E%A3%E6%B8%AF%E9%9B%A2%E5%B3%B6%E3%82%BF%E3%83%BC%E3%83%9F%E3%83%8A%E3%83%AB"></iframe>
+  </section>
+</main>
+
+<script>
+'use strict';
+const frames = [...document.querySelectorAll('iframe[data-map-id]')];
+const frameIds = new Set(frames.map(frame => frame.dataset.mapId));
+const targetOrigin = location.origin === 'null' ? '*' : location.origin;
+const readyMaps = new Set();
+const layerAcks = new Map();
+const groupsRoot = document.getElementById('layerGroups');
+const allLayers = document.getElementById('allLayers');
+const activeCount = document.getElementById('activeCount');
+const syncStatus = document.getElementById('syncStatus');
+let catalog = null;
+let activeOptions = new Set();
+let layerOrder = [];
+let defaultOptions = [];
+let defaultOrder = [];
+
+function frameForSource(source){
+  return frames.find(frame => frame.contentWindow === source) || null;
+}
+function stateSignature(state = { activeOptions:[...activeOptions], layerOrder }){
+  return JSON.stringify({
+    active:[...(state.activeOptions || [])].sort(),
+    order:[...(state.layerOrder || [])],
+  });
+}
+function currentLayerState(){
+  return { activeOptions:[...activeOptions], layerOrder:[...layerOrder] };
+}
+function sendLayers(frame){
+  frame.contentWindow?.postMessage({ type:'pixelmap:set-layers', layers:currentLayerState() }, targetOrigin);
+}
+function broadcastLayers(){
+  layerAcks.clear();
+  for (const frame of frames) sendLayers(frame);
+  updateStatus();
+}
+function updateStatus(){
+  const expected = stateSignature();
+  const synced = [...frameIds].filter(id => layerAcks.get(id) === expected).length;
+  const ready = readyMaps.size === frames.length && synced === frames.length;
+  syncStatus.textContent = ready
+    ? `4地点 同期済み・${activeOptions.size}レイヤー`
+    : `読込 ${readyMaps.size}/4・同期 ${synced}/4`;
+  document.documentElement.dataset.fourMapReady = ready ? '1' : '0';
+  document.documentElement.dataset.commonLayerCount = String(activeOptions.size);
+}
+function syncControls(){
+  const inputs = [...groupsRoot.querySelectorAll('[data-option]')];
+  for (const input of inputs) input.checked = activeOptions.has(input.dataset.option);
+  for (const group of groupsRoot.querySelectorAll('.layer-group')){
+    const items = [...group.querySelectorAll('[data-option]')];
+    const master = group.querySelector('[data-group-toggle]');
+    const checked = items.filter(input => input.checked).length;
+    master.checked = checked === items.length;
+    master.indeterminate = checked > 0 && checked < items.length;
+  }
+  allLayers.checked = activeOptions.size === inputs.length;
+  allLayers.indeterminate = activeOptions.size > 0 && activeOptions.size < inputs.length;
+  activeCount.textContent = `${activeOptions.size} / ${inputs.length}`;
+}
+function setOption(option, checked){
+  activeOptions.delete(option);
+  layerOrder = layerOrder.filter(item => item !== option);
+  if (checked){
+    activeOptions.add(option);
+    layerOrder.push(option);
+  }
+}
+function buildControls(layers){
+  catalog = layers.catalog;
+  activeOptions = new Set(layers.activeOptions || []);
+  layerOrder = [...(layers.layerOrder || [])];
+  defaultOptions = [...activeOptions];
+  defaultOrder = [...layerOrder];
+  groupsRoot.replaceChildren();
+
+  for (const groupData of catalog){
+    const group = document.createElement('section');
+    group.className = 'layer-group';
+    const header = document.createElement('div');
+    header.className = 'group-header';
+    const heading = document.createElement('h2');
+    heading.textContent = groupData.title;
+    const masterLabel = document.createElement('label');
+    masterLabel.className = 'group-toggle';
+    const master = document.createElement('input');
+    master.type = 'checkbox';
+    master.dataset.groupToggle = '';
+    masterLabel.append(master, document.createTextNode('一括'));
+    header.append(heading, masterLabel);
+
+    const itemsRoot = document.createElement('div');
+    itemsRoot.className = 'group-items';
+    for (const item of groupData.items){
+      const label = document.createElement('label');
+      label.className = 'layer-label';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.dataset.option = item.option;
+      input.addEventListener('change', () => {
+        setOption(item.option, input.checked);
+        syncControls();
+        broadcastLayers();
+      });
+      label.append(input, document.createTextNode(item.label));
+      itemsRoot.append(label);
+    }
+    master.addEventListener('change', () => {
+      for (const item of groupData.items) setOption(item.option, master.checked);
+      syncControls();
+      broadcastLayers();
+    });
+    group.append(header, itemsRoot);
+    groupsRoot.append(group);
+  }
+  syncControls();
+}
+
+allLayers.addEventListener('change', () => {
+  const options = catalog?.flatMap(group => group.items.map(item => item.option)) || [];
+  activeOptions.clear();
+  layerOrder = [];
+  if (allLayers.checked){
+    activeOptions = new Set(options);
+    layerOrder = [...options];
+  }
+  syncControls();
+  broadcastLayers();
+});
+document.getElementById('resetLayers').addEventListener('click', () => {
+  activeOptions = new Set(defaultOptions);
+  layerOrder = [...defaultOrder];
+  syncControls();
+  broadcastLayers();
+});
+
+window.addEventListener('message', event => {
+  const frame = frameForSource(event.source);
+  if (!frame) return;
+  if (location.origin !== 'null' && event.origin !== location.origin) return;
+  const mapId = frame.dataset.mapId;
+
+  if (event.data?.type === 'pixelmap:ready'){
+    readyMaps.add(mapId);
+    if (!catalog && event.data.layers?.catalog) buildControls(event.data.layers);
+    if (catalog) sendLayers(frame);
+    updateStatus();
+    return;
+  }
+  if (event.data?.type === 'pixelmap:layers'){
+    layerAcks.set(mapId, stateSignature(event.data.layers));
+    updateStatus();
+  }
+});
+</script>
+</body>
+</html>
