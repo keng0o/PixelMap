@@ -557,6 +557,7 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
+<script src="../assets/facility-resolver.js"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -2113,100 +2114,12 @@ const SPRITES = {
   parking:  { label:'駐車場',      draw:(x,y)=>signPost(x,y,P.roofB, (cx,cy)=>{ px(cx-1,cy-13,1,4,'#f8f0d8'); px(cx,cy-13,2,2,'#f8f0d8'); }) },
   generic:  { label:'施設',        draw:(x,y)=>signPost(x,y,P.dirt) },
 };
-const CLASS2SPRITE = {
-  railway:'station', bus:'bus', tram:'station', ferry:'station', aerialway:'station', harbor:'station',
-  shop:'shop', mall:'mall', department_store:'mall', shopping_centre:'mall', clothing_store:'shop', alcohol_shop:'shop', convenience:'grocery', bakery:'grocery', grocery:'grocery',
-  restaurant:'restaurant', fast_food:'fast_food', cafe:'cafe', bar:'bar', beer:'bar', ice_cream:'cafe',
-  lodging:'hotel', hotel:'hotel',
-  hospital:'hospital', doctors:'hospital', dentist:'hospital', veterinary:'hospital', pharmacy:'pharmacy',
-  school:'school', college:'school', university:'school', kindergarten:'school', library:'library',
-  bank:'bank', atm:'bank', money:'bank',
-  post:'post', police:'police', fire_station:'fire_station', town_hall:'townhall', townhall:'townhall',
-  place_of_worship:'place_of_worship',
-  attraction:'attraction', monument:'attraction', castle:'attraction', art_gallery:'museum', museum:'museum',
-  theatre:'cinema', cinema:'cinema', music:'cinema', entertainment:'cinema',
-  park:'park', garden:'park', playground:'park', dog_park:'park', pitch:'park', stadium:'park', golf:'park', swimming:'park', zoo:'park',
-  parking:'parking', fuel:'parking', charging_station:'parking',
-};
-const isStationProps = props => {
-  const c = props.class || '', s = props.subclass || '';
-  return c === 'railway' || c === 'station' || s === 'railway' || s === 'station' ||
-    s === 'halt' || s === 'tram_stop';
-};
-const poiImportance = props => {
-  if (isStationProps(props)) return 0;
-  const k = props.subclass || props.class || '';
-  const priority = {
-    town_hall:2, townhall:2, hospital:3, mall:4, school:5, university:5,
-    attraction:6, museum:6, police:7, fire_station:7, park:8,
-    place_of_worship:9, hotel:10, post:11, library:11, bus:12,
-    restaurant:18, grocery:18, cafe:20, shop:22, parking:28,
-  };
-  return (priority[k] ?? 24) + Math.min(20, Number(props.rank ?? 20)) * .15;
-};
-const CATEGORY_KEYS = {
-  health:new Set(['hospital','doctors','dentist','veterinary','pharmacy','clinic']),
-  civic:new Set(['school','college','university','kindergarten','library','bank','atm','money','post','police','fire_station','town_hall','townhall']),
-  food:new Set(['restaurant','fast_food','cafe','bar','beer','ice_cream','bakery','grocery','convenience']),
-  commerce:new Set(['shop','mall','department_store','shopping_centre','clothing_store','alcohol_shop']),
-  landmark:new Set(['attraction','monument','castle','art_gallery','museum','theatre','cinema','music','entertainment','place_of_worship']),
-  nature:new Set(['park','garden','playground','dog_park','pitch','stadium','golf','swimming','zoo']),
-  stay:new Set(['lodging','hotel','hostel','motel','guest_house']),
-  service:new Set(['parking','fuel','charging_station']),
-};
-function poiCategory(props){
-  if (isStationProps(props) || ['bus','tram','ferry','aerialway','harbor'].includes(props.subclass || props.class)) return 'transit';
-  const keys = [props.subclass, props.class].filter(Boolean);
-  for (const [category, values] of Object.entries(CATEGORY_KEYS))
-    if (keys.some(key => values.has(key))) return category;
-  return 'generic';
-}
-const tierValue = size => ({ S:0, M:1, L:2 }[size] ?? 0);
-const tierFromValue = value => ['S','M','L'][Math.max(0, Math.min(2, value))];
-function patternSize(metrics, category){
-  const areaTier = metrics.area >= ACTIVE_PATTERN.areaL ? 2 : metrics.area >= ACTIVE_PATTERN.areaM ? 1 : 0;
-  const heightTier = metrics.height >= ACTIVE_PATTERN.heightL ? 2 : metrics.height >= ACTIVE_PATTERN.heightM ? 1 : 0;
-  let tier = Math.max(areaTier, heightTier);
-  const minimum = ACTIVE_PATTERN.minSize?.[category];
-  if (minimum) tier = Math.max(tier, tierValue(minimum));
-  return tierFromValue(tier);
-}
-function patternAssetCount(metrics, category){
-  if (ACTIVE_PATTERN.maxAssets <= 1) return 1;
-  if (ACTIVE_PATTERN.multiCategories && !ACTIVE_PATTERN.multiCategories.includes(category)) return 1;
-  const areaCount = (ACTIVE_PATTERN.assetArea || []).filter(limit => metrics.area >= limit).length;
-  const heightCount = (ACTIVE_PATTERN.assetHeight || []).filter(limit => metrics.height >= limit).length;
-  const extra = ACTIVE_PATTERN.multiMode === 'area' ? areaCount
-    : ACTIVE_PATTERN.multiMode === 'height' ? heightCount
-      : Math.max(areaCount, heightCount);
-  return Math.min(ACTIVE_PATTERN.maxAssets, 1 + extra);
-}
+// 施設の分類・重要度・サイズ判定はリゾルバーモジュールが唯一の正典。
+// このページは確定済みの施設データを描くだけで、選抜の再計算は行わない。
+const RESOLVER = window.PixelMapFacilityResolver;
+const { CLASS2SPRITE, isStationProps, tierValue } = RESOLVER;
 function categoryTone(category){
   return ACTIVE_PATTERN.palette[category] || ACTIVE_PATTERN.palette.generic || '#78828a';
-}
-function stablePoiSeed(props){
-  const source = `${props['name:ja'] || props.name || ''}|${props.class || ''}|${props.subclass || ''}`;
-  let hash = 2166136261;
-  for (const ch of source){ hash ^= ch.codePointAt(0); hash = Math.imul(hash, 16777619); }
-  return hash >>> 0;
-}
-function patternSelectionPriority(p){
-  const index = ACTIVE_PATTERN.priority.indexOf(p.category);
-  return (index < 0 ? ACTIVE_PATTERN.priority.length : index) * 100 + p.importance * 2 + p.rank * .05 - p.metrics.area * .015 - p.metrics.height * .02;
-}
-function patternOffset(p, x, y){
-  const seed = stablePoiSeed(p.props);
-  const categoryIndex = Math.max(0, ACTIVE_PATTERN.priority.indexOf(p.category));
-  if (ACTIVE_PATTERN.offset === 'market-stagger' && ['food','commerce'].includes(p.category))
-    return [((Math.floor(y / 16) + categoryIndex) % 2 ? 8 : -8), 0];
-  if (ACTIVE_PATTERN.offset === 'transit-lane') return [p.category === 'transit' ? 0 : (categoryIndex % 3 - 1) * 5, 0];
-  if (ACTIVE_PATTERN.offset === 'civic-pair' && ['health','civic'].includes(p.category)) return [p.category === 'health' ? -6 : 6, -3];
-  if (ACTIVE_PATTERN.offset === 'micro-jitter') return [((seed % 3) - 1) * 4, ((Math.floor(seed / 3) % 3) - 1) * 4];
-  if (ACTIVE_PATTERN.offset === 'height-rise') return [0, -Math.min(10, Math.round(p.metrics.height / 8))];
-  if (ACTIVE_PATTERN.offset === 'footprint-orbit') return [((seed % 3) - 1) * Math.min(6, Math.round(p.metrics.area / 12)), 0];
-  if (ACTIVE_PATTERN.offset === 'category-nudge') return [(categoryIndex % 3 - 1) * 5, (Math.floor(categoryIndex / 3) % 3 - 1) * 3];
-  if (ACTIVE_PATTERN.offset === 'beacon-ring' && ['landmark','transit','health'].includes(p.category)) return [0, -6];
-  return [0, 0];
 }
 function spriteFor(props, size = 'M', variant = 0){
   const key = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
@@ -2465,9 +2378,6 @@ let renderCount = 0;
 let gridOriginX = -1, gridOriginY = -1;
 let gridShiftX = -CPX, gridShiftY = -CPX;
 const tp = ([x, y]) => [x * SCALE - viewOffset.x, y * SCALE - viewOffset.y];
-const iconSnap = Math.max(4, Number(ACTIVE_PATTERN.snap) || CPX);
-const snapX = v => (Math.floor((v + viewOffset.x) / iconSnap) + 0.5) * iconSnap - viewOffset.x;
-const snapY = v => (Math.floor((v + viewOffset.y) / iconSnap) + 0.5) * iconSnap - viewOffset.y;
 const locationCanvasPoint = () => currentLocation ? [
   (currentLocation.tileX - TILE.x) * W - viewOffset.x,
   (currentLocation.tileY - TILE.y) * H - viewOffset.y,
@@ -2621,61 +2531,6 @@ function render(){
   const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
   drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
-  // z14のbuilding featureには離れた複数棟が同じfeatureとして入る場合がある。
-  // feature全体の面積ではなく、4連結した「その棟」のローカル面積を各セルへ保存する。
-  const localBuildingArea = new Uint16Array(RG * RG);
-  for (let start = 0; start < bldGrid.length; start++){
-    const buildingIndex = bldGrid[start];
-    if (!buildingIndex || localBuildingArea[start]) continue;
-    const cells = [], stack = [start];
-    localBuildingArea[start] = 65535;
-    while (stack.length){
-      const index = stack.pop();
-      cells.push(index);
-      const x = index % RG, y = Math.floor(index / RG);
-      for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
-        const nx = x + dx, ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= RG || ny >= RG) continue;
-        const next = ny * RG + nx;
-        if (localBuildingArea[next] || bldGrid[next] !== buildingIndex) continue;
-        localBuildingArea[next] = 65535;
-        stack.push(next);
-      }
-    }
-    const area = Math.min(65534, cells.length);
-    for (const index of cells) localBuildingArea[index] = area;
-  }
-
-  // POIの近傍建物から面積・高さ・用途をまとめて取得する。
-  // 10パターンは同じPOIレイヤーでも、この実寸メトリクスからアセット級と個数を変える。
-  function poiBuildingMetrics(pt){
-    const RG = GRID + 2;
-    const cx0 = Math.floor((pt[0] - gridShiftX) / CPX);
-    const cy0 = Math.floor((pt[1] - gridShiftY) / CPX);
-    let bestIndex = 0, bestCell = -1, bestDistance = Infinity, bestArea = 0;
-    for (let dy = -2; dy <= 2; dy++){
-      for (let dx = -2; dx <= 2; dx++){
-        const cx = cx0 + dx, cy = cy0 + dy;
-        if (cx < 0 || cy < 0 || cx >= RG || cy >= RG) continue;
-        const bi = bldGrid[cy * RG + cx];
-        if (!bi) continue;
-        const distance = dx * dx + dy * dy;
-        const cell = cy * RG + cx;
-        const area = localBuildingArea[cell] || 0;
-        if (distance < bestDistance || (distance === bestDistance && area > bestArea)){
-          bestIndex = bi; bestCell = cell; bestDistance = distance; bestArea = area;
-        }
-      }
-    }
-    const feature = bestIndex ? bldFeats[bestIndex - 1] : null;
-    return {
-      area:bestCell >= 0 ? localBuildingArea[bestCell] : bestArea,
-      height:Math.max(0, Number(feature?.props?.render_height || 0)),
-      kind:bestIndex ? buildingKinds[bestIndex] : 'none',
-      buildingIndex:bestIndex,
-    };
-  }
-
   function drawTunnelLayer(option){
     ctx.globalAlpha = .3;
     ctx.lineCap = 'round';
@@ -2718,87 +2573,21 @@ function render(){
     `<span>その他POI建物: ${buildingKindCounts.poi || 0}</span>`+
     Object.entries(stats).map(([k, v]) => `<span>${k}: ${v}</span>`).join('');
 
-  /* --- POI --- */
-  const poiPool = poiFeatures
-    .map(f => {
-      const anchor = geometryAnchor(f);
-      const [x, y] = tp(anchor);
-      const props = f.props;
-      const idNum = Number(f.id || 0);
-      const nameSeed = [...(featureName(props) || props.class || '')]
-        .reduce((sum,ch) => sum + ch.codePointAt(0), 0);
-      const basePt = [snapX(x), snapY(y)];
-      const p = {
-        props, pt:basePt, rank: Number(props.rank ?? 30),
-        importance: poiImportance(props),
-        spriteKey: CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic',
-        variant: Math.abs((Number.isFinite(idNum) ? idNum : 0) + nameSeed) % 3,
-      };
-      p.category = poiCategory(props);
-      p.metrics = poiBuildingMetrics(basePt);
-      p.size = patternSize(p.metrics, p.category);
-      p.assetCount = patternAssetCount(p.metrics, p.category);
-      p.visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[p.category] || 1);
-      p.visualRadius = 24 * p.visualScale + Math.max(0, p.assetCount - 1) * 8;
-      const [dx, dy] = patternOffset(p, basePt[0], basePt[1]);
-      p.pt = [basePt[0] + dx, basePt[1] + dy];
-      p.selectionPriority = patternSelectionPriority(p);
-      return p;
-    });
-  // カテゴリごとのキューを優先順でラウンドロビンする。
-  // 一種類のPOIが多い都市でも、交通・医療・商業・自然などが同じ画面に残る。
-  const categoryQueues = new Map();
-  for (const p of poiPool){
-    if (!categoryQueues.has(p.category)) categoryQueues.set(p.category, []);
-    categoryQueues.get(p.category).push(p);
-  }
-  for (const queue of categoryQueues.values())
-    queue.sort((a,b) => a.selectionPriority - b.selectionPriority || a.rank - b.rank);
-  const orderedCategories = [
-    ...ACTIVE_PATTERN.priority,
-    ...[...categoryQueues.keys()].filter(category => !ACTIVE_PATTERN.priority.includes(category)),
-  ];
-  const pois = [];
-  const categoryIndexes = new Map(orderedCategories.map(category => [category, 0]));
-  let remainingPois = poiPool.length;
-  while (remainingPois > 0){
-    for (const category of orderedCategories){
-      const queue = categoryQueues.get(category);
-      const burst = ACTIVE_PATTERN.multiCategories?.includes(category) ? 2 : 1;
-      let index = categoryIndexes.get(category) || 0;
-      for (let i = 0; queue && index < queue.length && i < burst; i++){
-        pois.push(queue[index++]);
-        remainingPois--;
-      }
-      categoryIndexes.set(category, index);
-    }
-  }
-
-  const drawnIcons = [], hiddenPois = [];
-  for (const p of pois){
-    const [x, y] = p.pt;
-    if (x < -70 || y < -70 || x > W + 70 || y > H + 70) continue;
-    const pName = featureName(p.props);
-    const duplicate = pName && drawnIcons.some(d =>
-      featureName(d.props) === pName && d.spriteKey === p.spriteKey &&
-      Math.hypot(d.pt[0] - x, d.pt[1] - y) < 112 * ACTIVE_PATTERN.gapScale);
-    const near = drawnIcons.some(d => {
-      const sameKind = d.spriteKey === p.spriteKey;
-      const important = isStationProps(d.props) || isStationProps(p.props) || d.size === 'L' || p.size === 'L';
-      const gapScale = sameKind ? ACTIVE_PATTERN.sameGapScale : ACTIVE_PATTERN.gapScale;
-      const baseGap = important ? 86 : sameKind ? 74 : 56;
-      const scaleFactor = Math.max(.62, (p.visualScale + d.visualScale) / 2);
-      const minGap = Math.max(baseGap * gapScale * scaleFactor, p.visualRadius + d.visualRadius + 6);
-      return Math.hypot(d.pt[0] - x, d.pt[1] - y) < minGap;
-    });
-    if (!duplicate && !near && drawnIcons.length < ACTIVE_PATTERN.maxIcons) drawnIcons.push(p);
-    else hiddenPois.push(p);
-  }
-  const dotLimit = ACTIVE_PATTERN.id === '06'
-    ? Math.min(520, ACTIVE_PATTERN.maxIcons * 6)
-    : ACTIVE_PATTERN.id === '05'
-      ? Math.min(90, ACTIVE_PATTERN.maxIcons * 3)
-      : Math.min(320, ACTIVE_PATTERN.maxIcons * 4);
+  /* --- POI ---
+     icon / dot / cluster はリゾルバーがワールド座標で確定済み。
+     ここでは範囲内の確定データを画面座標へ変換して描くだけで、
+     パンしても選抜・表示順・アイコンと点の切り替えは一切起きない。 --- */
+  const resolvedView = collectResolvedFacilities();
+  if (resolvedView.pendingTiles) ensureTilesAround().catch(console.error);
+  const worldToScreen = (wx, wy) => [wx - TILE.x * W - viewOffset.x, wy - TILE.y * H - viewOffset.y];
+  const facilitiesInView = resolvedView.facilities
+    .map(f => ({ ...f, pt:worldToScreen(f.worldX, f.worldY), visualRadius:f.collisionRadius }))
+    .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
+  const drawnIcons = facilitiesInView.filter(p => p.representation === 'icon');
+  const hiddenPois = facilitiesInView.filter(p => p.representation === 'dot');
+  const clusterMarks = resolvedView.clusters
+    .map(c => ({ ...c, pt:worldToScreen(c.worldX, c.worldY) }))
+    .filter(c => c.pt[0] >= -40 && c.pt[1] >= -40 && c.pt[0] <= W + 40 && c.pt[1] <= H + 40);
   let drawnDotCount = 0;
   function drawDotMarker(p){
     const [x0, y0] = p.pt;
@@ -2836,12 +2625,36 @@ function render(){
   }
   function drawDots(points = hiddenPois){
     for (const p of points){
-      if (drawnDotCount >= dotLimit) break;
       const [x, y] = p.pt;
       if (x < 0 || y < 0 || x > W || y > H) continue;
       drawDotMarker(p);
       hitAreas.push({ x: x - 9, y: y - 9, w: 18, h: 18, p: p.props, kind:'dot' });
       drawnDotCount++;
+    }
+  }
+  // 密集地の点はリゾルバーがクラスターへ統合済み。件数に応じた角印で描く。
+  function drawClusters(){
+    for (const c of clusterMarks){
+      const x = Math.round(c.pt[0]), y = Math.round(c.pt[1]);
+      const tone = categoryTone(c.category);
+      const r = Math.min(13, 6 + Math.round(Math.sqrt(c.count)));
+      ctx.save();
+      ctx.fillStyle = OUT;
+      ctx.fillRect(x - r - 2, y - r - 2, r * 2 + 4, r * 2 + 4);
+      ctx.fillStyle = tone;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      ctx.fillStyle = '#f8f0d8';
+      const pips = Math.max(2, Math.min(4, Math.round(c.count / 3)));
+      for (let i = 0; i < pips; i++){
+        const angle = -Math.PI / 2 + i * Math.PI * 2 / pips;
+        ctx.fillRect(x + Math.round(Math.cos(angle) * (r - 4)) - 1,
+          y + Math.round(Math.sin(angle) * (r - 4)) - 1, 3, 3);
+      }
+      ctx.restore();
+      hitAreas.push({
+        x:x - r - 4, y:y - r - 4, w:(r + 4) * 2, h:(r + 4) * 2,
+        p:{ name:`まとまった施設（${c.count}件）`, class:'cluster' }, kind:'cluster',
+      });
     }
   }
   const categoryIndex = p => {
@@ -2856,8 +2669,9 @@ function render(){
     return a.pt[1] - b.pt[1] || tierValue(a.size) - tierValue(b.size);
   });
   function drawPoi(){
-    // アイコンを間引いたPOIも必ず点で残し、poi単独で全件を表示可能にする。
+    // アイコンにならなかった施設も、点またはクラスターとして必ず残す。
     drawDots();
+    drawClusters();
     for (const p of drawnIcons){
       drawSprite(spriteFor(p.props, p.size, p.variant), p.pt[0], p.pt[1], p);
       const radius = Math.max(28, p.visualRadius);
@@ -2966,7 +2780,11 @@ function render(){
   ]);
   const tunnelOptions = new Set(['subway','roadTunnels','pathTunnels','railTunnels']);
   const drawers = {
-    dots:() => { if (!o.poi) drawDots(pois); },
+    dots:() => {
+      if (o.poi) return;
+      drawDots(facilitiesInView.filter(p => p.representation !== 'cluster-member'));
+      drawClusters();
+    },
     poi:drawPoi,
     stationNames:drawStationNames,
     parkNames:drawParkNames,
@@ -3055,7 +2873,7 @@ function render(){
     counts[key] = (counts[key] || 0) + 1;
     return counts;
   }, {});
-  const visibleMetricItems = pois.filter(item => item.pt[0] >= 0 && item.pt[1] >= 0 && item.pt[0] <= W && item.pt[1] <= H);
+  const visibleMetricItems = facilitiesInView.filter(item => item.pt[0] >= 0 && item.pt[1] >= 0 && item.pt[0] <= W && item.pt[1] <= H);
   const quantiles = (items, key) => {
     const values = items.map(item => item.metrics[key]).sort((a,b) => a-b);
     const at = q => values.length ? values[Math.min(values.length - 1, Math.floor((values.length - 1) * q))] : 0;
@@ -3097,15 +2915,23 @@ function render(){
       name:ACTIVE_PATTERN.name,
       marker:ACTIVE_PATTERN.marker,
       drawOrder:ACTIVE_PATTERN.drawOrder,
-      maxIcons:ACTIVE_PATTERN.maxIcons,
+    },
+    resolver:{
+      algorithmVersion:RESOLVER.ALGORITHM_VERSION,
+      resolvedTiles:resolvedView.resolvedTileCount,
+      pendingTiles:resolvedView.pendingTiles,
     },
     poi:{
-      total:pois.length,
-      visible:drawnIcons.length + hiddenPois.length,
-      offscreen:pois.length - drawnIcons.length - hiddenPois.length,
+      total:resolvedView.facilities.length,
+      visible:facilitiesInView.length,
+      offscreen:resolvedView.facilities.length - facilitiesInView.length,
       icons:drawnIcons.length,
       dots:drawnDotCount,
       dotCandidates:hiddenPois.length,
+      clusters:clusterMarks.length,
+      clusteredMembers:facilitiesInView.filter(item => item.representation === 'cluster-member').length,
+      mixedBuildings:facilitiesInView.filter(item => item.facilityRole === 'mixed_building').length,
+      selectionReasons:countBy(facilitiesInView, item => String(item.selectionReason || '').split(':')[0]),
       sizes:countBy(drawnIcons, item => item.size),
       categories:countBy(drawnIcons, item => item.category),
       assetCounts:countBy(drawnIcons, item => String(item.assetCount)),
@@ -3245,6 +3071,54 @@ function rebuildTileLayers(){
   if (Object.keys(merged).length) tileLayers = merged;
 }
 
+/* --- 施設リゾルバー連携 ---
+   icon / dot / cluster はワールド座標で事前確定し、正規タイル単位でキャッシュする。
+   キャッシュキーは (タイル, パターン固定, tileGeneration)。レイヤー切り替えでは
+   無効化しない（レイヤーは描画フィルタであって選抜の入力ではない）。 */
+const resolvedTiles = new Map();   // "x/y" -> { generation, result }
+function resolverGetTile(x, y){
+  const max = 2 ** TILE.z;
+  if (y < 0 || y >= max) return { empty:true };
+  const layers = tileCache.get(tileKey(x, y));
+  if (layers) return { layers, baseX:TILE.x, baseY:TILE.y };
+  // ローカルPBFモードは1タイルしか持たないため、周辺を空タイルとして扱う
+  return networkTilesEnabled ? null : { empty:true };
+}
+function resolveTileFacilities(x, y){
+  const key = tileKey(x, y);
+  const cached = resolvedTiles.get(key);
+  if (cached && cached.generation === tileGeneration) return cached.result;
+  const result = RESOLVER.resolveTile({
+    tileX:x, tileY:y, pattern:ACTIVE_PATTERN, getTile:resolverGetTile,
+  });
+  if (result) resolvedTiles.set(key, { generation:tileGeneration, result });
+  return result;
+}
+function viewTileRange(pad = 96){
+  const max = 2 ** TILE.z;
+  return {
+    minX:TILE.x + Math.floor((viewOffset.x - pad) / W),
+    maxX:TILE.x + Math.floor((viewOffset.x + W + pad) / W),
+    minY:Math.max(0, TILE.y + Math.floor((viewOffset.y - pad) / H)),
+    maxY:Math.min(max - 1, TILE.y + Math.floor((viewOffset.y + H + pad) / H)),
+  };
+}
+function collectResolvedFacilities(){
+  const range = viewTileRange();
+  const facilities = [], clusters = [];
+  let resolvedTileCount = 0, pendingTiles = 0;
+  for (let ty = range.minY; ty <= range.maxY; ty++){
+    for (let tx = range.minX; tx <= range.maxX; tx++){
+      const result = resolveTileFacilities(tx, ty);
+      if (!result){ pendingTiles++; continue; }
+      resolvedTileCount++;
+      facilities.push(...result.facilities);
+      clusters.push(...result.clusters);
+    }
+  }
+  return { facilities, clusters, resolvedTileCount, pendingTiles };
+}
+
 async function fetchMapTile(x, y){
   const key = tileKey(x, y);
   if (tileCache.has(key)) return tileCache.get(key);
@@ -3289,15 +3163,23 @@ function updateMapPosition(){
   mapPosition.textContent = `${prefix}OpenFreeMap z${TILE.z} / ${t.x} / ${t.y} ─ 地理の読みやすさ`;
 }
 
+let ensureTilesRunning = false;
 async function ensureTilesAround(){
-  if (!networkTilesEnabled) return;
-  const center = centerTile();
-  const requests = [];
+  if (!networkTilesEnabled || ensureTilesRunning) return;
+  ensureTilesRunning = true;
   const cacheSizeBefore = tileCache.size;
-  for (let dy = -1; dy <= 1; dy++)
-    for (let dx = -1; dx <= 1; dx++)
-      requests.push(fetchMapTile(center.x + dx, center.y + dy));
-  await Promise.allSettled(requests);
+  try {
+    // ビューポートにかかる各タイルの3×3文脈まで先読みし、
+    // 画面へ入る施設が常に確定済みの状態で描けるようにする。
+    const range = viewTileRange();
+    const requests = [];
+    for (let ty = range.minY - 1; ty <= range.maxY + 1; ty++)
+      for (let tx = range.minX - 1; tx <= range.maxX + 1; tx++)
+        requests.push(fetchMapTile(tx, ty));
+    await Promise.allSettled(requests);
+  } finally {
+    ensureTilesRunning = false;
+  }
   if (tileCache.size === cacheSizeBefore) return;
   rebuildTileLayers();
   render();
@@ -3498,6 +3380,7 @@ const CLASS_JP = {
   alcohol_shop:'酒屋', bakery:'パン屋', ice_cream:'アイス', entertainment:'娯楽', music:'音楽',
   city:'市', town:'町', suburb:'地区', quarter:'地区', neighbourhood:'町名', village:'村',
   current_location:'測位結果',
+  cluster:'まとまった施設',
 };
 function describe(p){
   const name = p['name:ja'] || p.name || 'なまえのない場所';
