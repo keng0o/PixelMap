@@ -1,0 +1,8166 @@
+{
+  "generatedAt": "2026-08-17T06:43:51.548Z",
+  "source": "variants/map-02-refined.html",
+  "tileSource": "https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf",
+  "zoom": 14,
+  "viewport": {
+    "width": 1280,
+    "height": 920,
+    "canvasCssSize": 840
+  },
+  "patterns": [
+    {
+      "id": "01",
+      "name": "バランス階層"
+    },
+    {
+      "id": "02",
+      "name": "トランジット優先"
+    },
+    {
+      "id": "03",
+      "name": "公共施設コントラスト"
+    },
+    {
+      "id": "04",
+      "name": "マーケット・リズム"
+    },
+    {
+      "id": "05",
+      "name": "静かな最小表示"
+    },
+    {
+      "id": "06",
+      "name": "高密度マイクログリッド"
+    },
+    {
+      "id": "07",
+      "name": "高さスタック"
+    },
+    {
+      "id": "08",
+      "name": "面積クラスター"
+    },
+    {
+      "id": "09",
+      "name": "色＋形の二重符号化"
+    },
+    {
+      "id": "10",
+      "name": "ランドマーク・ビーコン"
+    }
+  ],
+  "locations": [
+    {
+      "id": "01",
+      "slug": "tokyo-station",
+      "name": "東京駅",
+      "lat": 35.681236,
+      "lon": 139.767125,
+      "group": "world"
+    },
+    {
+      "id": "02",
+      "slug": "new-york-times-square",
+      "name": "ニューヨーク・タイムズスクエア",
+      "lat": 40.758,
+      "lon": -73.9855,
+      "group": "world"
+    },
+    {
+      "id": "03",
+      "slug": "london-trafalgar-square",
+      "name": "ロンドン・トラファルガー広場",
+      "lat": 51.5074,
+      "lon": -0.1278,
+      "group": "world"
+    },
+    {
+      "id": "04",
+      "slug": "paris-hotel-de-ville",
+      "name": "パリ市庁舎",
+      "lat": 48.8566,
+      "lon": 2.3522,
+      "group": "world"
+    },
+    {
+      "id": "05",
+      "slug": "singapore-marina-bay",
+      "name": "シンガポール・マリーナベイ",
+      "lat": 1.2868,
+      "lon": 103.8545,
+      "group": "world"
+    },
+    {
+      "id": "06",
+      "slug": "kawasaki-station",
+      "name": "川崎駅",
+      "lat": 35.5314,
+      "lon": 139.6969,
+      "group": "japan"
+    },
+    {
+      "id": "07",
+      "slug": "kita-kamakura-station",
+      "name": "北鎌倉駅",
+      "lat": 35.3372,
+      "lon": 139.5451,
+      "group": "japan"
+    },
+    {
+      "id": "08",
+      "slug": "hakone-yumoto-station",
+      "name": "箱根湯本駅",
+      "lat": 35.2333,
+      "lon": 139.1069,
+      "group": "japan"
+    },
+    {
+      "id": "09",
+      "slug": "ishigaki-port",
+      "name": "石垣港離島ターミナル",
+      "lat": 24.3367,
+      "lon": 124.1557,
+      "group": "japan"
+    },
+    {
+      "id": "10",
+      "slug": "obihiro-station",
+      "name": "帯広駅",
+      "lat": 42.9178,
+      "lon": 143.2022,
+      "group": "japan"
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "pattern-01/01-tokyo-station.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "df84e28fd777b5d48f326d401e0bd96c469bfecc985d5938f8956f6e717aab4b",
+      "renderCount": 1,
+      "renderMs": 2036.6,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 28,
+          "2": 24
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 10,
+          "food": 1,
+          "generic": 9,
+          "health": 1,
+          "landmark": 4,
+          "nature": 2,
+          "service": 1,
+          "stay": 6,
+          "transit": 16
+        },
+        "dotCandidates": 3229,
+        "dots": 208,
+        "icons": 52,
+        "maxArea": 37,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 45,
+            "p90": 149,
+            "p99": 207
+          }
+        },
+        "offscreen": 10276,
+        "sizes": {
+          "L": 33,
+          "M": 13,
+          "S": 6
+        },
+        "total": 13557,
+        "visible": 3281
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-01/02-new-york-times-square.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "162380b6603084c1c92c43ccbc3404ab1ecbfb4f4b3b75e32797a1ee53c5b289",
+      "renderCount": 1,
+      "renderMs": 275.4,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 25,
+          "2": 27
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 6,
+          "generic": 9,
+          "health": 7,
+          "landmark": 2,
+          "service": 3,
+          "stay": 8,
+          "transit": 12
+        },
+        "dotCandidates": 4160,
+        "dots": 208,
+        "icons": 52,
+        "maxArea": 64,
+        "maxHeight": 423,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 472,
+            "p25": 20,
+            "p50": 46,
+            "p75": 80,
+            "p90": 143,
+            "p99": 246
+          }
+        },
+        "offscreen": 8354,
+        "sizes": {
+          "L": 39,
+          "M": 12,
+          "S": 1
+        },
+        "total": 12566,
+        "visible": 4212
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-01/03-london-trafalgar-square.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "a92089a77f1d1ad6e9843bde276daf005e39a70e2e3b8429978cb8123182f2d4",
+      "renderCount": 1,
+      "renderMs": 571,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 47,
+          "2": 5
+        },
+        "categories": {
+          "commerce": 2,
+          "food": 3,
+          "generic": 14,
+          "health": 1,
+          "landmark": 13,
+          "nature": 8,
+          "service": 2,
+          "stay": 2,
+          "transit": 7
+        },
+        "dotCandidates": 4553,
+        "dots": 208,
+        "icons": 52,
+        "maxArea": 68,
+        "maxHeight": 136,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 136,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 48
+          }
+        },
+        "offscreen": 12798,
+        "sizes": {
+          "L": 10,
+          "M": 28,
+          "S": 14
+        },
+        "total": 17403,
+        "visible": 4605
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-01/04-paris-hotel-de-ville.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "24cecd8d3ca4276d6d86bee8acf1d7499390212e28427a23e79c3fc91821e688",
+      "renderCount": 1,
+      "renderMs": 1137.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 48,
+          "2": 4
+        },
+        "categories": {
+          "civic": 3,
+          "food": 1,
+          "generic": 17,
+          "health": 3,
+          "landmark": 7,
+          "nature": 4,
+          "service": 1,
+          "stay": 1,
+          "transit": 15
+        },
+        "dotCandidates": 8060,
+        "dots": 208,
+        "icons": 52,
+        "maxArea": 65,
+        "maxHeight": 78,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 19,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 26,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36748,
+        "sizes": {
+          "L": 9,
+          "M": 27,
+          "S": 16
+        },
+        "total": 44860,
+        "visible": 8112
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-01/05-singapore-marina-bay.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "e319f1b45340149c2f13ac837925e4f789202adc602b0f285488205520718246",
+      "renderCount": 1,
+      "renderMs": 356.5,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 34,
+          "2": 18
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 7,
+          "food": 2,
+          "generic": 13,
+          "health": 1,
+          "landmark": 7,
+          "nature": 3,
+          "stay": 5,
+          "transit": 13
+        },
+        "dotCandidates": 4442,
+        "dots": 208,
+        "icons": 52,
+        "maxArea": 44,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 47,
+            "p25": 1,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 20,
+            "p75": 33,
+            "p90": 100,
+            "p99": 245
+          }
+        },
+        "offscreen": 10567,
+        "sizes": {
+          "L": 27,
+          "M": 15,
+          "S": 10
+        },
+        "total": 15061,
+        "visible": 4494
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-01/06-kawasaki-station.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "94437802631680aada31adb24eaa2690c8cdea26b001cc617c28b08c7bac1a1f",
+      "renderCount": 1,
+      "renderMs": 1111.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 47,
+          "2": 5
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 6,
+          "food": 1,
+          "generic": 5,
+          "health": 7,
+          "landmark": 6,
+          "nature": 1,
+          "service": 4,
+          "stay": 13,
+          "transit": 4
+        },
+        "dotCandidates": 1697,
+        "dots": 208,
+        "icons": 52,
+        "maxArea": 52,
+        "maxHeight": 117,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 89
+          }
+        },
+        "offscreen": 3988,
+        "sizes": {
+          "L": 9,
+          "M": 22,
+          "S": 21
+        },
+        "total": 5737,
+        "visible": 1749
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-01/07-kita-kamakura-station.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "0aaf86e25c9938bd8056bff2bed25cc75c17817285d2ee093589cfc65a36e4dc",
+      "renderCount": 1,
+      "renderMs": 864.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 52
+        },
+        "categories": {
+          "civic": 9,
+          "commerce": 2,
+          "food": 9,
+          "generic": 9,
+          "landmark": 10,
+          "nature": 8,
+          "service": 4,
+          "transit": 1
+        },
+        "dotCandidates": 565,
+        "dots": 208,
+        "icons": 52,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 4,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 5
+          }
+        },
+        "offscreen": 3523,
+        "sizes": {
+          "M": 5,
+          "S": 47
+        },
+        "total": 4140,
+        "visible": 617
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-01/08-hakone-yumoto-station.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "381990c4bd494fac245b50ca46cb6ed3f143b9ff8e5e85c205b156a1f7ed3b55",
+      "renderCount": 1,
+      "renderMs": 125.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 52
+        },
+        "categories": {
+          "civic": 4,
+          "commerce": 5,
+          "food": 6,
+          "generic": 6,
+          "health": 2,
+          "landmark": 10,
+          "nature": 1,
+          "service": 7,
+          "stay": 10,
+          "transit": 1
+        },
+        "dotCandidates": 212,
+        "dots": 203,
+        "icons": 52,
+        "maxArea": 10,
+        "maxHeight": 49,
+        "metrics": {
+          "area": {
+            "max": 10,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 49,
+            "p25": 10,
+            "p50": 14,
+            "p75": 19,
+            "p90": 26,
+            "p99": 37
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "L": 1,
+          "M": 16,
+          "S": 35
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-01/09-ishigaki-port.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "534e626814dad416e282a55b2b5281ab74d910311ef6b562835669193f822b77",
+      "renderCount": 1,
+      "renderMs": 264.2,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 52
+        },
+        "categories": {
+          "civic": 7,
+          "commerce": 1,
+          "food": 6,
+          "generic": 5,
+          "health": 7,
+          "landmark": 4,
+          "nature": 8,
+          "service": 5,
+          "stay": 9
+        },
+        "dotCandidates": 418,
+        "dots": 208,
+        "icons": 52,
+        "maxArea": 29,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 9,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 37,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 335,
+        "sizes": {
+          "M": 12,
+          "S": 40
+        },
+        "total": 805,
+        "visible": 470
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-01/10-obihiro-station.jpg",
+      "pattern": "01",
+      "patternName": "バランス階層",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "50032df7a3b7d0a6f526dffa0bb34dfefcb45378e2cc9d738cf3da409001d7df",
+      "renderCount": 1,
+      "renderMs": 269.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 50,
+          "2": 2
+        },
+        "categories": {
+          "civic": 3,
+          "commerce": 5,
+          "food": 8,
+          "generic": 14,
+          "health": 6,
+          "landmark": 4,
+          "service": 2,
+          "stay": 9,
+          "transit": 1
+        },
+        "dotCandidates": 438,
+        "dots": 208,
+        "icons": 52,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 11,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 60,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 48
+          }
+        },
+        "offscreen": 436,
+        "sizes": {
+          "L": 9,
+          "M": 15,
+          "S": 28
+        },
+        "total": 926,
+        "visible": 490
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    },
+    {
+      "path": "pattern-02/01-tokyo-station.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "b208685851acefdf36546d98be6667cc99c7ff1a29987f041e6759ae1e23f172",
+      "renderCount": 1,
+      "renderMs": 2078.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 35,
+          "2": 5,
+          "3": 6
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 8,
+          "food": 1,
+          "generic": 7,
+          "health": 1,
+          "landmark": 3,
+          "nature": 1,
+          "stay": 5,
+          "transit": 19
+        },
+        "dotCandidates": 3252,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 37,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 45,
+            "p90": 149,
+            "p99": 207
+          }
+        },
+        "offscreen": 10259,
+        "sizes": {
+          "L": 24,
+          "M": 18,
+          "S": 4
+        },
+        "total": 13557,
+        "visible": 3298
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-02/02-new-york-times-square.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "c8f71944c53c58fd5289753bd0ede4352e9f82648b0f7e0becbe84aa6cd8e36f",
+      "renderCount": 1,
+      "renderMs": 277.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 32,
+          "2": 10,
+          "3": 4
+        },
+        "categories": {
+          "civic": 3,
+          "commerce": 6,
+          "generic": 5,
+          "health": 4,
+          "landmark": 1,
+          "service": 2,
+          "stay": 6,
+          "transit": 19
+        },
+        "dotCandidates": 4157,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 64,
+        "maxHeight": 423,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 472,
+            "p25": 20,
+            "p50": 46,
+            "p75": 80,
+            "p90": 143,
+            "p99": 246
+          }
+        },
+        "offscreen": 8363,
+        "sizes": {
+          "L": 26,
+          "M": 16,
+          "S": 4
+        },
+        "total": 12566,
+        "visible": 4203
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-02/03-london-trafalgar-square.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "17184972dd1848c5d04d5793051cb7bbb3d0b719b3f41f269698daa1d9f0fc6f",
+      "renderCount": 1,
+      "renderMs": 562,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 45,
+          "2": 1
+        },
+        "categories": {
+          "commerce": 1,
+          "food": 4,
+          "generic": 13,
+          "health": 1,
+          "landmark": 11,
+          "nature": 7,
+          "service": 1,
+          "stay": 2,
+          "transit": 6
+        },
+        "dotCandidates": 4545,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 68,
+        "maxHeight": 136,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 136,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 48
+          }
+        },
+        "offscreen": 12812,
+        "sizes": {
+          "L": 7,
+          "M": 29,
+          "S": 10
+        },
+        "total": 17403,
+        "visible": 4591
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-02/04-paris-hotel-de-ville.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "bb112b997ba1682fabb03919c123eb1bda3346b9d64ffd910652b4ba60c26b1a",
+      "renderCount": 1,
+      "renderMs": 1155.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 45,
+          "2": 1
+        },
+        "categories": {
+          "civic": 3,
+          "commerce": 2,
+          "food": 1,
+          "generic": 15,
+          "health": 2,
+          "landmark": 4,
+          "nature": 2,
+          "service": 2,
+          "stay": 1,
+          "transit": 14
+        },
+        "dotCandidates": 8103,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 65,
+        "maxHeight": 42,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 19,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 26,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36711,
+        "sizes": {
+          "L": 7,
+          "M": 24,
+          "S": 15
+        },
+        "total": 44860,
+        "visible": 8149
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-02/05-singapore-marina-bay.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "0b1b0f55abec57a59b8fe94dc558c15b2457295d039af8e57cc8ae253923ea61",
+      "renderCount": 1,
+      "renderMs": 335.2,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 42,
+          "2": 3,
+          "3": 1
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 6,
+          "food": 2,
+          "generic": 13,
+          "landmark": 5,
+          "nature": 2,
+          "stay": 4,
+          "transit": 13
+        },
+        "dotCandidates": 4447,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 44,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 47,
+            "p25": 1,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 20,
+            "p75": 33,
+            "p90": 100,
+            "p99": 245
+          }
+        },
+        "offscreen": 10568,
+        "sizes": {
+          "L": 20,
+          "M": 21,
+          "S": 5
+        },
+        "total": 15061,
+        "visible": 4493
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-02/06-kawasaki-station.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "71366c06bb5be574329f37d38d88088906a36be06977062f14e030c84d244e00",
+      "renderCount": 1,
+      "renderMs": 1094.5,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 44,
+          "2": 2
+        },
+        "categories": {
+          "civic": 4,
+          "commerce": 6,
+          "food": 1,
+          "generic": 5,
+          "health": 6,
+          "landmark": 6,
+          "nature": 1,
+          "service": 1,
+          "stay": 12,
+          "transit": 4
+        },
+        "dotCandidates": 1713,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 52,
+        "maxHeight": 117,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 89
+          }
+        },
+        "offscreen": 3978,
+        "sizes": {
+          "L": 8,
+          "M": 19,
+          "S": 19
+        },
+        "total": 5737,
+        "visible": 1759
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-02/07-kita-kamakura-station.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "38607b6b70f422a7fbad75f8038f27f1885d74f1cca2fd8173f360f32ad02dc9",
+      "renderCount": 1,
+      "renderMs": 810,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 46
+        },
+        "categories": {
+          "civic": 8,
+          "commerce": 2,
+          "food": 10,
+          "generic": 9,
+          "landmark": 6,
+          "nature": 6,
+          "service": 4,
+          "transit": 1
+        },
+        "dotCandidates": 571,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 4,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 5
+          }
+        },
+        "offscreen": 3523,
+        "sizes": {
+          "M": 5,
+          "S": 41
+        },
+        "total": 4140,
+        "visible": 617
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-02/08-hakone-yumoto-station.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "6a2b2d1a86877b3c26d6a0ba751595314ca5cbc85a7b7b38e85fa92cbf7f3c3f",
+      "renderCount": 1,
+      "renderMs": 118.2,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 46
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 5,
+          "food": 6,
+          "generic": 6,
+          "health": 2,
+          "landmark": 9,
+          "nature": 1,
+          "service": 6,
+          "stay": 5,
+          "transit": 1
+        },
+        "dotCandidates": 218,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 10,
+        "maxHeight": 49,
+        "metrics": {
+          "area": {
+            "max": 10,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 49,
+            "p25": 10,
+            "p50": 14,
+            "p75": 19,
+            "p90": 26,
+            "p99": 37
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "M": 8,
+          "S": 38
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-02/09-ishigaki-port.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "0fa79a55c533001786e4dcaa5c571ef30e8b261df0f039379d3f7e9affe89efb",
+      "renderCount": 1,
+      "renderMs": 182.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 46
+        },
+        "categories": {
+          "civic": 6,
+          "commerce": 1,
+          "food": 6,
+          "generic": 5,
+          "health": 6,
+          "landmark": 5,
+          "nature": 7,
+          "service": 4,
+          "stay": 6
+        },
+        "dotCandidates": 424,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 21,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 9,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 37,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 335,
+        "sizes": {
+          "M": 11,
+          "S": 35
+        },
+        "total": 805,
+        "visible": 470
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-02/10-obihiro-station.jpg",
+      "pattern": "02",
+      "patternName": "トランジット優先",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "9a8932d61cceacf148cee4b163595d7017a1b7b806d61fef545769a232352e2c",
+      "renderCount": 1,
+      "renderMs": 274.5,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 45,
+          "2": 1
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 6,
+          "food": 7,
+          "generic": 11,
+          "health": 5,
+          "landmark": 5,
+          "service": 2,
+          "stay": 7,
+          "transit": 1
+        },
+        "dotCandidates": 446,
+        "dots": 184,
+        "icons": 46,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 11,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 60,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 48
+          }
+        },
+        "offscreen": 434,
+        "sizes": {
+          "L": 6,
+          "M": 13,
+          "S": 27
+        },
+        "total": 926,
+        "visible": 492
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    },
+    {
+      "path": "pattern-03/01-tokyo-station.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "6111b986bdf62cddaa203064f507cd8d03ed175b7b20b1cefedc59cf52e1a660",
+      "renderCount": 1,
+      "renderMs": 1995.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 41,
+          "2": 2,
+          "3": 1
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 7,
+          "food": 1,
+          "generic": 7,
+          "health": 5,
+          "landmark": 4,
+          "nature": 1,
+          "stay": 5,
+          "transit": 12
+        },
+        "dotCandidates": 3237,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 37,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 45,
+            "p90": 149,
+            "p99": 207
+          }
+        },
+        "offscreen": 10276,
+        "sizes": {
+          "L": 28,
+          "M": 14,
+          "S": 2
+        },
+        "total": 13557,
+        "visible": 3281
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-03/02-new-york-times-square.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "eaf1b641d96e3e96b1e0f2a399b857aae345ffd8548d38c55fec1a187949a275",
+      "renderCount": 1,
+      "renderMs": 272.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 37,
+          "2": 3,
+          "3": 4
+        },
+        "categories": {
+          "civic": 8,
+          "commerce": 4,
+          "generic": 5,
+          "health": 9,
+          "landmark": 1,
+          "service": 3,
+          "stay": 6,
+          "transit": 8
+        },
+        "dotCandidates": 4168,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 64,
+        "maxHeight": 423,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 472,
+            "p25": 20,
+            "p50": 46,
+            "p75": 80,
+            "p90": 143,
+            "p99": 246
+          }
+        },
+        "offscreen": 8354,
+        "sizes": {
+          "L": 27,
+          "M": 15,
+          "S": 2
+        },
+        "total": 12566,
+        "visible": 4212
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-03/03-london-trafalgar-square.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "d7ec49f7118db0dbb85253411ed98359101a40b77d0f7c812ab204283ad472b1",
+      "renderCount": 1,
+      "renderMs": 580.3,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 44
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 1,
+          "food": 2,
+          "generic": 11,
+          "health": 3,
+          "landmark": 10,
+          "nature": 6,
+          "service": 1,
+          "stay": 2,
+          "transit": 7
+        },
+        "dotCandidates": 4561,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 68,
+        "maxHeight": 136,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 136,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 48
+          }
+        },
+        "offscreen": 12798,
+        "sizes": {
+          "L": 11,
+          "M": 25,
+          "S": 8
+        },
+        "total": 17403,
+        "visible": 4605
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-03/04-paris-hotel-de-ville.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "1f56fe3f6f8465e2228763dff03f253e2cb5dbf3942204ed5718525330dc3b84",
+      "renderCount": 1,
+      "renderMs": 1161,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 42,
+          "2": 2
+        },
+        "categories": {
+          "civic": 3,
+          "food": 1,
+          "generic": 14,
+          "health": 3,
+          "landmark": 4,
+          "nature": 2,
+          "service": 1,
+          "stay": 1,
+          "transit": 15
+        },
+        "dotCandidates": 8074,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 65,
+        "maxHeight": 42,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 19,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 26,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36742,
+        "sizes": {
+          "L": 8,
+          "M": 24,
+          "S": 12
+        },
+        "total": 44860,
+        "visible": 8118
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-03/05-singapore-marina-bay.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "0ad103094b253b518c081e5f09c3471f416e758592c38989a6ad1d7d58e7be28",
+      "renderCount": 1,
+      "renderMs": 330.4,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 43,
+          "3": 1
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 6,
+          "food": 2,
+          "generic": 11,
+          "health": 5,
+          "landmark": 2,
+          "nature": 2,
+          "stay": 3,
+          "transit": 12
+        },
+        "dotCandidates": 4453,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 44,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 47,
+            "p25": 1,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 20,
+            "p75": 33,
+            "p90": 100,
+            "p99": 245
+          }
+        },
+        "offscreen": 10564,
+        "sizes": {
+          "L": 22,
+          "M": 17,
+          "S": 5
+        },
+        "total": 15061,
+        "visible": 4497
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-03/06-kawasaki-station.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "87bbeed5ea1bec6fdeb6e08cda877653ab2892baa27f8ff7512bcbc4c4c6a90a",
+      "renderCount": 1,
+      "renderMs": 1129.6,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 42,
+          "3": 2
+        },
+        "categories": {
+          "civic": 6,
+          "commerce": 6,
+          "food": 1,
+          "generic": 5,
+          "health": 6,
+          "landmark": 5,
+          "nature": 1,
+          "service": 1,
+          "stay": 9,
+          "transit": 4
+        },
+        "dotCandidates": 1705,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 52,
+        "maxHeight": 117,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 89
+          }
+        },
+        "offscreen": 3988,
+        "sizes": {
+          "L": 11,
+          "M": 21,
+          "S": 12
+        },
+        "total": 5737,
+        "visible": 1749
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-03/07-kita-kamakura-station.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "2838657e59ff20940ce79fd42d09f5f903a16aadb4f7c9f0d3cdb619c9fe12cc",
+      "renderCount": 1,
+      "renderMs": 861.4,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 44
+        },
+        "categories": {
+          "civic": 9,
+          "commerce": 2,
+          "food": 8,
+          "generic": 9,
+          "health": 1,
+          "landmark": 4,
+          "nature": 6,
+          "service": 4,
+          "transit": 1
+        },
+        "dotCandidates": 573,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 4,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 5
+          }
+        },
+        "offscreen": 3523,
+        "sizes": {
+          "M": 13,
+          "S": 31
+        },
+        "total": 4140,
+        "visible": 617
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-03/08-hakone-yumoto-station.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "9d312f767458b1439e2f44fd3d951be688df9f9fb13ab8120001ef559df615bb",
+      "renderCount": 1,
+      "renderMs": 132.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 44
+        },
+        "categories": {
+          "civic": 7,
+          "commerce": 6,
+          "food": 5,
+          "generic": 4,
+          "health": 2,
+          "landmark": 8,
+          "nature": 1,
+          "service": 6,
+          "stay": 5
+        },
+        "dotCandidates": 220,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 10,
+        "maxHeight": 49,
+        "metrics": {
+          "area": {
+            "max": 10,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 49,
+            "p25": 10,
+            "p50": 14,
+            "p75": 19,
+            "p90": 26,
+            "p99": 37
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "L": 1,
+          "M": 18,
+          "S": 25
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-03/09-ishigaki-port.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "92c01c4b9d20118214ac0c3e7b7af044af30159a4bd0bed68ae434cf40ff5f92",
+      "renderCount": 1,
+      "renderMs": 288.6,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 44
+        },
+        "categories": {
+          "civic": 12,
+          "commerce": 1,
+          "food": 4,
+          "generic": 5,
+          "health": 8,
+          "landmark": 3,
+          "nature": 5,
+          "service": 2,
+          "stay": 4
+        },
+        "dotCandidates": 426,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 20,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 9,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 37,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 335,
+        "sizes": {
+          "M": 24,
+          "S": 20
+        },
+        "total": 805,
+        "visible": 470
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-03/10-obihiro-station.jpg",
+      "pattern": "03",
+      "patternName": "公共施設コントラスト",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "caeab76cd17816759f6d85cbd5676afb639c2e194dca581a03a2f2a840446bf2",
+      "renderCount": 1,
+      "renderMs": 326.4,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 44
+        },
+        "categories": {
+          "civic": 3,
+          "commerce": 6,
+          "food": 5,
+          "generic": 10,
+          "health": 8,
+          "landmark": 4,
+          "service": 1,
+          "stay": 6,
+          "transit": 1
+        },
+        "dotCandidates": 446,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 11,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 60,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 48
+          }
+        },
+        "offscreen": 436,
+        "sizes": {
+          "L": 9,
+          "M": 17,
+          "S": 18
+        },
+        "total": 926,
+        "visible": 490
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    },
+    {
+      "path": "pattern-04/01-tokyo-station.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "d8ebf06f15f40a465f17f375776ab4ad840a6395d392fef3ba4206f339b762f2",
+      "renderCount": 1,
+      "renderMs": 2064.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 47,
+          "2": 13
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 14,
+          "food": 4,
+          "generic": 11,
+          "health": 1,
+          "landmark": 3,
+          "nature": 2,
+          "service": 1,
+          "stay": 6,
+          "transit": 16
+        },
+        "dotCandidates": 3224,
+        "dots": 240,
+        "icons": 60,
+        "maxArea": 37,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 45,
+            "p90": 149,
+            "p99": 207
+          }
+        },
+        "offscreen": 10273,
+        "sizes": {
+          "L": 34,
+          "M": 22,
+          "S": 4
+        },
+        "total": 13557,
+        "visible": 3284
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-04/02-new-york-times-square.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "e1ff3fb342b38c2458dd944a06d990a25f1eb7023879b869bc13c4d37ee6d0ae",
+      "renderCount": 1,
+      "renderMs": 270.4,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 48,
+          "2": 12
+        },
+        "categories": {
+          "civic": 6,
+          "commerce": 10,
+          "food": 5,
+          "generic": 8,
+          "health": 6,
+          "landmark": 2,
+          "service": 3,
+          "stay": 8,
+          "transit": 12
+        },
+        "dotCandidates": 4140,
+        "dots": 240,
+        "icons": 60,
+        "maxArea": 64,
+        "maxHeight": 423,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 472,
+            "p25": 20,
+            "p50": 46,
+            "p75": 80,
+            "p90": 143,
+            "p99": 246
+          }
+        },
+        "offscreen": 8366,
+        "sizes": {
+          "L": 41,
+          "M": 17,
+          "S": 2
+        },
+        "total": 12566,
+        "visible": 4200
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-04/03-london-trafalgar-square.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "53b4fce725e167846f204d1f2559cb9f5ae4966136ae92bb86884f2c0d3798e6",
+      "renderCount": 1,
+      "renderMs": 464.3,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 58,
+          "3": 2
+        },
+        "categories": {
+          "commerce": 3,
+          "food": 10,
+          "generic": 17,
+          "health": 1,
+          "landmark": 14,
+          "nature": 7,
+          "service": 1,
+          "transit": 7
+        },
+        "dotCandidates": 4534,
+        "dots": 240,
+        "icons": 60,
+        "maxArea": 68,
+        "maxHeight": 136,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 136,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 48
+          }
+        },
+        "offscreen": 12809,
+        "sizes": {
+          "L": 11,
+          "M": 37,
+          "S": 12
+        },
+        "total": 17403,
+        "visible": 4594
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-04/04-paris-hotel-de-ville.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "bee80b1cf5a417a808139d19519b4b94a27879bcad21898229dcff670c6647bc",
+      "renderCount": 1,
+      "renderMs": 1165.4,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 59,
+          "3": 1
+        },
+        "categories": {
+          "civic": 3,
+          "commerce": 4,
+          "food": 2,
+          "generic": 18,
+          "health": 4,
+          "landmark": 7,
+          "nature": 5,
+          "service": 3,
+          "stay": 1,
+          "transit": 13
+        },
+        "dotCandidates": 8083,
+        "dots": 240,
+        "icons": 60,
+        "maxArea": 65,
+        "maxHeight": 78,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 19,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 26,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36717,
+        "sizes": {
+          "L": 10,
+          "M": 24,
+          "S": 26
+        },
+        "total": 44860,
+        "visible": 8143
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-04/05-singapore-marina-bay.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "cc1b9d8408a770294ed5b681187fa2d1c556fd7892253ce1f504f5546198188c",
+      "renderCount": 1,
+      "renderMs": 336.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 45,
+          "2": 15
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 13,
+          "food": 6,
+          "generic": 14,
+          "landmark": 5,
+          "nature": 2,
+          "stay": 5,
+          "transit": 14
+        },
+        "dotCandidates": 4448,
+        "dots": 240,
+        "icons": 60,
+        "maxArea": 44,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 47,
+            "p25": 1,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 20,
+            "p75": 33,
+            "p90": 100,
+            "p99": 245
+          }
+        },
+        "offscreen": 10553,
+        "sizes": {
+          "L": 29,
+          "M": 22,
+          "S": 9
+        },
+        "total": 15061,
+        "visible": 4508
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-04/06-kawasaki-station.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "b797bf3e26ed1dc691ff32a52e4ad6a76eb90cebb680315d27517e7672019709",
+      "renderCount": 1,
+      "renderMs": 1079.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 56,
+          "2": 2,
+          "3": 2
+        },
+        "categories": {
+          "civic": 6,
+          "commerce": 9,
+          "food": 3,
+          "generic": 6,
+          "health": 6,
+          "landmark": 6,
+          "nature": 2,
+          "service": 4,
+          "stay": 14,
+          "transit": 4
+        },
+        "dotCandidates": 1690,
+        "dots": 240,
+        "icons": 60,
+        "maxArea": 52,
+        "maxHeight": 117,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 89
+          }
+        },
+        "offscreen": 3987,
+        "sizes": {
+          "L": 13,
+          "M": 29,
+          "S": 18
+        },
+        "total": 5737,
+        "visible": 1750
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-04/07-kita-kamakura-station.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "fb1c30076892b77d1346d03b2e12541410fc4f58ec70af22cdf519b31e6af675",
+      "renderCount": 1,
+      "renderMs": 840.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 60
+        },
+        "categories": {
+          "civic": 9,
+          "commerce": 4,
+          "food": 12,
+          "generic": 9,
+          "landmark": 10,
+          "nature": 10,
+          "service": 5,
+          "transit": 1
+        },
+        "dotCandidates": 557,
+        "dots": 240,
+        "icons": 60,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 4,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 5
+          }
+        },
+        "offscreen": 3523,
+        "sizes": {
+          "M": 22,
+          "S": 38
+        },
+        "total": 4140,
+        "visible": 617
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-04/08-hakone-yumoto-station.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "5986167ce365817ed0e5845596ff1123e841dc6d4ee3a1bcd22deb8bed0e8831",
+      "renderCount": 1,
+      "renderMs": 121.5,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 60
+        },
+        "categories": {
+          "civic": 7,
+          "commerce": 5,
+          "food": 14,
+          "generic": 7,
+          "health": 2,
+          "landmark": 9,
+          "nature": 1,
+          "service": 8,
+          "stay": 6,
+          "transit": 1
+        },
+        "dotCandidates": 204,
+        "dots": 199,
+        "icons": 60,
+        "maxArea": 10,
+        "maxHeight": 49,
+        "metrics": {
+          "area": {
+            "max": 10,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 49,
+            "p25": 10,
+            "p50": 14,
+            "p75": 19,
+            "p90": 26,
+            "p99": 37
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "M": 25,
+          "S": 35
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-04/09-ishigaki-port.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "8e174addce407e2dd593d43a31bc7e3885500cbac6deaf77f5643d88cf92e5d9",
+      "renderCount": 1,
+      "renderMs": 257.3,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 57,
+          "2": 3
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 3,
+          "food": 13,
+          "generic": 5,
+          "health": 7,
+          "landmark": 5,
+          "nature": 8,
+          "service": 6,
+          "stay": 8
+        },
+        "dotCandidates": 410,
+        "dots": 240,
+        "icons": 60,
+        "maxArea": 29,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 9,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 37,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 335,
+        "sizes": {
+          "L": 1,
+          "M": 25,
+          "S": 34
+        },
+        "total": 805,
+        "visible": 470
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-04/10-obihiro-station.jpg",
+      "pattern": "04",
+      "patternName": "マーケット・リズム",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "cd73004259e883e4a7835c97215931383dc0b2c2441ed6595a7b0048def591d7",
+      "renderCount": 1,
+      "renderMs": 290.2,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 56,
+          "3": 4
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 5,
+          "food": 16,
+          "generic": 14,
+          "health": 7,
+          "landmark": 5,
+          "service": 2,
+          "stay": 8,
+          "transit": 1
+        },
+        "dotCandidates": 431,
+        "dots": 240,
+        "icons": 60,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 11,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 60,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 48
+          }
+        },
+        "offscreen": 435,
+        "sizes": {
+          "L": 8,
+          "M": 35,
+          "S": 17
+        },
+        "total": 926,
+        "visible": 491
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    },
+    {
+      "path": "pattern-05/01-tokyo-station.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "3158dd75ddf03a716083d849e27735d85c8f5a12fb96923a40fdfb7eb6b1a383",
+      "renderCount": 1,
+      "renderMs": 1994.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 6,
+          "food": 2,
+          "generic": 3,
+          "health": 1,
+          "landmark": 3,
+          "nature": 1,
+          "stay": 3,
+          "transit": 6
+        },
+        "dotCandidates": 3269,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 21,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 47,
+            "p90": 150,
+            "p99": 210
+          }
+        },
+        "offscreen": 10262,
+        "sizes": {
+          "L": 16,
+          "M": 6,
+          "S": 4
+        },
+        "total": 13557,
+        "visible": 3295
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-05/02-new-york-times-square.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "35f1ffd476ada3864f5ad6dbff01db5c75d1f06ea39ae374bacdc3b4624b3eb1",
+      "renderCount": 1,
+      "renderMs": 262.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 4,
+          "generic": 4,
+          "health": 2,
+          "landmark": 1,
+          "nature": 1,
+          "service": 1,
+          "stay": 6,
+          "transit": 5
+        },
+        "dotCandidates": 4231,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 36,
+        "maxHeight": 472,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 472,
+            "p25": 20,
+            "p50": 47,
+            "p75": 83,
+            "p90": 146,
+            "p99": 257
+          }
+        },
+        "offscreen": 8309,
+        "sizes": {
+          "L": 19,
+          "M": 5,
+          "S": 2
+        },
+        "total": 12566,
+        "visible": 4257
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-05/03-london-trafalgar-square.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "ae7b68fa19f5299a3bbb6d68212ad0874fa7794894ee6413b11699750c6281d7",
+      "renderCount": 1,
+      "renderMs": 573.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "commerce": 1,
+          "generic": 8,
+          "health": 1,
+          "landmark": 6,
+          "nature": 4,
+          "transit": 6
+        },
+        "dotCandidates": 4608,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 68,
+        "maxHeight": 137,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 137,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 50
+          }
+        },
+        "offscreen": 12769,
+        "sizes": {
+          "L": 3,
+          "M": 11,
+          "S": 12
+        },
+        "total": 17403,
+        "visible": 4634
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-05/04-paris-hotel-de-ville.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "d847c0be027430ea3ad7e14eaefe5d41f1ed134ac3895ba25961c8b48cdc7578",
+      "renderCount": 1,
+      "renderMs": 1140.4,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 2,
+          "generic": 9,
+          "health": 2,
+          "landmark": 1,
+          "service": 1,
+          "stay": 1,
+          "transit": 8
+        },
+        "dotCandidates": 8256,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 65,
+        "maxHeight": 42,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 20,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 25,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36578,
+        "sizes": {
+          "L": 1,
+          "M": 9,
+          "S": 16
+        },
+        "total": 44860,
+        "visible": 8282
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-05/05-singapore-marina-bay.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "d0a78738ae706c17139322cee7dcec620297e7c786aba3f58ebe36b791b3914a",
+      "renderCount": 1,
+      "renderMs": 328.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 3,
+          "food": 1,
+          "generic": 8,
+          "landmark": 1,
+          "nature": 2,
+          "stay": 1,
+          "transit": 9
+        },
+        "dotCandidates": 4467,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 44,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 51,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 19,
+            "p75": 33,
+            "p90": 132,
+            "p99": 245
+          }
+        },
+        "offscreen": 10568,
+        "sizes": {
+          "L": 13,
+          "M": 5,
+          "S": 8
+        },
+        "total": 15061,
+        "visible": 4493
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-05/06-kawasaki-station.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "c7dfcf90d46e07d4261c9f428dd17fa99009ae1f513479272ad44d3c22cbfaff",
+      "renderCount": 1,
+      "renderMs": 1081,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 3,
+          "food": 1,
+          "generic": 3,
+          "health": 4,
+          "landmark": 3,
+          "service": 1,
+          "stay": 5,
+          "transit": 4
+        },
+        "dotCandidates": 1738,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 52,
+        "maxHeight": 112,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 90
+          }
+        },
+        "offscreen": 3973,
+        "sizes": {
+          "L": 2,
+          "M": 15,
+          "S": 9
+        },
+        "total": 5737,
+        "visible": 1764
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-05/07-kita-kamakura-station.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "81542eeef1cdfa790c1db012efe27cd9f70e3faeabda4f63caccafb1ae2849b3",
+      "renderCount": 1,
+      "renderMs": 842.2,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "civic": 3,
+          "commerce": 1,
+          "food": 5,
+          "generic": 7,
+          "landmark": 2,
+          "nature": 4,
+          "service": 3,
+          "transit": 1
+        },
+        "dotCandidates": 582,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 3,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 8
+          }
+        },
+        "offscreen": 3532,
+        "sizes": {
+          "S": 26
+        },
+        "total": 4140,
+        "visible": 608
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-05/08-hakone-yumoto-station.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "08b601e276602f57720afee12e310438ed568012a18ed8023ec994ed698df2be",
+      "renderCount": 1,
+      "renderMs": 127.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "civic": 4,
+          "commerce": 2,
+          "food": 2,
+          "generic": 4,
+          "health": 2,
+          "landmark": 3,
+          "nature": 2,
+          "service": 3,
+          "stay": 3,
+          "transit": 1
+        },
+        "dotCandidates": 238,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 6,
+        "maxHeight": 27,
+        "metrics": {
+          "area": {
+            "max": 7,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 37,
+            "p25": 10,
+            "p50": 13,
+            "p75": 19,
+            "p90": 26,
+            "p99": 30
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "S": 26
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-05/09-ishigaki-port.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "1392ce0cdf6b17200302382b8f834da33f3f8a68e3447ac082e4cf7800a93da9",
+      "renderCount": 1,
+      "renderMs": 303.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "civic": 4,
+          "food": 4,
+          "generic": 4,
+          "health": 2,
+          "landmark": 4,
+          "nature": 2,
+          "service": 3,
+          "stay": 3
+        },
+        "dotCandidates": 445,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 21,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 8,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 22,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 334,
+        "sizes": {
+          "M": 2,
+          "S": 24
+        },
+        "total": 805,
+        "visible": 471
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-05/10-obihiro-station.jpg",
+      "pattern": "05",
+      "patternName": "静かな最小表示",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "b7740cdf9ffe8258ff28533679eb15b06e659e5ab44a9f79f7c27fa421349056",
+      "renderCount": 1,
+      "renderMs": 306.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 26
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 3,
+          "food": 4,
+          "generic": 6,
+          "health": 3,
+          "landmark": 2,
+          "service": 1,
+          "stay": 4,
+          "transit": 1
+        },
+        "dotCandidates": 467,
+        "dots": 78,
+        "icons": 26,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 10,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 55,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 15,
+            "p99": 48
+          }
+        },
+        "offscreen": 433,
+        "sizes": {
+          "L": 2,
+          "M": 4,
+          "S": 20
+        },
+        "total": 926,
+        "visible": 493
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    },
+    {
+      "path": "pattern-06/01-tokyo-station.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "3c1f0262030e9cef147de5fe6ac966d526e749f2c39ffd0723299d57fc48fa14",
+      "renderCount": 1,
+      "renderMs": 2036.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 96
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 14,
+          "food": 5,
+          "generic": 20,
+          "health": 6,
+          "landmark": 8,
+          "nature": 5,
+          "service": 2,
+          "stay": 9,
+          "transit": 25
+        },
+        "dotCandidates": 3191,
+        "dots": 520,
+        "icons": 96,
+        "maxArea": 37,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 45,
+            "p90": 149,
+            "p99": 207
+          }
+        },
+        "offscreen": 10270,
+        "sizes": {
+          "L": 39,
+          "M": 33,
+          "S": 24
+        },
+        "total": 13557,
+        "visible": 3287
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-06/02-new-york-times-square.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "be20f9ca0697861c86663c67449b604138a4cf01e4372afd5a5eea4b916d380e",
+      "renderCount": 1,
+      "renderMs": 279.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 96
+        },
+        "categories": {
+          "civic": 8,
+          "commerce": 9,
+          "food": 1,
+          "generic": 16,
+          "health": 11,
+          "landmark": 7,
+          "service": 3,
+          "stay": 19,
+          "transit": 22
+        },
+        "dotCandidates": 4113,
+        "dots": 520,
+        "icons": 96,
+        "maxArea": 64,
+        "maxHeight": 423,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 472,
+            "p25": 20,
+            "p50": 46,
+            "p75": 80,
+            "p90": 143,
+            "p99": 246
+          }
+        },
+        "offscreen": 8357,
+        "sizes": {
+          "L": 52,
+          "M": 23,
+          "S": 21
+        },
+        "total": 12566,
+        "visible": 4209
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-06/03-london-trafalgar-square.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "c437837f28fe8527063ed9e2d93a7c992d255122bf7c547b636aeaaecd7c8729",
+      "renderCount": 1,
+      "renderMs": 589.6,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 96
+        },
+        "categories": {
+          "civic": 3,
+          "commerce": 4,
+          "food": 12,
+          "generic": 22,
+          "health": 3,
+          "landmark": 23,
+          "nature": 9,
+          "service": 7,
+          "stay": 6,
+          "transit": 7
+        },
+        "dotCandidates": 4475,
+        "dots": 520,
+        "icons": 96,
+        "maxArea": 68,
+        "maxHeight": 136,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 136,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 48
+          }
+        },
+        "offscreen": 12832,
+        "sizes": {
+          "L": 11,
+          "M": 30,
+          "S": 55
+        },
+        "total": 17403,
+        "visible": 4571
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-06/04-paris-hotel-de-ville.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "688474a27f395ced73f2ea15a95c0eeb5d5539260f292e37ba01f975cc87b0df",
+      "renderCount": 1,
+      "renderMs": 1148,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 96
+        },
+        "categories": {
+          "civic": 4,
+          "commerce": 4,
+          "food": 2,
+          "generic": 26,
+          "health": 5,
+          "landmark": 14,
+          "nature": 15,
+          "service": 6,
+          "stay": 5,
+          "transit": 15
+        },
+        "dotCandidates": 8112,
+        "dots": 520,
+        "icons": 96,
+        "maxArea": 65,
+        "maxHeight": 78,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 19,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 26,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36652,
+        "sizes": {
+          "L": 3,
+          "M": 15,
+          "S": 78
+        },
+        "total": 44860,
+        "visible": 8208
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-06/05-singapore-marina-bay.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "96e312d1344e6760888ff51cf9b021be093d9c2387541f5e980f4e85c0877513",
+      "renderCount": 1,
+      "renderMs": 374.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 96
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 14,
+          "food": 9,
+          "generic": 17,
+          "health": 11,
+          "landmark": 9,
+          "nature": 8,
+          "service": 4,
+          "stay": 8,
+          "transit": 15
+        },
+        "dotCandidates": 4388,
+        "dots": 520,
+        "icons": 96,
+        "maxArea": 47,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 47,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 20,
+            "p75": 33,
+            "p90": 110,
+            "p99": 245
+          }
+        },
+        "offscreen": 10577,
+        "sizes": {
+          "L": 30,
+          "M": 32,
+          "S": 34
+        },
+        "total": 15061,
+        "visible": 4484
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-06/06-kawasaki-station.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "a204b3f3b19c187829738f11e3a26286275bb5a91104ad4ded4a67c172a2e7b9",
+      "renderCount": 1,
+      "renderMs": 1049.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 96
+        },
+        "categories": {
+          "civic": 10,
+          "commerce": 11,
+          "food": 6,
+          "generic": 9,
+          "health": 13,
+          "landmark": 8,
+          "nature": 4,
+          "service": 7,
+          "stay": 24,
+          "transit": 4
+        },
+        "dotCandidates": 1656,
+        "dots": 520,
+        "icons": 96,
+        "maxArea": 52,
+        "maxHeight": 117,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 89
+          }
+        },
+        "offscreen": 3985,
+        "sizes": {
+          "L": 5,
+          "M": 38,
+          "S": 53
+        },
+        "total": 5737,
+        "visible": 1752
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-06/07-kita-kamakura-station.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "540186def417c6acd9f67aba8814dfc06c1c8fb0cd5d5d1e94f826e78a557d42",
+      "renderCount": 1,
+      "renderMs": 871.5,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 96
+        },
+        "categories": {
+          "civic": 12,
+          "commerce": 5,
+          "food": 14,
+          "generic": 17,
+          "health": 1,
+          "landmark": 23,
+          "nature": 17,
+          "service": 6,
+          "transit": 1
+        },
+        "dotCandidates": 522,
+        "dots": 477,
+        "icons": 96,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 4,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 5
+          }
+        },
+        "offscreen": 3522,
+        "sizes": {
+          "M": 3,
+          "S": 93
+        },
+        "total": 4140,
+        "visible": 618
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-06/08-hakone-yumoto-station.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "6698f9103cb89d7dac1e6fe331b22d599112f9516942572cbbd818a07582dc92",
+      "renderCount": 1,
+      "renderMs": 137.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 95
+        },
+        "categories": {
+          "civic": 9,
+          "commerce": 7,
+          "food": 13,
+          "generic": 14,
+          "health": 2,
+          "landmark": 14,
+          "nature": 2,
+          "service": 18,
+          "stay": 15,
+          "transit": 1
+        },
+        "dotCandidates": 169,
+        "dots": 165,
+        "icons": 95,
+        "maxArea": 10,
+        "maxHeight": 49,
+        "metrics": {
+          "area": {
+            "max": 10,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 49,
+            "p25": 10,
+            "p50": 14,
+            "p75": 19,
+            "p90": 26,
+            "p99": 37
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "M": 4,
+          "S": 91
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-06/09-ishigaki-port.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "04e0ed4cfbb416a35af89158e84b4c64b44397ba5cfdd89a1116c6af034dd8ec",
+      "renderCount": 1,
+      "renderMs": 273.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 96
+        },
+        "categories": {
+          "civic": 18,
+          "commerce": 3,
+          "food": 16,
+          "generic": 13,
+          "health": 8,
+          "landmark": 5,
+          "nature": 12,
+          "service": 8,
+          "stay": 13
+        },
+        "dotCandidates": 373,
+        "dots": 348,
+        "icons": 96,
+        "maxArea": 29,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 9,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 37,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 336,
+        "sizes": {
+          "M": 17,
+          "S": 79
+        },
+        "total": 805,
+        "visible": 469
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-06/10-obihiro-station.jpg",
+      "pattern": "06",
+      "patternName": "高密度マイクログリッド",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "f6887ca86ac97d0d9b223b742c22be1cc85c24a2180ed722f03f74cf1ff46914",
+      "renderCount": 1,
+      "renderMs": 285.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 96
+        },
+        "categories": {
+          "civic": 8,
+          "commerce": 8,
+          "food": 18,
+          "generic": 20,
+          "health": 7,
+          "landmark": 5,
+          "nature": 3,
+          "service": 4,
+          "stay": 22,
+          "transit": 1
+        },
+        "dotCandidates": 396,
+        "dots": 363,
+        "icons": 96,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 11,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 60,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 48
+          }
+        },
+        "offscreen": 434,
+        "sizes": {
+          "L": 4,
+          "M": 22,
+          "S": 70
+        },
+        "total": 926,
+        "visible": 492
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    },
+    {
+      "path": "pattern-07/01-tokyo-station.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "e004fb653bbde3266086e7ef6a67fa8810d1c02e940b46654898db522323cb28",
+      "renderCount": 1,
+      "renderMs": 2022.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 10,
+          "2": 3,
+          "3": 11,
+          "4": 20
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 9,
+          "food": 1,
+          "generic": 6,
+          "health": 1,
+          "landmark": 4,
+          "nature": 2,
+          "stay": 6,
+          "transit": 14
+        },
+        "dotCandidates": 3237,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 37,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 47,
+            "p90": 149,
+            "p99": 207
+          }
+        },
+        "offscreen": 10276,
+        "sizes": {
+          "L": 33,
+          "M": 4,
+          "S": 7
+        },
+        "total": 13557,
+        "visible": 3281
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-07/02-new-york-times-square.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "2f72fc3253db57bae5d29f89574be8e740cbb95e8f614755ae68e9ffaba40978",
+      "renderCount": 1,
+      "renderMs": 258.6,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 2,
+          "2": 7,
+          "3": 12,
+          "4": 23
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 6,
+          "generic": 6,
+          "health": 5,
+          "landmark": 1,
+          "service": 3,
+          "stay": 7,
+          "transit": 11
+        },
+        "dotCandidates": 4168,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 64,
+        "maxHeight": 423,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 423,
+            "p25": 20,
+            "p50": 46,
+            "p75": 80,
+            "p90": 143,
+            "p99": 246
+          }
+        },
+        "offscreen": 8354,
+        "sizes": {
+          "L": 38,
+          "M": 5,
+          "S": 1
+        },
+        "total": 12566,
+        "visible": 4212
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-07/03-london-trafalgar-square.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "bb59ff09e2ac083108821b330a6878d04fb96a1d13a37956e67abcde41512225",
+      "renderCount": 1,
+      "renderMs": 460.5,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 20,
+          "2": 14,
+          "3": 9,
+          "4": 1
+        },
+        "categories": {
+          "commerce": 1,
+          "food": 3,
+          "generic": 12,
+          "health": 1,
+          "landmark": 11,
+          "nature": 6,
+          "service": 1,
+          "stay": 2,
+          "transit": 7
+        },
+        "dotCandidates": 4561,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 68,
+        "maxHeight": 136,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 136,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 50
+          }
+        },
+        "offscreen": 12798,
+        "sizes": {
+          "L": 14,
+          "M": 20,
+          "S": 10
+        },
+        "total": 17403,
+        "visible": 4605
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-07/04-paris-hotel-de-ville.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "be12cf20ba67b9cf2f7279b0135e8159c28d97dd986bfc95f08cdde2a0a407f1",
+      "renderCount": 1,
+      "renderMs": 1119.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 18,
+          "2": 22,
+          "3": 4
+        },
+        "categories": {
+          "civic": 3,
+          "food": 1,
+          "generic": 16,
+          "health": 2,
+          "landmark": 4,
+          "nature": 2,
+          "service": 2,
+          "transit": 14
+        },
+        "dotCandidates": 8068,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 65,
+        "maxHeight": 42,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 19,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 26,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36748,
+        "sizes": {
+          "L": 8,
+          "M": 25,
+          "S": 11
+        },
+        "total": 44860,
+        "visible": 8112
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-07/05-singapore-marina-bay.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "9c2dd2fd1a5e08f68d63f9ef607cdbc4d4cbac419e9633d605636a4277fe85a7",
+      "renderCount": 1,
+      "renderMs": 337.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 16,
+          "2": 9,
+          "3": 5,
+          "4": 14
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 6,
+          "food": 2,
+          "generic": 13,
+          "landmark": 5,
+          "nature": 2,
+          "stay": 2,
+          "transit": 13
+        },
+        "dotCandidates": 4450,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 44,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 47,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 20,
+            "p75": 34,
+            "p90": 118,
+            "p99": 245
+          }
+        },
+        "offscreen": 10567,
+        "sizes": {
+          "L": 22,
+          "M": 17,
+          "S": 5
+        },
+        "total": 15061,
+        "visible": 4494
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-07/06-kawasaki-station.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "36592b294964d655f32c8aff7546a2a7ed772761335dc692634bb1def11bd4ab",
+      "renderCount": 1,
+      "renderMs": 1111.4,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 35,
+          "2": 2,
+          "3": 3,
+          "4": 4
+        },
+        "categories": {
+          "civic": 4,
+          "commerce": 6,
+          "food": 1,
+          "generic": 5,
+          "health": 6,
+          "landmark": 5,
+          "nature": 1,
+          "service": 1,
+          "stay": 11,
+          "transit": 4
+        },
+        "dotCandidates": 1705,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 52,
+        "maxHeight": 117,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 89
+          }
+        },
+        "offscreen": 3988,
+        "sizes": {
+          "L": 7,
+          "M": 14,
+          "S": 23
+        },
+        "total": 5737,
+        "visible": 1749
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-07/07-kita-kamakura-station.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "85e786b9048477a8713cf36bfd9578160ae451d21e08682e5bd5f4c87dbed84e",
+      "renderCount": 1,
+      "renderMs": 831.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 44
+        },
+        "categories": {
+          "civic": 8,
+          "commerce": 2,
+          "food": 9,
+          "generic": 9,
+          "landmark": 5,
+          "nature": 7,
+          "service": 3,
+          "transit": 1
+        },
+        "dotCandidates": 573,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 4,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 5
+          }
+        },
+        "offscreen": 3523,
+        "sizes": {
+          "S": 44
+        },
+        "total": 4140,
+        "visible": 617
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-07/08-hakone-yumoto-station.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "59c78c920a5775ad597d9ea6f4cc72b2eb7baf3cc020f7808a88d577f96a6fe3",
+      "renderCount": 1,
+      "renderMs": 131.6,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 30,
+          "2": 12,
+          "3": 2
+        },
+        "categories": {
+          "civic": 4,
+          "commerce": 5,
+          "food": 5,
+          "generic": 5,
+          "health": 2,
+          "landmark": 8,
+          "nature": 1,
+          "service": 6,
+          "stay": 7,
+          "transit": 1
+        },
+        "dotCandidates": 220,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 10,
+        "maxHeight": 49,
+        "metrics": {
+          "area": {
+            "max": 10,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 49,
+            "p25": 10,
+            "p50": 14,
+            "p75": 19,
+            "p90": 26,
+            "p99": 37
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "L": 2,
+          "M": 24,
+          "S": 18
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-07/09-ishigaki-port.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "b904f45fb9836a88ab88009485d5c039444acfb9b73f13db0df3fe5e7292c3e6",
+      "renderCount": 1,
+      "renderMs": 257.6,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 42,
+          "2": 1,
+          "3": 1
+        },
+        "categories": {
+          "civic": 6,
+          "commerce": 1,
+          "food": 5,
+          "generic": 5,
+          "health": 6,
+          "landmark": 4,
+          "nature": 6,
+          "service": 4,
+          "stay": 7
+        },
+        "dotCandidates": 426,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 21,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 9,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 37,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 335,
+        "sizes": {
+          "L": 1,
+          "M": 6,
+          "S": 37
+        },
+        "total": 805,
+        "visible": 470
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-07/10-obihiro-station.jpg",
+      "pattern": "07",
+      "patternName": "高さスタック",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "014a35d5e02f5febdecc6c2c089edcb802658bd3e734a12b069a9c9bfd0b0d43",
+      "renderCount": 1,
+      "renderMs": 302.6,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 39,
+          "2": 3,
+          "3": 2
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 5,
+          "food": 6,
+          "generic": 12,
+          "health": 5,
+          "landmark": 4,
+          "service": 2,
+          "stay": 7,
+          "transit": 1
+        },
+        "dotCandidates": 446,
+        "dots": 176,
+        "icons": 44,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 11,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 60,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 48
+          }
+        },
+        "offscreen": 436,
+        "sizes": {
+          "L": 5,
+          "M": 6,
+          "S": 33
+        },
+        "total": 926,
+        "visible": 490
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    },
+    {
+      "path": "pattern-08/01-tokyo-station.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "1d1c557e1fc528032e8f699228658a262bbeaf5a8d20f4820125d9b0de55303f",
+      "renderCount": 1,
+      "renderMs": 1988.3,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 33,
+          "2": 14,
+          "3": 1
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 9,
+          "food": 1,
+          "generic": 10,
+          "health": 1,
+          "landmark": 4,
+          "nature": 2,
+          "stay": 6,
+          "transit": 14
+        },
+        "dotCandidates": 3233,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 37,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 45,
+            "p90": 149,
+            "p99": 207
+          }
+        },
+        "offscreen": 10276,
+        "sizes": {
+          "L": 25,
+          "M": 20,
+          "S": 3
+        },
+        "total": 13557,
+        "visible": 3281
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-08/02-new-york-times-square.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "2f5a7c03cc37992032a0c066c4ae9075fdb544c777787941e31b6e9a23b24489",
+      "renderCount": 1,
+      "renderMs": 251,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 42,
+          "2": 2,
+          "3": 4
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 6,
+          "generic": 6,
+          "health": 7,
+          "landmark": 2,
+          "service": 3,
+          "stay": 8,
+          "transit": 11
+        },
+        "dotCandidates": 4164,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 64,
+        "maxHeight": 423,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 472,
+            "p25": 20,
+            "p50": 46,
+            "p75": 80,
+            "p90": 143,
+            "p99": 246
+          }
+        },
+        "offscreen": 8354,
+        "sizes": {
+          "L": 29,
+          "M": 15,
+          "S": 4
+        },
+        "total": 12566,
+        "visible": 4212
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-08/03-london-trafalgar-square.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "41aaf229eef5eab40de79aa51eeee1484200f05d5a3c375fc036de94bf7c7255",
+      "renderCount": 1,
+      "renderMs": 461.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 32,
+          "2": 10,
+          "3": 6
+        },
+        "categories": {
+          "commerce": 1,
+          "food": 4,
+          "generic": 13,
+          "health": 1,
+          "landmark": 12,
+          "nature": 7,
+          "service": 1,
+          "stay": 2,
+          "transit": 7
+        },
+        "dotCandidates": 4557,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 68,
+        "maxHeight": 136,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 136,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 48
+          }
+        },
+        "offscreen": 12798,
+        "sizes": {
+          "L": 14,
+          "M": 21,
+          "S": 13
+        },
+        "total": 17403,
+        "visible": 4605
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-08/04-paris-hotel-de-ville.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "8745a24413a621f99d4aeadcc1183e08f17fb6303b91cdeb7f0265be61ef36c8",
+      "renderCount": 1,
+      "renderMs": 1125.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 36,
+          "2": 3,
+          "3": 9
+        },
+        "categories": {
+          "civic": 3,
+          "food": 1,
+          "generic": 17,
+          "health": 2,
+          "landmark": 4,
+          "nature": 3,
+          "service": 3,
+          "stay": 1,
+          "transit": 14
+        },
+        "dotCandidates": 8064,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 65,
+        "maxHeight": 42,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 19,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 26,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36748,
+        "sizes": {
+          "L": 10,
+          "M": 11,
+          "S": 27
+        },
+        "total": 44860,
+        "visible": 8112
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-08/05-singapore-marina-bay.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "ca8d528fd83c1e586ebe2a132dbf73caf2bb1990f7e4a2d41f250df1bc790d08",
+      "renderCount": 1,
+      "renderMs": 320.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 35,
+          "2": 8,
+          "3": 5
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 6,
+          "food": 3,
+          "generic": 14,
+          "landmark": 5,
+          "nature": 2,
+          "stay": 4,
+          "transit": 13
+        },
+        "dotCandidates": 4446,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 44,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 47,
+            "p25": 1,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 20,
+            "p75": 33,
+            "p90": 100,
+            "p99": 245
+          }
+        },
+        "offscreen": 10567,
+        "sizes": {
+          "L": 28,
+          "M": 11,
+          "S": 9
+        },
+        "total": 15061,
+        "visible": 4494
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-08/06-kawasaki-station.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "40e9703b7e776390a3b866efb4ec492e6b0605115b06f3d705c9e8ca7d1b79b4",
+      "renderCount": 1,
+      "renderMs": 903.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 30,
+          "2": 14,
+          "3": 4
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 7,
+          "food": 1,
+          "generic": 5,
+          "health": 5,
+          "landmark": 6,
+          "nature": 1,
+          "service": 2,
+          "stay": 12,
+          "transit": 4
+        },
+        "dotCandidates": 1701,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 52,
+        "maxHeight": 117,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 89
+          }
+        },
+        "offscreen": 3988,
+        "sizes": {
+          "L": 17,
+          "M": 16,
+          "S": 15
+        },
+        "total": 5737,
+        "visible": 1749
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-08/07-kita-kamakura-station.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "a9b2ea9f4ae288b746f9f8c06a254419ea7fd325d608dfe532f031a9e12e036c",
+      "renderCount": 1,
+      "renderMs": 835.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 45,
+          "2": 3
+        },
+        "categories": {
+          "civic": 8,
+          "commerce": 2,
+          "food": 10,
+          "generic": 9,
+          "landmark": 6,
+          "nature": 8,
+          "service": 4,
+          "transit": 1
+        },
+        "dotCandidates": 569,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 4,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 5
+          }
+        },
+        "offscreen": 3523,
+        "sizes": {
+          "M": 7,
+          "S": 41
+        },
+        "total": 4140,
+        "visible": 617
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-08/08-hakone-yumoto-station.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "cb051a92ad8fb0f731bfab89b82054797f5a4dea378fce4ef06097eb52b0d688",
+      "renderCount": 1,
+      "renderMs": 129.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 48
+        },
+        "categories": {
+          "civic": 8,
+          "commerce": 5,
+          "food": 4,
+          "generic": 6,
+          "health": 2,
+          "landmark": 9,
+          "nature": 1,
+          "service": 7,
+          "stay": 5,
+          "transit": 1
+        },
+        "dotCandidates": 216,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 10,
+        "maxHeight": 49,
+        "metrics": {
+          "area": {
+            "max": 10,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 49,
+            "p25": 10,
+            "p50": 14,
+            "p75": 19,
+            "p90": 26,
+            "p99": 37
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "M": 4,
+          "S": 44
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-08/09-ishigaki-port.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "22429de6b0e888ce08a5f5079cf9898e3265986866260cf7d989ab3b774546c5",
+      "renderCount": 1,
+      "renderMs": 258.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 42,
+          "2": 6
+        },
+        "categories": {
+          "civic": 6,
+          "commerce": 1,
+          "food": 6,
+          "generic": 5,
+          "health": 7,
+          "landmark": 4,
+          "nature": 7,
+          "service": 5,
+          "stay": 7
+        },
+        "dotCandidates": 422,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 21,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 9,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 37,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 335,
+        "sizes": {
+          "L": 2,
+          "M": 10,
+          "S": 36
+        },
+        "total": 805,
+        "visible": 470
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-08/10-obihiro-station.jpg",
+      "pattern": "08",
+      "patternName": "面積クラスター",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "4d360985f4af90627d4fc5f2ec42cda9d12d2a6749188394276c0c374f142f8a",
+      "renderCount": 1,
+      "renderMs": 255.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 37,
+          "2": 4,
+          "3": 7
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 6,
+          "food": 6,
+          "generic": 12,
+          "health": 7,
+          "landmark": 5,
+          "service": 2,
+          "stay": 7,
+          "transit": 1
+        },
+        "dotCandidates": 442,
+        "dots": 192,
+        "icons": 48,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 11,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 60,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 48
+          }
+        },
+        "offscreen": 436,
+        "sizes": {
+          "L": 7,
+          "M": 18,
+          "S": 23
+        },
+        "total": 926,
+        "visible": 490
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    },
+    {
+      "path": "pattern-09/01-tokyo-station.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "8b419a913b7f462b37401a4a63d56a205f5dd74b51a25f116179aee4c96b009a",
+      "renderCount": 1,
+      "renderMs": 2021.3,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 23,
+          "2": 27
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 10,
+          "food": 1,
+          "generic": 8,
+          "health": 1,
+          "landmark": 4,
+          "nature": 2,
+          "service": 1,
+          "stay": 6,
+          "transit": 15
+        },
+        "dotCandidates": 3233,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 37,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 45,
+            "p90": 149,
+            "p99": 207
+          }
+        },
+        "offscreen": 10274,
+        "sizes": {
+          "L": 28,
+          "M": 16,
+          "S": 6
+        },
+        "total": 13557,
+        "visible": 3283
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-09/02-new-york-times-square.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "d1d3a4f71cdea941fff2bdbb4b0170b76f240a3d06eb056af4900be15f6440b9",
+      "renderCount": 1,
+      "renderMs": 259.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 22,
+          "2": 28
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 6,
+          "generic": 8,
+          "health": 7,
+          "landmark": 2,
+          "service": 3,
+          "stay": 7,
+          "transit": 12
+        },
+        "dotCandidates": 4179,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 64,
+        "maxHeight": 423,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 472,
+            "p25": 20,
+            "p50": 46,
+            "p75": 80,
+            "p90": 143,
+            "p99": 246
+          }
+        },
+        "offscreen": 8337,
+        "sizes": {
+          "L": 34,
+          "M": 12,
+          "S": 4
+        },
+        "total": 12566,
+        "visible": 4229
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-09/03-london-trafalgar-square.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "0d2a890de897dfc95c223beb7a2b6b09d30a28c093e3c19a00d3a9c7eb8460be",
+      "renderCount": 1,
+      "renderMs": 452.5,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 44,
+          "2": 6
+        },
+        "categories": {
+          "commerce": 2,
+          "food": 3,
+          "generic": 14,
+          "health": 1,
+          "landmark": 12,
+          "nature": 7,
+          "service": 2,
+          "stay": 2,
+          "transit": 7
+        },
+        "dotCandidates": 4522,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 68,
+        "maxHeight": 136,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 136,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 50
+          }
+        },
+        "offscreen": 12831,
+        "sizes": {
+          "L": 9,
+          "M": 29,
+          "S": 12
+        },
+        "total": 17403,
+        "visible": 4572
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-09/04-paris-hotel-de-ville.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "844a5e252e4a72a5d181fec06e6aa6a58c0c572796a12f7a565ab2ecd1eac297",
+      "renderCount": 1,
+      "renderMs": 1145.7,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 43,
+          "2": 7
+        },
+        "categories": {
+          "civic": 3,
+          "food": 1,
+          "generic": 18,
+          "health": 3,
+          "landmark": 7,
+          "nature": 2,
+          "service": 1,
+          "stay": 1,
+          "transit": 14
+        },
+        "dotCandidates": 8154,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 65,
+        "maxHeight": 78,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 19,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 26,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36656,
+        "sizes": {
+          "L": 10,
+          "M": 26,
+          "S": 14
+        },
+        "total": 44860,
+        "visible": 8204
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-09/05-singapore-marina-bay.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "f1f4f5a57a76c5aa8506917df9a0b3e6b2574e34245431da5e5ce6ce4e1071da",
+      "renderCount": 1,
+      "renderMs": 323.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 28,
+          "2": 22
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 7,
+          "food": 2,
+          "generic": 14,
+          "health": 1,
+          "landmark": 5,
+          "nature": 2,
+          "stay": 5,
+          "transit": 13
+        },
+        "dotCandidates": 4444,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 44,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 47,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 20,
+            "p75": 33,
+            "p90": 118,
+            "p99": 245
+          }
+        },
+        "offscreen": 10567,
+        "sizes": {
+          "L": 23,
+          "M": 18,
+          "S": 9
+        },
+        "total": 15061,
+        "visible": 4494
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-09/06-kawasaki-station.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "43cebb150b19d1f881dfa8c2e4ef700c34896d6dbce068c26782cfe9a30d3668",
+      "renderCount": 1,
+      "renderMs": 992.3,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 42,
+          "2": 8
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 6,
+          "food": 1,
+          "generic": 5,
+          "health": 6,
+          "landmark": 6,
+          "nature": 1,
+          "service": 3,
+          "stay": 13,
+          "transit": 4
+        },
+        "dotCandidates": 1707,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 52,
+        "maxHeight": 117,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 89
+          }
+        },
+        "offscreen": 3980,
+        "sizes": {
+          "L": 9,
+          "M": 19,
+          "S": 22
+        },
+        "total": 5737,
+        "visible": 1757
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-09/07-kita-kamakura-station.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "5fa3a2f71733c45a2d6cec99aa71778aac58fef4921bf574cae95de3a04bf07a",
+      "renderCount": 1,
+      "renderMs": 829.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 50
+        },
+        "categories": {
+          "civic": 8,
+          "commerce": 2,
+          "food": 9,
+          "generic": 9,
+          "landmark": 9,
+          "nature": 8,
+          "service": 4,
+          "transit": 1
+        },
+        "dotCandidates": 566,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 4,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 5
+          }
+        },
+        "offscreen": 3524,
+        "sizes": {
+          "M": 5,
+          "S": 45
+        },
+        "total": 4140,
+        "visible": 616
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-09/08-hakone-yumoto-station.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "137445a228c48a3898b7184194fb5970b5dccb6d895ae30334ae8040799708c5",
+      "renderCount": 1,
+      "renderMs": 128.4,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 50
+        },
+        "categories": {
+          "civic": 4,
+          "commerce": 5,
+          "food": 6,
+          "generic": 5,
+          "health": 2,
+          "landmark": 8,
+          "nature": 1,
+          "service": 8,
+          "stay": 10,
+          "transit": 1
+        },
+        "dotCandidates": 214,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 10,
+        "maxHeight": 49,
+        "metrics": {
+          "area": {
+            "max": 10,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 49,
+            "p25": 10,
+            "p50": 14,
+            "p75": 19,
+            "p90": 26,
+            "p99": 37
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "L": 1,
+          "M": 14,
+          "S": 35
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-09/09-ishigaki-port.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "a418128080f84303d0f234be60b3af05690e193600ffeab7d483211022d98d63",
+      "renderCount": 1,
+      "renderMs": 192.2,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 50
+        },
+        "categories": {
+          "civic": 6,
+          "commerce": 1,
+          "food": 6,
+          "generic": 5,
+          "health": 7,
+          "landmark": 4,
+          "nature": 8,
+          "service": 5,
+          "stay": 8
+        },
+        "dotCandidates": 419,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 29,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 9,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 37,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 336,
+        "sizes": {
+          "M": 12,
+          "S": 38
+        },
+        "total": 805,
+        "visible": 469
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-09/10-obihiro-station.jpg",
+      "pattern": "09",
+      "patternName": "色＋形の二重符号化",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "5737c5a1d7051b09be909624d5998eb2063f6da46863723637ea5e6402a7073f",
+      "renderCount": 1,
+      "renderMs": 240.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 46,
+          "2": 4
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 5,
+          "food": 9,
+          "generic": 13,
+          "health": 7,
+          "landmark": 4,
+          "service": 2,
+          "stay": 7,
+          "transit": 1
+        },
+        "dotCandidates": 442,
+        "dots": 200,
+        "icons": 50,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 11,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 60,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 48
+          }
+        },
+        "offscreen": 434,
+        "sizes": {
+          "L": 8,
+          "M": 12,
+          "S": 30
+        },
+        "total": 926,
+        "visible": 492
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    },
+    {
+      "path": "pattern-10/01-tokyo-station.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "01",
+      "locationSlug": "tokyo-station",
+      "locationName": "東京駅",
+      "group": "world",
+      "latitude": 35.681236,
+      "longitude": 139.767125,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14552 / 6451 ─ 地理の読みやすさ",
+      "offsetX": 702.191,
+      "offsetY": 244.033,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "49bfad2e39fad5eb5321160b25c75828499af2aebf2ffd3c5dc5f91f19ec85ea",
+      "renderCount": 1,
+      "renderMs": 2069.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 21,
+          "2": 5,
+          "3": 1,
+          "4": 7
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 6,
+          "food": 1,
+          "generic": 5,
+          "health": 1,
+          "landmark": 3,
+          "nature": 1,
+          "stay": 2,
+          "transit": 14
+        },
+        "dotCandidates": 3247,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 25,
+        "maxHeight": 212,
+        "metrics": {
+          "area": {
+            "max": 37,
+            "p25": 2,
+            "p50": 5,
+            "p75": 10,
+            "p90": 15,
+            "p99": 25
+          },
+          "height": {
+            "max": 212,
+            "p25": 5,
+            "p50": 5,
+            "p75": 45,
+            "p90": 149,
+            "p99": 207
+          }
+        },
+        "offscreen": 10276,
+        "sizes": {
+          "L": 22,
+          "M": 11,
+          "S": 1
+        },
+        "total": 13557,
+        "visible": 3281
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 111,
+        "normal": 297,
+        "poi": 24
+      }
+    },
+    {
+      "path": "pattern-10/02-new-york-times-square.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "02",
+      "locationSlug": "new-york-times-square",
+      "locationName": "ニューヨーク・タイムズスクエア",
+      "group": "world",
+      "latitude": 40.758,
+      "longitude": -73.9855,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 4824 / 6157 ─ 地理の読みやすさ",
+      "offsetX": 518.69,
+      "offsetY": -223.364,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "83b9146cde291366107479eafbe4ef4b9c4e34d739ee4f8ccb47fe13a4d613b2",
+      "renderCount": 1,
+      "renderMs": 254.2,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 13,
+          "2": 12,
+          "3": 3,
+          "4": 6
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 2,
+          "generic": 3,
+          "health": 7,
+          "landmark": 3,
+          "service": 1,
+          "stay": 4,
+          "transit": 12
+        },
+        "dotCandidates": 4181,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 64,
+        "maxHeight": 423,
+        "metrics": {
+          "area": {
+            "max": 64,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 7,
+            "p99": 34
+          },
+          "height": {
+            "max": 472,
+            "p25": 20,
+            "p50": 46,
+            "p75": 80,
+            "p90": 143,
+            "p99": 246
+          }
+        },
+        "offscreen": 8351,
+        "sizes": {
+          "L": 21,
+          "M": 11,
+          "S": 2
+        },
+        "total": 12566,
+        "visible": 4215
+      },
+      "buildingKindCounts": {
+        "convenience": 2,
+        "hospital": 2,
+        "mixed": 343,
+        "normal": 4908,
+        "poi": 274
+      }
+    },
+    {
+      "path": "pattern-10/03-london-trafalgar-square.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "03",
+      "locationSlug": "london-trafalgar-square",
+      "locationName": "ロンドン・トラファルガー広場",
+      "group": "world",
+      "latitude": 51.5074,
+      "longitude": -0.1278,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8186 / 5448 ─ 地理の読みやすさ",
+      "offsetX": -485.868,
+      "offsetY": -617.222,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "ebcc984faf2a0dbef825198ebc65793aba8721d3e6f335a153559826a54f09cb",
+      "renderCount": 1,
+      "renderMs": 471.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 28,
+          "2": 5,
+          "4": 1
+        },
+        "categories": {
+          "commerce": 1,
+          "food": 1,
+          "generic": 8,
+          "health": 1,
+          "landmark": 11,
+          "nature": 5,
+          "stay": 1,
+          "transit": 6
+        },
+        "dotCandidates": 4571,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 68,
+        "maxHeight": 136,
+        "metrics": {
+          "area": {
+            "max": 68,
+            "p25": 1,
+            "p50": 4,
+            "p75": 10,
+            "p90": 32,
+            "p99": 58
+          },
+          "height": {
+            "max": 136,
+            "p25": 5,
+            "p50": 11,
+            "p75": 19,
+            "p90": 26,
+            "p99": 48
+          }
+        },
+        "offscreen": 12798,
+        "sizes": {
+          "L": 14,
+          "M": 17,
+          "S": 3
+        },
+        "total": 17403,
+        "visible": 4605
+      },
+      "buildingKindCounts": {
+        "mixed": 129,
+        "normal": 1110,
+        "poi": 82
+      }
+    },
+    {
+      "path": "pattern-10/04-paris-hotel-de-ville.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "04",
+      "locationSlug": "paris-hotel-de-ville",
+      "locationName": "パリ市庁舎",
+      "group": "world",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 8299 / 5636 ─ 地理の読みやすさ",
+      "offsetX": -689.302,
+      "offsetY": 94.243,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "e025ea88906b75928c0b24828edf213bfc8642288c90a110bef9415e8cf3c295",
+      "renderCount": 1,
+      "renderMs": 1166.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 30,
+          "2": 3,
+          "3": 1
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 1,
+          "generic": 9,
+          "health": 2,
+          "landmark": 5,
+          "service": 1,
+          "stay": 1,
+          "transit": 13
+        },
+        "dotCandidates": 8081,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 65,
+        "maxHeight": 78,
+        "metrics": {
+          "area": {
+            "max": 65,
+            "p25": 1,
+            "p50": 2,
+            "p75": 6,
+            "p90": 19,
+            "p99": 65
+          },
+          "height": {
+            "max": 78,
+            "p25": 8,
+            "p50": 19,
+            "p75": 26,
+            "p90": 26,
+            "p99": 40
+          }
+        },
+        "offscreen": 36745,
+        "sizes": {
+          "L": 8,
+          "M": 21,
+          "S": 5
+        },
+        "total": 44860,
+        "visible": 8115
+      },
+      "buildingKindCounts": {
+        "convenience": 1,
+        "mixed": 67,
+        "normal": 544,
+        "poi": 29
+      }
+    },
+    {
+      "path": "pattern-10/05-singapore-marina-bay.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "05",
+      "locationSlug": "singapore-marina-bay",
+      "locationName": "シンガポール・マリーナベイ",
+      "group": "world",
+      "latitude": 1.2868,
+      "longitude": 103.8545,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 12918 / 8133 ─ 地理の読みやすさ",
+      "offsetX": 51.746,
+      "offsetY": -105.403,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "1e7354bbbaaf9cfdbd0732dd9e967484881ebf5b4294960dc4614ffecc560485",
+      "renderCount": 1,
+      "renderMs": 326.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 27,
+          "2": 6,
+          "4": 1
+        },
+        "categories": {
+          "civic": 1,
+          "commerce": 5,
+          "food": 2,
+          "generic": 7,
+          "landmark": 4,
+          "nature": 1,
+          "stay": 1,
+          "transit": 13
+        },
+        "dotCandidates": 4460,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 44,
+        "maxHeight": 245,
+        "metrics": {
+          "area": {
+            "max": 47,
+            "p25": 1,
+            "p50": 5,
+            "p75": 18,
+            "p90": 37,
+            "p99": 47
+          },
+          "height": {
+            "max": 290,
+            "p25": 10,
+            "p50": 20,
+            "p75": 33,
+            "p90": 100,
+            "p99": 245
+          }
+        },
+        "offscreen": 10567,
+        "sizes": {
+          "L": 18,
+          "M": 15,
+          "S": 1
+        },
+        "total": 15061,
+        "visible": 4494
+      },
+      "buildingKindCounts": {
+        "convenience": 4,
+        "mixed": 183,
+        "normal": 1400,
+        "poi": 86
+      }
+    },
+    {
+      "path": "pattern-10/06-kawasaki-station.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "06",
+      "locationSlug": "kawasaki-station",
+      "locationName": "川崎駅",
+      "group": "japan",
+      "latitude": 35.5314,
+      "longitude": 139.6969,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ",
+      "offsetX": 401.108,
+      "offsetY": -697.027,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "cd77e5bf95f3cf9c39e02e3cdc71d57984ba732729b459ebc5e837ff194b57cc",
+      "renderCount": 1,
+      "renderMs": 989.8,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 31,
+          "2": 1,
+          "3": 2
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 4,
+          "food": 1,
+          "generic": 5,
+          "health": 5,
+          "landmark": 6,
+          "nature": 1,
+          "service": 1,
+          "stay": 5,
+          "transit": 4
+        },
+        "dotCandidates": 1715,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 52,
+        "maxHeight": 117,
+        "metrics": {
+          "area": {
+            "max": 61,
+            "p25": 2,
+            "p50": 5,
+            "p75": 18,
+            "p90": 30,
+            "p99": 52
+          },
+          "height": {
+            "max": 135,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 37,
+            "p99": 89
+          }
+        },
+        "offscreen": 3988,
+        "sizes": {
+          "L": 12,
+          "M": 16,
+          "S": 6
+        },
+        "total": 5737,
+        "visible": 1749
+      },
+      "buildingKindCounts": {
+        "convenience": 3,
+        "mixed": 28,
+        "normal": 62,
+        "poi": 9
+      }
+    },
+    {
+      "path": "pattern-10/07-kita-kamakura-station.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "07",
+      "locationSlug": "kita-kamakura-station",
+      "locationName": "北鎌倉駅",
+      "group": "japan",
+      "latitude": 35.3372,
+      "longitude": 139.5451,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14542 / 6470 ─ 地理の読みやすさ",
+      "offsetX": 541.519,
+      "offsetY": 604.603,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "6545e26a464fd3b7865db5b3fb3241292da9518d7c0a19851f94756b37741338",
+      "renderCount": 1,
+      "renderMs": 839.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 34
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 2,
+          "food": 5,
+          "generic": 8,
+          "landmark": 4,
+          "nature": 5,
+          "service": 4,
+          "transit": 1
+        },
+        "dotCandidates": 584,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 12,
+        "maxHeight": 5,
+        "metrics": {
+          "area": {
+            "max": 14,
+            "p25": 1,
+            "p50": 2,
+            "p75": 3,
+            "p90": 4,
+            "p99": 12
+          },
+          "height": {
+            "max": 8,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 5
+          }
+        },
+        "offscreen": 3522,
+        "sizes": {
+          "L": 4,
+          "M": 4,
+          "S": 26
+        },
+        "total": 4140,
+        "visible": 618
+      },
+      "buildingKindCounts": {
+        "mixed": 4,
+        "normal": 16,
+        "poi": 2
+      }
+    },
+    {
+      "path": "pattern-10/08-hakone-yumoto-station.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "08",
+      "locationSlug": "hakone-yumoto-station",
+      "locationName": "箱根湯本駅",
+      "group": "japan",
+      "latitude": 35.2333,
+      "longitude": 139.1069,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14522 / 6476 ─ 地理の読みやすさ",
+      "offsetX": 629.118,
+      "offsetY": 286.386,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "60ad9145ba9f549cce8f306b22346aca36ac0daeaef7c43e746be35c69b69720",
+      "renderCount": 1,
+      "renderMs": 128.5,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 34
+        },
+        "categories": {
+          "civic": 5,
+          "commerce": 4,
+          "food": 4,
+          "generic": 5,
+          "health": 2,
+          "landmark": 6,
+          "nature": 1,
+          "service": 4,
+          "stay": 2,
+          "transit": 1
+        },
+        "dotCandidates": 230,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 5,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 10,
+            "p25": 1,
+            "p50": 1,
+            "p75": 2,
+            "p90": 3,
+            "p99": 6
+          },
+          "height": {
+            "max": 49,
+            "p25": 10,
+            "p50": 14,
+            "p75": 19,
+            "p90": 26,
+            "p99": 37
+          }
+        },
+        "offscreen": 198,
+        "sizes": {
+          "L": 6,
+          "M": 5,
+          "S": 23
+        },
+        "total": 462,
+        "visible": 264
+      },
+      "buildingKindCounts": {
+        "mixed": 19,
+        "normal": 115,
+        "poi": 14
+      }
+    },
+    {
+      "path": "pattern-10/09-ishigaki-port.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "09",
+      "locationSlug": "ishigaki-port",
+      "locationName": "石垣港離島ターミナル",
+      "group": "japan",
+      "latitude": 24.3367,
+      "longitude": 124.1557,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 13842 / 7049 ─ 地理の読みやすさ",
+      "offsetX": -55.514,
+      "offsetY": 29.69,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "55c498bab2b7a7a4413fb0581892731f230dd6877d2430b046d0d123edfd5fa0",
+      "renderCount": 1,
+      "renderMs": 257.9,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 34
+        },
+        "categories": {
+          "civic": 4,
+          "commerce": 1,
+          "food": 5,
+          "generic": 4,
+          "health": 6,
+          "landmark": 3,
+          "nature": 4,
+          "service": 3,
+          "stay": 4
+        },
+        "dotCandidates": 436,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 21,
+        "maxHeight": 37,
+        "metrics": {
+          "area": {
+            "max": 29,
+            "p25": 1,
+            "p50": 3,
+            "p75": 9,
+            "p90": 15,
+            "p99": 29
+          },
+          "height": {
+            "max": 37,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 19
+          }
+        },
+        "offscreen": 335,
+        "sizes": {
+          "L": 3,
+          "M": 12,
+          "S": 19
+        },
+        "total": 805,
+        "visible": 470
+      },
+      "buildingKindCounts": {
+        "mixed": 3,
+        "normal": 7,
+        "poi": 4
+      }
+    },
+    {
+      "path": "pattern-10/10-obihiro-station.jpg",
+      "pattern": "10",
+      "patternName": "ランドマーク・ビーコン",
+      "location": "10",
+      "locationSlug": "obihiro-station",
+      "locationName": "帯広駅",
+      "group": "japan",
+      "latitude": 42.9178,
+      "longitude": 143.2022,
+      "zoom": 14,
+      "tile": "OpenFreeMap z14 / 14709 / 6025 ─ 地理の読みやすさ",
+      "offsetX": -320.662,
+      "offsetY": -152.112,
+      "screenshotWidth": 1280,
+      "screenshotHeight": 920,
+      "canvas": {
+        "height": 840,
+        "width": 840,
+        "x": 220,
+        "y": 26
+      },
+      "sha256": "44cc9b5d43c5e6c4d5668641b9cb934190397d6fd8b804032d0c7fb0fbd5cba3",
+      "renderCount": 1,
+      "renderMs": 256.1,
+      "tileCacheSize": 9,
+      "poi": {
+        "assetCounts": {
+          "1": 33,
+          "2": 1
+        },
+        "categories": {
+          "civic": 2,
+          "commerce": 3,
+          "food": 5,
+          "generic": 8,
+          "health": 6,
+          "landmark": 5,
+          "stay": 4,
+          "transit": 1
+        },
+        "dotCandidates": 456,
+        "dots": 136,
+        "icons": 34,
+        "maxArea": 66,
+        "maxHeight": 55,
+        "metrics": {
+          "area": {
+            "max": 66,
+            "p25": 2,
+            "p50": 4,
+            "p75": 11,
+            "p90": 51,
+            "p99": 51
+          },
+          "height": {
+            "max": 60,
+            "p25": 5,
+            "p50": 5,
+            "p75": 5,
+            "p90": 5,
+            "p99": 48
+          }
+        },
+        "offscreen": 436,
+        "sizes": {
+          "L": 9,
+          "M": 11,
+          "S": 14
+        },
+        "total": 926,
+        "visible": 490
+      },
+      "buildingKindCounts": {
+        "mixed": 9,
+        "normal": 8,
+        "poi": 5
+      }
+    }
+  ]
+}

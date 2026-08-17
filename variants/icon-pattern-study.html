@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PixelMap｜アイコン表示 10パターン</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+  :root{ color-scheme:dark; --bg:#181820; --panel:#101018; --ink:#f8f0d8; --muted:#a8a088; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'DotGothic16',monospace; }
+  header, main, footer{ width:min(1180px,calc(100% - 28px)); margin-inline:auto; }
+  header{ padding:48px 0 26px; }
+  .kicker{ color:#88c860; font-size:12px; letter-spacing:3px; }
+  h1{ margin:7px 0 10px; font-size:clamp(28px,6vw,56px); font-weight:normal; letter-spacing:2px; }
+  .lead{ max-width:760px; color:#c8c0a8; font-size:14px; line-height:1.9; }
+  .meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+  .meta span{ padding:6px 9px; border:1px solid #585848; color:#a8a088; font-size:11px; }
+  #patternGrid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; padding-bottom:34px; }
+  .card{ --accent:#88c860; overflow:hidden; border:2px solid #f8f0d8; outline:2px solid #101018; box-shadow:0 0 0 4px #f8f0d8; background:var(--panel); }
+  .card-media{ display:block; position:relative; aspect-ratio:5/2; overflow:hidden; border-bottom:2px solid #f8f0d8; background:#282838; }
+  .card-media img{ width:100%; height:100%; object-fit:cover; image-rendering:auto; transition:transform .18s steps(3); }
+  .card-media:hover img{ transform:scale(1.025); }
+  .card-body{ padding:16px; }
+  .card-kicker{ color:#f8f0d8; font-size:11px; letter-spacing:2px; }
+  .card h2{ margin:3px 0 8px; font-size:21px; font-weight:normal; }
+  .summary{ min-height:48px; margin:0; color:#c8c0a8; font-size:12px; line-height:1.75; }
+  .swatches{ display:flex; gap:5px; margin:12px 0; }
+  .swatch{ width:24px; height:14px; border:1px solid #f8f0d8; }
+  .rules{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:0 0 14px; }
+  .rule{ min-width:0; padding:7px; border:1px solid #383830; color:#a8a088; font-size:10px; line-height:1.5; }
+  .rule b{ display:block; color:#f8f0d8; font-weight:normal; }
+  .actions{ display:flex; flex-wrap:wrap; gap:7px; }
+  .button{ padding:7px 10px; border:1px solid #686858; color:#f8f0d8; font-size:11px; text-decoration:none; }
+  .button.primary{ border-color:var(--accent); background:color-mix(in srgb,var(--accent) 18%,#101018); }
+  .button:hover{ color:#f8f0d8; }
+  .button:focus-visible, .card-media:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
+  footer{ padding:18px 0 40px; color:#a8a088; font-size:10px; text-align:center; }
+  footer a{ color:#88c860; }
+  @media (max-width:760px){
+    header{ padding-top:28px; }
+    #patternGrid{ grid-template-columns:1fr; }
+    .rules{ grid-template-columns:1fr; }
+    .summary{ min-height:0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">PIXELMAP / ICON READABILITY STUDY</div>
+  <h1>アイコン表示 10パターン</h1>
+  <p class="lead">同じPOIレイヤーを、サイズ・カテゴリ色・描画順・離隔・台座パターンで10通りに再構成しました。近傍建物の面積と高さを読み、主アセットの S / M / L と補助アセット数を場所ごとに変えています。</p>
+  <div class="meta"><span>10 PATTERNS</span><span>10 LOCATIONS</span><span>100 SCREENSHOTS</span><span>FIXED ZOOM 14</span></div>
+</header>
+
+<main>
+  <section id="patternGrid" aria-label="10パターンの一覧"></section>
+</main>
+
+<footer>
+  地図データ: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ／
+  <a href="https://openfreemap.org">OpenFreeMap</a> ／ <a href="../screenshots/icon-patterns/index.html">100枚の撮影一覧</a>
+</footer>
+
+<script src="../assets/icon-patterns.js"></script>
+<script>
+  'use strict';
+  const grid = document.getElementById('patternGrid');
+  const places = {
+    kawasaki:'lat=35.5314&lon=139.6969&place=%E5%B7%9D%E5%B4%8E%E9%A7%85',
+    tokyo:'lat=35.681236&lon=139.767125&place=%E6%9D%B1%E4%BA%AC%E9%A7%85',
+  };
+  for (const pattern of window.PixelMapIconPatterns){
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.style.setProperty('--accent', pattern.palette.transit || pattern.palette.generic);
+    const swatches = ['transit','health','civic','food','commerce','landmark','nature']
+      .map(key => `<i class="swatch" style="background:${pattern.palette[key]}" title="${key}"></i>`).join('');
+    card.innerHTML = `
+      <a class="card-media" href="map-02-refined.html?pattern=${pattern.id}&${places.kawasaki}">
+        <img src="../screenshots/icon-patterns/contact-sheets/pattern-${pattern.id}.webp" alt="${pattern.name}の10地点比較" loading="lazy">
+      </a>
+      <div class="card-body">
+        <div class="card-kicker">PATTERN ${pattern.id} / ${pattern.eyebrow}</div>
+        <h2>${pattern.name}</h2>
+        <p class="summary">${pattern.summary}</p>
+        <div class="swatches" aria-label="カテゴリ配色">${swatches}</div>
+        <div class="rules">
+          <div class="rule"><b>サイズ</b>${pattern.rule}</div>
+          <div class="rule"><b>並び順</b>${pattern.orderLabel}</div>
+          <div class="rule"><b>アセット</b>${pattern.assetRule}</div>
+        </div>
+        <div class="actions">
+          <a class="button primary" href="map-02-refined.html?pattern=${pattern.id}&${places.kawasaki}">川崎駅で開く</a>
+          <a class="button" href="map-02-refined.html?pattern=${pattern.id}&${places.tokyo}">東京駅で開く</a>
+          <a class="button" href="../screenshots/icon-patterns/index.html#pattern-${pattern.id}">撮影を見る</a>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  }
+</script>
+</body>
+</html>

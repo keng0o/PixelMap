@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PixelMap｜100 Screenshots</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+  :root{ color-scheme:dark; --bg:#181820; --panel:#101018; --ink:#f8f0d8; --muted:#a8a088; --accent:#88c860; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'DotGothic16',monospace; }
+  header{ position:sticky; top:0; z-index:5; padding:14px 18px; border-bottom:2px solid var(--ink); background:#101018ee; backdrop-filter:blur(10px); }
+  .header-row{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; }
+  .kicker{ color:var(--accent); font-size:10px; letter-spacing:3px; }
+  h1{ margin:2px 0 0; font-size:clamp(20px,4vw,34px); font-weight:normal; }
+  .links{ display:flex; flex-wrap:wrap; gap:7px; }
+  .links a{ padding:6px 8px; border:1px solid #585848; color:var(--ink); font-size:10px; text-decoration:none; }
+  .links a:hover{ border-color:var(--accent); color:var(--accent); }
+  main{ padding:18px; }
+  .note{ max-width:880px; margin:0 0 18px; color:#c8c0a8; font-size:12px; line-height:1.8; }
+  #contactSheets{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-bottom:24px; }
+  .sheet{ --tone:#88c860; overflow:hidden; border:1px solid #585848; background:var(--panel); color:var(--ink); text-decoration:none; }
+  .sheet img{ display:block; width:100%; aspect-ratio:5/2; object-fit:cover; border-bottom:2px solid var(--tone); }
+  .sheet span{ display:block; padding:7px 8px; font-size:10px; }
+  .sheet b{ color:var(--ink); font-weight:normal; }
+  .matrix-wrap{ overflow:auto; border:2px solid var(--ink); background:var(--panel); }
+  table{ width:max-content; min-width:100%; border-collapse:collapse; table-layout:fixed; }
+  th,td{ border:1px solid #383830; }
+  thead th{ position:sticky; top:0; z-index:2; width:170px; padding:8px; background:#101018; color:#a8a088; font-size:10px; font-weight:normal; }
+  thead th:first-child{ left:0; z-index:4; width:150px; }
+  tbody th{ position:sticky; left:0; z-index:1; width:150px; padding:9px; background:#14141c; text-align:left; font-size:10px; font-weight:normal; }
+  tbody th b{ display:block; margin-bottom:3px; color:var(--accent); font-weight:normal; }
+  td{ width:170px; padding:4px; vertical-align:top; background:#181820; }
+  .shot{ display:block; color:var(--ink); text-decoration:none; }
+  .shot img{ display:block; width:160px; height:112px; object-fit:cover; image-rendering:auto; background:#282838; }
+  .shot small{ display:flex; justify-content:space-between; gap:5px; padding:5px 2px 1px; color:#a8a088; font-size:8px; }
+  .shot:hover small{ color:var(--accent); }
+  .sheet:focus-visible, .shot:focus-visible, .links a:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
+  @media(max-width:760px){
+    header{ position:static; }
+    .header-row{ align-items:flex-start; flex-direction:column; }
+    main{ padding:10px; }
+    #contactSheets{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-row">
+    <div><div class="kicker">PIXELMAP / 10 × 10 MATRIX</div><h1>100 Screenshots</h1></div>
+    <nav class="links"><a href="../../variants/icon-pattern-study.html">10案の説明</a><a href="manifest.json">manifest.json</a><a href="manifest.csv">manifest.csv</a></nav>
+  </div>
+</header>
+
+<main>
+  <p class="note">列がアイコン表示パターン、行が撮影地点です。すべて固定ズーム14・同一撮影レイアウトで生成しました。画像を選ぶと原寸JPEGを開きます。</p>
+  <section id="contactSheets" aria-label="パターンごとのコンタクトシート"></section>
+  <div class="matrix-wrap"><table><thead><tr id="patternHeaders"><th>LOCATION ↓ / PATTERN →</th></tr></thead><tbody id="matrixBody"></tbody></table></div>
+</main>
+
+<script src="../../assets/icon-patterns.js"></script>
+<script>
+  'use strict';
+  const patterns = window.PixelMapIconPatterns;
+  const contactSheets = document.getElementById('contactSheets');
+  for (const pattern of patterns){
+    const link = document.createElement('a');
+    link.className = 'sheet';
+    link.id = `pattern-${pattern.id}`;
+    link.href = `contact-sheets/pattern-${pattern.id}.webp`;
+    link.style.setProperty('--tone', pattern.palette.transit || pattern.palette.generic);
+    link.innerHTML = `<img src="contact-sheets/pattern-${pattern.id}.webp" alt="${pattern.name}の10地点"><span><b>${pattern.id}</b> ${pattern.name}</span>`;
+    contactSheets.appendChild(link);
+  }
+
+  fetch('manifest.json').then(response => response.json()).then(manifest => {
+    const headers = document.getElementById('patternHeaders');
+    for (const pattern of patterns){
+      const th = document.createElement('th');
+      th.textContent = `${pattern.id} ${pattern.name}`;
+      headers.appendChild(th);
+    }
+    const byPath = new Map(manifest.screenshots.map(item => [`${item.location}/${item.pattern}`, item]));
+    const body = document.getElementById('matrixBody');
+    for (const location of manifest.locations){
+      const row = document.createElement('tr');
+      const heading = document.createElement('th');
+      heading.innerHTML = `<b>${location.id}</b>${location.name}`;
+      row.appendChild(heading);
+      for (const pattern of patterns){
+        const shot = byPath.get(`${location.id}/${pattern.id}`);
+        const cell = document.createElement('td');
+        cell.innerHTML = `<a class="shot" href="${shot.path}"><img src="${shot.path}" loading="lazy" alt="${pattern.name}・${location.name}"><small><span>${shot.poi.icons} icons</span><span>${shot.poi.dots} dots</span></small></a>`;
+        row.appendChild(cell);
+      }
+      body.appendChild(row);
+    }
+  });
+</script>
+</body>
+</html>

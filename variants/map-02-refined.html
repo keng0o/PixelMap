@@ -6,7 +6,7 @@
 <title>カワサキタウン｜地理の読みやすさ</title>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <style>
-  :root{ --ink:#181820; }
+  :root{ --ink:#181820; --pattern-accent:#2f6fed; --pattern-muted:#78828a; }
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{
     background:#181820;
@@ -25,6 +25,25 @@
     image-rendering:pixelated;
   }
   .map-frame{ padding:6px; line-height:0; }
+  #captureBadge{
+    display:none;
+    position:absolute;
+    top:18px;
+    left:18px;
+    z-index:4;
+    max-width:min(72%, 500px);
+    padding:9px 12px 10px;
+    border:3px solid #f8f0d8;
+    outline:3px solid #101018;
+    background:#101018e8;
+    color:#f8f0d8;
+    line-height:1.25;
+    box-shadow:8px 8px 0 #10101888;
+    pointer-events:none;
+  }
+  #captureBadge .capture-kicker{ color:#f8f0d8; font-size:12px; letter-spacing:2px; }
+  #captureBadge .capture-title{ margin-top:3px; font-size:24px; letter-spacing:1px; }
+  #captureBadge .capture-place{ margin-top:5px; color:#d8d0b8; font-size:13px; }
   canvas{
     width:min(92vw, 700px);
     aspect-ratio:1/1;
@@ -34,6 +53,7 @@
     touch-action:none;
     user-select:none;
   }
+  canvas:focus-visible{ outline:4px solid #f8d038; outline-offset:4px; }
   canvas.dragging{ cursor:grabbing; }
   #msg{ width:min(92vw, 700px); min-height:60px; font-size:14px; line-height:1.8; letter-spacing:1px; }
   #msg .cursor{ display:inline-block; margin-left:6px; animation:blink 1s steps(1) infinite; }
@@ -46,6 +66,71 @@
     gap:10px;
     align-items:start;
   }
+  #patternBar{
+    width:min(92vw,700px);
+    padding:12px;
+    line-height:1.5;
+  }
+  .pattern-heading{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:10px;
+  }
+  .pattern-kicker{ color:#f8f0d8; font-size:11px; letter-spacing:2px; }
+  #patternTitle{ margin-top:2px; color:#f8f0d8; font-size:19px; font-weight:normal; letter-spacing:1px; }
+  #patternSummary{ max-width:470px; margin-top:4px; color:#b8b09c; font-size:11px; }
+  .pattern-gallery-link{
+    flex:0 0 auto;
+    padding:6px 8px;
+    border:1px solid #686858;
+    color:#f8f0d8;
+    font-size:11px;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+  .pattern-gallery-link:hover{ border-color:var(--pattern-accent); color:#f8f0d8; }
+  #patternTabs{
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0,1fr));
+    gap:6px;
+  }
+  .pattern-tab{
+    min-width:0;
+    padding:6px 7px;
+    border:1px solid #585848;
+    background:#181820;
+    color:#a8a088;
+    font:inherit;
+    font-size:10px;
+    line-height:1.35;
+    text-decoration:none;
+  }
+  .pattern-tab .pattern-number{ display:block; color:#a8a088; font-size:9px; }
+  .pattern-tab:hover{ border-color:#f8f0d8; color:#f8f0d8; }
+  .pattern-tab[aria-current="page"]{
+    border-color:var(--pattern-accent);
+    background:color-mix(in srgb, var(--pattern-accent) 18%, #101018);
+    color:#f8f0d8;
+    box-shadow:inset 3px 0 0 var(--pattern-accent);
+  }
+  .pattern-tab[aria-current="page"] .pattern-number{ color:#f8f0d8; }
+  #patternRules{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:6px;
+    margin-top:8px;
+  }
+  .pattern-rule{
+    min-width:0;
+    padding:6px 8px;
+    border:1px solid #383830;
+    background:#14141c;
+    color:#a8a088;
+    font-size:10px;
+  }
+  .pattern-rule b{ display:block; margin-bottom:1px; color:#f8f0d8; font-weight:normal; }
   #toolbar label{ display:inline-flex; gap:6px; align-items:center; cursor:pointer; color:#d8d0b8; }
   #toolbar input{ accent-color:#88c860; }
   #toolbar .toolbar-actions{ grid-column:1 / -1; display:flex; }
@@ -100,7 +185,7 @@
   .location-btn:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
   .location-btn:disabled{ cursor:wait; opacity:.65; }
   #stats{ width:min(92vw,700px); font-size:11px; color:#a8a088; display:flex; flex-wrap:wrap; gap:4px 14px; }
-  #attrib{ font-size:10px; color:#787460; padding:6px 12px; }
+  #attrib{ font-size:10px; color:#a8a088; padding:6px 12px; }
   #attrib a{ color:#88c860; }
   button.retry, label.retry{
     font-family:inherit; font-size:13px; letter-spacing:1px;
@@ -118,6 +203,28 @@
       background:#78b850;
     }
     #stats, #attrib{ display:none; }
+    #patternBar{
+      position:fixed;
+      top:0;
+      left:0;
+      right:0;
+      z-index:35;
+      width:100%;
+      padding:6px 8px;
+      border:0;
+      border-bottom:2px solid #f8f0d8;
+      box-shadow:0 4px 14px #101018aa;
+      background:#101018ee;
+    }
+    .pattern-heading, #patternRules{ display:none; }
+    #patternTabs{
+      display:flex;
+      gap:5px;
+      overflow-x:auto;
+      scrollbar-width:none;
+    }
+    #patternTabs::-webkit-scrollbar{ display:none; }
+    .pattern-tab{ flex:0 0 auto; min-width:88px; padding:5px 7px; }
     .map-frame{
       position:fixed;
       inset:0;
@@ -227,6 +334,40 @@
     }
     #toolbar input{ width:18px; height:18px; }
   }
+  body.embedded #patternBar{ display:none; }
+  body.capture-mode{
+    display:flex;
+    min-height:100vh;
+    min-height:100dvh;
+    justify-content:flex-start;
+    padding:18px;
+    overflow:hidden;
+    background:#181820;
+  }
+  body.capture-mode #patternBar,
+  body.capture-mode #toolbar,
+  body.capture-mode #msg,
+  body.capture-mode #stats,
+  body.capture-mode #attrib{ display:none; }
+  body.capture-mode .map-frame{
+    position:relative;
+    inset:auto;
+    width:auto;
+    height:auto;
+    padding:6px;
+    overflow:hidden;
+    border:2px solid #f8f0d8;
+    box-shadow:0 0 0 2px #101018, 0 0 0 4px #f8f0d8, 0 0 0 6px #101018;
+    background:#78b850;
+  }
+  body.capture-mode canvas{
+    display:block;
+    width:min(84vw, 840px);
+    height:auto;
+    max-width:none;
+    cursor:default;
+  }
+  body.capture-mode #captureBadge{ display:block; }
   @media (prefers-reduced-motion: reduce){ #msg .cursor{ animation:none; } }
 </style>
 </head>
@@ -234,8 +375,26 @@
 
 <p id="mapPosition" hidden>OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ</p>
 
+<section id="patternBar" class="rpg-window" aria-labelledby="patternTitle">
+  <div class="pattern-heading">
+    <div>
+      <p class="pattern-kicker" id="patternKicker">ICON STUDY 01 / 10</p>
+      <h1 id="patternTitle">バランス階層</h1>
+      <p id="patternSummary">面積と高さから施設アイコンの大きさと情報量を調整します。</p>
+    </div>
+    <a class="pattern-gallery-link" href="icon-pattern-study.html">10案を一覧で比較</a>
+  </div>
+  <nav id="patternTabs" aria-label="アイコン表示パターン"></nav>
+  <div id="patternRules" aria-label="現在のパターンのルール"></div>
+</section>
+
 <div class="rpg-window map-frame">
-  <canvas id="map" width="1536" height="1536" aria-label="川崎駅周辺の読みやすいレトロRPG風マップ。ドラッグで移動できます" aria-describedby="msg"></canvas>
+  <div id="captureBadge" aria-hidden="true">
+    <div class="capture-kicker" id="captureKicker">ICON STUDY 01 / 10</div>
+    <div class="capture-title" id="captureTitle">バランス階層</div>
+    <div class="capture-place" id="capturePlace">川崎駅</div>
+  </div>
+  <canvas id="map" width="1536" height="1536" tabindex="0" aria-label="川崎駅周辺の読みやすいレトロRPG風マップ。ドラッグで移動、矢印キーで施設を選択できます" aria-describedby="msg"></canvas>
 </div>
 
 <div id="toolbar" class="rpg-window" aria-label="地図レイヤーの表示設定">
@@ -351,7 +510,7 @@
   </section>
 </div>
 
-<div id="msg" class="rpg-window">マップデータを よみこんでいる……<span class="cursor">▼</span></div>
+<div id="msg" class="rpg-window" role="status" aria-live="polite">マップデータを よみこんでいる……<span class="cursor">▼</span></div>
 
 <div id="stats" class="rpg-window">レイヤー情報 読込待ち…</div>
 
@@ -361,6 +520,7 @@
   <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">© OpenMapTiles</a>
 </div>
 
+<script src="../assets/icon-patterns.js"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -480,6 +640,75 @@ const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
+const ICON_PATTERNS = Array.isArray(window.PixelMapIconPatterns) ? window.PixelMapIconPatterns : [];
+const requestedPatternId = String(PAGE_PARAMS.get('pattern') || '01').padStart(2, '0');
+const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPatternId) || ICON_PATTERNS[0] || {
+  id:'01', name:'バランス階層', eyebrow:'基準案', summary:'施設の大きさを地物に合わせて調整します。',
+  rule:'面積と高さ', orderLabel:'地図上のY順', assetRule:'規模別', marker:'plinth', dot:'square',
+  scale:.92, maxIcons:52, gapScale:1, sameGapScale:1, snap:16, offset:'none', drawOrder:'depth',
+  labelLimit:14, dotScale:1, areaM:7, areaL:34, heightM:16, heightL:42,
+  assetArea:[], assetHeight:[], maxAssets:1, priority:['generic'], palette:{ generic:'#78828a' }, categoryScale:{},
+};
+const CAPTURE_MODE = PAGE_PARAMS.get('capture') === '1';
+const STUDY_MODE = !EMBEDDED && PAGE_PARAMS.get('layers') !== 'manual';
+const INITIAL_LAT_PARAM = PAGE_PARAMS.get('lat');
+const INITIAL_LON_PARAM = PAGE_PARAMS.get('lon');
+const HAS_INITIAL_COORDINATES = Boolean(INITIAL_LAT_PARAM?.trim() && INITIAL_LON_PARAM?.trim());
+const INITIAL_LAT = HAS_INITIAL_COORDINATES ? Number(INITIAL_LAT_PARAM) : NaN;
+const INITIAL_LON = HAS_INITIAL_COORDINATES ? Number(INITIAL_LON_PARAM) : NaN;
+const HAS_INITIAL_LOCATION = HAS_INITIAL_COORDINATES &&
+  Number.isFinite(INITIAL_LAT) && Number.isFinite(INITIAL_LON) &&
+  Math.abs(INITIAL_LAT) <= 85.05112878 && Math.abs(INITIAL_LON) <= 180;
+const INITIAL_PLACE = PAGE_PARAMS.get('place') || (HAS_INITIAL_LOCATION ? '指定地点' : '川崎駅');
+document.getElementById('map').setAttribute(
+  'aria-label',
+  `${INITIAL_PLACE}周辺の読みやすいレトロRPG風マップ。ドラッグで移動、矢印キーで施設を選択できます`
+);
+
+document.body.classList.toggle('embedded', EMBEDDED);
+document.body.classList.toggle('capture-mode', CAPTURE_MODE);
+document.documentElement.style.setProperty('--pattern-accent', ACTIVE_PATTERN.palette.transit || ACTIVE_PATTERN.palette.generic);
+document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.palette.generic || '#78828a');
+document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
+document.title = `${ACTIVE_PATTERN.id} ${ACTIVE_PATTERN.name}｜PixelMap アイコンスタディ`;
+
+function patternUrl(patternId){
+  const params = new URLSearchParams(PAGE_PARAMS);
+  params.set('pattern', patternId);
+  return `${location.pathname}?${params}`;
+}
+function populatePatternUi(){
+  document.getElementById('patternKicker').textContent = `ICON STUDY ${ACTIVE_PATTERN.id} / 10 ─ ${ACTIVE_PATTERN.eyebrow}`;
+  document.getElementById('patternTitle').textContent = ACTIVE_PATTERN.name;
+  document.getElementById('patternSummary').textContent = ACTIVE_PATTERN.summary;
+  document.getElementById('captureKicker').textContent = `ICON STUDY ${ACTIVE_PATTERN.id} / 10`;
+  document.getElementById('captureTitle').textContent = ACTIVE_PATTERN.name;
+  document.getElementById('capturePlace').textContent = INITIAL_PLACE;
+  const tabs = document.getElementById('patternTabs');
+  for (const pattern of ICON_PATTERNS){
+    const link = document.createElement('a');
+    link.className = 'pattern-tab';
+    link.href = patternUrl(pattern.id);
+    link.innerHTML = `<span class="pattern-number">PATTERN ${pattern.id}</span>${pattern.name}`;
+    if (pattern.id === ACTIVE_PATTERN.id) link.setAttribute('aria-current', 'page');
+    tabs.appendChild(link);
+  }
+  const rules = [
+    ['サイズ', ACTIVE_PATTERN.rule],
+    ['並び順', ACTIVE_PATTERN.orderLabel],
+    ['アセット', ACTIVE_PATTERN.assetRule],
+  ];
+  const ruleList = document.getElementById('patternRules');
+  for (const [label, value] of rules){
+    const item = document.createElement('div');
+    item.className = 'pattern-rule';
+    const heading = document.createElement('b');
+    heading.textContent = label;
+    item.append(heading, document.createTextNode(value));
+    ruleList.appendChild(item);
+  }
+}
+populatePatternUi();
 const cv = document.getElementById('map');
 const ctx = cv.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -1588,7 +1817,7 @@ const SPRITES = {
 };
 const CLASS2SPRITE = {
   railway:'station', bus:'bus', tram:'station', ferry:'station', aerialway:'station', harbor:'station',
-  shop:'shop', clothing_store:'shop', alcohol_shop:'shop', convenience:'grocery', bakery:'grocery', grocery:'grocery',
+  shop:'shop', mall:'mall', department_store:'mall', shopping_centre:'mall', clothing_store:'shop', alcohol_shop:'shop', convenience:'grocery', bakery:'grocery', grocery:'grocery',
   restaurant:'restaurant', fast_food:'fast_food', cafe:'cafe', bar:'bar', beer:'bar', ice_cream:'cafe',
   lodging:'hotel', hotel:'hotel',
   hospital:'hospital', doctors:'hospital', dentist:'hospital', veterinary:'hospital', pharmacy:'pharmacy',
@@ -1617,6 +1846,70 @@ const poiImportance = props => {
   };
   return (priority[k] ?? 24) + Math.min(20, Number(props.rank ?? 20)) * .15;
 };
+const CATEGORY_KEYS = {
+  health:new Set(['hospital','doctors','dentist','veterinary','pharmacy','clinic']),
+  civic:new Set(['school','college','university','kindergarten','library','bank','atm','money','post','police','fire_station','town_hall','townhall']),
+  food:new Set(['restaurant','fast_food','cafe','bar','beer','ice_cream','bakery','grocery','convenience']),
+  commerce:new Set(['shop','mall','department_store','shopping_centre','clothing_store','alcohol_shop']),
+  landmark:new Set(['attraction','monument','castle','art_gallery','museum','theatre','cinema','music','entertainment','place_of_worship']),
+  nature:new Set(['park','garden','playground','dog_park','pitch','stadium','golf','swimming','zoo']),
+  stay:new Set(['lodging','hotel','hostel','motel','guest_house']),
+  service:new Set(['parking','fuel','charging_station']),
+};
+function poiCategory(props){
+  if (isStationProps(props) || ['bus','tram','ferry','aerialway','harbor'].includes(props.subclass || props.class)) return 'transit';
+  const keys = [props.subclass, props.class].filter(Boolean);
+  for (const [category, values] of Object.entries(CATEGORY_KEYS))
+    if (keys.some(key => values.has(key))) return category;
+  return 'generic';
+}
+const tierValue = size => ({ S:0, M:1, L:2 }[size] ?? 0);
+const tierFromValue = value => ['S','M','L'][Math.max(0, Math.min(2, value))];
+function patternSize(metrics, category){
+  const areaTier = metrics.area >= ACTIVE_PATTERN.areaL ? 2 : metrics.area >= ACTIVE_PATTERN.areaM ? 1 : 0;
+  const heightTier = metrics.height >= ACTIVE_PATTERN.heightL ? 2 : metrics.height >= ACTIVE_PATTERN.heightM ? 1 : 0;
+  let tier = Math.max(areaTier, heightTier);
+  const minimum = ACTIVE_PATTERN.minSize?.[category];
+  if (minimum) tier = Math.max(tier, tierValue(minimum));
+  return tierFromValue(tier);
+}
+function patternAssetCount(metrics, category){
+  if (ACTIVE_PATTERN.maxAssets <= 1) return 1;
+  if (ACTIVE_PATTERN.multiCategories && !ACTIVE_PATTERN.multiCategories.includes(category)) return 1;
+  const areaCount = (ACTIVE_PATTERN.assetArea || []).filter(limit => metrics.area >= limit).length;
+  const heightCount = (ACTIVE_PATTERN.assetHeight || []).filter(limit => metrics.height >= limit).length;
+  const extra = ACTIVE_PATTERN.multiMode === 'area' ? areaCount
+    : ACTIVE_PATTERN.multiMode === 'height' ? heightCount
+      : Math.max(areaCount, heightCount);
+  return Math.min(ACTIVE_PATTERN.maxAssets, 1 + extra);
+}
+function categoryTone(category){
+  return ACTIVE_PATTERN.palette[category] || ACTIVE_PATTERN.palette.generic || '#78828a';
+}
+function stablePoiSeed(props){
+  const source = `${props['name:ja'] || props.name || ''}|${props.class || ''}|${props.subclass || ''}`;
+  let hash = 2166136261;
+  for (const ch of source){ hash ^= ch.codePointAt(0); hash = Math.imul(hash, 16777619); }
+  return hash >>> 0;
+}
+function patternSelectionPriority(p){
+  const index = ACTIVE_PATTERN.priority.indexOf(p.category);
+  return (index < 0 ? ACTIVE_PATTERN.priority.length : index) * 100 + p.importance * 2 + p.rank * .05 - p.metrics.area * .015 - p.metrics.height * .02;
+}
+function patternOffset(p, x, y){
+  const seed = stablePoiSeed(p.props);
+  const categoryIndex = Math.max(0, ACTIVE_PATTERN.priority.indexOf(p.category));
+  if (ACTIVE_PATTERN.offset === 'market-stagger' && ['food','commerce'].includes(p.category))
+    return [((Math.floor(y / 16) + categoryIndex) % 2 ? 8 : -8), 0];
+  if (ACTIVE_PATTERN.offset === 'transit-lane') return [p.category === 'transit' ? 0 : (categoryIndex % 3 - 1) * 5, 0];
+  if (ACTIVE_PATTERN.offset === 'civic-pair' && ['health','civic'].includes(p.category)) return [p.category === 'health' ? -6 : 6, -3];
+  if (ACTIVE_PATTERN.offset === 'micro-jitter') return [((seed % 3) - 1) * 4, ((Math.floor(seed / 3) % 3) - 1) * 4];
+  if (ACTIVE_PATTERN.offset === 'height-rise') return [0, -Math.min(10, Math.round(p.metrics.height / 8))];
+  if (ACTIVE_PATTERN.offset === 'footprint-orbit') return [((seed % 3) - 1) * Math.min(6, Math.round(p.metrics.area / 12)), 0];
+  if (ACTIVE_PATTERN.offset === 'category-nudge') return [(categoryIndex % 3 - 1) * 5, (Math.floor(categoryIndex / 3) % 3 - 1) * 3];
+  if (ACTIVE_PATTERN.offset === 'beacon-ring' && ['landmark','transit','health'].includes(p.category)) return [0, -6];
+  return [0, 0];
+}
 function spriteFor(props, size = 'M', variant = 0){
   const key = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
   const e = SPRITES[key];
@@ -1649,14 +1942,144 @@ function spriteFor(props, size = 'M', variant = 0){
   }
   return { label: e.label, draw };
 }
-function drawSprite(sp, cx, cy){
+function alphaColor(hex, alpha){
+  const value = String(hex || '#78828a').replace('#','');
+  if (!/^[0-9a-f]{6}$/i.test(value)) return `rgba(120,130,138,${alpha})`;
+  const n = parseInt(value, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+function drawCategoryShape(cx, cy, radius, category, tone, alpha = .68){
+  const x = Math.round(cx), y = Math.round(cy), r = Math.max(5, Math.round(radius));
+  ctx.save();
+  ctx.fillStyle = alphaColor(tone, alpha);
+  ctx.strokeStyle = OUT;
+  ctx.lineWidth = Math.max(2, Math.round(r / 7));
+  ctx.beginPath();
+  if (category === 'transit') ctx.arc(x, y, r, 0, Math.PI * 2);
+  else if (category === 'food') { ctx.moveTo(x, y-r); ctx.lineTo(x+r, y); ctx.lineTo(x, y+r); ctx.lineTo(x-r, y); ctx.closePath(); }
+  else if (category === 'commerce') ctx.rect(x-r, y-r, r*2, r*2);
+  else if (category === 'health'){
+    const t = Math.max(3, Math.round(r * .38));
+    ctx.rect(x-t/2, y-r, t, r*2); ctx.rect(x-r, y-t/2, r*2, t);
+  } else if (category === 'civic'){
+    for (let i = 0; i < 8; i++){
+      const a = Math.PI / 8 + i * Math.PI / 4;
+      const px0 = x + Math.cos(a) * r, py0 = y + Math.sin(a) * r;
+      i ? ctx.lineTo(px0, py0) : ctx.moveTo(px0, py0);
+    }
+    ctx.closePath();
+  } else if (category === 'landmark'){
+    ctx.moveTo(x, y-r); ctx.lineTo(x+r, y+r); ctx.lineTo(x-r, y+r); ctx.closePath();
+  } else if (category === 'nature'){
+    ctx.ellipse(x, y, r * .72, r, Math.PI / 4, 0, Math.PI * 2);
+  } else if (category === 'stay'){
+    for (let i = 0; i < 6; i++){
+      const a = -Math.PI / 2 + i * Math.PI / 3;
+      const px0 = x + Math.cos(a) * r, py0 = y + Math.sin(a) * r;
+      i ? ctx.lineTo(px0, py0) : ctx.moveTo(px0, py0);
+    }
+    ctx.closePath();
+  } else {
+    ctx.moveTo(x-r, y+r); ctx.lineTo(x, y-r); ctx.lineTo(x+r, y+r); ctx.closePath();
+  }
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+function drawPatternMarker(p, cx, cy, visualScale){
+  const tone = categoryTone(p.category);
+  const marker = ACTIVE_PATTERN.marker;
+  const r = Math.max(14, Math.round(20 * visualScale));
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  if (marker === 'category-shape'){
+    drawCategoryShape(cx, cy - r * .25, r, p.category, tone, .62);
+  } else if (marker === 'flag'){
+    ctx.fillStyle = OUT; ctx.fillRect(Math.round(cx-r-5), Math.round(cy-r-9), 4, r+17);
+    ctx.fillStyle = tone; ctx.fillRect(Math.round(cx-r-1), Math.round(cy-r-9), r+9, 9);
+    ctx.fillStyle = '#f8f0d8'; ctx.fillRect(Math.round(cx-r+3), Math.round(cy-r-6), Math.max(5,r-5), 2);
+  } else if (marker === 'shield'){
+    drawCategoryShape(cx, cy-3, r, p.category === 'health' ? 'health' : 'civic', tone, .45);
+  } else if (marker === 'awning'){
+    ctx.fillStyle = alphaColor(tone,.8);
+    for (let i = -2; i <= 2; i += 2) ctx.fillRect(Math.round(cx + i * r/3 - r/6), Math.round(cy+4), Math.ceil(r/3), 8);
+    ctx.fillStyle = '#f8f0d8';
+    for (let i = -1; i <= 1; i += 2) ctx.fillRect(Math.round(cx + i * r/3 - r/6), Math.round(cy+4), Math.ceil(r/3), 8);
+  } else if (marker === 'corners'){
+    ctx.fillStyle = tone;
+    const d = r+3, t = 4, l = 10;
+    for (const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){
+      ctx.fillRect(Math.round(cx+sx*d-(sx<0?0:l)), Math.round(cy-8+sy*d), l, t);
+      ctx.fillRect(Math.round(cx+sx*d), Math.round(cy-8+sy*d-(sy<0?0:l)), t, l);
+    }
+  } else if (marker === 'microgrid'){
+    ctx.fillStyle = tone;
+    for (const [dx,dy] of [[-r,-r],[r,-r],[-r,r],[r,r]]) ctx.fillRect(Math.round(cx+dx-2),Math.round(cy+dy-7),4,4);
+  } else if (marker === 'tower'){
+    const h = Math.max(16, Math.min(62, Math.round(14 + p.metrics.height * .42)));
+    ctx.fillStyle = OUT; ctx.fillRect(Math.round(cx+r-2), Math.round(cy-h), 9, h+4);
+    ctx.fillStyle = tone; ctx.fillRect(Math.round(cx+r), Math.round(cy-h+2), 5, h);
+    ctx.fillStyle = '#f8f0d8';
+    for (let y = cy-h+6; y < cy-4; y += 9) ctx.fillRect(Math.round(cx+r+1), Math.round(y), 3, 3);
+  } else if (marker === 'cluster'){
+    drawCategoryShape(cx, cy+2, r * .92, 'food', tone, .35);
+  } else if (marker === 'beacon'){
+    ctx.fillStyle = alphaColor(tone,.84);
+    ctx.fillRect(Math.round(cx-3), Math.round(cy-r-16), 6, r+19);
+    ctx.fillRect(Math.round(cx-r-10), Math.round(cy-r/2-3), r*2+20, 6);
+    ctx.fillStyle = '#f8f0d8'; ctx.fillRect(Math.round(cx-1), Math.round(cy-r-12), 2, r+12);
+  } else {
+    ctx.fillStyle = OUT; ctx.fillRect(Math.round(cx-r-2), Math.round(cy+2), r*2+4, 10);
+    ctx.fillStyle = tone; ctx.fillRect(Math.round(cx-r), Math.round(cy+4), r*2, 6);
+  }
+  ctx.restore();
+}
+function drawAuxiliaryAssets(p, cx, cy){
+  const extra = Math.max(0, p.assetCount - 1);
+  if (!extra) return;
+  const tone = categoryTone(p.category);
+  const areaOffsets = [[-28,2],[28,2],[-22,-22],[22,-22]];
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  for (let i = 0; i < extra; i++){
+    if (ACTIVE_PATTERN.multiMode === 'height' || ACTIVE_PATTERN.marker === 'tower'){
+      const x = Math.round(cx + 25 + i * 9), h = 15 + i * 8;
+      ctx.fillStyle = OUT; ctx.fillRect(x-2, Math.round(cy-h-2), 9, h+4);
+      ctx.fillStyle = tone; ctx.fillRect(x, Math.round(cy-h), 5, h);
+      ctx.fillStyle = '#c8e4f4'; ctx.fillRect(x+1, Math.round(cy-h+4), 3, 3);
+    } else if (ACTIVE_PATTERN.multiMode === 'area' || ACTIVE_PATTERN.marker === 'cluster'){
+      const [dx,dy] = areaOffsets[i];
+      const x = Math.round(cx+dx), y = Math.round(cy+dy);
+      ctx.fillStyle = OUT; ctx.fillRect(x-7,y-10,14,11);
+      ctx.fillStyle = '#f0e4c8'; ctx.fillRect(x-5,y-7,10,7);
+      ctx.fillStyle = tone; ctx.fillRect(x-7,y-11,14,4);
+    } else if (ACTIVE_PATTERN.marker === 'flag' || ACTIVE_PATTERN.marker === 'beacon'){
+      const side = i % 2 ? 1 : -1, x = Math.round(cx + side * (24 + i * 4));
+      ctx.fillStyle = OUT; ctx.fillRect(x, Math.round(cy-24-i*4), 3, 25+i*4);
+      ctx.fillStyle = tone; ctx.fillRect(x+side*(side>0?3:-9), Math.round(cy-24-i*4), 9, 6);
+    } else if (ACTIVE_PATTERN.marker === 'awning'){
+      const [dx] = areaOffsets[i];
+      ctx.fillStyle = tone; ctx.fillRect(Math.round(cx+dx-5),Math.round(cy-8),10,7);
+      ctx.fillStyle = '#f8f0d8'; ctx.fillRect(Math.round(cx+dx-2),Math.round(cy-8),3,7);
+    } else {
+      const [dx,dy] = areaOffsets[i];
+      drawCategoryShape(cx+dx*.65, cy+dy*.4, 6, p.category, tone, .92);
+    }
+  }
+  ctx.restore();
+}
+function drawSprite(sp, cx, cy, p){
+  const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[p.category] || 1);
+  p.visualScale = visualScale;
+  p.visualRadius = 24 * visualScale + Math.max(0, p.assetCount - 1) * 8;
+  drawPatternMarker(p, cx, cy, visualScale);
   ctx.save();
   ctx.translate(Math.round(cx), Math.round(cy));
-  ctx.scale(3, 3);
+  ctx.scale(3 * visualScale, 3 * visualScale);
   ctx.fillStyle = 'rgba(24,40,16,.3)';
   ctx.fillRect(-7, -1, 14, 3);
   sp.draw(0, 0);
   ctx.restore();
+  drawAuxiliaryAssets(p, cx, cy);
 }
 /* 文字もドット絵に: 半分のサイズで描いて2倍に最近傍拡大する */
 function makePixelText(text, size, color, outline){
@@ -1744,8 +2167,9 @@ let renderCount = 0;
 let gridOriginX = -1, gridOriginY = -1;
 let gridShiftX = -CPX, gridShiftY = -CPX;
 const tp = ([x, y]) => [x * SCALE - viewOffset.x, y * SCALE - viewOffset.y];
-const snapX = v => (Math.floor((v + viewOffset.x) / CPX) + 0.5) * CPX - viewOffset.x;
-const snapY = v => (Math.floor((v + viewOffset.y) / CPX) + 0.5) * CPX - viewOffset.y;
+const iconSnap = Math.max(4, Number(ACTIVE_PATTERN.snap) || CPX);
+const snapX = v => (Math.floor((v + viewOffset.x) / iconSnap) + 0.5) * iconSnap - viewOffset.x;
+const snapY = v => (Math.floor((v + viewOffset.y) / iconSnap) + 0.5) * iconSnap - viewOffset.y;
 const locationCanvasPoint = () => currentLocation ? [
   (currentLocation.tileX - TILE.x) * W - viewOffset.x,
   (currentLocation.tileY - TILE.y) * H - viewOffset.y,
@@ -1753,6 +2177,19 @@ const locationCanvasPoint = () => currentLocation ? [
 
 const layerInputs = [...document.querySelectorAll('[data-category-item]')];
 const optionForInput = input => input.id.slice(3).replace(/^./, c => c.toLowerCase());
+const STUDY_LAYER_OPTIONS = new Set([
+  'grass','forest','farmland','landcoverGrass','sand','rock','wetland','ice','parks',
+  'waterAreas','rivers','streams','canals',
+  'landuseResidential','landuseCommercial','landuseRetail','landuseSchool','landuseHigherEducation',
+  'landuseMedical','landuseCivic','landuseIndustrial','landuseRailway','landuseCemetery',
+  'landuseStadium','landusePlayground','landuseZoo','landuseAirport',
+  'localRoads','regionalRoads','majorRoads','motorways','paths','tracks','ferries','piers',
+  'rail','subway','aerialways','roadTunnels','pathTunnels','railTunnels',
+  'buildings','poi','dots','stationNames','parkNames','poiNames','placeNames','terrainNames',
+]);
+if (STUDY_MODE){
+  for (const input of layerInputs) input.checked = STUDY_LAYER_OPTIONS.has(optionForInput(input));
+}
 let layerOrder = layerInputs.filter(input => input.checked).map(optionForInput);
 const opts = () => Object.fromEntries(layerInputs.map(input => [optionForInput(input), input.checked]));
 function updateLayerOrder(input){
@@ -1885,23 +2322,59 @@ function render(){
   const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
   drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
-  // POIの位置にある建物の面積(マス数)から施設のサイズ級を決める
-  function poiSizeClass(pt){
+  // z14のbuilding featureには離れた複数棟が同じfeatureとして入る場合がある。
+  // feature全体の面積ではなく、4連結した「その棟」のローカル面積を各セルへ保存する。
+  const localBuildingArea = new Uint16Array(RG * RG);
+  for (let start = 0; start < bldGrid.length; start++){
+    const buildingIndex = bldGrid[start];
+    if (!buildingIndex || localBuildingArea[start]) continue;
+    const cells = [], stack = [start];
+    localBuildingArea[start] = 65535;
+    while (stack.length){
+      const index = stack.pop();
+      cells.push(index);
+      const x = index % RG, y = Math.floor(index / RG);
+      for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= RG || ny >= RG) continue;
+        const next = ny * RG + nx;
+        if (localBuildingArea[next] || bldGrid[next] !== buildingIndex) continue;
+        localBuildingArea[next] = 65535;
+        stack.push(next);
+      }
+    }
+    const area = Math.min(65534, cells.length);
+    for (const index of cells) localBuildingArea[index] = area;
+  }
+
+  // POIの近傍建物から面積・高さ・用途をまとめて取得する。
+  // 10パターンは同じPOIレイヤーでも、この実寸メトリクスからアセット級と個数を変える。
+  function poiBuildingMetrics(pt){
     const RG = GRID + 2;
     const cx0 = Math.floor((pt[0] - gridShiftX) / CPX);
     const cy0 = Math.floor((pt[1] - gridShiftY) / CPX);
-    let best = 0;
+    let bestIndex = 0, bestCell = -1, bestDistance = Infinity, bestArea = 0;
     for (let dy = -2; dy <= 2; dy++){
       for (let dx = -2; dx <= 2; dx++){
         const cx = cx0 + dx, cy = cy0 + dy;
         if (cx < 0 || cy < 0 || cx >= RG || cy >= RG) continue;
         const bi = bldGrid[cy * RG + cx];
-        if (bi) best = Math.max(best, bldArea[bi]);
+        if (!bi) continue;
+        const distance = dx * dx + dy * dy;
+        const cell = cy * RG + cx;
+        const area = localBuildingArea[cell] || 0;
+        if (distance < bestDistance || (distance === bestDistance && area > bestArea)){
+          bestIndex = bi; bestCell = cell; bestDistance = distance; bestArea = area;
+        }
       }
     }
-    if (best >= 35) return 'L';       // 大規模施設だけをLにする
-    if (best >= 6)  return 'M';
-    return 'S';
+    const feature = bestIndex ? bldFeats[bestIndex - 1] : null;
+    return {
+      area:bestCell >= 0 ? localBuildingArea[bestCell] : bestArea,
+      height:Math.max(0, Number(feature?.props?.render_height || 0)),
+      kind:bestIndex ? buildingKinds[bestIndex] : 'none',
+      buildingIndex:bestIndex,
+    };
   }
 
   function drawTunnelLayer(option){
@@ -1947,7 +2420,7 @@ function render(){
     Object.entries(stats).map(([k, v]) => `<span>${k}: ${v}</span>`).join('');
 
   /* --- POI --- */
-  const pois = poiFeatures
+  const poiPool = poiFeatures
     .map(f => {
       const anchor = geometryAnchor(f);
       const [x, y] = tp(anchor);
@@ -1955,50 +2428,141 @@ function render(){
       const idNum = Number(f.id || 0);
       const nameSeed = [...(featureName(props) || props.class || '')]
         .reduce((sum,ch) => sum + ch.codePointAt(0), 0);
-      return {
-        props, pt: [snapX(x), snapY(y)], rank: Number(props.rank ?? 30),
+      const basePt = [snapX(x), snapY(y)];
+      const p = {
+        props, pt:basePt, rank: Number(props.rank ?? 30),
         importance: poiImportance(props),
         spriteKey: CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic',
         variant: Math.abs((Number.isFinite(idNum) ? idNum : 0) + nameSeed) % 3,
       };
-    })
-    .sort((a, b) => a.importance - b.importance || a.rank - b.rank);
+      p.category = poiCategory(props);
+      p.metrics = poiBuildingMetrics(basePt);
+      p.size = patternSize(p.metrics, p.category);
+      p.assetCount = patternAssetCount(p.metrics, p.category);
+      p.visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[p.category] || 1);
+      p.visualRadius = 24 * p.visualScale + Math.max(0, p.assetCount - 1) * 8;
+      const [dx, dy] = patternOffset(p, basePt[0], basePt[1]);
+      p.pt = [basePt[0] + dx, basePt[1] + dy];
+      p.selectionPriority = patternSelectionPriority(p);
+      return p;
+    });
+  // カテゴリごとのキューを優先順でラウンドロビンする。
+  // 一種類のPOIが多い都市でも、交通・医療・商業・自然などが同じ画面に残る。
+  const categoryQueues = new Map();
+  for (const p of poiPool){
+    if (!categoryQueues.has(p.category)) categoryQueues.set(p.category, []);
+    categoryQueues.get(p.category).push(p);
+  }
+  for (const queue of categoryQueues.values())
+    queue.sort((a,b) => a.selectionPriority - b.selectionPriority || a.rank - b.rank);
+  const orderedCategories = [
+    ...ACTIVE_PATTERN.priority,
+    ...[...categoryQueues.keys()].filter(category => !ACTIVE_PATTERN.priority.includes(category)),
+  ];
+  const pois = [];
+  const categoryIndexes = new Map(orderedCategories.map(category => [category, 0]));
+  let remainingPois = poiPool.length;
+  while (remainingPois > 0){
+    for (const category of orderedCategories){
+      const queue = categoryQueues.get(category);
+      const burst = ACTIVE_PATTERN.multiCategories?.includes(category) ? 2 : 1;
+      let index = categoryIndexes.get(category) || 0;
+      for (let i = 0; queue && index < queue.length && i < burst; i++){
+        pois.push(queue[index++]);
+        remainingPois--;
+      }
+      categoryIndexes.set(category, index);
+    }
+  }
 
   const drawnIcons = [], hiddenPois = [];
   for (const p of pois){
     const [x, y] = p.pt;
-    if (x < -30 || y < -30 || x > W + 30 || y > H + 30) continue;
-    p.size = poiSizeClass(p.pt);
+    if (x < -70 || y < -70 || x > W + 70 || y > H + 70) continue;
     const pName = featureName(p.props);
     const duplicate = pName && drawnIcons.some(d =>
       featureName(d.props) === pName && d.spriteKey === p.spriteKey &&
-      Math.hypot(d.pt[0] - x, d.pt[1] - y) < 112);
+      Math.hypot(d.pt[0] - x, d.pt[1] - y) < 112 * ACTIVE_PATTERN.gapScale);
     const near = drawnIcons.some(d => {
       const sameKind = d.spriteKey === p.spriteKey;
       const important = isStationProps(d.props) || isStationProps(p.props) || d.size === 'L' || p.size === 'L';
-      const minGap = important ? 86 : sameKind ? 74 : 56;
+      const gapScale = sameKind ? ACTIVE_PATTERN.sameGapScale : ACTIVE_PATTERN.gapScale;
+      const baseGap = important ? 86 : sameKind ? 74 : 56;
+      const scaleFactor = Math.max(.62, (p.visualScale + d.visualScale) / 2);
+      const minGap = Math.max(baseGap * gapScale * scaleFactor, p.visualRadius + d.visualRadius + 6);
       return Math.hypot(d.pt[0] - x, d.pt[1] - y) < minGap;
     });
-    if (!duplicate && !near && drawnIcons.length < 64) drawnIcons.push(p);
+    if (!duplicate && !near && drawnIcons.length < ACTIVE_PATTERN.maxIcons) drawnIcons.push(p);
     else hiddenPois.push(p);
+  }
+  const dotLimit = ACTIVE_PATTERN.id === '06'
+    ? Math.min(520, ACTIVE_PATTERN.maxIcons * 6)
+    : ACTIVE_PATTERN.id === '05'
+      ? Math.min(90, ACTIVE_PATTERN.maxIcons * 3)
+      : Math.min(320, ACTIVE_PATTERN.maxIcons * 4);
+  let drawnDotCount = 0;
+  function drawDotMarker(p){
+    const [x0, y0] = p.pt;
+    const x = Math.round(x0), y = Math.round(y0);
+    const tone = categoryTone(p.category);
+    const s = Math.max(2, Math.round(4 * ACTIVE_PATTERN.dotScale));
+    const kind = ACTIVE_PATTERN.dot;
+    if (kind === 'category-shape'){
+      drawCategoryShape(x, y, Math.max(5,s+2), p.category, tone, .9);
+      return;
+    }
+    ctx.save();
+    ctx.fillStyle = OUT; ctx.strokeStyle = OUT; ctx.lineWidth = 2;
+    if (kind === 'ring'){
+      ctx.beginPath(); ctx.arc(x,y,s+3,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle = tone; ctx.fillRect(x-2,y-2,4,4);
+    } else if (kind === 'diamond'){
+      ctx.beginPath(); ctx.moveTo(x,y-s-3); ctx.lineTo(x+s+3,y); ctx.lineTo(x,y+s+3); ctx.lineTo(x-s-3,y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = tone; ctx.beginPath(); ctx.moveTo(x,y-s); ctx.lineTo(x+s,y); ctx.lineTo(x,y+s); ctx.lineTo(x-s,y); ctx.closePath(); ctx.fill();
+    } else if (kind === 'cross'){
+      ctx.fillRect(x-2,y-s-3,4,(s+3)*2); ctx.fillRect(x-s-3,y-2,(s+3)*2,4);
+      ctx.fillStyle = tone; ctx.fillRect(x-1,y-s-1,2,(s+1)*2); ctx.fillRect(x-s-1,y-1,(s+1)*2,2);
+    } else if (kind === 'dash'){
+      ctx.fillRect(x-s-4,y-3,(s+4)*2,6); ctx.fillStyle = tone; ctx.fillRect(x-s-2,y-1,(s+2)*2,2);
+    } else if (kind === 'bar'){
+      ctx.fillRect(x-3,y-s-5,6,(s+5)*2); ctx.fillStyle = tone; ctx.fillRect(x-1,y-s-3,2,(s+3)*2);
+    } else if (kind === 'cluster'){
+      for (const [dx,dy] of [[-4,-3],[4,-3],[0,4]]){ ctx.fillStyle=OUT; ctx.fillRect(x+dx-3,y+dy-3,6,6); ctx.fillStyle=tone; ctx.fillRect(x+dx-2,y+dy-2,4,4); }
+    } else if (kind === 'tiny' || kind === 'pixel'){
+      ctx.fillRect(x-s-1,y-s-1,(s+1)*2,(s+1)*2); ctx.fillStyle=tone; ctx.fillRect(x-s+1,y-s+1,Math.max(2,(s-1)*2),Math.max(2,(s-1)*2));
+    } else {
+      ctx.fillRect(x-s-2,y-s-2,(s+2)*2,(s+2)*2); ctx.fillStyle=tone; ctx.fillRect(x-s,y-s,s*2,s*2);
+    }
+    ctx.restore();
   }
   function drawDots(points = hiddenPois){
     for (const p of points){
+      if (drawnDotCount >= dotLimit) break;
       const [x, y] = p.pt;
       if (x < 0 || y < 0 || x > W || y > H) continue;
-      px(x - 4, y - 4, 8, 8, OUT);
-      px(x - 3, y - 3, 6, 6, '#f8d038');
+      drawDotMarker(p);
       hitAreas.push({ x: x - 9, y: y - 9, w: 18, h: 18, p: p.props, kind:'dot' });
+      drawnDotCount++;
     }
   }
-  // Y座標昇順に描く = 画面の下にある施設ほど手前に重なる
-  drawnIcons.sort((a, b) => a.pt[1] - b.pt[1]);
+  const categoryIndex = p => {
+    const index = ACTIVE_PATTERN.priority.indexOf(p.category);
+    return index < 0 ? ACTIVE_PATTERN.priority.length : index;
+  };
+  drawnIcons.sort((a, b) => {
+    if (ACTIVE_PATTERN.drawOrder === 'priority') return b.selectionPriority - a.selectionPriority || a.pt[1] - b.pt[1];
+    if (ACTIVE_PATTERN.drawOrder === 'height') return a.metrics.height - b.metrics.height || a.pt[1] - b.pt[1];
+    if (ACTIVE_PATTERN.drawOrder === 'size') return tierValue(a.size) - tierValue(b.size) || a.pt[1] - b.pt[1];
+    if (ACTIVE_PATTERN.drawOrder === 'category') return categoryIndex(b) - categoryIndex(a) || a.pt[1] - b.pt[1];
+    return a.pt[1] - b.pt[1] || tierValue(a.size) - tierValue(b.size);
+  });
   function drawPoi(){
     // アイコンを間引いたPOIも必ず点で残し、poi単独で全件を表示可能にする。
     drawDots();
     for (const p of drawnIcons){
-      drawSprite(spriteFor(p.props, p.size, p.variant), p.pt[0], p.pt[1]);
-      hitAreas.push({ x: p.pt[0] - 30, y: p.pt[1] - 54, w: 60, h: 62, p: p.props, kind:'poi' });
+      drawSprite(spriteFor(p.props, p.size, p.variant), p.pt[0], p.pt[1], p);
+      const radius = Math.max(28, p.visualRadius);
+      hitAreas.push({ x: p.pt[0] - radius, y: p.pt[1] - radius*1.9, w: radius*2, h: radius*2.1, p: p.props, kind:'poi' });
     }
   }
 
@@ -2024,8 +2588,8 @@ function render(){
     const placedRects = [];
     const labelTargets = drawnIcons
       .filter(p => featureName(p.props) && !isStationProps(p.props))
-      .sort((a, b) => a.importance - b.importance || a.rank - b.rank)
-      .slice(0, 16);
+      .sort((a, b) => a.selectionPriority - b.selectionPriority || a.rank - b.rank)
+      .slice(0, ACTIVE_PATTERN.labelLimit);
     for (const p of labelTargets)
       labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 142 : 116), placedRects);
   }
@@ -2175,6 +2739,17 @@ function render(){
   const featureCounts = Object.fromEntries(
     Object.entries(tileLayers).map(([name, layer]) => [name, layer.features.length])
   );
+  const countBy = (items, keyFor) => items.reduce((counts, item) => {
+    const key = keyFor(item);
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
+  const visibleMetricItems = pois.filter(item => item.pt[0] >= 0 && item.pt[1] >= 0 && item.pt[0] <= W && item.pt[1] <= H);
+  const quantiles = (items, key) => {
+    const values = items.map(item => item.metrics[key]).sort((a,b) => a-b);
+    const at = q => values.length ? values[Math.min(values.length - 1, Math.floor((values.length - 1) * q))] : 0;
+    return { p25:at(.25), p50:at(.5), p75:at(.75), p90:at(.9), p99:at(.99), max:at(1) };
+  };
   toolbar.dataset.renderMs = (performance.now() - renderStartedAt).toFixed(1);
   toolbar.dataset.renderCount = renderCount;
   window.PixelMapDiagnostics = {
@@ -2187,12 +2762,27 @@ function render(){
     layerOrder:[...layerOrder],
     renderOrder:[...renderOrder],
     buildingKindCounts:{ ...buildingKindCounts },
+    pattern:{
+      id:ACTIVE_PATTERN.id,
+      slug:ACTIVE_PATTERN.slug,
+      name:ACTIVE_PATTERN.name,
+      marker:ACTIVE_PATTERN.marker,
+      drawOrder:ACTIVE_PATTERN.drawOrder,
+      maxIcons:ACTIVE_PATTERN.maxIcons,
+    },
     poi:{
       total:pois.length,
       visible:drawnIcons.length + hiddenPois.length,
       offscreen:pois.length - drawnIcons.length - hiddenPois.length,
       icons:drawnIcons.length,
-      dots:hiddenPois.length,
+      dots:drawnDotCount,
+      dotCandidates:hiddenPois.length,
+      sizes:countBy(drawnIcons, item => item.size),
+      categories:countBy(drawnIcons, item => item.category),
+      assetCounts:countBy(drawnIcons, item => String(item.assetCount)),
+      maxHeight:drawnIcons.reduce((max, item) => Math.max(max, item.metrics.height), 0),
+      maxArea:drawnIcons.reduce((max, item) => Math.max(max, item.metrics.area), 0),
+      metrics:{ area:quantiles(visibleMetricItems,'area'), height:quantiles(visibleMetricItems,'height') },
     },
     renderMs:Number(toolbar.dataset.renderMs),
   };
@@ -2209,7 +2799,61 @@ const MOBILE_QUERY = '(max-width:760px), (max-height:500px)';
 const DEFAULT_MSG = window.matchMedia(MOBILE_QUERY).matches
   ? 'ドラッグで マップをいどう。ばしょを タップして しらべよう。'
   : 'ドラッグで マップをいどう。アイコンや点も しらべられるよ。';
-function setMsg(t){ msg.innerHTML = `${t}<span class="cursor">▼</span>`; }
+function appendMsgCursor(){
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  cursor.textContent = '▼';
+  msg.append(cursor);
+}
+function setMsg(message){
+  msg.replaceChildren();
+  if (typeof message === 'string'){
+    msg.append(document.createTextNode(message));
+  } else {
+    msg.append(document.createTextNode(message.before));
+    const strong = document.createElement('b');
+    strong.textContent = message.strong;
+    msg.append(strong, document.createTextNode(message.after));
+  }
+  appendMsgCursor();
+}
+function showLoadError(){
+  msg.replaceChildren(document.createTextNode('データを とりにいけなかった……'), document.createElement('br'));
+
+  const details = document.createElement('small');
+  details.style.color = '#a8a088';
+  details.append(document.createTextNode('チャット内プレビューはCSPで外部通信がブロックされます。'));
+  const recommendation = document.createElement('b');
+  recommendation.textContent = 'このHTMLをダウンロードしてブラウザで開く';
+  details.append(recommendation, document.createTextNode('のがいちばん簡単です。'), document.createElement('br'));
+  details.append(document.createTextNode('あるいは下のコマンドでタイルを保存して、ファイルとして読み込むこともできます:'), document.createElement('br'));
+  const command = document.createElement('code');
+  command.style.fontSize = '10px';
+  command.style.color = '#88c860';
+  command.textContent = `curl -o tile.pbf "${FALLBACK_TILE_URL
+    .replace('{z}', TILE.z).replace('{x}', TILE.x).replace('{y}', TILE.y)}"`;
+  details.append(command);
+
+  const retry = document.createElement('button');
+  retry.type = 'button';
+  retry.className = 'retry';
+  retry.textContent = 'もういちど ためす';
+  retry.addEventListener('click', boot);
+
+  const picker = document.createElement('input');
+  picker.type = 'file';
+  picker.accept = '.pbf,.mvt';
+  picker.hidden = true;
+  picker.addEventListener('change', () => pickPbf(picker));
+  const pickerButton = document.createElement('button');
+  pickerButton.type = 'button';
+  pickerButton.className = 'retry';
+  pickerButton.textContent = 'PBFをひらく';
+  pickerButton.addEventListener('click', () => picker.click());
+
+  msg.append(details, document.createElement('br'), retry, document.createTextNode(' '), pickerButton, picker);
+  appendMsgCursor();
+}
 
 let tileTemplate = FALLBACK_TILE_URL;
 let networkTilesEnabled = true;
@@ -2357,10 +3001,12 @@ async function loadFromBuffer(buf){
 async function loadTile(){
   setMsg('マップデータを よみこんでいる……');
   if (!networkTilesEnabled){ tileCache.clear(); tileLayers = null; }
-  try {
-    const tj = await (await fetch(TILEJSON_URL)).json();
-    if (tj.tiles && tj.tiles[0]) tileTemplate = tj.tiles[0];
-  } catch (e) {}
+  if (!CAPTURE_MODE){
+    try {
+      const tj = await (await fetch(TILEJSON_URL)).json();
+      if (tj.tiles && tj.tiles[0]) tileTemplate = tj.tiles[0];
+    } catch (e) {}
+  }
   networkTilesEnabled = true;
   await fetchMapTile(TILE.x, TILE.y);
   await ensureTilesAround();
@@ -2369,22 +3015,13 @@ async function boot(){
   locateBtn.disabled = true;
   try { await document.fonts.load('17px DotGothic16'); } catch (e) {}
   buildTiles();
+  applyInitialQueryViewport();
   try {
     await loadTile();
     setMsg(DEFAULT_MSG);
   } catch (e) {
     console.error(e);
-    setMsg(
-      'データを とりにいけなかった……<br>' +
-      '<small style="color:#a8a088">チャット内プレビューはCSPで外部通信がブロックされます。' +
-      '<b>このHTMLをダウンロードしてブラウザで開く</b>のがいちばん簡単です。<br>' +
-      'あるいは下のコマンドでタイルを保存して、ファイルとして読み込むこともできます:<br>' +
-      '<code style="font-size:10px;color:#88c860">curl -o tile.pbf "' + FALLBACK_TILE_URL
-        .replace('{z}', TILE.z).replace('{x}', TILE.x).replace('{y}', TILE.y) + '"</code></small><br>' +
-      '<button class="retry" onclick="boot()">もういちど ためす</button> ' +
-      '<label class="retry" style="display:inline-block">PBFをひらく<input type="file" accept=".pbf,.mvt" ' +
-      'style="display:none" onchange="pickPbf(this)"></label>'
-    );
+    showLoadError();
   } finally {
     locateBtn.disabled = false;
   }
@@ -2411,6 +3048,20 @@ function tilePointFromCoordinates(latitude, longitude){
   const projectedY = (1 - Math.asinh(Math.tan(rad)) / Math.PI) / 2 * n;
   const tileY = Math.max(0, Math.min(n - 1e-7, projectedY));
   return { tileX, tileY };
+}
+
+function applyInitialQueryViewport(){
+  if (!HAS_INITIAL_LOCATION) return;
+  const point = tilePointFromCoordinates(INITIAL_LAT, INITIAL_LON);
+  const maxTile = 2 ** TILE.z;
+  const baseX = Math.max(0, Math.min(maxTile - 1, Math.floor(point.tileX)));
+  const baseY = Math.max(0, Math.min(maxTile - 1, Math.floor(point.tileY)));
+  TILE.x = baseX; TILE.y = baseY;
+  viewOffset.x = (point.tileX - baseX) * W - W / 2;
+  viewOffset.y = (point.tileY - baseY) * H - H / 2;
+  currentLocation = null;
+  cv.setAttribute('aria-label', `${INITIAL_PLACE}周辺の${ACTIVE_PATTERN.name}アイコン地図。ドラッグで移動できます`);
+  updateMapPosition();
 }
 
 function geolocationErrorMessage(error){
@@ -2523,7 +3174,11 @@ function describe(p){
   const name = p['name:ja'] || p.name || 'なまえのない場所';
   const en = p['name:en'] ? `（${p['name:en']}）` : '';
   const cls = CLASS_JP[p.subclass] || CLASS_JP[p.class] || p.subclass || p.class || '';
-  return `＊「ここは <b>${name}</b>${en}${cls ? ' ─ ' + cls : ''} だ。」`;
+  return {
+    before:'＊「ここは ',
+    strong:String(name),
+    after:`${en}${cls ? ' ─ ' + cls : ''} だ。」`,
+  };
 }
 function hitTest(ev){
   const r = cv.getBoundingClientRect();
@@ -2698,6 +3353,28 @@ cv.addEventListener('click', ev => {
   const hit = hitTest(ev);
   if (hit) setMsg(describe(hit.p));
 });
+let keyboardHitIndex = -1;
+cv.addEventListener('focus', () => {
+  if (hitAreas.length) setMsg('矢印キーで 施設をえらび、Enterで あんないを確認できます。');
+});
+cv.addEventListener('blur', () => {
+  keyboardHitIndex = -1;
+  setMsg(DEFAULT_MSG);
+});
+cv.addEventListener('keydown', ev => {
+  const navigable = hitAreas.filter(area => area.p && (featureName(area.p) || area.p.class || area.p.subclass));
+  if (!navigable.length) return;
+  let nextIndex = keyboardHitIndex;
+  if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') nextIndex++;
+  else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') nextIndex--;
+  else if (ev.key === 'Home') nextIndex = 0;
+  else if (ev.key === 'End') nextIndex = navigable.length - 1;
+  else if (ev.key !== 'Enter' && ev.key !== ' ') return;
+  ev.preventDefault();
+  if (nextIndex < 0) nextIndex = navigable.length - 1;
+  keyboardHitIndex = nextIndex % navigable.length;
+  setMsg(describe(navigable[keyboardHitIndex].p));
+});
 function syncCategoryMaster(panel){
   const master = panel.querySelector('[data-category-toggle]');
   const items = [...panel.querySelectorAll('[data-category-item]')];
@@ -2754,7 +3431,27 @@ function centerMobileMap(){
 window.addEventListener('load', () => requestAnimationFrame(centerMobileMap));
 window.addEventListener('resize', () => requestAnimationFrame(centerMobileMap), { passive:true });
 
-boot().finally(() => {
+boot().finally(async () => {
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const ready = !!tileLayers && !!window.PixelMapDiagnostics && tileLoads.size === 0;
+  document.documentElement.dataset.mapReady = ready ? '1' : '0';
+  document.documentElement.dataset.tileCacheSize = String(tileCache.size);
+  document.documentElement.dataset.renderCount = String(renderCount);
+  document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
+  document.documentElement.dataset.place = INITIAL_PLACE;
+  window.PixelMapStudy = {
+    ready,
+    captureReady:ready && (!CAPTURE_MODE || tileCache.size >= 9),
+    pattern:ACTIVE_PATTERN,
+    location:HAS_INITIAL_LOCATION ? { name:INITIAL_PLACE, latitude:INITIAL_LAT, longitude:INITIAL_LON } : null,
+    viewport:viewportState(),
+    diagnostics:window.PixelMapDiagnostics || null,
+    tileCacheSize:tileCache.size,
+  };
+  if (CAPTURE_MODE){
+    if (window.PixelMapStudy.captureReady) document.documentElement.dataset.captureReady = '1';
+    else document.documentElement.dataset.captureError = ready ? `tile-cache-${tileCache.size}` : 'map-not-ready';
+  }
   if (EMBEDDED){
     window.parent.postMessage({ type:'pixelmap:ready', mapId:MAP_ID }, MESSAGE_ORIGIN);
   }
