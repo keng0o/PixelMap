@@ -650,7 +650,7 @@ const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPat
   assetArea:[], assetHeight:[], maxAssets:1, priority:['generic'], palette:{ generic:'#78828a' }, categoryScale:{},
 };
 const CAPTURE_MODE = PAGE_PARAMS.get('capture') === '1';
-const STUDY_MODE = !EMBEDDED && PAGE_PARAMS.get('layers') !== 'manual';
+const STUDY_MODE = PAGE_PARAMS.get('layers') !== 'manual';
 const INITIAL_LAT_PARAM = PAGE_PARAMS.get('lat');
 const INITIAL_LON_PARAM = PAGE_PARAMS.get('lon');
 const HAS_INITIAL_COORDINATES = Boolean(INITIAL_LAT_PARAM?.trim() && INITIAL_LON_PARAM?.trim());
@@ -2178,14 +2178,15 @@ const locationCanvasPoint = () => currentLocation ? [
 const layerInputs = [...document.querySelectorAll('[data-category-item]')];
 const optionForInput = input => input.id.slice(3).replace(/^./, c => c.toLowerCase());
 const STUDY_LAYER_OPTIONS = new Set([
-  'grass','forest','farmland','landcoverGrass','sand','rock','wetland','ice','parks',
-  'waterAreas','rivers','streams','canals',
-  'landuseResidential','landuseCommercial','landuseRetail','landuseSchool','landuseHigherEducation',
-  'landuseMedical','landuseCivic','landuseIndustrial','landuseRailway','landuseCemetery',
-  'landuseStadium','landusePlayground','landuseZoo','landuseAirport',
-  'localRoads','regionalRoads','majorRoads','motorways','paths','tracks','ferries','piers',
-  'rail','subway','aerialways','roadTunnels','pathTunnels','railTunnels',
-  'buildings','poi','dots','stationNames','parkNames','poiNames','placeNames','terrainNames',
+  'grass','forest','farmland','landcoverGrass','sand','rock','wetland','ice','landcoverOther',
+  'parks','waterAreas','rivers','streams',
+  'landuseCommercial','landuseRetail','landuseSchool','landuseHigherEducation',
+  'landuseMedical','landuseCivic','landuseIndustrial','landuseGarages','landuseMilitary',
+  'landuseBusStation','landuseRailway','landuseCemetery','landuseStadium','landusePitchTrack',
+  'landusePlayground','landuseAmusement','landuseZoo','landuseAirport','landuseHelipad','landuseOther',
+  'regionalRoads','majorRoads','motorways','tracks','raceways','ferries','piers',
+  'rail','subway','aerialways','transportationOther',
+  'poi',
 ]);
 if (STUDY_MODE){
   for (const input of layerInputs) input.checked = STUDY_LAYER_OPTIONS.has(optionForInput(input));
