@@ -445,7 +445,8 @@
     </div>
     <div class="category-items">
       <label><input type="checkbox" id="tglGrass" data-category-item>草地(背景)</label>
-      <label><input type="checkbox" id="tglForest" data-category-item>森林</label>
+      <label><input type="checkbox" id="tglForest" data-category-item>森</label>
+      <label><input type="checkbox" id="tglWoods" data-category-item>林</label>
       <label><input type="checkbox" id="tglFarmland" data-category-item>農地</label>
       <label><input type="checkbox" id="tglLandcoverGrass" data-category-item>草原</label>
       <label><input type="checkbox" id="tglSand" data-category-item>砂地</label>
@@ -764,6 +765,8 @@ const P = {
   treeDk:'#2c6030', treeMd:'#3e8840', treeLt:'#5cb050', trunk:'#785030',
   forestFloor:'#355d38', forestDeep:'#1f4628', forestMid:'#2f7038',
   forestLight:'#57954a', forestMoss:'#83a657',
+  woodsFloor:'#679553', woodsDeep:'#315f35', woodsMid:'#4f8443', woodsLight:'#83b75f',
+  parkSmall:'#92ce69', parkMedium:'#88c764', parkLarge:'#7fbb61', parkPath:'#d8bd78',
   road:'#c6c6c0', roadDk:'#8e8e88', roadDot:'#b4b4ae',
   trail:'#dcc890', trailDot:'#c4ac70',
   dirt:'#d0b078', dirtDk:'#b09058',
@@ -852,6 +855,20 @@ function buildTiles(){
     q(7,6,4,3,OUT); q(8,6,2,2,'#9b7241'); q(8,8,2,3,P.trunk);
     q(3,5,1,4,P.forestDeep); q(4,7,1,2,P.forestLight);
     q(12,9,1,4,P.forestDeep); q(11,11,1,2,P.forestLight); });
+  // 林は樹冠の間に明るい地面が見える、疎らで歩けそうな木立として森と描き分ける。
+  const woodsGround = q => {
+    q(0,0,16,16,P.woodsFloor); q(3,13,2,1,P.woodsLight); q(11,4,2,1,P.woodsDeep);
+  };
+  const woodsTree = (q,x,y) => {
+    q(x+2,y,4,1,OUT); q(x+1,y+1,6,1,OUT); q(x,y+2,8,4,OUT); q(x+1,y+6,6,1,OUT);
+    q(x+2,y+1,4,1,P.woodsLight); q(x+1,y+2,6,3,P.woodsMid); q(x+2,y+5,4,1,P.woodsDeep);
+    q(x+3,y+7,2,4,P.trunk); q(x+2,y+11,4,1,P.woodsDeep);
+  };
+  TILES.woodsCopse0 = T((g,q)=>{ woodsGround(q); woodsTree(q,-1,-2); woodsTree(q,8,5); });
+  TILES.woodsCopse1 = T((g,q)=>{ woodsGround(q); woodsTree(q,7,-3); woodsTree(q,0,7); });
+  TILES.woodsLane = T((g,q)=>{ woodsGround(q);
+    q(6,0,5,16,'#a5b56c'); q(7,0,3,16,'#c6c07b');
+    woodsTree(q,-2,1); woodsTree(q,9,7); });
   TILES.parkTree = T((g,q)=>treeArt(q, '#8cc864', '#78b452'));
   TILES.lawn = T((g,q)=>{ q(0,0,16,16,'#8cc864');       // 公園の芝生
     q(3,5,1,2,'#78b452'); q(5,4,1,3,'#78b452'); q(10,9,1,2,'#78b452'); q(13,3,1,1,'#a4dc7c'); });
@@ -863,6 +880,30 @@ function buildTiles(){
   TILES.bench = T((g,q)=>{ q(0,0,16,16,'#8cc864');      // ベンチ
     q(4,6,8,2,'#a87848'); q(4,9,8,1,'#a87848');
     q(4,8,1,4,'#805828'); q(11,8,1,4,'#805828'); q(4,5,8,1,'#c09058'); });
+  // 小公園は一画に遊具・植栽がまとまる。大公園は芝生・木立・園路を広いリズムでつなぐ。
+  TILES.parkPocket0 = T((g,q)=>{ q(0,0,16,16,P.parkSmall);
+    q(1,1,14,14,'#9bd874'); q(1,1,14,2,P.treeMd); q(1,13,14,2,P.treeMd);
+    q(3,5,4,1,OUT); q(2,6,6,4,OUT); q(3,10,4,1,OUT);
+    q(3,6,4,4,P.treeMd); q(4,5,2,2,P.treeLt); q(4,11,2,3,P.trunk);
+    q(9,8,5,1,'#c09058'); q(9,9,1,3,'#805828'); q(13,9,1,3,'#805828'); });
+  TILES.parkPocket1 = T((g,q)=>{ q(0,0,16,16,P.parkSmall);
+    q(1,1,14,14,'#9bd874'); q(3,3,10,10,'#85c45f');
+    q(5,5,1,1,'#f87890'); q(4,6,3,1,'#f87890'); q(5,7,1,1,'#f8d038');
+    q(10,8,1,1,'#f8f8f8'); q(9,9,3,1,'#f8f8f8'); q(10,10,1,1,'#f8d038');
+    q(3,12,10,1,P.parkPath); q(7,11,2,3,'#a87848'); });
+  TILES.parkMeadow = T((g,q)=>{ q(0,0,16,16,P.parkMedium);
+    q(2,4,1,3,'#69a94d'); q(4,3,1,4,'#69a94d'); q(10,10,1,3,'#69a94d'); q(12,9,1,4,'#69a94d');
+    q(7,5,2,1,'#a4dc7c'); q(3,12,2,1,'#78b452'); });
+  TILES.parkGrove = T((g,q)=>{ q(0,0,16,16,P.parkLarge);
+    q(1,2,5,1,OUT); q(0,3,7,4,OUT); q(1,7,5,1,OUT); q(2,3,3,4,P.treeMd); q(3,2,2,2,P.treeLt); q(3,8,1,4,P.trunk);
+    q(10,7,4,1,OUT); q(9,8,6,4,OUT); q(10,12,4,1,OUT); q(11,8,3,4,P.treeMd); q(12,7,1,2,P.treeLt); q(12,13,1,2,P.trunk); });
+  TILES.parkGrandGarden = T((g,q)=>{ q(0,0,16,16,P.parkLarge);
+    q(1,6,14,4,'#6fae54'); q(3,7,1,1,'#f87890'); q(6,8,1,1,'#f8d038'); q(9,7,1,1,'#f8f8f8'); q(12,8,1,1,'#f8a040');
+    q(0,5,16,1,P.treeMd); q(0,10,16,1,P.treeMd); });
+  TILES.parkPromenadeH = T((g,q)=>{ q(0,0,16,16,P.parkLarge);
+    q(0,6,16,5,'#b89f68'); q(0,7,16,3,P.parkPath); q(3,4,1,2,P.treeDk); q(12,10,1,2,P.treeDk); });
+  TILES.parkPromenadeV = T((g,q)=>{ q(0,0,16,16,P.parkLarge);
+    q(6,0,5,16,'#b89f68'); q(7,0,3,16,P.parkPath); q(4,3,2,1,P.treeDk); q(10,12,2,1,P.treeDk); });
   TILES.dirt = T((g,q)=>{ q(0,0,16,16,P.dirt);
     q(2,3,2,1,P.dirtDk); q(9,6,3,1,P.dirtDk); q(4,11,2,1,P.dirtDk); q(12,13,2,1,P.dirtDk); q(13,2,1,1,'#e0c898'); });
   TILES.pave = T((g,q)=>{ q(0,0,16,16,P.pave);
@@ -962,8 +1003,10 @@ function buildTiles(){
    ===================================================== */
 const ID = { GRASS:0, FOREST:1, PARK:2, DIRT:3, PAVE:4, GRAVEL:5, FARM:6, SAND:7, FIELD:8,
              WATER:9, PATH:10, ROAD:11, RAIL:12, BLD:13, ROAD_MAJOR:14, HIGHWAY:15,
-             ROCK:16, WETLAND:17, ICE:18, MEADOW:19, TERRAIN_OTHER:20 };
+             ROCK:16, WETLAND:17, ICE:18, MEADOW:19, TERRAIN_OTHER:20, WOODS:21,
+             PARK_MEDIUM:22, PARK_LARGE:23, PARK_RESERVE:24 };
 const isRoad = id => id === ID.ROAD || id === ID.ROAD_MAJOR || id === ID.HIGHWAY;
+const isPark = id => id === ID.PARK || id === ID.PARK_MEDIUM || id === ID.PARK_LARGE || id === ID.PARK_RESERVE;
 const isBld = id => id === ID.BLD;
 const normalizeTransportValue = value => String(value || '').replace(/_construction$/, '');
 const PATH_TRANSPORT = new Set(['path','pedestrian','footway','cycleway','steps','bridleway','corridor','platform']);
@@ -1106,8 +1149,23 @@ function rasterizeGrid(layers, options){
     }
   }
 
+  function featureAreaCells(feature){
+    if (feature.type !== 3) return 0;
+    let twiceArea = 0;
+    for (const ring of feature.geom){
+      for (let i = 0; i + 1 < ring.length; i++)
+        twiceArea += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+    }
+    return Math.abs(twiceArea) * .5 * S * S;
+  }
+
+  const PARK_SURFACE_CLASSES = new Set(['park','garden','recreation_ground']);
+  const PARK_RESERVE_CLASSES = new Set(['national_park','geopark','nature_reserve','protected_area']);
+  const featureKind = feature => feature.props.subclass || feature.props.class || '';
+  const isParkSurface = feature => PARK_SURFACE_CLASSES.has(featureKind(feature));
+
   const LANDCOVER = {
-    wood:{ id:ID.FOREST, option:'forest' },
+    wood:{ id:ID.WOODS, option:'woods' },
     forest:{ id:ID.FOREST, option:'forest' },
     farmland:{ id:ID.FARM, option:'farmland' },
     ice:{ id:ID.ICE, option:'ice' },
@@ -1128,7 +1186,7 @@ function rasterizeGrid(layers, options){
     dune:{ id:ID.SAND, option:'sand' },
   };
   const LANDUSE = {
-    wood:{ id:ID.FOREST, option:'forest' },
+    wood:{ id:ID.WOODS, option:'woods' },
     forest:{ id:ID.FOREST, option:'forest' },
     residential:{ id:ID.DIRT, option:'landuseResidential' },
     suburb:{ id:ID.DIRT, option:'landuseResidential' },
@@ -1162,17 +1220,34 @@ function rasterizeGrid(layers, options){
     styles[feature.props.subclass] || styles[feature.props.class] || fallback;
   stampGroups(
     L('landcover'),
-    feature => featureStyle(feature, LANDCOVER, { id:ID.TERRAIN_OTHER, option:'landcoverOther' }),
+    feature => isParkSurface(feature) ? null : featureStyle(feature, LANDCOVER, { id:ID.TERRAIN_OTHER, option:'landcoverOther' }),
     feature => paintGeometry(feature, 1.2, 1)
   );
   stampGroups(
     L('landuse'),
-    feature => featureStyle(feature, LANDUSE, { id:ID.DIRT, option:'landuseOther' }),
+    feature => isParkSurface(feature) ? null : featureStyle(feature, LANDUSE, { id:ID.DIRT, option:'landuseOther' }),
     feature => paintGeometry(feature, 1.2, 1)
   );
-  stamp('parks', ID.PARK, () => {
-    for (const feature of L('park')) paintGeometry(feature, 1.2, 1);
-  });
+  // landcover/landuse の公園・庭園を統合し、面積8セル未満を小、64セル未満を中、それ以上を大にする。
+  // 国立公園・保護区は地表ではなく指定区域なので別IDにし、既存の森や林を塗り潰さない。
+  const parkFeatures = [
+    ...L('landcover').filter(isParkSurface),
+    ...L('landuse').filter(isParkSurface),
+  ];
+  const parkGroups = new Map([
+    [ID.PARK_RESERVE,L('park').filter(feature => feature.type === 3 && PARK_RESERVE_CLASSES.has(featureKind(feature)))],
+    [ID.PARK_LARGE,[]],[ID.PARK_MEDIUM,[]],[ID.PARK,[]],
+  ]);
+  for (const feature of parkFeatures){
+    const area = featureAreaCells(feature);
+    const id = area >= 64 ? ID.PARK_LARGE : area >= 8 ? ID.PARK_MEDIUM : ID.PARK;
+    parkGroups.get(id).push(feature);
+  }
+  for (const [id, features] of parkGroups){
+    stamp('parks', id, () => {
+      for (const feature of features) paintGeometry(feature, 1.2, 1);
+    });
+  }
   stampGroups(
     L('aeroway'),
     feature => {
@@ -1410,7 +1485,10 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
           break;
         }
         case ID.FOREST: put(h < 52 ? 'forestBroad0' : h < 82 ? 'forestBroad1' : 'forestPine', x, y); break;
-        case ID.PARK: {
+        case ID.WOODS: put(h < 54 ? 'woodsCopse0' : h < 88 ? 'woodsCopse1' : 'woodsLane', x, y); break;
+        case ID.PARK:
+        case ID.PARK_MEDIUM:
+        case ID.PARK_LARGE: {
           if (h < 34) put('parkTree', x, y);              // 木を主役に
           else if (h < 40) put('parkFlower', x, y);
           else if (h < 43) put('bench', x, y);
@@ -1418,7 +1496,7 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
           // 公園のふちに生け垣
           for (const [d, nx, ny] of [['L',x-1,y],['R',x+1,y],['U',x,y-1],['D',x,y+1]]){
             const n = at(nx, ny);
-            if (n !== ID.PARK && n !== ID.FOREST){
+            if (!isPark(n) && n !== ID.FOREST && n !== ID.WOODS){
               edge(x, y, d, P.treeDk, 4);
               edge(x, y, d, P.treeMd, 2);
             }
@@ -1620,6 +1698,81 @@ function drawForestGrid(grid){
       if (at(x+1,y) !== ID.FOREST) boundary(x, y, 'R');
       if (at(x,y-1) !== ID.FOREST) boundary(x, y, 'U');
       if (at(x,y+1) !== ID.FOREST) boundary(x, y, 'D');
+    }
+  }
+}
+
+function drawWoodsGrid(grid){
+  const RG = GRID + 2;
+  const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
+  const put = (name, x, y) => ctx.drawImage(TILES[name], gridShiftX + x * CPX, gridShiftY + y * CPX);
+  const boundary = (x, y, dir) => {
+    const px = gridShiftX + x * CPX, py = gridShiftY + y * CPX;
+    ctx.fillStyle = P.woodsDeep;
+    if (dir === 'L') ctx.fillRect(px, py, 2, CPX);
+    if (dir === 'R') ctx.fillRect(px + CPX - 2, py, 2, CPX);
+    if (dir === 'U') ctx.fillRect(px, py, CPX, 2);
+    if (dir === 'D') ctx.fillRect(px, py + CPX - 2, CPX, 2);
+    ctx.fillStyle = P.woodsLight;
+    if (dir === 'L') ctx.fillRect(px + 2, py + 4, 1, 4);
+    if (dir === 'R') ctx.fillRect(px + CPX - 3, py + 9, 1, 4);
+    if (dir === 'U') ctx.fillRect(px + 4, py + 2, 4, 1);
+    if (dir === 'D') ctx.fillRect(px + 9, py + CPX - 3, 4, 1);
+  };
+  for (let y = 0; y < RG; y++){
+    for (let x = 0; x < RG; x++){
+      if (at(x, y) !== ID.WOODS) continue;
+      const h = cellHash(x, y);
+      const interior = at(x-1,y) === ID.WOODS && at(x+1,y) === ID.WOODS &&
+        at(x,y-1) === ID.WOODS && at(x,y+1) === ID.WOODS;
+      put(interior && h >= 90 ? 'woodsLane' : h < 55 ? 'woodsCopse0' : 'woodsCopse1', x, y);
+      if (at(x-1,y) !== ID.WOODS) boundary(x, y, 'L');
+      if (at(x+1,y) !== ID.WOODS) boundary(x, y, 'R');
+      if (at(x,y-1) !== ID.WOODS) boundary(x, y, 'U');
+      if (at(x,y+1) !== ID.WOODS) boundary(x, y, 'D');
+    }
+  }
+}
+
+function drawParkGrid(grid){
+  const RG = GRID + 2;
+  const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
+  const put = (name, x, y) => ctx.drawImage(TILES[name], gridShiftX + x * CPX, gridShiftY + y * CPX);
+  const boundary = (x, y, dir, id) => {
+    const px = gridShiftX + x * CPX, py = gridShiftY + y * CPX;
+    const thick = id === ID.PARK ? 4 : id === ID.PARK_MEDIUM ? 3 : 2;
+    ctx.fillStyle = P.treeDk;
+    if (dir === 'L') ctx.fillRect(px, py, thick, CPX);
+    if (dir === 'R') ctx.fillRect(px + CPX - thick, py, thick, CPX);
+    if (dir === 'U') ctx.fillRect(px, py, CPX, thick);
+    if (dir === 'D') ctx.fillRect(px, py + CPX - thick, CPX, thick);
+    ctx.fillStyle = P.treeMd;
+    if (dir === 'L') ctx.fillRect(px + thick, py + 4, 1, 5);
+    if (dir === 'R') ctx.fillRect(px + CPX - thick - 1, py + 7, 1, 5);
+    if (dir === 'U') ctx.fillRect(px + 4, py + thick, 5, 1);
+    if (dir === 'D') ctx.fillRect(px + 7, py + CPX - thick - 1, 5, 1);
+  };
+  for (let y = 0; y < RG; y++){
+    for (let x = 0; x < RG; x++){
+      const id = at(x, y);
+      if (!isPark(id)) continue;
+      const h = cellHash(x, y), wx = gridOriginX + x, wy = gridOriginY + y;
+      if (id === ID.PARK_RESERVE){
+        // 国立公園・保護区は土地被覆ではないため、森や林を塗り潰さず境界だけを示す。
+      } else if (id === ID.PARK){
+        put(h < 50 ? 'parkPocket0' : 'parkPocket1', x, y);
+      } else if (id === ID.PARK_MEDIUM){
+        put(h < 30 ? 'parkTree' : h < 58 ? 'parkMeadow' : h < 74 ? 'parkFlower' : h < 86 ? 'bench' : 'lawn', x, y);
+      } else {
+        const verticalPath = ((wx % 13) + 13) % 13 === 0;
+        const horizontalPath = ((wy % 11) + 11) % 11 === 0;
+        put(verticalPath ? 'parkPromenadeV' : horizontalPath ? 'parkPromenadeH'
+          : h < 56 ? 'parkMeadow' : h < 76 ? 'parkGrove' : h < 86 ? 'parkGrandGarden' : 'lawn', x, y);
+      }
+      for (const [dir, nx, ny] of [['L',x-1,y],['R',x+1,y],['U',x,y-1],['D',x,y+1]]){
+        const neighbor = at(nx, ny);
+        if (!isPark(neighbor) && neighbor !== ID.FOREST && neighbor !== ID.WOODS) boundary(x, y, dir, id);
+      }
     }
   }
 }
@@ -2281,7 +2434,7 @@ const locationCanvasPoint = () => currentLocation ? [
 const layerInputs = [...document.querySelectorAll('[data-category-item]')];
 const optionForInput = input => input.id.slice(3).replace(/^./, c => c.toLowerCase());
 const STUDY_LAYER_OPTIONS = new Set([
-  'grass','forest','farmland','landcoverGrass','sand','rock','wetland','ice','landcoverOther',
+  'grass','forest','woods','farmland','landcoverGrass','sand','rock','wetland','ice','landcoverOther',
   'parks','waterAreas','rivers','streams',
   'landuseCommercial','landuseRetail','landuseSchool','landuseHigherEducation',
   'landuseMedical','landuseCivic','landuseIndustrial','landuseGarages','landuseMilitary',
@@ -2753,7 +2906,7 @@ function render(){
   }
 
   const z0Ground = new Set([
-    'grass','forest','farmland','landcoverGrass','sand','rock','wetland','ice','landcoverOther','parks',
+    'grass','forest','woods','farmland','landcoverGrass','sand','rock','wetland','ice','landcoverOther','parks',
     'landuseResidential','landuseCommercial','landuseRetail','landuseSchool','landuseHigherEducation',
     'landuseMedical','landuseCivic','landuseIndustrial','landuseGarages','landuseMilitary',
     'landuseBusStation','landuseRailway','landuseCemetery','landuseStadium','landusePitchTrack',
@@ -2788,6 +2941,14 @@ function render(){
       else if (option === 'forest'){
         const grid = grids.get(option);
         if (grid) drawForestGrid(grid);
+      }
+      else if (option === 'woods'){
+        const grid = grids.get(option);
+        if (grid) drawWoodsGrid(grid);
+      }
+      else if (option === 'parks'){
+        const grid = grids.get(option);
+        if (grid) drawParkGrid(grid);
       }
       else {
         const grid = grids.get(option);
@@ -2858,6 +3019,23 @@ function render(){
     const at = q => values.length ? values[Math.min(values.length - 1, Math.floor((values.length - 1) * q))] : 0;
     return { p25:at(.25), p50:at(.5), p75:at(.75), p90:at(.9), p99:at(.99), max:at(1) };
   };
+  const gridCellCount = (option, id) => {
+    const grid = grids.get(option);
+    if (!grid) return 0;
+    let count = 0;
+    for (const cell of grid) if (cell === id) count++;
+    return count;
+  };
+  const surfaceCellCounts = {
+    forest:gridCellCount('forest', ID.FOREST),
+    woods:gridCellCount('woods', ID.WOODS),
+    parks:{
+      small:gridCellCount('parks', ID.PARK),
+      medium:gridCellCount('parks', ID.PARK_MEDIUM),
+      large:gridCellCount('parks', ID.PARK_LARGE),
+      reserve:gridCellCount('parks', ID.PARK_RESERVE),
+    },
+  };
   toolbar.dataset.renderMs = (performance.now() - renderStartedAt).toFixed(1);
   toolbar.dataset.renderCount = renderCount;
   window.PixelMapDiagnostics = {
@@ -2866,6 +3044,7 @@ function render(){
     unexpectedSourceLayers:Object.keys(tileLayers).filter(name => !RETAINED_SOURCE_LAYERS.has(name)),
     featureCounts,
     classesBySource,
+    surfaceCellCounts,
     activeOptions:Object.entries(o).filter(([, enabled]) => enabled).map(([name]) => name),
     layerOrder:[...layerOrder],
     renderOrder:[...renderOrder],
