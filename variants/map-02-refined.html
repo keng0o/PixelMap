@@ -765,7 +765,7 @@ const P = {
   treeDk:'#2c6030', treeMd:'#3e8840', treeLt:'#5cb050', trunk:'#785030',
   forestFloor:'#355d38', forestDeep:'#1f4628', forestMid:'#2f7038',
   forestLight:'#57954a', forestMoss:'#83a657',
-  woodsFloor:'#679553', woodsDeep:'#315f35', woodsMid:'#4f8443', woodsLight:'#83b75f',
+  woodsFloor:'#80b564', woodsDeep:'#477a46', woodsMid:'#62a052', woodsLight:'#a0cf7a',
   parkSmall:'#92ce69', parkMedium:'#88c764', parkLarge:'#7fbb61', parkPath:'#d8bd78',
   road:'#c6c6c0', roadDk:'#8e8e88', roadDot:'#b4b4ae',
   trail:'#dcc890', trailDot:'#c4ac70',
@@ -858,17 +858,21 @@ function buildTiles(){
   // 林は樹冠の間に明るい地面が見える、疎らで歩けそうな木立として森と描き分ける。
   const woodsGround = q => {
     q(0,0,16,16,P.woodsFloor); q(3,13,2,1,P.woodsLight); q(11,4,2,1,P.woodsDeep);
+    q(1,7,1,2,'#72a857'); q(14,11,1,2,'#72a857');
   };
   const woodsTree = (q,x,y) => {
-    q(x+2,y,4,1,OUT); q(x+1,y+1,6,1,OUT); q(x,y+2,8,4,OUT); q(x+1,y+6,6,1,OUT);
-    q(x+2,y+1,4,1,P.woodsLight); q(x+1,y+2,6,3,P.woodsMid); q(x+2,y+5,4,1,P.woodsDeep);
-    q(x+3,y+7,2,4,P.trunk); q(x+2,y+11,4,1,P.woodsDeep);
+    q(x+2,y,3,1,OUT); q(x+1,y+1,5,1,OUT); q(x,y+2,7,3,OUT); q(x+1,y+5,5,1,OUT);
+    q(x+2,y+1,3,1,P.woodsLight); q(x+1,y+2,5,2,P.woodsMid); q(x+2,y+4,3,1,P.woodsDeep);
+    q(x+3,y+6,1,4,P.trunk); q(x+2,y+10,3,1,P.woodsDeep);
   };
-  TILES.woodsCopse0 = T((g,q)=>{ woodsGround(q); woodsTree(q,-1,-2); woodsTree(q,8,5); });
-  TILES.woodsCopse1 = T((g,q)=>{ woodsGround(q); woodsTree(q,7,-3); woodsTree(q,0,7); });
+  TILES.woodsCopse0 = T((g,q)=>{ woodsGround(q); woodsTree(q,1,1); });
+  TILES.woodsCopse1 = T((g,q)=>{ woodsGround(q); woodsTree(q,8,4); });
+  TILES.woodsOpen = T((g,q)=>{ woodsGround(q);
+    q(4,5,1,3,P.woodsDeep); q(6,4,1,4,P.woodsMid); q(10,10,1,2,P.woodsDeep); q(12,9,1,3,P.woodsMid);
+    q(7,13,3,1,P.woodsLight); });
   TILES.woodsLane = T((g,q)=>{ woodsGround(q);
     q(6,0,5,16,'#a5b56c'); q(7,0,3,16,'#c6c07b');
-    woodsTree(q,-2,1); woodsTree(q,9,7); });
+    woodsTree(q,-2,1); woodsTree(q,11,7); });
   TILES.parkTree = T((g,q)=>treeArt(q, '#8cc864', '#78b452'));
   TILES.lawn = T((g,q)=>{ q(0,0,16,16,'#8cc864');       // 公園の芝生
     q(3,5,1,2,'#78b452'); q(5,4,1,3,'#78b452'); q(10,9,1,2,'#78b452'); q(13,3,1,1,'#a4dc7c'); });
@@ -1469,6 +1473,39 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
     if (dir === 'U') ctx.fillRect(px, py, CPX, t);
     if (dir === 'D') ctx.fillRect(px, py + CPX - t, CPX, t);
   };
+  const drawJaggedPath = (x, y) => {
+    const bx = gridShiftX + x * CPX, by = gridShiftY + y * CPX;
+    const connected = {
+      L:at(x-1,y) === ID.PATH, R:at(x+1,y) === ID.PATH,
+      U:at(x,y-1) === ID.PATH, D:at(x,y+1) === ID.PATH,
+    };
+    if (!connected.L && !connected.R && !connected.U && !connected.D) connected.L = connected.R = true;
+    const seed = cellHash(x * 5 + 3, y * 7 + 1);
+    const wiggle = (step, salt) => ((seed + step * 17 + salt * 29) % 3) - 1;
+    const segments = [];
+    const horizontal = (from, to, salt) => {
+      for (let sx = from; sx <= to; sx += 2){
+        const endpoint = sx === from || sx === to;
+        segments.push({ x:sx, y:7 + (endpoint ? 0 : wiggle(sx, salt)), vertical:false });
+      }
+    };
+    const vertical = (from, to, salt) => {
+      for (let sy = from; sy <= to; sy += 2){
+        const endpoint = sy === from || sy === to;
+        segments.push({ x:7 + (endpoint ? 0 : wiggle(sy, salt)), y:sy, vertical:true });
+      }
+    };
+    if (connected.L) horizontal(0,8,1);
+    if (connected.R) horizontal(8,14,2);
+    if (connected.U) vertical(0,8,3);
+    if (connected.D) vertical(8,14,4);
+    ctx.fillStyle = P.trailDot;
+    for (const s of segments) ctx.fillRect(bx + s.x - (s.vertical ? 2 : 0), by + s.y - (s.vertical ? 0 : 2), s.vertical ? 6 : 4, s.vertical ? 4 : 6);
+    ctx.fillRect(bx + 4, by + 4, 8, 8);
+    ctx.fillStyle = P.trail;
+    for (const s of segments) ctx.fillRect(bx + s.x - (s.vertical ? 1 : 0), by + s.y - (s.vertical ? 0 : 1), 4, 4);
+    ctx.fillRect(bx + 5, by + 5, 6, 6);
+  };
 
   for (let y = 0; y < RG; y++){
     for (let x = 0; x < RG; x++){
@@ -1485,7 +1522,7 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
           break;
         }
         case ID.FOREST: put(h < 52 ? 'forestBroad0' : h < 82 ? 'forestBroad1' : 'forestPine', x, y); break;
-        case ID.WOODS: put(h < 54 ? 'woodsCopse0' : h < 88 ? 'woodsCopse1' : 'woodsLane', x, y); break;
+        case ID.WOODS: put(h < 38 ? 'woodsCopse0' : h < 76 ? 'woodsCopse1' : 'woodsOpen', x, y); break;
         case ID.PARK:
         case ID.PARK_MEDIUM:
         case ID.PARK_LARGE: {
@@ -1520,7 +1557,10 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
             if (at(nx, ny) !== ID.WATER) edge(x, y, d, P.foam, 2);
           break;
         }
-        case ID.PATH: put('path', x, y); break;
+        case ID.PATH:
+          if (options.routeOption === 'paths') drawJaggedPath(x, y);
+          else put('path', x, y);
+          break;
         case ID.ROAD:
         case ID.ROAD_MAJOR:
         case ID.HIGHWAY: {
@@ -1534,9 +1574,11 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
             if (lr){ ctx.fillRect(bx+1,by+7,5,2); ctx.fillRect(bx+10,by+7,5,2); }
             if (ud){ ctx.fillRect(bx+7,by+1,2,5); ctx.fillRect(bx+7,by+10,2,5); }
           }
-          for (const [d, nx, ny] of [['L',x-1,y],['R',x+1,y],['U',x,y-1],['D',x,y+1]]){
-            const n = at(nx, ny);
-            if (!isRoad(n) && n !== ID.PAVE) edge(x, y, d, id === ID.HIGHWAY ? '#a89058' : P.roadDk, 2);
+          if (!['regionalRoads','majorRoads'].includes(options.routeOption)){
+            for (const [d, nx, ny] of [['L',x-1,y],['R',x+1,y],['U',x,y-1],['D',x,y+1]]){
+              const n = at(nx, ny);
+              if (!isRoad(n) && n !== ID.PAVE) edge(x, y, d, id === ID.HIGHWAY ? '#a89058' : P.roadDk, 2);
+            }
           }
           break;
         }
@@ -1725,7 +1767,7 @@ function drawWoodsGrid(grid){
       const h = cellHash(x, y);
       const interior = at(x-1,y) === ID.WOODS && at(x+1,y) === ID.WOODS &&
         at(x,y-1) === ID.WOODS && at(x,y+1) === ID.WOODS;
-      put(interior && h >= 90 ? 'woodsLane' : h < 55 ? 'woodsCopse0' : 'woodsCopse1', x, y);
+      put(interior && h >= 94 ? 'woodsLane' : h < 35 ? 'woodsCopse0' : h < 70 ? 'woodsCopse1' : 'woodsOpen', x, y);
       if (at(x-1,y) !== ID.WOODS) boundary(x, y, 'L');
       if (at(x+1,y) !== ID.WOODS) boundary(x, y, 'R');
       if (at(x,y-1) !== ID.WOODS) boundary(x, y, 'U');
@@ -2952,7 +2994,7 @@ function render(){
       }
       else {
         const grid = grids.get(option);
-        if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false }, true);
+        if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);
       }
       renderOrder.push(`${z}:${option}`);
     }
@@ -2966,7 +3008,7 @@ function render(){
     if (tunnelOptions.has(option)) drawTunnelLayer(option);
     else {
       const grid = grids.get(option);
-      if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false }, true);
+      if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);
     }
     renderOrder.push(`Z2:${option}`);
   }
@@ -2978,7 +3020,7 @@ function render(){
   for (const option of layerOrder){
     if (!o[option] || !bridgeOptions.has(option)) continue;
     const grid = grids.get(`bridge:${option}`);
-    if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false }, true);
+    if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);
     renderOrder.push(`Z3:bridge:${option}`);
   }
   if (o.buildings){
