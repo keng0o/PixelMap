@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>カワサキタウン｜地理の読みやすさ</title>
+<title>PixelMap｜テスト用1マップ</title>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <style>
   :root{ --ink:#181820; --pattern-accent:#2f6fed; --pattern-muted:#78828a; }
@@ -334,7 +334,7 @@
     }
     #toolbar input{ width:18px; height:18px; }
   }
-  body.embedded #patternBar{ display:none; }
+  #patternBar{ display:none; }
   body.shared-controls{
     display:block;
     min-height:100vh;
@@ -680,7 +680,7 @@ const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
 const ICON_PATTERNS = Array.isArray(window.PixelMapIconPatterns) ? window.PixelMapIconPatterns : [];
-const requestedPatternId = String(PAGE_PARAMS.get('pattern') || '01').padStart(2, '0');
+const requestedPatternId = String(PAGE_PARAMS.get('pattern') || '07').padStart(2, '0');
 const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPatternId) || ICON_PATTERNS[0] || {
   id:'01', name:'バランス階層', eyebrow:'基準案', summary:'施設の大きさを地物に合わせて調整します。',
   rule:'面積と高さ', orderLabel:'地図上のY順', assetRule:'規模別', marker:'plinth', dot:'square',
@@ -710,7 +710,7 @@ document.body.classList.toggle('capture-mode', CAPTURE_MODE);
 document.documentElement.style.setProperty('--pattern-accent', ACTIVE_PATTERN.palette.transit || ACTIVE_PATTERN.palette.generic);
 document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.palette.generic || '#78828a');
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
-document.title = `${ACTIVE_PATTERN.id} ${ACTIVE_PATTERN.name}｜PixelMap アイコンスタディ`;
+document.title = 'PixelMap｜テスト用1マップ';
 
 function patternUrl(patternId){
   const params = new URLSearchParams(PAGE_PARAMS);
