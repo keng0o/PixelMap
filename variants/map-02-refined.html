@@ -403,6 +403,32 @@
     cursor:default;
   }
   body.capture-mode #captureBadge{ display:block; }
+  /* テスト用1マップだけは、768pxの論理ドット面を整数倍で表示する。
+     枠と倍率が合わない分は中央で切り抜き、非整数縮小は行わない。 */
+  html[data-map-mode="test"]{ --pixel-display-scale:1; }
+  html[data-map-mode="test"] .map-frame{
+    width:min(calc(92vw + 12px), 712px);
+    height:min(calc(92vw + 12px), 712px);
+    overflow:hidden;
+  }
+  html[data-map-mode="test"] #map{
+    display:block;
+    width:calc(768px * var(--pixel-display-scale));
+    height:calc(768px * var(--pixel-display-scale));
+    max-width:none;
+    flex:none;
+  }
+  html[data-map-mode="test"] body.capture-mode .map-frame{
+    width:780px;
+    height:780px;
+  }
+  @media (max-width:760px), (max-height:500px){
+    html[data-map-mode="test"] .map-frame{
+      width:100vw;
+      height:100vh;
+      height:100dvh;
+    }
+  }
   @media (prefers-reduced-motion: reduce){ #msg .cursor{ animation:none; } }
 </style>
 </head>
@@ -683,6 +709,7 @@ const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
 const ICON_PATTERNS = Array.isArray(window.PixelMapIconPatterns) ? window.PixelMapIconPatterns : [];
 const requestedPatternId = TEST_MODE ? '06' : String(PAGE_PARAMS.get('pattern') || '07').padStart(2, '0');
+const REQUESTED_PIXEL_SCALE = TEST_MODE && PAGE_PARAMS.get('pixel') === '2' ? 2 : 1;
 const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPatternId) || ICON_PATTERNS[0] || {
   id:'01', name:'バランス階層', eyebrow:'基準案', summary:'施設の大きさを地物に合わせて調整します。',
   rule:'面積と高さ', orderLabel:'地図上のY順', assetRule:'規模別', marker:'plinth', dot:'square',
@@ -714,6 +741,9 @@ document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.pal
 document.documentElement.dataset.mapMode = TEST_MODE ? 'test' : 'production';
 document.documentElement.dataset.assetTaste = TEST_MODE ? 'pop' : 'reference';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
+document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_PIXEL_SCALE);
+document.documentElement.dataset.pixelScale = String(REQUESTED_PIXEL_SCALE);
+document.documentElement.style.setProperty('--pixel-display-scale', REQUESTED_PIXEL_SCALE);
 document.title = 'PixelMap｜テスト用1マップ';
 
 function patternUrl(patternId){
@@ -754,13 +784,31 @@ function populatePatternUi(){
 }
 populatePatternUi();
 const cv = document.getElementById('map');
-const ctx = cv.getContext('2d');
+const SCENE_SIZE = 1536;
+const PRESENTATION_SIZE = SCENE_SIZE / 2;
+if (TEST_MODE) cv.width = cv.height = PRESENTATION_SIZE;
+const sceneCanvas = TEST_MODE ? document.createElement('canvas') : cv;
+if (TEST_MODE) sceneCanvas.width = sceneCanvas.height = SCENE_SIZE;
+const ctx = sceneCanvas.getContext('2d');
+const presentationCtx = TEST_MODE ? cv.getContext('2d') : ctx;
 ctx.imageSmoothingEnabled = false;
-const W = cv.width, H = cv.height;
+presentationCtx.imageSmoothingEnabled = false;
+const W = sceneCanvas.width, H = sceneCanvas.height;
 const GRID = 96, CPX = 16;                 // 96×96マス・1マス16px（見かけ2/3サイズ）
 const TILE = { z:14, x:14549, y:6460 };
 const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
 const FALLBACK_TILE_URL = 'https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf';
+
+function presentScene(){
+  if (!TEST_MODE) return;
+  presentationCtx.clearRect(0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE);
+  presentationCtx.imageSmoothingEnabled = false;
+  presentationCtx.drawImage(
+    sceneCanvas,
+    0, 0, SCENE_SIZE, SCENE_SIZE,
+    0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE
+  );
+}
 
 /* =====================================================
    3. 16pxドット絵タイル（GB風パレット）
@@ -2479,7 +2527,10 @@ function drawSprite(sp, cx, cy, p){
   drawPatternMarker(p, cx, cy, visualScale);
   ctx.save();
   ctx.translate(Math.round(cx), Math.round(cy));
-  ctx.scale(3 * visualScale, 3 * visualScale);
+  // テスト表示は1アセットpx＝2シーンpxに固定し、カテゴリ倍率による
+  // 分数幅をなくす。S/M/Lはアセット外形そのもので表現する。
+  const spritePixelScale = TEST_MODE ? 2 : 3 * visualScale;
+  ctx.scale(spritePixelScale, spritePixelScale);
   ctx.fillStyle = 'rgba(24,40,16,.3)';
   ctx.fillRect(-7, -1, 14, 3);
   sp.draw(0, 0);
@@ -3133,6 +3184,13 @@ function render(){
       marker:ACTIVE_PATTERN.marker,
       drawOrder:ACTIVE_PATTERN.drawOrder,
     },
+    pixel:{
+      requestedScale:REQUESTED_PIXEL_SCALE,
+      effectiveScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_PIXEL_SCALE),
+      sceneSize:SCENE_SIZE,
+      presentationSize:TEST_MODE ? PRESENTATION_SIZE : SCENE_SIZE,
+      scenePixelsPerLogicalPixel:TEST_MODE ? 2 : 1,
+    },
     resolver:{
       algorithmVersion:RESOLVER.ALGORITHM_VERSION,
       resolvedTiles:resolvedView.resolvedTileCount,
@@ -3159,6 +3217,7 @@ function render(){
     renderMs:Number(toolbar.dataset.renderMs),
   };
   toolbar.dataset.diagnostics = JSON.stringify(window.PixelMapDiagnostics);
+  presentScene();
 }
 
 /* =====================================================
@@ -3642,6 +3701,7 @@ function scheduleDragPreview(){
     ctx.fillRect(0, 0, W, H);
     ctx.drawImage(drag.preview, drag.previewX, drag.previewY);
     ctx.restore();
+    presentScene();
   });
 }
 function viewportState(){
@@ -3756,7 +3816,7 @@ cv.addEventListener('pointerdown', ev => {
   if (renderFrame){ cancelAnimationFrame(renderFrame); renderFrame = 0; }
   const preview = document.createElement('canvas');
   preview.width = W; preview.height = H;
-  preview.getContext('2d').drawImage(cv, 0, 0);
+  preview.getContext('2d').drawImage(sceneCanvas, 0, 0);
   drag = {
     id:ev.pointerId, x:ev.clientX, y:ev.clientY,
     offsetX:viewOffset.x, offsetY:viewOffset.y,
@@ -3900,13 +3960,30 @@ syncAllLayersToggle();
 locateBtn.addEventListener('click', locateMe);
 
 const mapFrame = document.querySelector('.map-frame');
+function updatePixelDisplayScale(){
+  if (!TEST_MODE) return;
+  let effectiveScale = REQUESTED_PIXEL_SCALE;
+  if (!CAPTURE_MODE && window.matchMedia(MOBILE_QUERY).matches){
+    const requiredSpan = Math.max(mapFrame.clientWidth, mapFrame.clientHeight);
+    effectiveScale = Math.max(effectiveScale, Math.ceil(requiredSpan / PRESENTATION_SIZE));
+  }
+  document.documentElement.style.setProperty('--pixel-display-scale', effectiveScale);
+  document.documentElement.dataset.pixelScale = String(effectiveScale);
+  if (window.PixelMapDiagnostics?.pixel) window.PixelMapDiagnostics.pixel.effectiveScale = effectiveScale;
+  if (window.PixelMapStudy) window.PixelMapStudy.pixelScale = effectiveScale;
+}
 function centerMobileMap(){
-  if (!SHARED_CONTROLS && !window.matchMedia(MOBILE_QUERY).matches) return;
+  if (!TEST_MODE && !SHARED_CONTROLS && !window.matchMedia(MOBILE_QUERY).matches) return;
   mapFrame.scrollLeft = Math.max(0, (mapFrame.scrollWidth - mapFrame.clientWidth) / 2);
   mapFrame.scrollTop = Math.max(0, (mapFrame.scrollHeight - mapFrame.clientHeight) / 2);
 }
-window.addEventListener('load', () => requestAnimationFrame(centerMobileMap));
-window.addEventListener('resize', () => requestAnimationFrame(centerMobileMap), { passive:true });
+function syncPixelViewport(){
+  updatePixelDisplayScale();
+  requestAnimationFrame(centerMobileMap);
+}
+syncPixelViewport();
+window.addEventListener('load', syncPixelViewport);
+window.addEventListener('resize', syncPixelViewport, { passive:true });
 
 boot().finally(async () => {
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -3922,6 +3999,9 @@ boot().finally(async () => {
     mode:TEST_MODE ? 'test' : 'production',
     assetTaste:TEST_MODE ? 'pop' : 'reference',
     pattern:ACTIVE_PATTERN,
+    pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_PIXEL_SCALE),
+    pixelRequestedScale:REQUESTED_PIXEL_SCALE,
+    presentationSize:TEST_MODE ? PRESENTATION_SIZE : SCENE_SIZE,
     location:HAS_INITIAL_LOCATION ? { name:INITIAL_PLACE, latitude:INITIAL_LAT, longitude:INITIAL_LON } : null,
     viewport:viewportState(),
     diagnostics:window.PixelMapDiagnostics || null,
