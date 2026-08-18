@@ -677,6 +677,8 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+const CELL_ONLY_MODE = !EMBEDDED && PAGE_PARAMS.get('render') === 'cell8';
+const RENDER_MODE = CELL_ONLY_MODE ? 'cell8' : 'standard';
 const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
@@ -716,11 +718,12 @@ document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.pal
 document.documentElement.dataset.mapMode = 'production';
 document.documentElement.dataset.assetTaste = 'reference';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
+document.documentElement.dataset.renderMode = RENDER_MODE;
 document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
 document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISPLAY_SCALE);
-document.title = 'PixelMap｜本番マップ';
+document.title = CELL_ONLY_MODE ? 'PixelMap｜8×8単色セル検証' : 'PixelMap｜本番マップ';
 
 function patternUrl(patternId){
   const params = new URLSearchParams(PAGE_PARAMS);
@@ -813,6 +816,7 @@ ctx.fillRect=(x,y,w,h)=>{
   nativeFillRect(rect.x,rect.y,rect.w,rect.h);
 };
 const GRID = 96, CPX = 16;                 // 96×96セル・1セル16シーンpx（8論理px）
+const MAP_CELL_LOGICAL_SIZE = CPX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
 const TILE = { z:14, x:14549, y:6460 };
 const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
 const FALLBACK_TILE_URL = 'https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf';
@@ -1145,6 +1149,29 @@ const ID = { GRASS:0, FOREST:1, PARK:2, DIRT:3, PAVE:4, GRAVEL:5, FARM:6, SAND:7
 const isRoad = id => id === ID.ROAD || id === ID.ROAD_MAJOR || id === ID.HIGHWAY;
 const isPark = id => id === ID.PARK || id === ID.PARK_MEDIUM || id === ID.PARK_LARGE || id === ID.PARK_RESERVE;
 const isBld = id => id === ID.BLD;
+const CELL_COLOR_BY_ID = new Map([
+  [ID.GRASS,P.g1], [ID.FOREST,P.forestMid], [ID.WOODS,P.woodsMid],
+  [ID.PARK,P.parkSmall], [ID.PARK_MEDIUM,P.parkMedium], [ID.PARK_LARGE,P.parkLarge],
+  [ID.PARK_RESERVE,P.treeDk], [ID.DIRT,P.dirt], [ID.PAVE,P.pave],
+  [ID.GRAVEL,P.gravel], [ID.FARM,P.farm], [ID.SAND,P.sand], [ID.FIELD,P.field],
+  [ID.WATER,P.water], [ID.PATH,P.trail], [ID.ROAD,P.road], [ID.RAIL,P.rail],
+  [ID.BLD,P.roofA], [ID.ROAD_MAJOR,'#d0d0ca'], [ID.HIGHWAY,'#d8c890'],
+  [ID.ROCK,P.rock], [ID.WETLAND,P.wetland], [ID.ICE,P.ice], [ID.MEADOW,P.gLt],
+  [ID.TERRAIN_OTHER,'#b3aa78'],
+]);
+const CELL_COLOR_BY_OPTION = Object.freeze({
+  paths:P.trail,
+  tracks:P.gravelLt,
+  ferries:P.foam,
+  piers:P.pave,
+  rail:P.rail,
+  subway:'#484870',
+  aerialways:P.tie,
+  transportationOther:P.paveDk,
+  roadTunnels:P.roadDk,
+  pathTunnels:P.dirtDk,
+  railTunnels:P.rail,
+});
 const normalizeTransportValue = value => String(value || '').replace(/_construction$/, '');
 const PATH_TRANSPORT = new Set(['path','pedestrian','footway','cycleway','steps','bridleway','corridor','platform']);
 const RAIL_TRANSPORT = new Set(['rail','railway','narrow_gauge','preserved','funicular','light_rail','monorail','tram']);
@@ -1203,6 +1230,10 @@ function rasterizeGrid(layers, options){
   // レイヤーごとに独立したグリッドを持ち、チェック順に合成できるようにする。
   // 0 = GRASS は未描画セルも兼ねるため、grass 以外は drawGrid の transparent で読み分ける。
   const grids = new Map();
+  const featureCountsByOption = Object.create(null);
+  const countFeatures = (option, count) => {
+    featureCountsByOption[option] = (featureCountsByOption[option] || 0) + count;
+  };
   const layerGrid = option => {
     if (!grids.has(option)) grids.set(option, new Uint8Array(RG * RG));
     return grids.get(option);
@@ -1246,10 +1277,12 @@ function rasterizeGrid(layers, options){
       if (!groups.has(key)) groups.set(key, { ...style, features:[] });
       groups.get(key).features.push(feature);
     }
-    for (const group of groups.values())
+    for (const group of groups.values()){
+      countFeatures(group.option, group.features.length);
       stamp(group.option, group.id, () => {
         for (const feature of group.features) drawFeature(feature, group);
       });
+    }
   }
   function paintGeometry(feature, lineWidth = 1, pointSize = 1){
     if (feature.type === 3){ polyPath(feature.geom); c.fill('evenodd'); }
@@ -1355,6 +1388,7 @@ function rasterizeGrid(layers, options){
     parkGroups.get(id).push(feature);
   }
   for (const [id, features] of parkGroups){
+    countFeatures('parks', features.length);
     stamp('parks', id, () => {
       for (const feature of features) paintGeometry(feature, 1.2, 1);
     });
@@ -1374,6 +1408,7 @@ function rasterizeGrid(layers, options){
     }
   );
   // 水
+  countFeatures('waterAreas', L('water').length);
   stamp('waterAreas', ID.WATER, () => {
     for (const feature of L('water')) paintGeometry(feature, 1.4, 1);
   });
@@ -1504,6 +1539,7 @@ function rasterizeGrid(layers, options){
     }
     bldArea[i + 1] = cnt;
   });
+  countFeatures('buildings', bldUnits.length);
   /* --- 道・線路: セル走査で必ず4連結にする（斜めは階段状） --- */
   const setCell = (grid, cx, cy, id) => {
     if (cx >= 0 && cy >= 0 && cx < RG && cy < RG) grid[cy * RG + cx] = id;
@@ -1574,27 +1610,34 @@ function rasterizeGrid(layers, options){
   for (const feature of L('transportation')){
     const option = transportationOption(feature);
     const isBridgeFeature = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
+    const isTunnelFeature = feature.props.brunnel === 'tunnel';
     const hasDedicatedTunnel = [
       'subway','localRoads','regionalRoads','majorRoads','motorways','raceways',
       'transportationOther','paths','tracks','rail','aerialways',
     ].includes(option);
-    if ((!isBridgeFeature && option === 'subway') ||
-        (feature.props.brunnel === 'tunnel' && hasDedicatedTunnel)) continue;
-    const layer = isBridgeFeature
-      ? `bridge:${option}`
-      : option;
+    let layer = isBridgeFeature ? `bridge:${option}` : option;
+    if (!isBridgeFeature && option === 'subway'){
+      if (!CELL_ONLY_MODE) continue;
+      layer = 'subway';
+    } else if (isTunnelFeature && hasDedicatedTunnel){
+      if (!CELL_ONLY_MODE) continue;
+      if (['paths','tracks'].includes(option)) layer = 'pathTunnels';
+      else if (['rail','aerialways'].includes(option)) layer = 'railTunnels';
+      else layer = 'roadTunnels';
+    }
     if (feature.type === 2){
-      if (!transportationLines.has(layer)) transportationLines.set(layer, []);
-      transportationLines.get(layer).push(feature);
+      const key = `${layer}:${option}`;
+      if (!transportationLines.has(key)) transportationLines.set(key, { layer, option, features:[] });
+      transportationLines.get(key).features.push(feature);
     }else{
       transportationSurfaces.set(feature, { option, layer });
     }
   }
-  for (const [layer, features] of transportationLines){
-    const option = layer.replace(/^bridge:/, '');
+  for (const { layer, option, features } of transportationLines.values()){
     const style = TRANSPORT_STYLE[option] || TRANSPORT_STYLE.transportationOther;
     if (style.id === ID.RAIL) railStamp(layer, features);
     else lineStamp(layer, features, style.id, style.thick);
+    countFeatures(layer, features.length);
   }
   stampGroups(
     [...transportationSurfaces.keys()],
@@ -1605,7 +1648,7 @@ function rasterizeGrid(layers, options){
     },
     feature => paintGeometry(feature, 1.5, 1.25)
   );
-  return { grids, bldGrid, bldUnits, unitByRingKey, bldArea, size:RG };
+  return { grids, bldGrid, bldUnits, unitByRingKey, bldArea, featureCountsByOption, size:RG };
 }
 let rasterizationCache = { layers:null, originX:null, originY:null, result:null };
 function getRasterizedGrid(layers, options){
@@ -1626,6 +1669,57 @@ const cellHash = (x, y) => {
   const wx = gridOriginX + x, wy = gridOriginY + y;
   return ((wx * 7349 + wy * 9151 + TILE.x) % 97 + 97) % 97;
 };
+
+function paintSolidMapCell(gx, gy, color, layer, stats){
+  if (!color) return;
+  const originX = Math.round(gridShiftX / SCENE_PIXELS_PER_LOGICAL_PIXEL) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+  const originY = Math.round(gridShiftY / SCENE_PIXELS_PER_LOGICAL_PIXEL) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+  ctx.fillStyle = color;
+  nativeFillRect(originX + gx * CPX, originY + gy * CPX, CPX, CPX);
+  if (!stats) return;
+  stats.paintedCells++;
+  stats.occupiedCells.add(`${gridOriginX + gx},${gridOriginY + gy}`);
+  stats.layerCells[layer] = (stats.layerCells[layer] || 0) + 1;
+}
+
+function solidMapCellCenter(gx, gy){
+  const originX = Math.round(gridShiftX / SCENE_PIXELS_PER_LOGICAL_PIXEL) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+  const originY = Math.round(gridShiftY / SCENE_PIXELS_PER_LOGICAL_PIXEL) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+  return [originX + (gx + .5) * CPX, originY + (gy + .5) * CPX];
+}
+
+function drawSolidCellGrid(grid, option, stats, transparent = true){
+  const RG = GRID + 2;
+  const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
+  for (let y = 0; y < RG; y++){
+    for (let x = 0; x < RG; x++){
+      const id = at(x, y);
+      if (transparent && id === ID.GRASS) continue;
+      if (id === ID.PARK_RESERVE &&
+          at(x-1,y) === ID.PARK_RESERVE && at(x+1,y) === ID.PARK_RESERVE &&
+          at(x,y-1) === ID.PARK_RESERVE && at(x,y+1) === ID.PARK_RESERVE) continue;
+      const color = CELL_COLOR_BY_OPTION[option] || CELL_COLOR_BY_ID.get(id);
+      paintSolidMapCell(x, y, color, option, stats);
+    }
+  }
+}
+
+function drawSolidBuildingGrid(grid, bldGrid, buildingKinds, buildingDescs, layer, stats){
+  const RG = GRID + 2;
+  for (let y = 0; y < RG; y++){
+    for (let x = 0; x < RG; x++){
+      const index = y * RG + x;
+      if (grid[index] !== ID.BLD) continue;
+      const buildingIndex = bldGrid[index];
+      const desc = buildingDescs[buildingIndex];
+      const kind = buildingKinds[buildingIndex] || 'normal';
+      const color = kind === 'normal'
+        ? (desc?.pal?.[0] || P.roofA)
+        : (desc?.accent || desc?.pal?.[0] || P.roofA);
+      paintSolidMapCell(x, y, color, layer, stats);
+    }
+  }
+}
 
 function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
   const RG = GRID + 2;
@@ -2702,8 +2796,21 @@ function render(){
 
   /* --- 地形のマップグリッド + 建物情報 --- */
   const rasterized = getRasterizedGrid(tileLayers, o);
-  const { grids, bldGrid, bldUnits, unitByRingKey, bldArea } = rasterized;
+  const { grids, bldGrid, bldUnits, unitByRingKey, bldArea, featureCountsByOption } = rasterized;
   const RG = GRID + 2;
+  const worldToGridCell = (wx, wy) => [
+    Math.floor(wx / CPX) - TILE.x * GRID - gridOriginX,
+    Math.floor(wy / CPX) - TILE.y * GRID - gridOriginY,
+  ];
+  const cellRenderingStats = {
+    paintedCells:0,
+    occupiedCells:new Set(),
+    layerCells:Object.create(null),
+    countedFeatureOptions:new Set(),
+    cellizedFeatures:0,
+    facilitySymbols:0,
+    terrainSymbols:0,
+  };
 
   /* --- リゾルバーの確定施設データ（アイコンにも建物の用途分類にも使う） --- */
   const resolvedView = collectResolvedFacilities();
@@ -2719,17 +2826,13 @@ function render(){
     const buildingDescs = Array(unitCount + 1).fill(null);
     const buildingAnchors = Array(unitCount + 1).fill(null);
     const facilityByUnit = Array(unitCount + 1).fill(null);
-    const worldToCell = (wx, wy) => [
-      Math.floor(wx / CPX) - TILE.x * GRID - gridOriginX,
-      Math.floor(wy / CPX) - TILE.y * GRID - gridOriginY,
-    ];
     const unitAt = (cx, cy) => (cx >= 0 && cy >= 0 && cx < RG && cy < RG) ? bldGrid[cy * RG + cx] : 0;
     for (const facility of resolvedView.facilities){
       if (!facility.buildingId) continue;
       let bi = unitByRingKey.get(facility.buildingId) || 0;
       if (!bi){
         // MVTタイル境界でリング片が異なる場合は施設位置のセルから引く
-        const [cx, cy] = worldToCell(facility.worldX, facility.worldY);
+        const [cx, cy] = worldToGridCell(facility.worldX, facility.worldY);
         bi = unitAt(cx, cy);
       }
       if (!bi) continue;
@@ -2752,7 +2855,7 @@ function render(){
       });
       if (facility){
         // 屋上マークと入口は施設のワールド座標にアンカーする（パンで動かない）
-        let [ax, ay] = worldToCell(facility.worldX, facility.worldY);
+        let [ax, ay] = worldToGridCell(facility.worldX, facility.worldY);
         if (unitAt(ax, ay) !== bi){
           let found = false;
           for (let dy = -1; dy <= 1 && !found; dy++)
@@ -2788,7 +2891,8 @@ function render(){
   }
   const { buildingKinds, buildingDescs, buildingAnchors, bldStyle, normalBuildingGrid, poiBuildingGrid } = rasterized.semantic;
   const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
-  drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
+  if (CELL_ONLY_MODE) drawSolidCellGrid(emptyGrid, 'grass', cellRenderingStats, false);
+  else drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
   /* 本番道路は16pxセルへ落とさず、MVTの元形状を2シーンpx
      （出力画像上1論理px）のグリッドへ直接描く。外形・舗装・中央線を
@@ -2899,6 +3003,7 @@ function render(){
     return counts;
   }, {});
   document.getElementById('stats').innerHTML =
+    (CELL_ONLY_MODE ? `<span>描画: ${MAP_CELL_LOGICAL_SIZE}×${MAP_CELL_LOGICAL_SIZE}論理px単色セル</span>` : '')+
     `<span>普通建物: ${buildingKindCounts.normal || 0}</span>`+
     `<span>病院: ${buildingKindCounts.hospital || 0}</span>`+
     `<span>コンビニ: ${buildingKindCounts.convenience || 0}</span>`+
@@ -2988,6 +3093,44 @@ function render(){
       });
     }
   }
+  function drawCellFacilityMarker(item, size, layer){
+    const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
+    const tone = categoryTone(item.category);
+    const cells = size === 'L'
+      ? [
+          [-1,-1,OUT],[0,-1,OUT],[1,-1,OUT],
+          [-1,0,OUT],[0,0,tone],[1,0,OUT],
+          [-1,1,OUT],[0,1,OUT],[1,1,OUT],
+        ]
+      : size === 'M'
+        ? [[0,-1,OUT],[-1,0,OUT],[0,0,tone],[1,0,OUT],[0,1,OUT]]
+        : [[0,0,tone]];
+    for (const [dx, dy, color] of cells){
+      const x = gx + dx, y = gy + dy;
+      if (x < 0 || y < 0 || x >= RG || y >= RG) continue;
+      paintSolidMapCell(x, y, color, layer, cellRenderingStats);
+    }
+    item.cellPt = solidMapCellCenter(gx, gy);
+    cellRenderingStats.facilitySymbols++;
+    return item.cellPt;
+  }
+  function drawCellDots(points = hiddenPois){
+    for (const p of points){
+      const [x, y] = drawCellFacilityMarker(p, 'S', 'dots');
+      if (x < 0 || y < 0 || x > W || y > H) continue;
+      hitAreas.push({ x:x - 9, y:y - 9, w:18, h:18, p:p.props, kind:'dot' });
+      drawnDotCount++;
+    }
+  }
+  function drawCellClusters(){
+    for (const c of clusterMarks){
+      const [x, y] = drawCellFacilityMarker(c, 'L', 'clusters');
+      hitAreas.push({
+        x:x - CPX * 1.5, y:y - CPX * 1.5, w:CPX * 3, h:CPX * 3,
+        p:{ name:`まとまった施設（${c.count}件）`, class:'cluster' }, kind:'cluster',
+      });
+    }
+  }
   const categoryIndex = p => {
     const index = ACTIVE_PATTERN.priority.indexOf(p.category);
     return index < 0 ? ACTIVE_PATTERN.priority.length : index;
@@ -3009,14 +3152,27 @@ function render(){
       hitAreas.push({ x: p.pt[0] - radius, y: p.pt[1] - radius*1.9, w: radius*2, h: radius*2.1, p: p.props, kind:'poi' });
     }
   }
+  function drawCellPoi(){
+    drawCellDots();
+    drawCellClusters();
+    for (const p of drawnIcons){
+      const [x, y] = drawCellFacilityMarker(p, p.size, 'poi');
+      const radius = Math.max(28, p.visualRadius);
+      hitAreas.push({ x:x - radius, y:y - radius*1.9, w:radius*2, h:radius*2.1, p:p.props, kind:'poi' });
+    }
+  }
+
+  const labelPoint = p => CELL_ONLY_MODE && p.cellPt ? p.cellPt : p.pt;
 
   function drawStationNames(){
     const placedRects = [];
     const stationTargets = drawnIcons
       .filter(p => isStationProps(p.props) && featureName(p.props))
       .sort((a,b) => a.rank - b.rank);
-    for (const p of stationTargets)
-      labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 154 : 130), placedRects);
+    for (const p of stationTargets){
+      const [x, y] = labelPoint(p);
+      labelWindow(featureName(p.props), x, y - (p.size === 'L' ? 154 : 130), placedRects);
+    }
   }
   function drawParkNames(){
     const placedRects = [];
@@ -3034,8 +3190,10 @@ function render(){
       .filter(p => featureName(p.props) && !isStationProps(p.props))
       .sort((a, b) => a.selectionPriority - b.selectionPriority || a.rank - b.rank)
       .slice(0, ACTIVE_PATTERN.labelLimit);
-    for (const p of labelTargets)
-      labelWindow(featureName(p.props), p.pt[0], p.pt[1] - (p.size === 'L' ? 142 : 116), placedRects);
+    for (const p of labelTargets){
+      const [x, y] = labelPoint(p);
+      labelWindow(featureName(p.props), x, y - (p.size === 'L' ? 142 : 116), placedRects);
+    }
   }
   function drawPlaceNames(){
     const placedRects = [];
@@ -3062,11 +3220,13 @@ function render(){
       }
     }
   }
+  const terrainItems = L('mountain_peak')
+    .map(feature => ({ feature, anchor:geometryAnchor(feature) }))
+    .filter(item => item.anchor);
+  const terrainCellPoints = new Map();
   function drawTerrainNames(){
     const placedRects = [];
-    for (const f of L('mountain_peak')){
-      const anchor = geometryAnchor(f);
-      if (!anchor) continue;
+    for (const { feature:f, anchor } of terrainItems){
       const kind = f.props.subclass || f.props.class || 'terrain';
       const [ax, ay] = tp(anchor);
       if (f.type === 1){
@@ -3089,6 +3249,70 @@ function render(){
       if (name) outlinedTextPlaced(name, ax, ay - 16, 26, '#e8d8b0', placedRects);
       hitAreas.push({ x:ax - 12, y:ay - 14, w:24, h:24,
         p:{ ...f.props, name:name || kind }, kind:'terrain' });
+    }
+  }
+  function drawCellTerrainSymbols(){
+    const screenToGridCell = ([x, y]) => [
+      Math.floor((x - gridShiftX) / CPX),
+      Math.floor((y - gridShiftY) / CPX),
+    ];
+    const walkLine = (x0, y0, x1, y1, visit) => {
+      let cx = Math.floor(x0), cy = Math.floor(y0);
+      const ex = Math.floor(x1), ey = Math.floor(y1);
+      const dx = x1 - x0, dy = y1 - y0;
+      const stepX = dx > 0 ? 1 : -1, stepY = dy > 0 ? 1 : -1;
+      const tDX = dx !== 0 ? Math.abs(1 / dx) : Infinity;
+      const tDY = dy !== 0 ? Math.abs(1 / dy) : Infinity;
+      let tMX = dx !== 0 ? (dx > 0 ? cx + 1 - x0 : x0 - cx) * tDX : Infinity;
+      let tMY = dy !== 0 ? (dy > 0 ? cy + 1 - y0 : y0 - cy) * tDY : Infinity;
+      visit(cx, cy);
+      let guard = 0;
+      while ((cx !== ex || cy !== ey) && guard++ < RG * 4){
+        if (tMX < tMY){ cx += stepX; tMX += tDX; }
+        else { cy += stepY; tMY += tDY; }
+        visit(cx, cy);
+      }
+    };
+    for (const { feature:f, anchor } of terrainItems){
+      const kind = f.props.subclass || f.props.class || 'terrain';
+      const [anchorX, anchorY] = screenToGridCell(tp(anchor));
+      const color = kind === 'volcano' ? '#d8583f'
+        : kind === 'saddle' ? '#b89058'
+          : kind === 'cliff' ? P.rockDk
+            : kind === 'ridge' || kind === 'arete' ? '#8d7655' : P.rock;
+      const cells = new Set();
+      if (f.type === 1){
+        cells.add(`${anchorX},${anchorY}`);
+      } else {
+        for (const line of f.geom){
+          for (let index = 1; index < line.length; index++){
+            const [x0, y0] = screenToGridCell(tp(line[index - 1]));
+            const [x1, y1] = screenToGridCell(tp(line[index]));
+            walkLine(x0 + .5, y0 + .5, x1 + .5, y1 + .5, (x, y) => cells.add(`${x},${y}`));
+          }
+        }
+      }
+      for (const key of cells){
+        const [x, y] = key.split(',').map(Number);
+        if (x < 0 || y < 0 || x >= RG || y >= RG) continue;
+        paintSolidMapCell(x, y, color, 'terrainSymbols', cellRenderingStats);
+      }
+      if (!cells.size) continue;
+      const point = solidMapCellCenter(anchorX, anchorY);
+      terrainCellPoints.set(f, point);
+      cellRenderingStats.terrainSymbols++;
+      cellRenderingStats.cellizedFeatures++;
+      hitAreas.push({ x:point[0] - 12, y:point[1] - 14, w:24, h:24,
+        p:{ ...f.props, name:featureName(f.props) || kind }, kind:'terrain' });
+    }
+  }
+  function drawCellTerrainNames(){
+    const placedRects = [];
+    for (const { feature:f, anchor } of terrainItems){
+      const name = featureName(f.props);
+      if (!name) continue;
+      const [ax, ay] = terrainCellPoints.get(f) || tp(anchor);
+      outlinedTextPlaced(name, ax, ay - 16, 26, '#e8d8b0', placedRects);
     }
   }
 
@@ -3123,12 +3347,33 @@ function render(){
     placeNames:drawPlaceNames,
     terrainNames:drawTerrainNames,
   };
+  const cellLabelDrawers = {
+    stationNames:drawStationNames,
+    parkNames:drawParkNames,
+    poiNames:drawPoiNames,
+    placeNames:drawPlaceNames,
+    terrainNames:drawCellTerrainNames,
+  };
 
   const renderOrder = [];
+  const countCellFeatures = option => {
+    if (!CELL_ONLY_MODE || cellRenderingStats.countedFeatureOptions.has(option)) return;
+    cellRenderingStats.countedFeatureOptions.add(option);
+    cellRenderingStats.cellizedFeatures += featureCountsByOption[option] || 0;
+  };
   const drawRasterGroup = (z, options) => {
     for (const option of layerOrder){
       if (!o[option] || !options.has(option)) continue;
-      if (option === 'grass') drawGrid(emptyGrid, bldGrid, bldStyle, { grass:true });
+      if (CELL_ONLY_MODE){
+        // The base pass already fills every map cell with grass. Avoid a
+        // duplicate repaint so the cell-write diagnostics remain meaningful.
+        if (option !== 'grass'){
+          const grid = grids.get(option);
+          if (grid) drawSolidCellGrid(grid, option, cellRenderingStats, true);
+        }
+        countCellFeatures(option);
+      }
+      else if (option === 'grass') drawGrid(emptyGrid, bldGrid, bldStyle, { grass:true });
       else if (option === 'forest'){
         const grid = grids.get(option);
         if (grid) drawForestGrid(grid);
@@ -3154,7 +3399,12 @@ function render(){
   drawRasterGroup('Z1', z1Water);
   for (const option of layerOrder){
     if (!o[option] || !z2Routes.has(option)) continue;
-    if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option);
+    if (CELL_ONLY_MODE){
+      const grid = grids.get(option);
+      if (grid) drawSolidCellGrid(grid, option, cellRenderingStats, true);
+      countCellFeatures(option);
+    }
+    else if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option);
     else if (tunnelOptions.has(option)) drawTunnelLayer(option);
     else {
       const grid = grids.get(option);
@@ -3164,28 +3414,63 @@ function render(){
   }
 
   if (o.buildings){
-    drawGrid(normalBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
+    if (CELL_ONLY_MODE){
+      drawSolidBuildingGrid(normalBuildingGrid, bldGrid, buildingKinds, buildingDescs, 'buildings', cellRenderingStats);
+      countCellFeatures('buildings');
+    } else {
+      drawGrid(normalBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
+    }
     renderOrder.push('Z3:building');
   }
   for (const option of layerOrder){
     if (!o[option] || !bridgeOptions.has(option)) continue;
-    if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option, true);
+    const bridgeOption = `bridge:${option}`;
+    if (CELL_ONLY_MODE){
+      const grid = grids.get(bridgeOption);
+      if (grid) drawSolidCellGrid(grid, option, cellRenderingStats, true);
+      countCellFeatures(bridgeOption);
+    }
+    else if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option, true);
     else {
-      const grid = grids.get(`bridge:${option}`);
+      const grid = grids.get(bridgeOption);
       if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);
     }
     renderOrder.push(`Z3:bridge:${option}`);
   }
   if (o.buildings){
-    drawGrid(poiBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
+    if (CELL_ONLY_MODE)
+      drawSolidBuildingGrid(poiBuildingGrid, bldGrid, buildingKinds, buildingDescs, 'poiBuildings', cellRenderingStats);
+    else
+      drawGrid(poiBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
     renderOrder.push('Z3:poiBuilding');
   }
 
-  for (const option of layerOrder){
-    if (!o[option]) continue;
-    if (drawers[option]) drawers[option]();
-    else continue;
-    renderOrder.push(`Z4:${option}`);
+  if (CELL_ONLY_MODE){
+    if (o.dots && !o.poi){
+      drawCellDots(facilitiesInView.filter(p => p.representation !== 'cluster-member'));
+      drawCellClusters();
+      renderOrder.push('Z4:dots');
+    }
+    if (o.poi){
+      drawCellPoi();
+      renderOrder.push('Z4:poi');
+    }
+    if (o.terrainNames){
+      drawCellTerrainSymbols();
+      renderOrder.push('Z4:terrainSymbols');
+    }
+    for (const option of layerOrder){
+      if (!o[option] || !cellLabelDrawers[option]) continue;
+      cellLabelDrawers[option]();
+      renderOrder.push(`Z4:${option}`);
+    }
+  } else {
+    for (const option of layerOrder){
+      if (!o[option]) continue;
+      if (drawers[option]) drawers[option]();
+      else continue;
+      renderOrder.push(`Z4:${option}`);
+    }
   }
   const toolbar = document.getElementById('toolbar');
   toolbar.dataset.renderOrder = renderOrder.join(',');
@@ -3234,6 +3519,7 @@ function render(){
   toolbar.dataset.renderMs = (performance.now() - renderStartedAt).toFixed(1);
   toolbar.dataset.renderCount = renderCount;
   window.PixelMapDiagnostics = {
+    renderMode:RENDER_MODE,
     retainedSourceLayers:[...RETAINED_SOURCE_LAYERS],
     loadedSourceLayers:Object.keys(tileLayers),
     unexpectedSourceLayers:Object.keys(tileLayers).filter(name => !RETAINED_SOURCE_LAYERS.has(name)),
@@ -3263,6 +3549,19 @@ function render(){
       assetScenePixel:SCENE_PIXELS_PER_LOGICAL_PIXEL,
       quantizedAssetTiles:true,
       quantizedSceneRects:true,
+    },
+    cellRendering:{
+      enabled:CELL_ONLY_MODE,
+      mode:RENDER_MODE,
+      cellLogicalPixels:MAP_CELL_LOGICAL_SIZE,
+      cellScenePixels:CPX,
+      singleColorCells:CELL_ONLY_MODE,
+      cellizedFeatures:CELL_ONLY_MODE ? cellRenderingStats.cellizedFeatures : 0,
+      facilitySymbols:CELL_ONLY_MODE ? cellRenderingStats.facilitySymbols : 0,
+      terrainSymbols:CELL_ONLY_MODE ? cellRenderingStats.terrainSymbols : 0,
+      paintedCells:CELL_ONLY_MODE ? cellRenderingStats.paintedCells : 0,
+      occupiedCells:CELL_ONLY_MODE ? cellRenderingStats.occupiedCells.size : 0,
+      layerCells:CELL_ONLY_MODE ? { ...cellRenderingStats.layerCells } : {},
     },
     resolver:{
       algorithmVersion:RESOLVER.ALGORITHM_VERSION,
@@ -4057,6 +4356,7 @@ boot().finally(async () => {
     ready,
     captureReady:ready && (!CAPTURE_MODE || tileCache.size >= 9),
     mode:'production',
+    renderMode:RENDER_MODE,
     assetTaste:'reference',
     pattern:ACTIVE_PATTERN,
     pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_DISPLAY_SCALE),
