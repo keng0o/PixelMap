@@ -36,6 +36,7 @@ test('assets.html用カタログは52点・新テイスト26点でマッピン�
   const assetIds = new Set(catalog.assets.map(asset => asset.id));
   for(const spriteId of Object.values(resolver.CLASS2SPRITE)) assert.ok(assetIds.has(spriteId), spriteId);
   for(const asset of catalog.assets) assert.equal(typeof asset.categoryLabel, 'string');
+  assert.equal(typeof catalog.draw, 'function');
 });
 
 test('新テイスト候補20点はアセットのみで、マップのPOI属性へは未接続', () => {
@@ -50,4 +51,11 @@ test('現行マップの描画辞書にも新作6アセットが実装されて�
   const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
   const spriteBlock = html.slice(html.indexOf('const SPRITES = {'), html.indexOf('// 施設の分類・重要度・サイズ判定'));
   for(const id of inspiredIds) assert.match(spriteBlock, new RegExp(`\\n\\s*${id}\\s*:`), id);
+});
+
+test('しろポップ10点はテスト用マップだけに接続される', async () => {
+  const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+  for(const id of popIds) assert.ok(html.includes(id), id);
+  assert.match(html, /TEST_MODE \? 'pop' : 'reference'/);
+  assert.match(html, /TEST_MODE && key\.startsWith\('pop_'\)/);
 });

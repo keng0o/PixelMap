@@ -148,7 +148,7 @@
     wing_post:{label:'翼の郵便小屋',draw:(x,y)=>{yard(x,y,13);block(x-8,y-11,16,11,'#f8eee5');px(x-9,y-14,18,3,'#d95072');px(x-9,y-14,18,1,hi('#d95072'));px(x-4,y-21,8,5,'#f0d1bd');px(x-4,y-21,8,1,hi('#f0d1bd'));px(x-3,y-20,2,1,'#d6a88f');px(x+1,y-20,2,1,'#d6a88f');px(x-1,y-19,2,1,'#d6a88f');px(x-8,y-20,4,2,'#f0cf5a');px(x-11,y-21,3,2,'#e6bd4d');px(x+4,y-20,4,2,'#f0cf5a');px(x+8,y-21,3,2,'#e6bd4d');px(x-5,y-8,4,3,'#a882c5');px(x+1,y-8,4,8,'#6f3f46');px(x+2,y-6,2,1,'#f0cf5a');}},
     art_museum:{label:'額縁美術館',draw:(x,y)=>{yard(x,y,18);block(x-13,y-11,26,11,'#f8eee5');px(x-11,y-9,2,9,'#f0d1bd');px(x-5,y-9,2,9,'#f0d1bd');px(x+3,y-9,2,9,'#f0d1bd');px(x+9,y-9,2,9,'#f0d1bd');px(x-12,y-27,24,16,'#e6bd4d');px(x-12,y-27,24,1,hi('#f0cf5a'));px(x-10,y-25,20,12,'#d6a93f');px(x-9,y-24,18,10,'#6fa7a2');px(x+3,y-23,3,3,'#f0cf5a');px(x-9,y-18,8,4,'#70507f');px(x-3,y-16,12,2,'#456b6b');px(x-2,y-6,4,6,'#6f3f46');}},
     menagerie:{label:'モンスター牧場',draw:(x,y)=>{yard(x,y,20);for(let i=0;i<5;i++)px(x-16+i*8,y-9,2,5,'#456b6b');px(x-16,y-6,32,2,'#456b6b');px(x-16,y-6,32,1,hi('#456b6b'));block(x-9,y-16,18,10,'#a45f58');px(x-10,y-19,20,3,'#6f3f46');px(x-10,y-19,20,1,hi('#a45f58'));px(x-9,y-23,3,4,'#f0d1bd');px(x+6,y-23,3,4,'#f0d1bd');px(x-3,y-11,6,5,'#6f3f46');px(x-2,y-10,4,4,'#70507f');px(x+8,y-14,7,7,'#a882c5');px(x+9,y-16,2,2,'#70507f');px(x+12,y-16,2,2,'#70507f');px(x+9,y-12,2,2,'#f0cf5a');px(x+12,y-12,2,2,'#f0cf5a');px(x+10,y-9,3,1,'#6f3f46');}},
-    /* --- しろポップ候補（未接続・カタログのみ）: 白地×インク輪郭×原色 --- */
+    /* --- しろポップ（テスト用マップで接続）: 白地×インク輪郭×原色 --- */
     pop_office:{label:'しろいオフィス',draw:(x,y)=>{popPad(x,y,13);popBox(x-7,y-26,14,26);popBox(x-8,y-29,16,4,POP.blue);px(x,y-33,1,4,POP.ink);px(x-1,y-35,3,2,POP.red);for(let row=0;row<3;row++){popWin(x-5,y-24+row*6);popWin(x+1,y-24+row*6);}popDoor(x-2,y-6);}},
     pop_townhall:{label:'まちの役所',draw:(x,y)=>{popPad(x,y,17);popBox(x-13,y-13,26,13);popBox(x-14,y-17,28,4,POP.green);popBox(x-4,y-24,8,7);px(x-2,y-22,4,4,POP.ink);px(x-1,y-21,2,2,POP.yellow);px(x+3,y-28,1,4,POP.ink);px(x+4,y-28,4,3,POP.red);px(x-10,y-11,1,11,POP.ink);px(x+9,y-11,1,11,POP.ink);popWin(x-8,y-10);popWin(x+4,y-10);popDoor(x-2,y-6,POP.red);}},
     pop_fastfood:{label:'バーガーキオスク',draw:(x,y)=>{popPad(x,y,12);popBox(x-8,y-10,16,10);px(x-9,y-14,18,4,POP.ink);for(let i=0;i<4;i++)px(x-8+i*4,y-13,4,2,i%2?POP.white:POP.red);popBox(x-5,y-22,10,8);px(x-4,y-21,8,2,POP.yellow);px(x-4,y-19,8,1,POP.green);px(x-4,y-18,8,2,POP.red);px(x-4,y-16,8,1,POP.yellow);px(x-4,y-8,8,4,POP.ink);px(x-3,y-7,6,2,POP.blue);}},
@@ -243,5 +243,13 @@
     target.restore();
   }
 
-  global.PixelMapPoiSprites = Object.freeze({assets,categories,tastes,render});
+  function draw(target, id, x, y, size='M'){
+    const entry = SPRITES[id] || SPRITES.generic;
+    const drawSprite = entry[size] || entry.M || entry.S || entry.L || entry.draw;
+    ctx=target;
+    try { drawSprite(x,y); }
+    finally { ctx=null; }
+  }
+
+  global.PixelMapPoiSprites = Object.freeze({assets,categories,tastes,draw,render});
 })(window);

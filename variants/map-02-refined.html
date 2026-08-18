@@ -558,6 +558,7 @@
 
 <script src="../assets/icon-patterns.js"></script>
 <script src="../assets/facility-resolver.js"></script>
+<script src="../assets/poi-sprites.js"></script>
 <script src="../assets/building-styles.js"></script>
 <script>
 'use strict';
@@ -711,7 +712,7 @@ document.body.classList.toggle('capture-mode', CAPTURE_MODE);
 document.documentElement.style.setProperty('--pattern-accent', ACTIVE_PATTERN.palette.transit || ACTIVE_PATTERN.palette.generic);
 document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.palette.generic || '#78828a');
 document.documentElement.dataset.mapMode = TEST_MODE ? 'test' : 'production';
-document.documentElement.dataset.assetTaste = TEST_MODE ? 'classic' : 'reference';
+document.documentElement.dataset.assetTaste = TEST_MODE ? 'pop' : 'reference';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.title = 'PixelMap｜テスト用1マップ';
 
@@ -2278,6 +2279,23 @@ const SPRITES = {
 // このページは確定済みの施設データを描くだけで、選抜の再計算は行わない。
 const RESOLVER = window.PixelMapFacilityResolver;
 const { CLASS2SPRITE, isStationProps, tierValue } = RESOLVER;
+const POI_ASSETS = window.PixelMapPoiSprites;
+const TEST_POP_SPRITES_BY_TYPE = Object.freeze({
+  office:'pop_office',
+  town_hall:'pop_townhall',
+  townhall:'pop_townhall',
+  fast_food:'pop_fastfood',
+  university:'pop_university',
+  college:'pop_college',
+  post:'pop_post',
+  art_gallery:'pop_art_museum',
+  museum:'pop_art_museum',
+  zoo:'pop_zoo',
+});
+const TEST_POP_SPRITES_BY_RESOLVED_KEY = Object.freeze({
+  station:'pop_station',
+  library:'pop_library',
+});
 const TEST_SPRITE_FALLBACKS = Object.freeze({
   monument:'attraction',
   castle:'attraction',
@@ -2291,9 +2309,16 @@ function categoryTone(category){
 }
 function spriteFor(props, size = 'M', variant = 0){
   const resolvedKey = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
-  const key = TEST_MODE ? (TEST_SPRITE_FALLBACKS[resolvedKey] || resolvedKey) : resolvedKey;
-  const e = SPRITES[key];
-  const baseDraw = e[size] || e.M || e.S || e.L || e.draw;
+  const typeKey = props.subclass || props.class || '';
+  const popKey = TEST_POP_SPRITES_BY_TYPE[typeKey] || TEST_POP_SPRITES_BY_RESOLVED_KEY[resolvedKey];
+  const key = TEST_MODE ? (popKey || TEST_SPRITE_FALLBACKS[resolvedKey] || resolvedKey) : resolvedKey;
+  const popAsset = TEST_MODE && key.startsWith('pop_')
+    ? POI_ASSETS.assets.find(asset => asset.id === key)
+    : null;
+  const e = popAsset || SPRITES[key];
+  const baseDraw = popAsset
+    ? (x,y) => POI_ASSETS.draw(ctx,key,x,y,size)
+    : (e[size] || e.M || e.S || e.L || e.draw);
   let draw = baseDraw;
   // 川崎駅(JR系=緑)と京急川崎駅(京急=赤)を、世界観を変えず小旗で判別可能にする。
   if (isStationProps(props)){
@@ -3895,7 +3920,7 @@ boot().finally(async () => {
     ready,
     captureReady:ready && (!CAPTURE_MODE || tileCache.size >= 9),
     mode:TEST_MODE ? 'test' : 'production',
-    assetTaste:TEST_MODE ? 'classic' : 'reference',
+    assetTaste:TEST_MODE ? 'pop' : 'reference',
     pattern:ACTIVE_PATTERN,
     location:HAS_INITIAL_LOCATION ? { name:INITIAL_PLACE, latitude:INITIAL_LAT, longitude:INITIAL_LON } : null,
     viewport:viewportState(),
