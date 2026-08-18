@@ -403,9 +403,9 @@
     cursor:default;
   }
   body.capture-mode #captureBadge{ display:block; }
-  /* テスト用1マップだけは、768pxの論理ドット面を整数倍で表示する。
+  /* テスト用1マップだけは、768×768論理pxの出力画像を整数倍で表示する。
      枠と倍率が合わない分は中央で切り抜き、非整数縮小は行わない。 */
-  html[data-map-mode="test"]{ --pixel-display-scale:1; }
+  html[data-map-mode="test"]{ --map-display-scale:1; }
   html[data-map-mode="test"] .map-frame{
     width:min(calc(92vw + 12px), 712px);
     height:min(calc(92vw + 12px), 712px);
@@ -413,8 +413,8 @@
   }
   html[data-map-mode="test"] #map{
     display:block;
-    width:calc(768px * var(--pixel-display-scale));
-    height:calc(768px * var(--pixel-display-scale));
+    width:calc(768px * var(--map-display-scale));
+    height:calc(768px * var(--map-display-scale));
     max-width:none;
     flex:none;
   }
@@ -709,9 +709,9 @@ const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
 const ICON_PATTERNS = Array.isArray(window.PixelMapIconPatterns) ? window.PixelMapIconPatterns : [];
 const requestedPatternId = TEST_MODE ? '06' : String(PAGE_PARAMS.get('pattern') || '07').padStart(2, '0');
-// 全マップは共通ドットの1px版だけを提供する。
-// 旧 ?pixel=2 を含むpixel指定は表示倍率へ影響させない。
-const REQUESTED_PIXEL_SCALE = 1;
+// 表示倍率は1に固定する。論理ピクセル密度やシーン解像度とは別の値。
+// 旧 ?pixel=2 を含むpixel指定も表示倍率へ影響させない。
+const REQUESTED_DISPLAY_SCALE = 1;
 const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPatternId) || ICON_PATTERNS[0] || {
   id:'01', name:'バランス階層', eyebrow:'基準案', summary:'施設の大きさを地物に合わせて調整します。',
   rule:'面積と高さ', orderLabel:'地図上のY順', assetRule:'規模別', marker:'plinth', dot:'square',
@@ -743,10 +743,10 @@ document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.pal
 document.documentElement.dataset.mapMode = TEST_MODE ? 'test' : 'production';
 document.documentElement.dataset.assetTaste = TEST_MODE ? 'pop' : 'reference';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
-document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_PIXEL_SCALE);
-document.documentElement.dataset.pixelScale = String(REQUESTED_PIXEL_SCALE);
+document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_SCALE);
+document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
-document.documentElement.style.setProperty('--pixel-display-scale', REQUESTED_PIXEL_SCALE);
+document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISPLAY_SCALE);
 document.title = 'PixelMap｜テスト用1マップ';
 
 function patternUrl(patternId){
@@ -787,6 +787,13 @@ function populatePatternUi(){
 }
 populatePatternUi();
 const cv = document.getElementById('map');
+/*
+  描画単位（詳細は TERMINOLOGY.md）
+  - 論理ピクセル: 768×768の出力画像を構成する最小単位
+  - シーンピクセル: 1536×1536の作業用キャンバスの座標単位
+  - マップセル: 地物種別を保持する96×96マップグリッドの1セル
+  1論理px = 2×2シーンpx、1マップセル = 16×16シーンpx = 8×8論理px。
+*/
 const SCENE_SIZE = 1536;
 const PRESENTATION_SIZE = SCENE_SIZE / 2;
 cv.width = cv.height = PRESENTATION_SIZE;
@@ -797,21 +804,21 @@ const presentationCtx = cv.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 presentationCtx.imageSmoothingEnabled = false;
 const W = sceneCanvas.width, H = sceneCanvas.height;
-const ASSET_SCENE_PIXEL = 2;
+const SCENE_PIXELS_PER_LOGICAL_PIXEL = 2;
 
-// Every map is presented at half the scene resolution. Keep every authored
-// asset pixel on a 2x2 scene block so it becomes exactly one visible pixel.
+// アセットの輪郭を論理ピクセルグリッドへそろえる。
+// 1論理pxは2×2シーンpxで、出力画像ではちょうど1pxになる。
 function quantizeAssetRect(x,y,w,h){
   if(w<=0 || h<=0) return {x,y,w,h};
-  const x0=Math.floor(x/ASSET_SCENE_PIXEL)*ASSET_SCENE_PIXEL;
-  const y0=Math.floor(y/ASSET_SCENE_PIXEL)*ASSET_SCENE_PIXEL;
-  const x1=Math.ceil((x+w)/ASSET_SCENE_PIXEL)*ASSET_SCENE_PIXEL;
-  const y1=Math.ceil((y+h)/ASSET_SCENE_PIXEL)*ASSET_SCENE_PIXEL;
+  const x0=Math.floor(x/SCENE_PIXELS_PER_LOGICAL_PIXEL)*SCENE_PIXELS_PER_LOGICAL_PIXEL;
+  const y0=Math.floor(y/SCENE_PIXELS_PER_LOGICAL_PIXEL)*SCENE_PIXELS_PER_LOGICAL_PIXEL;
+  const x1=Math.ceil((x+w)/SCENE_PIXELS_PER_LOGICAL_PIXEL)*SCENE_PIXELS_PER_LOGICAL_PIXEL;
+  const y1=Math.ceil((y+h)/SCENE_PIXELS_PER_LOGICAL_PIXEL)*SCENE_PIXELS_PER_LOGICAL_PIXEL;
   return {
     x:x0,
     y:y0,
-    w:Math.max(ASSET_SCENE_PIXEL,x1-x0),
-    h:Math.max(ASSET_SCENE_PIXEL,y1-y0)
+    w:Math.max(SCENE_PIXELS_PER_LOGICAL_PIXEL,x1-x0),
+    h:Math.max(SCENE_PIXELS_PER_LOGICAL_PIXEL,y1-y0)
   };
 }
 
@@ -823,16 +830,16 @@ function fillAssetRect(target,x,y,w,h,color){
 
 const nativeFillRect=ctx.fillRect.bind(ctx);
 ctx.fillRect=(x,y,w,h)=>{
-  // Facility sprites are authored at 1 px and already drawn at 2x in the scene.
+  // 施設スプライトの素材座標1単位は、描画時に1論理px（2シーンpx）へ拡大済み。
   const transform=ctx.getTransform();
-  if(Math.max(Math.abs(transform.a),Math.abs(transform.d))>=ASSET_SCENE_PIXEL){
+  if(Math.max(Math.abs(transform.a),Math.abs(transform.d))>=SCENE_PIXELS_PER_LOGICAL_PIXEL){
     nativeFillRect(x,y,w,h);
     return;
   }
   const rect=quantizeAssetRect(x,y,w,h);
   nativeFillRect(rect.x,rect.y,rect.w,rect.h);
 };
-const GRID = 96, CPX = 16;                 // 96×96マス・1マス16px（見かけ2/3サイズ）
+const GRID = 96, CPX = 16;                 // 96×96セル・1セル16シーンpx（8論理px）
 const TILE = { z:14, x:14549, y:6460 };
 const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
 const FALLBACK_TILE_URL = 'https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf';
@@ -848,7 +855,7 @@ function presentScene(){
 }
 
 /* =====================================================
-   3. 16pxドット絵タイル（GB風パレット）
+   3. 16シーンpx（8論理px）のマップチップ（GB風パレット）
    ===================================================== */
 const P = {
   outline:'#302838',
@@ -1093,7 +1100,7 @@ function buildTiles(){
     q(0,13,16,3,P.wallDk); q(3,4,2,1,P.wallDk); q(10,7,2,1,P.wallDk); });
 }
 
-/* --- 動的タイル: 棟の記述子から必要になった組み合わせだけを焼く --- */
+/* --- 動的マップチップ: 棟の記述子から必要になった組み合わせだけを生成する --- */
 const DYN_TILES = new Map();
 function tileFor(key, draw){
   if (!DYN_TILES.has(key)) DYN_TILES.set(key, T(draw));
@@ -1230,7 +1237,7 @@ const DIRECT_TRANSPORT_STYLE = {
 const TEST_TRANSPORT_SCENE_WIDTH = 8;
 const TEST_TRANSPORT_SCENE_CASING = 2;
 /* 建物の分類・配色は building-styles.js が唯一の正典。
-   ROOFPALはタイル焼き込みと後方互換のためのエイリアス。 */
+   ROOFPALはマップチップ生成と後方互換のためのエイリアス。 */
 const BUILDING_STYLES = window.PixelMapBuildingStyles;
 const ROOFPAL = BUILDING_STYLES.LEGACY_ROOFPAL;
 
@@ -1525,7 +1532,7 @@ function rasterizeGrid(layers, options){
       bldGrid[cy * RG + cx] = i + 1;
       cnt++;
     });
-    if (!cnt){                                   // セル中心を1つも拾えない極小の棟は重心に1マス
+    if (!cnt){                                   // セル中心を1つも拾えない極小の棟は重心に1セル
       const r = u.rings[0];
       let sx = 0, sy = 0;
       r.forEach(p => { sx += p[0]; sy += p[1]; });
@@ -1545,7 +1552,7 @@ function rasterizeGrid(layers, options){
     if (cx >= 0 && cy >= 0 && cx < RG && cy < RG) grid[cy * RG + cx] = id;
   };
   // Amanatides–Woo のボクセル走査。1ステップで進むのは必ず1軸だけなので
-  // 斜め線も自動的に「ギザギザの階段」になり、タイルが途切れない。
+  // 斜め線も自動的に「ギザギザの階段」になり、経路セルが途切れない。
   function traverse(x0, y0, x1, y1, visit){
     let cx = Math.floor(x0), cy = Math.floor(y0);
     const ex = Math.floor(x1), ey = Math.floor(y1);
@@ -1656,7 +1663,7 @@ function getRasterizedGrid(layers, options){
 }
 
 /* =====================================================
-   5. グリッド描画（オートタイリング）
+   5. マップグリッド描画（隣接セルに応じたマップチップ選択）
    ===================================================== */
 const cellHash = (x, y) => {
   const wx = gridOriginX + x, wy = gridOriginY + y;
@@ -1828,7 +1835,7 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
             if (isEntrance) putC(entranceTileFor(desc.glyph, accent, true), x, y);
             else put((!right ? 'frontDoor' : 'front') + st, x, y);
           } else if (!below && above){
-            // 2マス以上の高さがある建物の最下段は壁面。施設はカテゴリ色の庇つき店先にする
+            // 2セル以上の高さがある建物の最下段は壁面。施設はカテゴリ色の庇つき店先にする
             if (isEntrance) putC(entranceTileFor(desc.glyph, accent, true), x, y);
             else if (accent) putC(entranceTileFor(desc.glyph, accent, false), x, y);
             else if (towerWall) put('wallTower', x, y);
@@ -1843,7 +1850,7 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
             const motif = desc ? desc.motif : (isHouse ? 'gable' : st === 7 ? 'aviation' : 'ac');
             if (motif === 'gable'){
               const parity = (((gridOriginX + x + gridOriginY + y) % 2) + 2) % 2;
-              ctx.fillStyle = pal[1];                        // 瓦の継ぎ目(半マスずらし)
+              ctx.fillStyle = pal[1];                        // 瓦の継ぎ目（半セルずらし）
               ctx.fillRect(bx + (parity ? 4 : 10), by + 5, 1, 3);
               ctx.fillRect(bx + (parity ? 11 : 5), by + 10, 1, 3);
               if (hh < 6){                                   // テレビアンテナ
@@ -1871,7 +1878,7 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
           }
           // 屋上のカテゴリマーク（施設のワールド座標にアンカーし、パンで動かない）
           if (anchor && accent && desc.glyph && anchor.gx === x && anchor.gy === y){
-            if (isEntrance){                                 // 1マスの棟は玄関の上に小型の袖看板
+            if (isEntrance){                                 // 1セルの棟は玄関の上に小型の袖看板
               ctx.fillStyle = P.outline; ctx.fillRect(bx + 8, by + 1, 7, 7);
               ctx.fillStyle = accent;    ctx.fillRect(bx + 9, by + 2, 5, 5);
               ctx.fillStyle = GLYPH_WHITE; ctx.fillRect(bx + 11, by + 4, 2, 2);
@@ -2769,7 +2776,7 @@ function render(){
   gridShiftX = gridOriginX * CPX - viewOffset.x;
   gridShiftY = gridOriginY * CPX - viewOffset.y;
 
-  /* --- 地形グリッド + 建物情報 --- */
+  /* --- 地形のマップグリッド + 建物情報 --- */
   const rasterized = getRasterizedGrid(tileLayers, o);
   const { grids, bldGrid, bldUnits, unitByRingKey, bldArea } = rasterized;
   const RG = GRID + 2;
@@ -2779,8 +2786,8 @@ function render(){
   if (resolvedView.pendingTiles) ensureTilesAround().catch(console.error);
 
   /* --- 建物の意味づけ: 棟 × リゾルバー施設 → 見た目記述子 ---
-     kind/categoryはリゾルバーが唯一の正典。未解決タイルの棟は一旦normalで描き、
-     解決タイルが増える（stampが変わる）たびに再計算して昇格させる。 --- */
+     kind/categoryはリゾルバーが唯一の正典。未解決MVTタイルの棟は一旦normalで描き、
+     解決済みMVTタイルが増える（stampが変わる）たびに再計算して昇格させる。 --- */
   const semanticStamp = tileGeneration + ':' + resolvedView.resolvedTileCount;
   if (!rasterized.semantic || rasterized.semantic.stamp !== semanticStamp){
     const unitCount = bldUnits.length;
@@ -2797,7 +2804,7 @@ function render(){
       if (!facility.buildingId) continue;
       let bi = unitByRingKey.get(facility.buildingId) || 0;
       if (!bi){
-        // タイル境界でリング片が異なる場合は施設位置のセルから引く
+        // MVTタイル境界でリング片が異なる場合は施設位置のセルから引く
         const [cx, cy] = worldToCell(facility.worldX, facility.worldY);
         bi = unitAt(cx, cy);
       }
@@ -2860,7 +2867,7 @@ function render(){
   drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
   /* テストページの交通線はすべて、MVTの元形状を2シーンpx
-     （表示上1論理px）のグリッドへ直接描く。共通の外形・本体・中央線
+     （出力画像上1論理px）の論理ピクセルグリッドへ直接描く。共通の外形・本体・中央線
      ストロークを使い、道路だけを例外的な描画経路にしない。 */
   function drawDirectTransportLayer(option, bridge = false){
     const style = DIRECT_TRANSPORT_STYLE[option];
@@ -2892,9 +2899,9 @@ function render(){
     };
     const drawRepeatedDecoration = (decoration, span) => {
       if (!decoration || span <= 0) return;
-      const spacing = Math.max(ASSET_SCENE_PIXEL, decoration.spacing);
+      const spacing = Math.max(SCENE_PIXELS_PER_LOGICAL_PIXEL, decoration.spacing);
       const halfSpan = span / 2;
-      const snap = value => Math.round(value / ASSET_SCENE_PIXEL) * ASSET_SCENE_PIXEL;
+      const snap = value => Math.round(value / SCENE_PIXELS_PER_LOGICAL_PIXEL) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
       ctx.save();
       ctx.beginPath();
       ctx.lineCap = 'butt';
@@ -2930,7 +2937,7 @@ function render(){
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     // テストページでは交通種別や橋による太さの差をなくす。
-    // 8シーンpx＝表示4px、2シーンpx＝表示1pxの外周に統一する。
+    // 8シーンpx＝4論理px、2シーンpx＝1論理pxの外周に統一する。
     const directTestTransport = TEST_MODE && DIRECT_TRANSPORT_OPTIONS.has(option);
     const bridgeWidth = !TEST_MODE && bridge ? 4 : 0;
     const width = directTestTransport ? TEST_TRANSPORT_SCENE_WIDTH : style.width + bridgeWidth;
@@ -2972,10 +2979,10 @@ function render(){
       ctx.stroke();
       ctx.setLineDash([]);
       if (style.repeatDecoration){
-        // 端点の1px丸め分を内側へ逃がし、反復模様で線の全幅を広げない。
+        // 端点の1論理px丸め分を内側へ逃がし、反復模様で線の全幅を広げない。
         const decorationSpan = Math.max(
-          ASSET_SCENE_PIXEL,
-          width + casing * 2 - ASSET_SCENE_PIXEL
+          SCENE_PIXELS_PER_LOGICAL_PIXEL,
+          width + casing * 2 - SCENE_PIXELS_PER_LOGICAL_PIXEL
         );
         drawRepeatedDecoration(style.repeatDecoration, decorationSpan);
       }
@@ -3387,13 +3394,13 @@ function render(){
       drawOrder:ACTIVE_PATTERN.drawOrder,
     },
     pixel:{
-      requestedScale:REQUESTED_PIXEL_SCALE,
-      effectiveScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_PIXEL_SCALE),
+      requestedScale:REQUESTED_DISPLAY_SCALE,
+      effectiveScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_DISPLAY_SCALE),
       sceneSize:SCENE_SIZE,
       presentationSize:PRESENTATION_SIZE,
       scenePixelsPerLogicalPixel:2,
       assetLogicalPixel:1,
-      assetScenePixel:ASSET_SCENE_PIXEL,
+      assetScenePixel:SCENE_PIXELS_PER_LOGICAL_PIXEL,
       quantizedAssetTiles:true,
       quantizedSceneRects:true,
     },
@@ -3554,8 +3561,8 @@ function rebuildTileLayers(){
 }
 
 /* --- 施設リゾルバー連携 ---
-   icon / dot / cluster はワールド座標で事前確定し、正規タイル単位でキャッシュする。
-   キャッシュキーは (タイル, パターン固定, tileGeneration)。レイヤー切り替えでは
+   icon / dot / cluster はワールド座標で事前確定し、正規MVTタイル単位でキャッシュする。
+   キャッシュキーは (MVTタイル, パターン固定, tileGeneration)。レイヤー切り替えでは
    無効化しない（レイヤーは描画フィルタであって選抜の入力ではない）。 */
 const resolvedTiles = new Map();   // "x/y" -> { generation, result }
 function resolverGetTile(x, y){
@@ -3563,7 +3570,7 @@ function resolverGetTile(x, y){
   if (y < 0 || y >= max) return { empty:true };
   const layers = tileCache.get(tileKey(x, y));
   if (layers) return { layers, baseX:TILE.x, baseY:TILE.y };
-  // ローカルPBFモードは1タイルしか持たないため、周辺を空タイルとして扱う
+  // ローカルPBFモードはMVTタイルを1枚しか持たないため、周辺を空MVTタイルとして扱う
   return networkTilesEnabled ? null : { empty:true };
 }
 function resolveTileFacilities(x, y){
@@ -3651,7 +3658,7 @@ async function ensureTilesAround(){
   ensureTilesRunning = true;
   const cacheSizeBefore = tileCache.size;
   try {
-    // ビューポートにかかる各タイルの3×3文脈まで先読みし、
+    // ビューポートにかかる各MVTタイルの3×3文脈まで先読みし、
     // 画面へ入る施設が常に確定済みの状態で描けるようにする。
     const range = viewTileRange();
     const requests = [];
@@ -4166,14 +4173,14 @@ syncAllLayersToggle();
 locateBtn.addEventListener('click', locateMe);
 
 const mapFrame = document.querySelector('.map-frame');
-function updatePixelDisplayScale(){
+function updateDisplayScale(){
   if (!TEST_MODE) return;
-  let effectiveScale = REQUESTED_PIXEL_SCALE;
+  let effectiveScale = REQUESTED_DISPLAY_SCALE;
   if (!CAPTURE_MODE && window.matchMedia(MOBILE_QUERY).matches){
     const requiredSpan = Math.max(mapFrame.clientWidth, mapFrame.clientHeight);
     effectiveScale = Math.max(effectiveScale, Math.ceil(requiredSpan / PRESENTATION_SIZE));
   }
-  document.documentElement.style.setProperty('--pixel-display-scale', effectiveScale);
+  document.documentElement.style.setProperty('--map-display-scale', effectiveScale);
   document.documentElement.dataset.pixelScale = String(effectiveScale);
   if (window.PixelMapDiagnostics?.pixel) window.PixelMapDiagnostics.pixel.effectiveScale = effectiveScale;
   if (window.PixelMapStudy) window.PixelMapStudy.pixelScale = effectiveScale;
@@ -4184,7 +4191,7 @@ function centerMobileMap(){
   mapFrame.scrollTop = Math.max(0, (mapFrame.scrollHeight - mapFrame.clientHeight) / 2);
 }
 function syncPixelViewport(){
-  updatePixelDisplayScale();
+  updateDisplayScale();
   requestAnimationFrame(centerMobileMap);
 }
 syncPixelViewport();
@@ -4205,8 +4212,8 @@ boot().finally(async () => {
     mode:TEST_MODE ? 'test' : 'production',
     assetTaste:TEST_MODE ? 'pop' : 'reference',
     pattern:ACTIVE_PATTERN,
-    pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_PIXEL_SCALE),
-    pixelRequestedScale:REQUESTED_PIXEL_SCALE,
+    pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_DISPLAY_SCALE),
+    pixelRequestedScale:REQUESTED_DISPLAY_SCALE,
     assetPixelSize:1,
     presentationSize:PRESENTATION_SIZE,
     location:HAS_INITIAL_LOCATION ? { name:INITIAL_PLACE, latitude:INITIAL_LAT, longitude:INITIAL_LON } : null,
