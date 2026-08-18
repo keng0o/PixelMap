@@ -676,11 +676,12 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+const TEST_MODE = !EMBEDDED;
 const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
 const ICON_PATTERNS = Array.isArray(window.PixelMapIconPatterns) ? window.PixelMapIconPatterns : [];
-const requestedPatternId = String(PAGE_PARAMS.get('pattern') || '07').padStart(2, '0');
+const requestedPatternId = TEST_MODE ? '06' : String(PAGE_PARAMS.get('pattern') || '07').padStart(2, '0');
 const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPatternId) || ICON_PATTERNS[0] || {
   id:'01', name:'バランス階層', eyebrow:'基準案', summary:'施設の大きさを地物に合わせて調整します。',
   rule:'面積と高さ', orderLabel:'地図上のY順', assetRule:'規模別', marker:'plinth', dot:'square',
@@ -709,6 +710,8 @@ document.body.classList.toggle('shared-controls', SHARED_CONTROLS);
 document.body.classList.toggle('capture-mode', CAPTURE_MODE);
 document.documentElement.style.setProperty('--pattern-accent', ACTIVE_PATTERN.palette.transit || ACTIVE_PATTERN.palette.generic);
 document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.palette.generic || '#78828a');
+document.documentElement.dataset.mapMode = TEST_MODE ? 'test' : 'production';
+document.documentElement.dataset.assetTaste = TEST_MODE ? 'classic' : 'reference';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.title = 'PixelMap｜テスト用1マップ';
 
@@ -2275,11 +2278,20 @@ const SPRITES = {
 // このページは確定済みの施設データを描くだけで、選抜の再計算は行わない。
 const RESOLVER = window.PixelMapFacilityResolver;
 const { CLASS2SPRITE, isStationProps, tierValue } = RESOLVER;
+const TEST_SPRITE_FALLBACKS = Object.freeze({
+  monument:'attraction',
+  castle:'attraction',
+  gallery:'museum',
+  theatre:'cinema',
+  zoo:'park',
+  charge_hub:'parking',
+});
 function categoryTone(category){
   return ACTIVE_PATTERN.palette[category] || ACTIVE_PATTERN.palette.generic || '#78828a';
 }
 function spriteFor(props, size = 'M', variant = 0){
-  const key = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
+  const resolvedKey = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
+  const key = TEST_MODE ? (TEST_SPRITE_FALLBACKS[resolvedKey] || resolvedKey) : resolvedKey;
   const e = SPRITES[key];
   const baseDraw = e[size] || e.M || e.S || e.L || e.draw;
   let draw = baseDraw;
@@ -3882,6 +3894,8 @@ boot().finally(async () => {
   window.PixelMapStudy = {
     ready,
     captureReady:ready && (!CAPTURE_MODE || tileCache.size >= 9),
+    mode:TEST_MODE ? 'test' : 'production',
+    assetTaste:TEST_MODE ? 'classic' : 'reference',
     pattern:ACTIVE_PATTERN,
     location:HAS_INITIAL_LOCATION ? { name:INITIAL_PLACE, latitude:INITIAL_LAT, longitude:INITIAL_LON } : null,
     viewport:viewportState(),
