@@ -18,6 +18,11 @@ const PATTERN_07 = {
 };
 
 const EXTENT = 4096;
+const DENSE_POLICY = {
+  priority:'protected-area',
+  protectedKinds:['station','hospital'],
+  loserRepresentation:'hidden',
+};
 
 function poiFeature(id, cls, name, x, y, rank = 10){
   return { id, type:1, props:{ class:cls, name, rank }, geom:[[[x, y]]] };
@@ -58,9 +63,9 @@ function makeGetTile(tiles, base = null){
   };
 }
 
-function resolve(tiles, tileX, tileY, base = null){
+function resolve(tiles, tileX, tileY, base = null, collisionPolicy = null){
   return RESOLVER.resolveTile({
-    tileX, tileY, pattern:PATTERN_07, getTile:makeGetTile(tiles, base),
+    tileX, tileY, pattern:PATTERN_07, getTile:makeGetTile(tiles, base), collisionPolicy,
   });
 }
 
@@ -100,6 +105,75 @@ test('衝突解決: 重要度の低い近接施設は dot になり理由が残�
   assert.equal(station.representation, 'icon');
   assert.equal(cafe.representation, 'dot');
   assert.match(cafe.selectionReason, /^collision:/);
+  assert.equal(result.stats.hidden, 0);
+});
+
+test('面積優先: 保護対象でない近接施設は大きい建物が icon、小さい建物が hidden になる', () => {
+  const tiles = new Map([['10/10', makeTile({
+    pois:[
+      poiFeature(1, 'museum', '小資料館', 1990, 2000),
+      poiFeature(2, 'cafe', '大型カフェ', 2030, 2000),
+    ],
+    buildings:[
+      buildingFeature(10, 1800, 1900, 2000, 2100),
+      buildingFeature(11, 2020, 1800, 2480, 2200),
+    ],
+  })]]);
+  const result = resolve(tiles, 10, 10, null, DENSE_POLICY);
+  const small = result.facilities.find(f => f.name === '小資料館');
+  const large = result.facilities.find(f => f.name === '大型カフェ');
+  assert.ok(large.metrics.area > small.metrics.area);
+  assert.equal(large.representation, 'icon');
+  assert.equal(small.representation, 'hidden');
+  assert.match(small.selectionReason, /^collision:/);
+  assert.equal(result.stats.hidden, 1);
+});
+
+test('面積優先: 駅と病院は大きい一般施設より優先される', () => {
+  for (const [protectedClass, protectedName] of [['railway', '保護駅'], ['hospital', '保護病院']]){
+    const tiles = new Map([['10/10', makeTile({
+      pois:[
+        poiFeature(1, protectedClass, protectedName, 1990, 2000),
+        poiFeature(2, 'cafe', '大型カフェ', 2030, 2000),
+      ],
+      buildings:[
+        buildingFeature(10, 1800, 1900, 2000, 2100),
+        buildingFeature(11, 2020, 1800, 2480, 2200),
+      ],
+    })]]);
+    const result = resolve(tiles, 10, 10, null, DENSE_POLICY);
+    const protectedFacility = result.facilities.find(f => f.name === protectedName);
+    const large = result.facilities.find(f => f.name === '大型カフェ');
+    assert.equal(protectedFacility.collisionProtected, true);
+    assert.equal(protectedFacility.representation, 'icon');
+    assert.equal(large.representation, 'hidden');
+  }
+});
+
+test('面積優先: 複合施設は代表テナント以外に病院があっても保護する', () => {
+  const tiles = new Map([['10/10', makeTile({
+    pois:[
+      poiFeature(1, 'town_hall', '複合庁舎', 1200, 1200),
+      poiFeature(2, 'hospital', '庁舎内病院', 1250, 1250),
+    ],
+    buildings:[buildingFeature(9, 1000, 1000, 1400, 1400)],
+  })]]);
+  const result = resolve(tiles, 10, 10, null, DENSE_POLICY);
+  assert.equal(result.facilities.length, 1);
+  assert.equal(result.facilities[0].name, '複合庁舎');
+  assert.equal(result.facilities[0].collisionProtected, true);
+});
+
+test('面積優先: hidden は点クラスターへ再統合しない', () => {
+  const pois = [poiFeature(1, 'railway', '中央駅', 2000, 2000)];
+  [1900, 1920, 1940, 1960, 1980]
+    .forEach((x, i) => pois.push(poiFeature(10 + i, 'cafe', `喫茶${i}`, x, 2000)));
+  const tiles = new Map([['10/10', makeTile({ pois })]]);
+  const result = resolve(tiles, 10, 10, null, DENSE_POLICY);
+  assert.equal(result.clusters.length, 0);
+  assert.equal(result.facilities.filter(f => f.representation === 'hidden').length, 5);
+  assert.equal(result.stats.hidden, 5);
+  assert.equal(result.stats.clusterMembers, 0);
 });
 
 test('雑居ビル統合: 同じ建物のテナントは1施設へまとまり代表看板を持つ', () => {

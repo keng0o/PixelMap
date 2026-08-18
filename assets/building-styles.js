@@ -9,7 +9,7 @@
      カテゴリ色は icon-patterns.js のパターン07パレットと同一。
      ===================================================== */
 
-  const VERSION = 'building-styles/1';
+  const VERSION = 'building-styles/2';
 
   // 高さバンド: 1=切妻住宅(<10m) 2=低層陸屋根(10-30m) 3=中層(31-59m) 4=高層(60m+)
   const HEIGHT_BANDS = { gableMax:10, lowMax:31, midMax:60 };
@@ -49,6 +49,52 @@
     let hash = 2166136261;
     for (const ch of String(key || '')){ hash ^= ch.codePointAt(0); hash = Math.imul(hash, 16777619); }
     return hash >>> 0;
+  }
+
+  /* 密集した棟の表示選抜。
+     candidates: [{ id, key, area, cells:[[x,y],...], protected }]
+     protected は互いに間引かず全件を先に採用し、それ以外は面積の大きい順で
+     採用済みセルから gapCells 以内にない棟だけを残す。 */
+  function selectDenseBuildings(candidates = [], { gapCells = 1 } = {}){
+    const gap = Math.max(0, Math.floor(Number(gapCells) || 0));
+    const normalized = candidates.map((candidate, index) => ({
+      id:candidate.id ?? index,
+      key:String(candidate.key ?? candidate.id ?? index),
+      area:Number(candidate.area) || 0,
+      cells:Array.isArray(candidate.cells) ? candidate.cells : [],
+      protected:Boolean(candidate.protected),
+    }));
+    const acceptedCells = new Set();
+    const visible = new Set();
+    const cellKey = (x, y) => `${x},${y}`;
+    const stamp = candidate => {
+      visible.add(candidate.id);
+      for (const cell of candidate.cells){
+        if (!Array.isArray(cell) || cell.length < 2) continue;
+        acceptedCells.add(cellKey(Number(cell[0]), Number(cell[1])));
+      }
+    };
+    const overlapsAccepted = candidate => {
+      for (const cell of candidate.cells){
+        if (!Array.isArray(cell) || cell.length < 2) continue;
+        const x = Number(cell[0]), y = Number(cell[1]);
+        for (let dy = -gap; dy <= gap; dy++)
+          for (let dx = -gap; dx <= gap; dx++)
+            if (acceptedCells.has(cellKey(x + dx, y + dy))) return true;
+      }
+      return false;
+    };
+    const byKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+    const protectedCandidates = normalized.filter(candidate => candidate.protected).sort(byKey);
+    const ordinaryCandidates = normalized.filter(candidate => !candidate.protected)
+      .sort((a, b) => b.area - a.area || byKey(a, b));
+
+    // 保護対象は近接していても全件残し、後続の通常建物に対する占有物として扱う。
+    for (const candidate of protectedCandidates) stamp(candidate);
+    for (const candidate of ordinaryCandidates){
+      if (!overlapsAccepted(candidate)) stamp(candidate);
+    }
+    return visible;
   }
 
   /* 入力:
@@ -123,6 +169,7 @@
     HOUSE_PALETTES,
     FLAT_PALETTES,
     seedFromKey,
+    selectDenseBuildings,
     buildingAppearance,
   };
   global.PixelMapBuildingStyles = api;

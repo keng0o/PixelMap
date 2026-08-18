@@ -16,7 +16,7 @@
      （旧実装の4連結フラッドフィルと同じ意味論）。
      ===================================================== */
 
-  const ALGORITHM_VERSION = 'facility-resolver/1';
+  const ALGORITHM_VERSION = 'facility-resolver/2';
   const TILE_PX = 1536;            // z14表示スケール: 1タイル = 96セル × 16px
   const CELL_PX = 16;
   const CELL_AREA = CELL_PX * CELL_PX;
@@ -58,6 +58,11 @@
     return c === 'railway' || c === 'station' || s === 'railway' || s === 'station' ||
       s === 'halt' || s === 'tram_stop';
   };
+  const isHospitalProps = props => props.class === 'hospital' || props.subclass === 'hospital';
+  function isProtectedProps(props, protectedKinds){
+    return (protectedKinds.has('station') && isStationProps(props)) ||
+      (protectedKinds.has('hospital') && isHospitalProps(props));
+  }
   const poiImportance = props => {
     if (isStationProps(props)) return 0;
     const k = props.subclass || props.class || '';
@@ -311,15 +316,20 @@
      入力:
        tileX/tileY … 確定対象の正規タイル座標
        pattern     … icon-patterns.js のパターン設定
+       collisionPolicy … 任意。protected-area と hidden 表現を指定できる
        getTile(x,y) … { layers, baseX, baseY } を返す（layersの座標は
                        (タイル座標-base)*extent が加算済み）。未取得なら null、
                        世界の外など恒久的に空なら { empty:true }。
      出力: 施設リスト（このタイルにアンカーを持つものだけ）。文脈9タイルが
            揃わないうちは null を返し、呼び出し側が取得後に再試行する。 */
-  function resolveTile({ tileX, tileY, pattern, getTile }){
+  function resolveTile({ tileX, tileY, pattern, getTile, collisionPolicy = null }){
     const context = collectContext(tileX, tileY, getTile);
     if (!context) return null;
     bindPoisToRings(context.pois, context.rings);
+    const protectedAreaPriority = collisionPolicy?.priority === 'protected-area';
+    const protectedKinds = new Set(Array.isArray(collisionPolicy?.protectedKinds)
+      ? collisionPolicy.protectedKinds : []);
+    const loserRepresentation = collisionPolicy?.loserRepresentation === 'hidden' ? 'hidden' : 'dot';
 
     /* --- 雑居ビル統合: 同じ棟のテナントを1施設へ --- */
     const groups = new Map();   // ringKey|poiKey -> { building, tenants[] }
@@ -370,6 +380,8 @@
         visualScale:visualScaleFor(pattern, category),
         collisionRadius:visualRadiusFor(pattern, category, assetCount),
       };
+      if (protectedAreaPriority)
+        facility.collisionProtected = tenants.some(tenant => isProtectedProps(tenant.poi.props, protectedKinds));
       facility.selectionPriority = selectionPriorityFor(pattern, facility);
       // 世界座標グリッドへスナップしてから決定的オフセットを加える
       const sx = (Math.floor(rep.poi.x / snap) + 0.5) * snap;
@@ -381,8 +393,17 @@
     }
 
     /* --- 世界座標上の衝突解決（重要度→rank→安定キーの全域一貫した順で貪欲配置） --- */
-    facilities.sort((a, b) =>
-      a.selectionPriority - b.selectionPriority || a.rank - b.rank || (a.key < b.key ? -1 : 1));
+    const defaultCollisionOrder = (a, b) =>
+      a.selectionPriority - b.selectionPriority || a.rank - b.rank || (a.key < b.key ? -1 : 1);
+    facilities.sort((a, b) => {
+      if (!protectedAreaPriority) return defaultCollisionOrder(a, b);
+      if (Boolean(a.collisionProtected) !== Boolean(b.collisionProtected))
+        return a.collisionProtected ? -1 : 1;
+      // 保護施設同士は従来重要度で決め、それ以外だけ建物面積を最優先する。
+      if (!a.collisionProtected && a.metrics.area !== b.metrics.area)
+        return b.metrics.area - a.metrics.area;
+      return defaultCollisionOrder(a, b);
+    });
     const acceptedBuckets = new Map();
     const bucketOf = (x, y) => `${Math.floor(x / COLLISION_BUCKET_PX)}:${Math.floor(y / COLLISION_BUCKET_PX)}`;
     const gapScale = pattern.gapScale || 1;
@@ -428,7 +449,7 @@
         if (!acceptedBuckets.has(key)) acceptedBuckets.set(key, []);
         acceptedBuckets.get(key).push(facility);
       } else {
-        facility.representation = 'dot';
+        facility.representation = loserRepresentation;
         facility.selectionReason = reason;
       }
     }
@@ -491,6 +512,7 @@
         facilities:owned.length,
         icons:owned.filter(f => f.representation === 'icon').length,
         dots:owned.filter(f => f.representation === 'dot').length,
+        hidden:owned.filter(f => f.representation === 'hidden').length,
         clusterMembers:owned.filter(f => f.representation === 'cluster-member').length,
         clusters:ownedClusters.length,
       },
@@ -505,6 +527,7 @@
     resolveTile,
     CLASS2SPRITE,
     isStationProps,
+    isHospitalProps,
     poiImportance,
     poiCategory,
     tierValue,

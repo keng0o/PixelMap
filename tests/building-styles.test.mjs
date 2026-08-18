@@ -5,6 +5,7 @@ import '../assets/icon-patterns.js';
 
 const STYLES = globalThis.PixelMapBuildingStyles;
 const appearance = input => STYLES.buildingAppearance(input);
+const dense = (candidates, gapCells = 1) => STYLES.selectDenseBuildings(candidates, { gapCells });
 
 test('高さバンドの閾値', () => {
   assert.equal(appearance({ heightM:0 }).band, 1);
@@ -69,6 +70,48 @@ test('決定性: 同入力→同出力、住宅の配色はシードだけで決
   const b = appearance({ heightM:4, areaCells:20, seed:777 });
   assert.equal(a.roofKey, b.roofKey);   // 面積が変わっても（S内なら）色は変わらない
   assert.equal(STYLES.seedFromKey('r:1,2,3,4'), STYLES.seedFromKey('r:1,2,3,4'));
+});
+
+test('密集建物: 1セル以内では面積が大きい棟だけを残す', () => {
+  const visible = dense([
+    { id:'small', key:'small', area:4, cells:[[1, 1]] },
+    { id:'large', key:'large', area:20, cells:[[2, 1]] },
+  ]);
+  assert.deepEqual([...visible], ['large']);
+});
+
+test('密集建物: 斜め1セルは競合し、2セル以上離れれば両方残す', () => {
+  const diagonal = dense([
+    { id:'a', key:'a', area:10, cells:[[0, 0]] },
+    { id:'b', key:'b', area:5, cells:[[1, 1]] },
+  ]);
+  assert.deepEqual([...diagonal], ['a']);
+  const separated = dense([
+    { id:'a', key:'a', area:10, cells:[[0, 0]] },
+    { id:'b', key:'b', area:5, cells:[[2, 0]] },
+  ]);
+  assert.deepEqual([...separated], ['a', 'b']);
+});
+
+test('密集建物: 同面積は安定キー順、保護建物は小さくても残る', () => {
+  const tied = dense([
+    { id:'z', key:'z', area:10, cells:[[0, 0]] },
+    { id:'a', key:'a', area:10, cells:[[1, 0]] },
+  ]);
+  assert.deepEqual([...tied], ['a']);
+  const protectedVisible = dense([
+    { id:'station', key:'station', area:1, cells:[[0, 0]], protected:true },
+    { id:'large', key:'large', area:100, cells:[[1, 0]] },
+  ]);
+  assert.deepEqual([...protectedVisible], ['station']);
+});
+
+test('密集建物: 保護建物同士は近接していても共存する', () => {
+  const visible = dense([
+    { id:'station', key:'station', area:1, cells:[[0, 0]], protected:true },
+    { id:'hospital', key:'hospital', area:1, cells:[[1, 0]], protected:true },
+  ]);
+  assert.deepEqual([...visible], ['hospital', 'station']);
 });
 
 test('カテゴリ色はicon-patternsのパターン07パレットと同一', () => {
