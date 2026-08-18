@@ -51,6 +51,14 @@ test('全マップの道路は元形状を1論理px単位で直接描画する',
   assert.match(html, /if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option, true\)/);
 });
 
+test('テストページの道路は種別と橋を問わず表示8px・外周1pxに揃える', () => {
+  assert.match(html, /const TEST_ROAD_SCENE_WIDTH = 16/);
+  assert.match(html, /const TEST_ROAD_SCENE_CASING = 2/);
+  assert.match(html, /const width = TEST_MODE \? TEST_ROAD_SCENE_WIDTH : style\.width \+ \(bridge \? 4 : 0\)/);
+  assert.match(html, /const casing = TEST_MODE \? TEST_ROAD_SCENE_CASING : style\.casing/);
+  assert.match(html, /const areaCasing = TEST_MODE \? TEST_ROAD_SCENE_CASING : style\.casing \+ \(bridge \? 2 : 0\)/);
+});
+
 test('1マップ・2マップ・4マップは共通の1px描画エンジンを使う', () => {
   assert.match(oneMap, /variants\/map-02-refined\.html\?embedded=1/);
   assert.equal((twoMap.match(/variants\/map-02-refined\.html\?embedded=1/g) || []).length, 2);

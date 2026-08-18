@@ -1213,6 +1213,8 @@ const SMOOTH_ROAD_STYLE = {
   majorRoads:{ width:20, casing:2, fill:'#d8c890', edge:'#a89058', center:'#e8b840' },
   motorways:{ width:28, casing:3, fill:'#d8c890', edge:'#8f7848', center:'#f8d878' },
 };
+const TEST_ROAD_SCENE_WIDTH = 16;
+const TEST_ROAD_SCENE_CASING = 2;
 /* 建物の分類・配色は building-styles.js が唯一の正典。
    ROOFPALはタイル焼き込みと後方互換のためのエイリアス。 */
 const BUILDING_STYLES = window.PixelMapBuildingStyles;
@@ -2878,7 +2880,11 @@ function render(){
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    const width = style.width + (bridge ? 4 : 0);
+    // テストページでは道路種別や橋による太さの差をなくす。
+    // 16シーンpx＝表示8px、2シーンpx＝表示1pxの外周に統一する。
+    const width = TEST_MODE ? TEST_ROAD_SCENE_WIDTH : style.width + (bridge ? 4 : 0);
+    const casing = TEST_MODE ? TEST_ROAD_SCENE_CASING : style.casing;
+    const areaCasing = TEST_MODE ? TEST_ROAD_SCENE_CASING : style.casing + (bridge ? 2 : 0);
     if (areaFeatures.length){
       for (const feature of areaFeatures){
         ctx.beginPath();
@@ -2891,7 +2897,7 @@ function render(){
         }
         ctx.fillStyle = style.fill;
         ctx.strokeStyle = style.edge;
-        ctx.lineWidth = style.casing * 2 + (bridge ? 4 : 0);
+        ctx.lineWidth = areaCasing * 2;
         ctx.fill('evenodd');
         ctx.stroke();
       }
@@ -2899,7 +2905,7 @@ function render(){
     if (lineFeatures.length){
       traceLines();
       ctx.strokeStyle = style.edge;
-      ctx.lineWidth = width + style.casing * 2;
+      ctx.lineWidth = width + casing * 2;
       ctx.stroke();
       traceLines();
       ctx.strokeStyle = style.fill;
