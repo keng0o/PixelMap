@@ -4,8 +4,9 @@ import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
 
-test('テスト用マップはpixel=1/2だけを受け付け、1を既定値にする', () => {
-  assert.match(html, /PAGE_PARAMS\.get\('pixel'\) === '2' \? 2 : 1/);
+test('テスト用マップは1px版だけを提供する', () => {
+  assert.match(html, /const REQUESTED_PIXEL_SCALE = 1/);
+  assert.doesNotMatch(html, /PAGE_PARAMS\.get\('pixel'\) === '2'/);
   assert.match(html, /dataset\.pixelRequestedScale = String\(REQUESTED_PIXEL_SCALE\)/);
   assert.match(html, /pixelRequestedScale:REQUESTED_PIXEL_SCALE/);
 });
@@ -25,4 +26,12 @@ test('施設の構成ドットはテストモードだけ2シーンpxへ固定�
 test('本番埋め込みにはテスト用表示CSSを適用しない', () => {
   assert.match(html, /html\[data-map-mode="test"\] #map/);
   assert.doesNotMatch(html, /html\[data-map-mode="production"\][^{]*#map/);
+});
+
+test('テスト用道路は元形状を1論理px単位で直接描画する', () => {
+  assert.match(html, /const SMOOTH_ROAD_OPTIONS = new Set\(\['localRoads','regionalRoads','majorRoads','motorways'\]\)/);
+  assert.match(html, /function drawSmoothRoadLayer\(option, bridge = false\)/);
+  assert.match(html, /Math\.round\(x \/ 2\) \* 2/);
+  assert.match(html, /TEST_MODE && SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option\)/);
+  assert.match(html, /TEST_MODE && SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option, true\)/);
 });

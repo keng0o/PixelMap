@@ -709,7 +709,9 @@ const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
 const ICON_PATTERNS = Array.isArray(window.PixelMapIconPatterns) ? window.PixelMapIconPatterns : [];
 const requestedPatternId = TEST_MODE ? '06' : String(PAGE_PARAMS.get('pattern') || '07').padStart(2, '0');
-const REQUESTED_PIXEL_SCALE = TEST_MODE && PAGE_PARAMS.get('pixel') === '2' ? 2 : 1;
+// テスト用マップは共通ドットの1px版だけを提供する。
+// 旧 ?pixel=2 を含むpixel指定は表示倍率へ影響させない。
+const REQUESTED_PIXEL_SCALE = 1;
 const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPatternId) || ICON_PATTERNS[0] || {
   id:'01', name:'バランス階層', eyebrow:'基準案', summary:'施設の大きさを地物に合わせて調整します。',
   rule:'面積と高さ', orderLabel:'地図上のY順', assetRule:'規模別', marker:'plinth', dot:'square',
@@ -1168,6 +1170,13 @@ const TRANSPORT_STYLE = {
   majorRoads:{ id:ID.HIGHWAY, thick:true, polygonId:ID.HIGHWAY },
   motorways:{ id:ID.HIGHWAY, thick:true, polygonId:ID.HIGHWAY },
   transportationOther:{ id:ID.PATH, thick:false, polygonId:ID.PAVE },
+};
+const SMOOTH_ROAD_OPTIONS = new Set(['localRoads','regionalRoads','majorRoads','motorways']);
+const SMOOTH_ROAD_STYLE = {
+  localRoads:{ width:14, casing:2, fill:'#c6c6c0', edge:'#8e8e88', center:null },
+  regionalRoads:{ width:16, casing:2, fill:'#d0d0ca', edge:'#9e9e98', center:'#f8f0d8' },
+  majorRoads:{ width:20, casing:2, fill:'#d8c890', edge:'#a89058', center:'#e8b840' },
+  motorways:{ width:28, casing:3, fill:'#d8c890', edge:'#8f7848', center:'#f8d878' },
 };
 /* 建物の分類・配色は building-styles.js が唯一の正典。
    ROOFPALはタイル焼き込みと後方互換のためのエイリアス。 */
@@ -2799,6 +2808,80 @@ function render(){
   const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
   drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
+  /* テスト用の道路は16pxセルへ落とさず、MVTの元形状を2シーンpx
+     （表示上1論理px）のグリッドへ直接描く。外形・舗装・中央線を
+     別ストロークにすることで、交差点をつなげたまま細かな曲線を保つ。 */
+  function drawSmoothRoadLayer(option, bridge = false){
+    const style = SMOOTH_ROAD_STYLE[option];
+    if (!style) return;
+    const features = L('transportation').filter(feature => {
+      if (transportationOption(feature) !== option) return false;
+      const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
+      const isTunnel = feature.props.brunnel === 'tunnel';
+      return bridge ? isBridge : !isBridge && !isTunnel;
+    });
+    if (!features.length) return;
+
+    const point = value => {
+      const [x, y] = tp(value);
+      return [Math.round(x / 2) * 2, Math.round(y / 2) * 2];
+    };
+    const lineFeatures = features.filter(feature => feature.type === 2);
+    const areaFeatures = features.filter(feature => feature.type === 3);
+    const traceLines = () => {
+      ctx.beginPath();
+      for (const feature of lineFeatures){
+        for (const line of feature.geom){
+          line.forEach((pt, index) => {
+            const [x, y] = point(pt);
+            index ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+          });
+        }
+      }
+    };
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    const width = style.width + (bridge ? 4 : 0);
+    if (areaFeatures.length){
+      for (const feature of areaFeatures){
+        ctx.beginPath();
+        for (const ring of feature.geom){
+          ring.forEach((pt, index) => {
+            const [x, y] = point(pt);
+            index ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+          });
+          ctx.closePath();
+        }
+        ctx.fillStyle = style.fill;
+        ctx.strokeStyle = style.edge;
+        ctx.lineWidth = style.casing * 2 + (bridge ? 4 : 0);
+        ctx.fill('evenodd');
+        ctx.stroke();
+      }
+    }
+    if (lineFeatures.length){
+      traceLines();
+      ctx.strokeStyle = style.edge;
+      ctx.lineWidth = width + style.casing * 2;
+      ctx.stroke();
+      traceLines();
+      ctx.strokeStyle = style.fill;
+      ctx.lineWidth = width;
+      ctx.stroke();
+      if (style.center){
+        traceLines();
+        ctx.strokeStyle = style.center;
+        ctx.lineWidth = 2;
+        ctx.setLineDash(option === 'regionalRoads' ? [14, 12] : [20, 14]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+    ctx.restore();
+  }
+
   function drawTunnelLayer(option){
     ctx.globalAlpha = .3;
     ctx.lineCap = 'round';
@@ -3089,7 +3172,8 @@ function render(){
   drawRasterGroup('Z1', z1Water);
   for (const option of layerOrder){
     if (!o[option] || !z2Routes.has(option)) continue;
-    if (tunnelOptions.has(option)) drawTunnelLayer(option);
+    if (TEST_MODE && SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option);
+    else if (tunnelOptions.has(option)) drawTunnelLayer(option);
     else {
       const grid = grids.get(option);
       if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);
@@ -3103,8 +3187,11 @@ function render(){
   }
   for (const option of layerOrder){
     if (!o[option] || !bridgeOptions.has(option)) continue;
-    const grid = grids.get(`bridge:${option}`);
-    if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);
+    if (TEST_MODE && SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option, true);
+    else {
+      const grid = grids.get(`bridge:${option}`);
+      if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);
+    }
     renderOrder.push(`Z3:bridge:${option}`);
   }
   if (o.buildings){
