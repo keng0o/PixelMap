@@ -37,6 +37,34 @@ test('assets.html用カタログは52点・新テイスト26点でマッピン�
   for(const spriteId of Object.values(resolver.CLASS2SPRITE)) assert.ok(assetIds.has(spriteId), spriteId);
   for(const asset of catalog.assets) assert.equal(typeof asset.categoryLabel, 'string');
   assert.equal(typeof catalog.draw, 'function');
+  assert.equal(typeof catalog.measure, 'function');
+});
+
+test('全POIのS/M/L実寸が透明描画の外接矩形と一致する', () => {
+  for(const asset of catalog.assets){
+    for(const size of asset.sizes){
+      const measured=catalog.measure(asset.id,size);
+      assert.ok(Number.isInteger(measured.width) && measured.width>0, `${asset.id}:${size} width`);
+      assert.ok(Number.isInteger(measured.height) && measured.height>0, `${asset.id}:${size} height`);
+      assert.equal(measured.width,measured.right-measured.left,`${asset.id}:${size} horizontal bounds`);
+      assert.equal(measured.height,measured.bottom-measured.top,`${asset.id}:${size} vertical bounds`);
+
+      let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+      const offsetX=73,offsetY=59;
+      catalog.draw({
+        fillStyle:'#000000',
+        fillRect(x,y,width,height){
+          left=Math.min(left,Math.floor(x));top=Math.min(top,Math.floor(y));
+          right=Math.max(right,Math.ceil(x+width));bottom=Math.max(bottom,Math.ceil(y+height));
+        },
+      },asset.id,offsetX,offsetY,size);
+      assert.deepEqual(
+        {left:left-offsetX,top:top-offsetY,right:right-offsetX,bottom:bottom-offsetY},
+        {left:measured.left,top:measured.top,right:measured.right,bottom:measured.bottom},
+        `${asset.id}:${size}`,
+      );
+    }
+  }
 });
 
 test('新テイスト候補20点はアセットのみで、マップのPOI属性へは未接続', () => {

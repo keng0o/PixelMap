@@ -86,9 +86,41 @@
     },
   ]);
 
+  const LINE_WIDTHS = Object.freeze({
+    river:1.4, stream:.65, canal:1.4, drain:1.1, other:1,
+    local:14, regional:16, major:20, motorway:28,
+    path:2, track:4, raceway:8, ferry:2, pier:4,
+    rail:4, subway:4, aerialway:2,
+    roadTunnel:5, pathTunnel:5, railTunnel:5,
+  });
+
+  function metricFor(kind,variant){
+    if(kind==='surface' || (kind==='water' && variant==='area')){
+      return Object.freeze({kind:'tile',label:'16×16 px TILE',width:16,height:16});
+    }
+    if(kind==='water' || kind==='route'){
+      const lineWidth=kind==='route' && variant==='other' ? 2 : LINE_WIDTHS[variant] ?? 1;
+      return Object.freeze({
+        kind:'line',label:`${lineWidth} px LINE`,lineWidth,
+        width:32,height:Math.max(16,Math.ceil(lineWidth)+8),
+      });
+    }
+    if(kind==='object' && variant==='buildings'){
+      return Object.freeze({kind:'variable',label:'可変 / 48×36 px SAMPLE',width:48,height:36});
+    }
+    if(kind==='object' && variant==='poi'){
+      return Object.freeze({kind:'variable',label:'可変 / POI別',width:32,height:32});
+    }
+    if(kind==='object'){
+      return Object.freeze({kind:'object',label:'7×7 px DOT',width:7,height:7});
+    }
+    const fontSize=variant==='place'?26:22;
+    return Object.freeze({kind:'variable',label:`可変 / ${fontSize} px TYPE`,width:96,height:32,fontSize});
+  }
+
   const layers = Object.freeze(groups.flatMap(group => group.items.map(item => Object.freeze({
     id:item[0], label:item[1], kind:item[2], color:item[3], variant:item[4],
-    group:group.id, groupLabel:group.label,
+    group:group.id, groupLabel:group.label, metric:metricFor(item[2],item[4]),
   }))));
 
   const P = Object.freeze({
@@ -226,5 +258,69 @@
     else label(ctx,asset);
   }
 
-  global.PixelMapLayerAssets=Object.freeze({groups,layers,render});
+  function renderTileDetail(ctx,asset){
+    rect(ctx,0,0,16,16,asset.color);
+    if(asset.variant==='grass'){
+      rect(ctx,3,5,1,2,P.grassDark);rect(ctx,4,4,1,3,P.grassLight);
+      rect(ctx,11,11,2,1,P.grassDark);return;
+    }
+    if(asset.variant==='forest' || asset.variant==='woods'){
+      rect(ctx,2,7,12,6,P.treeDark);rect(ctx,4,3,8,8,P.tree);
+      rect(ctx,6,3,3,3,P.treeLight);rect(ctx,7,11,2,5,P.trunk);return;
+    }
+    if(asset.variant==='farmland'){
+      for(let y=2;y<16;y+=4)rect(ctx,0,y,16,1,'#b09850');return;
+    }
+    if(asset.variant==='water' || asset.variant==='area'){
+      rect(ctx,0,0,16,16,P.water);rect(ctx,2,5,6,1,P.waterLight);rect(ctx,9,11,5,1,P.waterDark);return;
+    }
+    const detailTone=asset.color==='#c0c0c8'?'#989ca8':asset.color==='#a8a098'?'#888078':P.outline;
+    for(const [x,y] of [[3,4],[11,3],[6,11],[13,13]])rect(ctx,x,y,2,2,detailTone);
+  }
+
+  function renderLineDetail(ctx,asset){
+    const metric=asset.metric;
+    const lineWidth=Math.max(1,Math.round(metric.lineWidth));
+    const y=Math.floor((canvasHeight(ctx)-lineWidth)/2);
+    const dashed=asset.variant.endsWith('Tunnel') || asset.variant==='subway' || asset.variant==='ferry' || asset.variant==='aerialway';
+    const background=asset.variant==='ferry' || asset.variant==='pier' ? P.water : P.grass;
+    rect(ctx,0,0,ctx.canvas.width,ctx.canvas.height,background);
+    for(let x=0;x<ctx.canvas.width;x+=dashed?10:ctx.canvas.width){
+      const segmentWidth=dashed?6:ctx.canvas.width;
+      rect(ctx,x,y,segmentWidth,lineWidth,asset.color);
+    }
+    if(['rail','subway','railTunnel'].includes(asset.variant)){
+      for(let x=2;x<ctx.canvas.width;x+=5)rect(ctx,x,y-2,1,lineWidth+4,'#786048');
+    }
+  }
+
+  function canvasHeight(ctx){ return ctx.canvas?.height || 16; }
+
+  function renderDetail(canvas,asset){
+    const metric=asset.metric;
+    canvas.width=metric.width;canvas.height=metric.height;
+    const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(metric.kind==='tile') renderTileDetail(ctx,asset);
+    else if(metric.kind==='line') renderLineDetail(ctx,asset);
+    else if(asset.variant==='buildings') building(ctx,24,24,P.roof);
+    else if(asset.variant==='poi'){
+      const poiCatalog=global.PixelMapPoiSprites;
+      const measurement=poiCatalog?.measure('pop_station','M');
+      if(measurement){
+        canvas.width=measurement.width;canvas.height=measurement.height;
+        const poiCtx=canvas.getContext('2d');poiCtx.imageSmoothingEnabled=false;
+        poiCatalog.draw(poiCtx,'pop_station',-measurement.left,-measurement.top,'M');
+      }
+    }
+    else if(asset.variant==='dots'){
+      rect(ctx,0,0,7,7,P.outline);rect(ctx,2,2,3,3,'#f8d038');
+    }
+    else{
+      const labels={station:'駅名',park:'公園名',poi:'施設名',place:'地名',terrain:'山名'};
+      ctx.font=`${metric.fontSize}px DotGothic16,monospace`;
+      ctx.textBaseline='top';ctx.fillStyle=asset.color;ctx.fillText(labels[asset.variant],1,1);
+    }
+  }
+
+  global.PixelMapLayerAssets=Object.freeze({groups,layers,render,renderDetail});
 })(window);

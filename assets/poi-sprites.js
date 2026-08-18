@@ -251,5 +251,28 @@
     finally { ctx=null; }
   }
 
-  global.PixelMapPoiSprites = Object.freeze({assets,categories,tastes,draw,render});
+  const measurementCache = new Map();
+  function measure(id, size='M'){
+    const cacheKey = `${id}:${size}`;
+    if(measurementCache.has(cacheKey)) return measurementCache.get(cacheKey);
+    let left=Infinity, top=Infinity, right=-Infinity, bottom=-Infinity;
+    const measurementTarget = {
+      fillStyle:'#000000',
+      fillRect(x,y,width,height){
+        if(!Number.isFinite(x+y+width+height) || width<=0 || height<=0) return;
+        left=Math.min(left,Math.floor(x));
+        top=Math.min(top,Math.floor(y));
+        right=Math.max(right,Math.ceil(x+width));
+        bottom=Math.max(bottom,Math.ceil(y+height));
+      },
+    };
+    draw(measurementTarget,id,0,0,size);
+    const measurement = Object.freeze(Number.isFinite(left)
+      ? {left,top,right,bottom,width:right-left,height:bottom-top}
+      : {left:0,top:0,right:0,bottom:0,width:0,height:0});
+    measurementCache.set(cacheKey,measurement);
+    return measurement;
+  }
+
+  global.PixelMapPoiSprites = Object.freeze({assets,categories,tastes,draw,render,measure});
 })(window);

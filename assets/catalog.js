@@ -8,6 +8,9 @@
   const tastes = catalog.tastes || [];
   const tasteIds = new Set(tastes.map(taste => taste.id));
   const state = { category:'all', query:'' };
+  const PIXEL_SCALE = 8;
+  let expandedCard = null;
+  let expandedButton = null;
   const grid = document.getElementById('assetGrid');
   const filters = document.getElementById('filters');
   const resultCount = document.getElementById('resultCount');
@@ -65,19 +68,164 @@
     list.className = 'size-chips';
     for (const size of asset.sizes){
       const chip = document.createElement('span');
-      chip.textContent = size;
+      chip.className = 'size-chip';
+      const measurement = catalog.measure(asset.id,size);
+      const name = document.createElement('b');
+      name.textContent = size;
+      const dimensions = document.createElement('small');
+      dimensions.textContent = `${measurement.width}×${measurement.height}`;
+      chip.append(name,dimensions);
+      chip.title = `${size}: ${measurement.width}×${measurement.height} px`;
       list.appendChild(chip);
     }
     return list;
   }
 
+  function closeExpanded(){
+    if(!expandedCard) return;
+    expandedCard.classList.remove('is-expanded');
+    expandedCard.querySelector(':scope > .pixel-detail')?.remove();
+    expandedButton?.setAttribute('aria-expanded','false');
+    expandedButton?.removeAttribute('aria-controls');
+    expandedCard=null;
+    expandedButton=null;
+  }
+
+  function makeRuler(axis,length,cssLength){
+    const ruler=document.createElement('div');
+    ruler.className=`pixel-ruler pixel-ruler-${axis}`;
+    ruler.style[axis==='x'?'width':'height']=`${cssLength}px`;
+    const start=document.createElement('span');
+    start.textContent='0';
+    const end=document.createElement('span');
+    end.textContent=String(length);
+    ruler.append(start,end);
+    return ruler;
+  }
+
+  function makePixelStage(canvas,label){
+    const cssWidth=canvas.width*PIXEL_SCALE;
+    const cssHeight=canvas.height*PIXEL_SCALE;
+    canvas.className='pixel-detail-canvas';
+    canvas.style.width=`${cssWidth}px`;
+    canvas.style.height=`${cssHeight}px`;
+    canvas.setAttribute('aria-label',label);
+
+    const scroll=document.createElement('div');
+    scroll.className='pixel-detail-scroll';
+    const stage=document.createElement('div');
+    stage.className='pixel-stage';
+    stage.style.width=`${cssWidth+24}px`;
+    stage.style.height=`${cssHeight+24}px`;
+    const corner=document.createElement('div');
+    corner.className='pixel-ruler-corner';
+    corner.textContent='px';
+    const grid=document.createElement('div');
+    grid.className='pixel-grid';
+    grid.style.width=`${cssWidth}px`;
+    grid.style.height=`${cssHeight}px`;
+    grid.style.setProperty('--pixel-scale',`${PIXEL_SCALE}px`);
+    grid.appendChild(canvas);
+    stage.append(corner,makeRuler('x',canvas.width,cssWidth),makeRuler('y',canvas.height,cssHeight),grid);
+    scroll.appendChild(stage);
+    return scroll;
+  }
+
+  function makeDetailHeading(titleText,metricText){
+    const heading=document.createElement('div');
+    heading.className='pixel-detail-heading';
+    const title=document.createElement('strong');
+    title.textContent=titleText;
+    const metric=document.createElement('code');
+    metric.textContent=metricText;
+    const legend=document.createElement('span');
+    legend.textContent='1マス = 1 px / 8× ZOOM';
+    heading.append(title,metric,legend);
+    return {heading,metric};
+  }
+
+  function makeLayerDetail(asset){
+    const panel=document.createElement('section');
+    panel.className='pixel-detail';
+    panel.setAttribute('aria-label',`${asset.label}のピクセル拡大表示`);
+    const {heading}=makeDetailHeading(asset.label,asset.metric.label);
+    const canvas=document.createElement('canvas');
+    layerCatalog.renderDetail(canvas,asset);
+    panel.append(heading,makePixelStage(
+      canvas,
+      `${asset.label}の${canvas.width}×${canvas.height}ピクセル拡大見本`,
+    ));
+    return panel;
+  }
+
+  function makePoiDetail(asset){
+    const panel=document.createElement('section');
+    panel.className='pixel-detail';
+    panel.setAttribute('aria-label',`${asset.label}のピクセル拡大表示`);
+    const {heading,metric}=makeDetailHeading(asset.label,'');
+    const controls=document.createElement('div');
+    controls.className='detail-size-controls';
+    controls.setAttribute('role','group');
+    controls.setAttribute('aria-label','アセットサイズ');
+    const stageHost=document.createElement('div');
+    let selectedSize=asset.previewSize;
+
+    const renderSize=()=>{
+      const measurement=catalog.measure(asset.id,selectedSize);
+      metric.textContent=`${selectedSize} / ${measurement.width}×${measurement.height} px`;
+      const canvas=document.createElement('canvas');
+      canvas.width=measurement.width;
+      canvas.height=measurement.height;
+      const target=canvas.getContext('2d');
+      target.imageSmoothingEnabled=false;
+      catalog.draw(target,asset.id,-measurement.left,-measurement.top,selectedSize);
+      stageHost.replaceChildren(makePixelStage(
+        canvas,
+        `${asset.label} ${selectedSize}の${measurement.width}×${measurement.height}ピクセル拡大表示`,
+      ));
+      for(const button of controls.children){
+        button.setAttribute('aria-pressed',String(button.dataset.size===selectedSize));
+      }
+    };
+
+    for(const size of asset.sizes){
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='detail-size-button';
+      button.dataset.size=size;
+      button.textContent=size;
+      button.addEventListener('click',()=>{selectedSize=size;renderSize();});
+      controls.appendChild(button);
+    }
+    panel.append(heading,controls,stageHost);
+    renderSize();
+    return panel;
+  }
+
+  function toggleExpanded(card,button,makePanel){
+    if(expandedCard===card){closeExpanded();return;}
+    closeExpanded();
+    const panel=makePanel();
+    panel.id=`pixelDetail-${card.dataset.layerId || card.dataset.assetId}`;
+    card.appendChild(panel);
+    card.classList.add('is-expanded');
+    button.setAttribute('aria-expanded','true');
+    button.setAttribute('aria-controls',panel.id);
+    expandedCard=card;
+    expandedButton=button;
+  }
+
   function makeCard(asset, index){
     const article = document.createElement('article');
     article.className = `asset-card${asset.inspired ? ' is-inspired' : ''}`;
+    article.dataset.assetId = asset.id;
     article.dataset.number = String(index + 1).padStart(2, '0');
 
-    const preview = document.createElement('div');
+    const preview = document.createElement('button');
+    preview.type = 'button';
     preview.className = 'asset-preview';
+    preview.setAttribute('aria-expanded','false');
+    preview.setAttribute('aria-label',`${asset.label}のピクセル拡大表示を開く`);
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-label', `${asset.label}のマップ表示`);
     catalog.render(canvas, asset.id, asset.previewSize);
@@ -114,6 +262,7 @@
 
     copy.append(heading, mapping);
     article.append(preview, copy);
+    preview.addEventListener('click',()=>toggleExpanded(article,preview,()=>makePoiDetail(asset)));
     return article;
   }
 
@@ -123,8 +272,11 @@
     article.dataset.layerId = asset.id;
     article.dataset.number = String(index + 1).padStart(2, '0');
 
-    const preview = document.createElement('div');
+    const preview = document.createElement('button');
+    preview.type = 'button';
     preview.className = 'layer-preview';
+    preview.setAttribute('aria-expanded','false');
+    preview.setAttribute('aria-label',`${asset.label}のピクセル拡大表示を開く`);
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-label', `${asset.label}レイヤーの表示見本`);
     layerCatalog.render(canvas, asset);
@@ -136,8 +288,12 @@
     name.textContent = asset.label;
     const id = document.createElement('code');
     id.textContent = asset.id;
-    copy.append(name,id);
+    const metric = document.createElement('span');
+    metric.className = 'pixel-metric';
+    metric.textContent = asset.metric.label;
+    copy.append(name,id,metric);
     article.append(preview,copy);
+    preview.addEventListener('click',()=>toggleExpanded(article,preview,()=>makeLayerDetail(asset)));
     return article;
   }
 
@@ -166,6 +322,7 @@
   }
 
   function renderGrid(){
+    closeExpanded();
     const items = visibleAssets();
     const fragment = document.createDocumentFragment();
     items.forEach(asset => fragment.appendChild(makeCard(asset, assets.indexOf(asset))));
