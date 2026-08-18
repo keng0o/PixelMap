@@ -4,6 +4,8 @@
   const catalog = window.PixelMapPoiSprites;
   const assets = catalog.assets;
   const categories = catalog.categories;
+  const tastes = catalog.tastes || [];
+  const tasteIds = new Set(tastes.map(taste => taste.id));
   const state = { category:'all', query:'' };
   const grid = document.getElementById('assetGrid');
   const filters = document.getElementById('filters');
@@ -17,10 +19,10 @@
     const query = normalize(state.query.trim());
     return assets.filter(asset => {
       const inCategory = state.category === 'all'
-        || (state.category === 'reference' ? asset.inspired : asset.category === state.category);
+        || (tasteIds.has(state.category) ? asset.taste === state.category : asset.category === state.category);
       const haystack = normalize([
         asset.id, asset.label, asset.categoryLabel, ...asset.poiTypes,
-        asset.inspired ? 'reference mix 新作 参照テイスト' : '',
+        asset.inspired ? `新作 候補 ${asset.tasteLabel}` : '',
       ].join(' '));
       return inCategory && (!query || haystack.includes(query));
     });
@@ -43,7 +45,11 @@
   function renderFilters(){
     filters.replaceChildren(
       makeFilter('all', 'すべて', assets.length),
-      makeFilter('reference', '参照テイスト', assets.filter(asset => asset.inspired).length),
+      ...tastes.map(taste => makeFilter(
+        taste.id,
+        taste.label,
+        assets.filter(asset => asset.taste === taste.id).length,
+      )),
       ...categories.map(category => makeFilter(
         category.id,
         category.label,
@@ -77,7 +83,7 @@
     if(asset.inspired){
       const badge = document.createElement('span');
       badge.className = 'reference-badge';
-      badge.textContent = 'REFERENCE MIX';
+      badge.textContent = asset.tasteLabel;
       preview.appendChild(badge);
     }
 

@@ -67,6 +67,24 @@
     deco?.(cx,cy);
   }
 
+  /* --- しろポップ系ヘルパー: 白地＋インク輪郭＋原色アクセント --- */
+  const POP = Object.freeze({
+    ink:'#2c3452', white:'#ffffff', shade:'#e2e8f2',
+    red:'#e8474f', yellow:'#f7c948', blue:'#3fb5e5', green:'#8bc53f',
+  });
+  function popPad(cx, cy, half){
+    px(cx-half,cy-2,half*2,4,POP.ink);
+    px(cx-half+1,cy-1,half*2-2,2,POP.white);
+    px(cx-half+3,cy,2,1,POP.green); px(cx+half-6,cy,2,1,POP.blue); px(cx-1,cy,2,1,POP.yellow);
+  }
+  function popBox(x, y, w, h, fill = POP.white){
+    px(x,y,w,h,POP.ink);
+    px(x+1,y+1,w-2,h-2,fill);
+    if (fill === POP.white) px(x+w-2,y+1,1,h-2,POP.shade);
+  }
+  function popWin(x, y, w = 4, h = 4){ px(x,y,w,h,POP.ink); px(x+1,y+1,w-2,h-2,POP.blue); }
+  function popDoor(x, y, color = POP.yellow){ px(x,y,4,6,POP.ink); px(x+1,y+1,2,5,color); }
+
   const SPRITES = {
     station:{ label:'鉄道駅',
       S:(x,y)=>{ yard(x,y,14);block(x-7,y-10,14,10,P.wall);roofBar(x-9,y-14,18,4,P.roofA);px(x-7,y-10,14,1,sh(P.wall,.7));sign(x-4,y-9,8);win(x-5,y-6,3,3);win(x-1,y-6,3,4);win(x+3,y-6,3,3); },
@@ -130,6 +148,17 @@
     wing_post:{label:'翼の郵便小屋',draw:(x,y)=>{yard(x,y,13);block(x-8,y-11,16,11,'#f8eee5');px(x-9,y-14,18,3,'#d95072');px(x-9,y-14,18,1,hi('#d95072'));px(x-4,y-21,8,5,'#f0d1bd');px(x-4,y-21,8,1,hi('#f0d1bd'));px(x-3,y-20,2,1,'#d6a88f');px(x+1,y-20,2,1,'#d6a88f');px(x-1,y-19,2,1,'#d6a88f');px(x-8,y-20,4,2,'#f0cf5a');px(x-11,y-21,3,2,'#e6bd4d');px(x+4,y-20,4,2,'#f0cf5a');px(x+8,y-21,3,2,'#e6bd4d');px(x-5,y-8,4,3,'#a882c5');px(x+1,y-8,4,8,'#6f3f46');px(x+2,y-6,2,1,'#f0cf5a');}},
     art_museum:{label:'額縁美術館',draw:(x,y)=>{yard(x,y,18);block(x-13,y-11,26,11,'#f8eee5');px(x-11,y-9,2,9,'#f0d1bd');px(x-5,y-9,2,9,'#f0d1bd');px(x+3,y-9,2,9,'#f0d1bd');px(x+9,y-9,2,9,'#f0d1bd');px(x-12,y-27,24,16,'#e6bd4d');px(x-12,y-27,24,1,hi('#f0cf5a'));px(x-10,y-25,20,12,'#d6a93f');px(x-9,y-24,18,10,'#6fa7a2');px(x+3,y-23,3,3,'#f0cf5a');px(x-9,y-18,8,4,'#70507f');px(x-3,y-16,12,2,'#456b6b');px(x-2,y-6,4,6,'#6f3f46');}},
     menagerie:{label:'モンスター牧場',draw:(x,y)=>{yard(x,y,20);for(let i=0;i<5;i++)px(x-16+i*8,y-9,2,5,'#456b6b');px(x-16,y-6,32,2,'#456b6b');px(x-16,y-6,32,1,hi('#456b6b'));block(x-9,y-16,18,10,'#a45f58');px(x-10,y-19,20,3,'#6f3f46');px(x-10,y-19,20,1,hi('#a45f58'));px(x-9,y-23,3,4,'#f0d1bd');px(x+6,y-23,3,4,'#f0d1bd');px(x-3,y-11,6,5,'#6f3f46');px(x-2,y-10,4,4,'#70507f');px(x+8,y-14,7,7,'#a882c5');px(x+9,y-16,2,2,'#70507f');px(x+12,y-16,2,2,'#70507f');px(x+9,y-12,2,2,'#f0cf5a');px(x+12,y-12,2,2,'#f0cf5a');px(x+10,y-9,3,1,'#6f3f46');}},
+    /* --- しろポップ候補（未接続・カタログのみ）: 白地×インク輪郭×原色 --- */
+    pop_office:{label:'しろいオフィス',draw:(x,y)=>{popPad(x,y,13);popBox(x-7,y-26,14,26);popBox(x-8,y-29,16,4,POP.blue);px(x,y-33,1,4,POP.ink);px(x-1,y-35,3,2,POP.red);for(let row=0;row<3;row++){popWin(x-5,y-24+row*6);popWin(x+1,y-24+row*6);}popDoor(x-2,y-6);}},
+    pop_townhall:{label:'まちの役所',draw:(x,y)=>{popPad(x,y,17);popBox(x-13,y-13,26,13);popBox(x-14,y-17,28,4,POP.green);popBox(x-4,y-24,8,7);px(x-2,y-22,4,4,POP.ink);px(x-1,y-21,2,2,POP.yellow);px(x+3,y-28,1,4,POP.ink);px(x+4,y-28,4,3,POP.red);px(x-10,y-11,1,11,POP.ink);px(x+9,y-11,1,11,POP.ink);popWin(x-8,y-10);popWin(x+4,y-10);popDoor(x-2,y-6,POP.red);}},
+    pop_fastfood:{label:'バーガーキオスク',draw:(x,y)=>{popPad(x,y,12);popBox(x-8,y-10,16,10);px(x-9,y-14,18,4,POP.ink);for(let i=0;i<4;i++)px(x-8+i*4,y-13,4,2,i%2?POP.white:POP.red);popBox(x-5,y-22,10,8);px(x-4,y-21,8,2,POP.yellow);px(x-4,y-19,8,1,POP.green);px(x-4,y-18,8,2,POP.red);px(x-4,y-16,8,1,POP.yellow);px(x-4,y-8,8,4,POP.ink);px(x-3,y-7,6,2,POP.blue);}},
+    pop_station:{label:'しろい停車場',draw:(x,y)=>{popPad(x,y,16);popBox(x-12,y-12,24,12);popBox(x-14,y-16,28,4,POP.blue);px(x-3,y-23,6,6,POP.ink);px(x-2,y-22,4,4,POP.white);px(x-1,y-21,1,2,POP.ink);px(x,y-19,1,1,POP.ink);popWin(x-9,y-9);popWin(x+5,y-9);px(x-3,y-9,6,9,POP.ink);px(x-2,y-8,4,8,POP.yellow);for(let i=0;i<6;i++)px(x-12+i*4,y-2,4,1,i%2?POP.white:POP.red);}},
+    pop_library:{label:'ひらいた図書館',draw:(x,y)=>{popPad(x,y,14);popBox(x-10,y-14,20,14);popBox(x-11,y-18,22,4,POP.blue);px(x-6,y-24,12,5,POP.ink);px(x-5,y-23,5,3,POP.white);px(x,y-23,5,3,POP.white);px(x-1,y-19,2,2,POP.red);popWin(x-8,y-11);popWin(x-2,y-11);popWin(x+4,y-11);popDoor(x-2,y-6,POP.green);}},
+    pop_university:{label:'ドームの大学',draw:(x,y)=>{popPad(x,y,20);popBox(x-16,y-12,32,12);px(x-8,y-17,16,5,POP.ink);px(x-7,y-16,14,3,POP.white);px(x-2,y-15,4,2,POP.yellow);px(x-4,y-21,8,4,POP.ink);px(x-3,y-20,6,2,POP.green);px(x-1,y-23,2,2,POP.ink);px(x-16,y-16,1,4,POP.ink);px(x-15,y-16,3,2,POP.red);px(x+15,y-16,1,4,POP.ink);px(x+12,y-16,3,2,POP.red);px(x-12,y-10,1,10,POP.ink);px(x-6,y-10,1,10,POP.ink);px(x+5,y-10,1,10,POP.ink);px(x+11,y-10,1,10,POP.ink);popDoor(x-2,y-6,POP.blue);}},
+    pop_college:{label:'ペナントカレッジ',draw:(x,y)=>{popPad(x,y,15);popBox(x-11,y-16,22,16);popBox(x-12,y-19,24,4,POP.yellow);px(x-1,y-27,1,8,POP.ink);px(x,y-27,5,2,POP.blue);px(x,y-25,3,1,POP.blue);popWin(x-8,y-14);popWin(x-2,y-14);popWin(x+4,y-14);popWin(x-8,y-8);popWin(x+4,y-8);popDoor(x-2,y-6,POP.red);}},
+    pop_post:{label:'ふうとう郵便局',draw:(x,y)=>{popPad(x,y,14);popBox(x-8,y-11,16,11);popBox(x-9,y-14,18,4,POP.red);px(x-5,y-21,10,6,POP.ink);px(x-4,y-20,8,4,POP.white);px(x-3,y-19,2,1,POP.ink);px(x+1,y-19,2,1,POP.ink);px(x-1,y-18,2,1,POP.ink);px(x+2,y-17,2,1,POP.yellow);popWin(x-5,y-8);popDoor(x,y-6,POP.blue);px(x+10,y-8,4,8,POP.ink);px(x+11,y-7,2,6,POP.red);px(x+11,y-5,2,1,POP.ink);}},
+    pop_art_museum:{label:'バナー美術館',draw:(x,y)=>{popPad(x,y,17);popBox(x-13,y-13,26,13);popBox(x-14,y-16,28,4,POP.blue);px(x-10,y-15,2,2,POP.white);px(x-4,y-15,2,2,POP.white);px(x+2,y-15,2,2,POP.white);px(x+8,y-15,2,2,POP.white);px(x-9,y-12,7,9,POP.ink);px(x-8,y-11,5,7,POP.red);px(x-6,y-9,1,3,POP.yellow);px(x-7,y-8,3,1,POP.yellow);popWin(x+6,y-10);popDoor(x+1,y-6,POP.green);px(x-13,y-11,1,11,POP.ink);px(x+12,y-11,1,11,POP.ink);}},
+    pop_zoo:{label:'どうぶつゲート',draw:(x,y)=>{popPad(x,y,18);popBox(x-13,y-14,5,14);popBox(x+8,y-14,5,14);px(x-13,y-19,26,5,POP.ink);px(x-12,y-18,24,3,POP.yellow);px(x-2,y-17,3,2,POP.ink);px(x-4,y-18,1,1,POP.ink);px(x,y-18,1,1,POP.ink);px(x+2,y-18,1,1,POP.ink);px(x-8,y-7,16,1,POP.ink);px(x-8,y-3,16,1,POP.ink);for(let i=0;i<5;i++)px(x-7+i*4,y-7,1,4,POP.ink);px(x-18,y-8,5,5,POP.ink);px(x-17,y-7,3,3,POP.green);px(x+13,y-8,5,5,POP.ink);px(x+14,y-7,3,3,POP.green);px(x+5,y-22,3,2,POP.blue);px(x+7,y-23,1,1,POP.blue);}},
     generic:{label:'施設',draw:(x,y)=>signPost(x,y,P.dirt)},
   };
 
@@ -148,21 +177,31 @@
     parking:'service',charge_hub:'service',generic:'generic',
     office:'commerce',civic_hall:'civic',burger_stand:'food',grand_station:'transit',owl_library:'civic',
     university:'civic',college:'civic',wing_post:'civic',art_museum:'landmark',menagerie:'nature',
+    pop_office:'commerce',pop_townhall:'civic',pop_fastfood:'food',pop_station:'transit',pop_library:'civic',
+    pop_university:'civic',pop_college:'civic',pop_post:'civic',pop_art_museum:'landmark',pop_zoo:'nature',
   };
   const categoryLabels = Object.fromEntries(categories.map(category => [category.id,category.label]));
   const classToSprite = global.PixelMapFacilityResolver?.CLASS2SPRITE || {};
   const typesBySprite = {};
   for(const [type,sprite] of Object.entries(classToSprite)) (typesBySprite[sprite] ||= []).push(type);
 
-  const referenceIds = new Set([
-    'monument','castle','gallery','theatre','zoo','charge_hub',
-    // 新テイスト候補（マップ未接続・カタログのみ）
-    'office','civic_hall','burger_stand','grand_station','owl_library',
-    'university','college','wing_post','art_museum','menagerie',
+  /* テイスト系列: reference=参照イメージ由来の暖色ファンタジー / pop=白地×原色のプロセスイラスト調 */
+  const tastes = Object.freeze([
+    {id:'reference',label:'参照テイスト'},
+    {id:'pop',label:'しろポップ'},
   ]);
+  const tasteBySprite = {
+    monument:'reference',castle:'reference',gallery:'reference',theatre:'reference',zoo:'reference',charge_hub:'reference',
+    office:'reference',civic_hall:'reference',burger_stand:'reference',grand_station:'reference',owl_library:'reference',
+    university:'reference',college:'reference',wing_post:'reference',art_museum:'reference',menagerie:'reference',
+    pop_office:'pop',pop_townhall:'pop',pop_fastfood:'pop',pop_station:'pop',pop_library:'pop',
+    pop_university:'pop',pop_college:'pop',pop_post:'pop',pop_art_museum:'pop',pop_zoo:'pop',
+  };
+  const tasteLabels = Object.fromEntries(tastes.map(taste => [taste.id,taste.label]));
   const assets = Object.freeze(Object.entries(SPRITES).map(([id,entry]) => {
     const category = categoryBySprite[id];
     const sizes = ['S','M','L'].filter(size => typeof entry[size] === 'function');
+    const taste = tasteBySprite[id] || null;
     return Object.freeze({
       id,
       label:entry.label,
@@ -171,7 +210,9 @@
       poiTypes:Object.freeze(typesBySprite[id] || []),
       sizes:Object.freeze(sizes.length ? sizes : ['M']),
       previewSize:entry.M ? 'M' : entry.S ? 'S' : entry.L ? 'L' : 'M',
-      inspired:referenceIds.has(id),
+      taste,
+      tasteLabel:taste ? tasteLabels[taste] : null,
+      inspired:Boolean(taste),
     });
   }));
 
@@ -202,5 +243,5 @@
     target.restore();
   }
 
-  global.PixelMapPoiSprites = Object.freeze({assets,categories,render});
+  global.PixelMapPoiSprites = Object.freeze({assets,categories,tastes,render});
 })(window);

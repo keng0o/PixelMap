@@ -11,6 +11,8 @@ const catalog = globalThis.PixelMapPoiSprites;
 const inspiredIds = ['monument','castle','gallery','theatre','zoo','charge_hub'];
 const candidateIds = ['office','civic_hall','burger_stand','grand_station','owl_library',
   'university','college','wing_post','art_museum','menagerie'];
+const popIds = ['pop_office','pop_townhall','pop_fastfood','pop_station','pop_library',
+  'pop_university','pop_college','pop_post','pop_art_museum','pop_zoo'];
 
 test('参照イメージを取り入れた6アセットが実際のPOI属性へ割り当てられる', () => {
   assert.equal(resolver.CLASS2SPRITE.monument, 'monument');
@@ -21,20 +23,24 @@ test('参照イメージを取り入れた6アセットが実際のPOI属性へ�
   assert.equal(resolver.CLASS2SPRITE.charging_station, 'charge_hub');
 });
 
-test('assets.html用カタログは42点・参照テイスト16点でマッピング欠落がない', () => {
-  assert.equal(catalog.assets.length, 42);
+test('assets.html用カタログは52点・新テイスト26点でマッピング欠落がない', () => {
+  assert.equal(catalog.assets.length, 52);
   assert.deepEqual(
     catalog.assets.filter(asset => asset.inspired).map(asset => asset.id),
-    [...inspiredIds, ...candidateIds],
+    [...inspiredIds, ...candidateIds, ...popIds],
+  );
+  assert.deepEqual(
+    catalog.assets.filter(asset => asset.taste === 'pop').map(asset => asset.id),
+    popIds,
   );
   const assetIds = new Set(catalog.assets.map(asset => asset.id));
   for(const spriteId of Object.values(resolver.CLASS2SPRITE)) assert.ok(assetIds.has(spriteId), spriteId);
   for(const asset of catalog.assets) assert.equal(typeof asset.categoryLabel, 'string');
 });
 
-test('新テイスト候補10点はアセットのみで、マップのPOI属性へは未接続', () => {
+test('新テイスト候補20点はアセットのみで、マップのPOI属性へは未接続', () => {
   const wired = new Set(Object.values(resolver.CLASS2SPRITE));
-  for(const id of candidateIds){
+  for(const id of [...candidateIds, ...popIds]){
     assert.ok(catalog.assets.some(asset => asset.id === id && asset.inspired), id);
     assert.ok(!wired.has(id), `${id} はCLASS2SPRITEに接続しない`);
   }
