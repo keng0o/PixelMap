@@ -558,6 +558,7 @@
 
 <script src="../assets/icon-patterns.js"></script>
 <script src="../assets/facility-resolver.js"></script>
+<script src="../assets/building-styles.js"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -1003,6 +1004,68 @@ function buildTiles(){
     q(0,13,16,3,P.wallDk); q(3,4,2,1,P.wallDk); q(10,7,2,1,P.wallDk); });
 }
 
+/* --- 動的タイル: 棟の記述子から必要になった組み合わせだけを焼く --- */
+const DYN_TILES = new Map();
+function tileFor(key, draw){
+  if (!DYN_TILES.has(key)) DYN_TILES.set(key, T(draw));
+  return DYN_TILES.get(key);
+}
+function roofTileFor(desc){
+  const key = desc.roofKey;
+  if (key.startsWith('roofGable:') || key === 'roofMid' || key === 'roofHigh' || key === 'roofBigBox')
+    return TILES['roof' + desc.styleIndex];
+  if (key === 'roofCampus') return tileFor(key, (g,q)=>{
+    const pal = desc.pal;
+    q(0,0,16,16,pal[0]);
+    q(0,0,16,1,pal[2]);
+    q(1,4,14,2,pal[2]); q(1,10,14,2,pal[2]);       // 天窓帯
+    q(4,4,2,2,pal[0]); q(10,4,2,2,pal[0]);
+    q(4,10,2,2,pal[0]); q(10,10,2,2,pal[0]);
+    q(11,6,4,3,pal[1]);                             // 空調設備
+  });
+  return tileFor(key, (g,q)=>{                      // roofFlat:<v> 低層の陸屋根
+    const pal = desc.pal;
+    q(0,0,16,16,pal[0]);
+    q(0,0,16,2,pal[2]);                             // パラペット
+    q(0,14,16,2,pal[1]);
+    q(4,5,3,2,pal[1]); q(10,9,3,2,pal[1]);         // 通気口
+  });
+}
+const GLYPH_WHITE = '#f8f0d8';
+function glyphTileFor(category, accent){
+  return tileFor('glyph:' + category, (g,q)=>{
+    q(3,3,10,10,P.outline);
+    q(4,4,8,8,accent);
+    const w = GLYPH_WHITE;
+    if (category === 'health'){ q(7,5,2,6,w); q(5,7,6,2,w); }
+    else if (category === 'transit'){ q(5,5,6,5,w); q(6,6,2,2,accent); q(8,6,2,2,accent); q(5,11,2,1,w); q(9,11,2,1,w); }
+    else if (category === 'food'){ q(5,6,5,5,w); q(10,7,1,3,w); q(6,4,1,1,w); q(8,4,1,1,w); }
+    else if (category === 'commerce'){ q(5,5,6,6,w); q(6,6,2,2,accent); q(9,9,2,2,accent); }
+    else if (category === 'civic'){ q(4,5,8,1,w); q(5,7,1,4,w); q(7,7,1,4,w); q(9,7,1,4,w); q(4,11,8,1,w); }
+    else if (category === 'landmark'){ q(7,4,2,2,w); q(5,6,6,2,w); q(6,8,4,2,w); q(5,10,2,1,w); q(9,10,2,1,w); }
+    else if (category === 'nature'){ q(6,5,4,4,w); q(9,6,2,2,w); q(7,9,1,3,w); }
+    else if (category === 'stay'){ q(4,6,1,5,w); q(4,9,8,2,w); q(5,8,3,1,w); }
+    else if (category === 'service'){ q(5,5,3,3,w); q(7,7,2,2,w); q(9,9,2,2,w); }
+    else q(6,6,4,4,w);
+  });
+}
+function entranceTileFor(category, accent, withDoor){
+  return tileFor((withDoor ? 'entranceDoor:' : 'entranceBand:') + category, (g,q)=>{
+    q(0,0,16,16,P.wall);
+    q(0,0,16,4,accent);                             // カテゴリ色の庇
+    q(0,4,16,2,sh(accent));
+    q(0,14,16,2,P.wallDk);
+    if (withDoor){
+      q(2,9,5,4,P.outline); q(3,10,3,2,P.win);
+      q(10,8,4,7,P.outline); q(11,9,2,6,P.win);
+      q(11,11,1,1,GLYPH_WHITE);
+    } else {
+      q(2,9,5,4,P.outline); q(3,10,3,2,P.win);
+      q(9,9,5,4,P.outline); q(10,10,3,2,P.win);
+    }
+  });
+}
+
 /* =====================================================
    4. 地形グリッドへのラスタライズ
    ===================================================== */
@@ -1054,43 +1117,10 @@ const TRANSPORT_STYLE = {
   motorways:{ id:ID.HIGHWAY, thick:true, polygonId:ID.HIGHWAY },
   transportationOther:{ id:ID.PATH, thick:false, polygonId:ID.PAVE },
 };
-/* 建物10スタイルのパレット [屋根, 濃, ハイライト] */
-const ROOFPAL = [
-  ['#e05038','#b03828','#f87858'],  // 0 赤い切妻
-  ['#5078d8','#3858b0','#88a0f0'],  // 1 青
-  ['#48a058','#357f42','#70c078'],  // 2 緑
-  ['#e08038','#b06028','#f8a860'],  // 3 だいだい
-  ['#8890a0','#687080','#a8b0c0'],  // 4 スレート
-  ['#a07850','#805838','#c09868'],  // 5 こげ茶
-  ['#707c90','#525c70','#8a96ac'],  // 6 中層ビル屋上
-  ['#3c4454','#2a3040','#546078'],  // 7 高層ビル
-  ['#b4b4b0','#909090','#d0d0cc'],  // 8 大型商業屋根
-  ['#c8a878','#a08858','#e0c898'],  // 9 アパート
-];
-function buildingPoiType(props){
-  const types = [props.class, props.subclass].filter(Boolean);
-  if (types.includes('hospital')) return 'hospital';
-  if (types.includes('convenience')) return 'convenience';
-  return 'other';
-}
-function buildingKindFromPois(poiKeys, poiTypes){
-  if (poiKeys.size > 1) return 'mixed';
-  if (poiTypes.has('hospital')) return 'hospital';
-  if (poiTypes.has('convenience')) return 'convenience';
-  if (poiKeys.size === 1) return 'poi';
-  return 'normal';
-}
-function styleOfBuilding(f, areaCells, kind = 'normal'){
-  if (kind === 'hospital') return 8;            // 白い大屋根 + 医療サイン
-  if (kind === 'convenience') return 4;         // 明るい陸屋根 + 店舗帯
-  if (kind === 'mixed') return 6;               // 中層の雑居ビル
-  const h = f.props.render_height || 0;
-  if (h >= 60) return 7;                       // 超高層
-  if (h >= 31) return 6;                       // 中層ビル
-  if (areaCells >= 28) return 8;               // 低くて巨大 → 商業施設
-  const pick = [0,1,2,3,4,5,9];                // 低層はランダム
-  return pick[((f.id || 1) + areaCells) % pick.length];
-}
+/* 建物の分類・配色は building-styles.js が唯一の正典。
+   ROOFPALはタイル焼き込みと後方互換のためのエイリアス。 */
+const BUILDING_STYLES = window.PixelMapBuildingStyles;
+const ROOFPAL = BUILDING_STYLES.LEGACY_ROOFPAL;
 
 function rasterizeGrid(layers, options){
   const RG = GRID + 2;                           // 移動時に端が空かないよう外周も描画
@@ -1284,10 +1314,10 @@ function rasterizeGrid(layers, options){
     feature => featureStyle(feature, WATERWAY, { id:ID.WATER, option:'waterwayOther', width:1 }),
     (feature, style) => paintGeometry(feature, style.width, 1)
   );
-  // 建物: 表示の有無にかかわらず面積を計算し、POIのサイズ判定に使う
-  const bldFeats = L('building').filter(f => f.type === 3);
+  // 建物: 表示の有無にかかわらず面積を計算する。
+  // z14では多数の棟が1つのマルチポリゴンfeatureに統合されるため、
+  // 「外形リング＝棟」を単位に分割する（リゾルバーのbuildingIdと同じ意味論）。
   const bldGrid = new Uint16Array(RG * RG);
-  const bldArea = new Uint16Array(bldFeats.length + 1);
   const buildingGrid = layerGrid('buildings');
   function fillPolyCells(rings, visit){
     let minY = Infinity, maxY = -Infinity;
@@ -1316,15 +1346,75 @@ function rasterizeGrid(layers, options){
       }
     }
   }
-  bldFeats.forEach((f, i) => {
+  const ringSigned = ring => {
+    let sum = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++)
+      sum += (ring[j][0] - ring[i][0]) * (ring[j][1] + ring[i][1]);
+    return sum / 2;
+  };
+  const ringContainsPoint = (ring, x, y) => {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++){
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+        inside = !inside;
+    }
+    return inside;
+  };
+  const buildingExtent = layers.building?.extent || 4096;
+  // 世界px変換はリゾルバーと同一式・同一の座標オブジェクトを使うため、
+  // ringKey は facility.buildingId と文字列一致し、直接joinできる。
+  const worldScale = (GRID * CPX) / buildingExtent;
+  const bldUnits = [];                        // { props, rings, ringKey, geomAreaCells }
+  const unitByRingKey = new Map();
+  for (const f of L('building')){
+    if (f.type !== 3 || !f.geom.length) continue;
+    const rings = f.geom.filter(r => r.length >= 3).map(r => ({ pts:r, signed:ringSigned(r), holes:null }));
+    if (!rings.length) continue;
+    // 最大リングの符号を「外形」とみなし、逆符号のリングは内包する外形へ穴として割り当てる
+    let outerSign = 1, maxAbs = -1;
+    for (const r of rings){
+      const a = Math.abs(r.signed);
+      if (a > maxAbs){ maxAbs = a; outerSign = Math.sign(r.signed) || 1; }
+    }
+    const outers = [], holes = [];
+    for (const r of rings) ((Math.sign(r.signed) || outerSign) === outerSign ? outers : holes).push(r);
+    for (const hole of holes){
+      const [hx, hy] = hole.pts[0];
+      let best = null;
+      for (const outer of outers){
+        if (!ringContainsPoint(outer.pts, hx, hy)) continue;
+        if (!best || Math.abs(outer.signed) < Math.abs(best.signed)) best = outer;
+      }
+      if (best) (best.holes || (best.holes = [])).push(hole.pts);
+    }
+    for (const outer of outers){
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const [ox, oy] of outer.pts){
+        const wx = ox * worldScale + TILE.x * GRID * CPX;
+        const wy = oy * worldScale + TILE.y * GRID * CPX;
+        if (wx < minX) minX = wx; if (wx > maxX) maxX = wx;
+        if (wy < minY) minY = wy; if (wy > maxY) maxY = wy;
+      }
+      bldUnits.push({
+        props:f.props,
+        rings:[outer.pts, ...(outer.holes || [])],
+        ringKey:`r:${Math.round(minX)},${Math.round(minY)},${Math.round(maxX)},${Math.round(maxY)}`,
+        geomAreaCells:Math.abs(outer.signed) * (GRID / buildingExtent) ** 2,
+      });
+    }
+  }
+  const bldArea = new Uint16Array(bldUnits.length + 1);
+  bldUnits.forEach((u, i) => {
+    if (!unitByRingKey.has(u.ringKey)) unitByRingKey.set(u.ringKey, i + 1);
     let cnt = 0;
-    fillPolyCells(f.geom, (cx, cy) => {
+    fillPolyCells(u.rings, (cx, cy) => {
       buildingGrid[cy * RG + cx] = ID.BLD;
       bldGrid[cy * RG + cx] = i + 1;
       cnt++;
     });
-    if (!cnt){                                   // セル中心を1つも拾えない極小建物は重心に1マス
-      const r = f.geom[0] || [];
+    if (!cnt){                                   // セル中心を1つも拾えない極小の棟は重心に1マス
+      const r = u.rings[0];
       let sx = 0, sy = 0;
       r.forEach(p => { sx += p[0]; sy += p[1]; });
       if (r.length){
@@ -1439,7 +1529,7 @@ function rasterizeGrid(layers, options){
     },
     feature => paintGeometry(feature, 1.5, 1.25)
   );
-  return { grids, bldGrid, bldFeats, bldArea, size:RG };
+  return { grids, bldGrid, bldUnits, unitByRingKey, bldArea, size:RG };
 }
 let rasterizationCache = { layers:null, originX:null, originY:null, result:null };
 function getRasterizedGrid(layers, options){
@@ -1466,6 +1556,7 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
   const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
   const bAt = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? 0 : bldGrid[y * RG + x];
   const put = (name, x, y) => ctx.drawImage(TILES[name], gridShiftX + x * CPX, gridShiftY + y * CPX);
+  const putC = (canvas, x, y) => ctx.drawImage(canvas, gridShiftX + x * CPX, gridShiftY + y * CPX);
   const edge = (x, y, dir, color, t = 2) => {
     ctx.fillStyle = color;
     const px = gridShiftX + x * CPX, py = gridShiftY + y * CPX;
@@ -1605,48 +1696,75 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
         }
         case ID.BLD: {
           const bi = bAt(x, y);
-          const st = bldStyle[bi] || 0;
+          const desc = options.buildingDescs?.[bi] || null;
+          const st = desc ? desc.styleIndex : (bldStyle[bi] || 0);
+          const pal = desc ? desc.pal : ROOFPAL[st];
           const kind = options.buildingKinds?.[bi] || 'normal';
+          const anchor = options.buildingAnchors?.[bi] || null;
+          // 病院・コンビニ・雑居は専用オーバーレイが用途を語るため、
+          // カテゴリ色の庇・屋上マークは kind==='poi' の施設建物にだけ使う
+          const accent = desc && kind === 'poi' ? desc.accent : null;
           const same = (nx, ny) => at(nx, ny) === ID.BLD && bAt(nx, ny) === bi;
           const above = same(x, y - 1), below = same(x, y + 1);
-          const right = same(x + 1, y);
-          const isHouse = st <= 5 || st === 9;
+          const right = same(x + 1, y), left = same(x - 1, y);
+          const isHouse = desc ? desc.isHouse : (st <= 5 || st === 9);
+          const towerWall = desc ? desc.wallKey === 'tower' : (st === 6 || st === 7);
           const bx = gridShiftX + x * CPX, by = gridShiftY + y * CPX;
+          const isEntrance = Boolean(anchor && accent && anchor.ex === x && anchor.ey === y && !below);
           if (!below && isHouse){
             // 低層建物の南面には窓と玄関を出し、塊ではなく家として読めるようにする
-            put((!right ? 'frontDoor' : 'front') + st, x, y);
+            if (isEntrance) putC(entranceTileFor(desc.glyph, accent, true), x, y);
+            else put((!right ? 'frontDoor' : 'front') + st, x, y);
           } else if (!below && above){
-            // 2マス以上の高さがある建物の最下段だけ壁面（1マスの建物は屋根を見せる）
-            if (st === 6 || st === 7) put('wallTower', x, y);
+            // 2マス以上の高さがある建物の最下段は壁面。施設はカテゴリ色の庇つき店先にする
+            if (isEntrance) putC(entranceTileFor(desc.glyph, accent, true), x, y);
+            else if (accent) putC(entranceTileFor(desc.glyph, accent, false), x, y);
+            else if (towerWall) put('wallTower', x, y);
             else if (h % 3 === 2) put('wallPlain', x, y);
             else put('wallWin', x, y);
           } else {
-            put('roof' + st, x, y);
-            if (!above) edge(x, y, 'U', ROOFPAL[st][2], 2);
-            // 屋根の書き込み
+            if (desc) putC(roofTileFor(desc), x, y);
+            else put('roof' + st, x, y);
+            if (!above) edge(x, y, 'U', accent || pal[2], 2);
+            // 屋根の書き込み（世界座標アンカーで決定的）
             const hh = cellHash(x * 3 + 1, y * 5 + 2);
-            if (st <= 5 || st === 9){
-              ctx.fillStyle = ROOFPAL[st][1];               // 瓦の継ぎ目(半マスずらし)
-              ctx.fillRect(bx + ((x + y) % 2 ? 4 : 10), by + 5, 1, 3);
-              ctx.fillRect(bx + ((x + y) % 2 ? 11 : 5), by + 10, 1, 3);
+            const motif = desc ? desc.motif : (isHouse ? 'gable' : st === 7 ? 'aviation' : 'ac');
+            if (motif === 'gable'){
+              const parity = (((gridOriginX + x + gridOriginY + y) % 2) + 2) % 2;
+              ctx.fillStyle = pal[1];                        // 瓦の継ぎ目(半マスずらし)
+              ctx.fillRect(bx + (parity ? 4 : 10), by + 5, 1, 3);
+              ctx.fillRect(bx + (parity ? 11 : 5), by + 10, 1, 3);
               if (hh < 6){                                   // テレビアンテナ
                 ctx.fillStyle = P.outline;
                 ctx.fillRect(bx + 11, by + 4, 1, 5);
                 ctx.fillRect(bx + 9,  by + 4, 5, 1);
               } else if (hh < 10){                           // 天窓
-                ctx.fillStyle = ROOFPAL[st][2];
+                ctx.fillStyle = pal[2];
                 ctx.fillRect(bx + 6, by + 5, 4, 3);
                 ctx.fillStyle = P.win;
                 ctx.fillRect(bx + 7, by + 6, 2, 1);
               }
-            } else if ((st === 6 || st === 8) && hh < 12){   // 追加の室外機
-              ctx.fillStyle = ROOFPAL[st][1];
-              ctx.fillRect(bx + 6, by + 6, 4, 4);
-              ctx.fillStyle = ROOFPAL[st][2];
-              ctx.fillRect(bx + 7, by + 7, 2, 1);
-            } else if (st === 7 && hh < 8){                  // 屋上の赤色灯
-              ctx.fillStyle = '#f05038';
-              ctx.fillRect(bx + 7, by + 7, 2, 2);
+            } else if (motif === 'tank' && !above && !left){ // 給水タンクは北西角に固定
+              ctx.fillStyle = pal[1]; ctx.fillRect(bx + 2, by + 3, 5, 5);
+              ctx.fillStyle = pal[2]; ctx.fillRect(bx + 2, by + 3, 5, 1);
+              ctx.fillStyle = P.outline;
+              ctx.fillRect(bx + 3, by + 8, 1, 2); ctx.fillRect(bx + 5, by + 8, 1, 2);
+            } else if (motif === 'aviation' && !above && !right){ // 航空灯は北東角に固定
+              ctx.fillStyle = '#f05038'; ctx.fillRect(bx + 11, by + 2, 2, 2);
+              ctx.fillStyle = '#f8b0a0'; ctx.fillRect(bx + 11, by + 1, 2, 1);
+            } else if ((motif === 'ac' || motif === 'hvac') && hh < 12){ // 追加の室外機
+              ctx.fillStyle = pal[1]; ctx.fillRect(bx + 6, by + 6, 4, 4);
+              ctx.fillStyle = pal[2]; ctx.fillRect(bx + 7, by + 7, 2, 1);
+            }
+          }
+          // 屋上のカテゴリマーク（施設のワールド座標にアンカーし、パンで動かない）
+          if (anchor && accent && desc.glyph && anchor.gx === x && anchor.gy === y){
+            if (isEntrance){                                 // 1マスの棟は玄関の上に小型の袖看板
+              ctx.fillStyle = P.outline; ctx.fillRect(bx + 8, by + 1, 7, 7);
+              ctx.fillStyle = accent;    ctx.fillRect(bx + 9, by + 2, 5, 5);
+              ctx.fillStyle = GLYPH_WHITE; ctx.fillRect(bx + 11, by + 4, 2, 2);
+            } else {
+              putC(glyphTileFor(desc.glyph, accent), x, y);
             }
           }
           // POIを内包する建物は、屋根・店先の記号で用途を直接読めるようにする。
@@ -1684,17 +1802,11 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
               ctx.fillStyle = '#f8d038'; ctx.fillRect(bx + 9, by + 2, 5, 2);
               ctx.fillStyle = '#e05038'; ctx.fillRect(bx + 9, by + 4, 5, 2);
             }
-          } else if (kind === 'poi'){
-            if (!above && !right){
-              ctx.fillStyle = P.outline; ctx.fillRect(bx + 9, by + 2, 6, 7);
-              ctx.fillStyle = '#5078d8'; ctx.fillRect(bx + 10, by + 3, 4, 3);
-              ctx.fillStyle = '#f8d038'; ctx.fillRect(bx + 11, by + 6, 2, 2);
-            }
           }
           for (const [d, nx, ny] of [['L',x-1,y],['R',x+1,y],['U',x,y-1],['D',x,y+1]]){
             const n = at(nx, ny);
             if (!isBld(n)) edge(x, y, d, P.outline, 1);              // 輪郭は地面と接する辺だけ
-            else if (bAt(nx, ny) !== bi) edge(x, y, d, ROOFPAL[st][1], 1); // 建物同士は淡い影
+            else if (bAt(nx, ny) !== bi) edge(x, y, d, pal[1], 1);   // 棟同士は淡い影
           }
           break;
         }
@@ -2394,7 +2506,7 @@ const STUDY_LAYER_OPTIONS = new Set([
   'landusePlayground','landuseAmusement','landuseZoo','landuseAirport','landuseHelipad','landuseOther',
   'regionalRoads','majorRoads','motorways','tracks','raceways','ferries','piers',
   'rail','subway','aerialways','transportationOther',
-  'poi',
+  'buildings','poi',
 ]);
 if (STUDY_MODE){
   for (const input of layerInputs) input.checked = STUDY_LAYER_OPTIONS.has(optionForInput(input));
@@ -2466,55 +2578,75 @@ function render(){
 
   /* --- 地形グリッド + 建物情報 --- */
   const rasterized = getRasterizedGrid(tileLayers, o);
-  const { grids, bldGrid, bldFeats, bldArea } = rasterized;
-  const poiFeatures = L('poi').filter(feature => geometryAnchor(feature));
+  const { grids, bldGrid, bldUnits, unitByRingKey, bldArea } = rasterized;
   const RG = GRID + 2;
-  if (!rasterized.semantic){
-    const gridExtent = tileLayers.transportation?.extent || tileLayers.building?.extent || 4096;
-    const gridScale = GRID / gridExtent;
-    const buildingPoiKeys = Array.from({ length:bldFeats.length + 1 }, () => new Set());
-    const buildingPoiTypes = Array.from({ length:bldFeats.length + 1 }, () => new Set());
-    const pointInPolygon = ([px0, py0], rings) => {
-      let inside = false;
-      for (const ring of rings){
-        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++){
-          const [xi, yi] = ring[i], [xj, yj] = ring[j];
-          if ((yi > py0) !== (yj > py0) && px0 < (xj - xi) * (py0 - yi) / (yj - yi) + xi)
-            inside = !inside;
+
+  /* --- リゾルバーの確定施設データ（アイコンにも建物の用途分類にも使う） --- */
+  const resolvedView = collectResolvedFacilities();
+  if (resolvedView.pendingTiles) ensureTilesAround().catch(console.error);
+
+  /* --- 建物の意味づけ: 棟 × リゾルバー施設 → 見た目記述子 ---
+     kind/categoryはリゾルバーが唯一の正典。未解決タイルの棟は一旦normalで描き、
+     解決タイルが増える（stampが変わる）たびに再計算して昇格させる。 --- */
+  const semanticStamp = tileGeneration + ':' + resolvedView.resolvedTileCount;
+  if (!rasterized.semantic || rasterized.semantic.stamp !== semanticStamp){
+    const unitCount = bldUnits.length;
+    const buildingKinds = Array(unitCount + 1).fill('normal');
+    const buildingDescs = Array(unitCount + 1).fill(null);
+    const buildingAnchors = Array(unitCount + 1).fill(null);
+    const facilityByUnit = Array(unitCount + 1).fill(null);
+    const worldToCell = (wx, wy) => [
+      Math.floor(wx / CPX) - TILE.x * GRID - gridOriginX,
+      Math.floor(wy / CPX) - TILE.y * GRID - gridOriginY,
+    ];
+    const unitAt = (cx, cy) => (cx >= 0 && cy >= 0 && cx < RG && cy < RG) ? bldGrid[cy * RG + cx] : 0;
+    for (const facility of resolvedView.facilities){
+      if (!facility.buildingId) continue;
+      let bi = unitByRingKey.get(facility.buildingId) || 0;
+      if (!bi){
+        // タイル境界でリング片が異なる場合は施設位置のセルから引く
+        const [cx, cy] = worldToCell(facility.worldX, facility.worldY);
+        bi = unitAt(cx, cy);
+      }
+      if (!bi) continue;
+      const current = facilityByUnit[bi];
+      if (!current || facility.selectionPriority < current.selectionPriority ||
+          (facility.selectionPriority === current.selectionPriority && facility.key < current.key))
+        facilityByUnit[bi] = facility;
+    }
+    for (let bi = 1; bi <= unitCount; bi++){
+      const unit = bldUnits[bi - 1];
+      const facility = facilityByUnit[bi];
+      const kind = facility && facility.metrics.kind !== 'none' ? facility.metrics.kind : 'normal';
+      buildingKinds[bi] = kind;
+      buildingDescs[bi] = BUILDING_STYLES.buildingAppearance({
+        heightM:Number(unit.props.render_height || 0),
+        areaCells:unit.geomAreaCells,
+        kind,
+        category:facility ? facility.category : null,
+        seed:BUILDING_STYLES.seedFromKey(unit.ringKey),
+      });
+      if (facility){
+        // 屋上マークと入口は施設のワールド座標にアンカーする（パンで動かない）
+        let [ax, ay] = worldToCell(facility.worldX, facility.worldY);
+        if (unitAt(ax, ay) !== bi){
+          let found = false;
+          for (let dy = -1; dy <= 1 && !found; dy++)
+            for (let dx = -1; dx <= 1 && !found; dx++)
+              if (unitAt(ax + dx, ay + dy) === bi){ ax += dx; ay += dy; found = true; }
+          if (!found) ax = -1;
+        }
+        if (ax >= 0){
+          let ay0 = ay, ay1 = ay;
+          while (ay0 - 1 >= 0 && unitAt(ax, ay0 - 1) === bi) ay0--;
+          while (ay1 + 1 < RG && unitAt(ax, ay1 + 1) === bi) ay1++;
+          // 屋上マークはアンカー列の最上段、入口は最下段
+          buildingAnchors[bi] = { gx:ax, gy:ay0, ex:ax, ey:ay1 };
         }
       }
-      return inside;
-    };
-    const buildingAtPoint = point => {
-      const cx0 = Math.floor(point[0] * gridScale - gridOriginX);
-      const cy0 = Math.floor(point[1] * gridScale - gridOriginY);
-      const candidates = new Set();
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){
-        const cx = cx0 + dx, cy = cy0 + dy;
-        if (cx < 0 || cy < 0 || cx >= RG || cy >= RG) continue;
-        const bi = bldGrid[cy * RG + cx];
-        if (bi) candidates.add(bi);
-      }
-      for (const bi of candidates)
-        if (pointInPolygon(point, bldFeats[bi - 1].geom)) return bi;
-      return 0;
-    };
-    for (const feature of poiFeatures){
-      const point = geometryAnchor(feature);
-      const bi = buildingAtPoint(point);
-      if (!bi) continue;
-      const props = feature.props;
-      const key = feature.id != null
-        ? `id:${feature.id}`
-        : `${props.name || props['name:ja'] || ''}|${props.class || ''}|${props.subclass || ''}|${point[0]}|${point[1]}`;
-      buildingPoiKeys[bi].add(key);
-      buildingPoiTypes[bi].add(buildingPoiType(props));
     }
-    const buildingKinds = Array(bldFeats.length + 1).fill('normal');
-    for (let bi = 1; bi < buildingKinds.length; bi++)
-      buildingKinds[bi] = buildingKindFromPois(buildingPoiKeys[bi], buildingPoiTypes[bi]);
-    const bldStyle = new Uint8Array(bldFeats.length + 1);
-    bldFeats.forEach((f, i) => { bldStyle[i + 1] = styleOfBuilding(f, bldArea[i + 1], buildingKinds[i + 1]); });
+    const bldStyle = new Uint8Array(unitCount + 1);
+    for (let bi = 1; bi <= unitCount; bi++) bldStyle[bi] = buildingDescs[bi].styleIndex;
     const buildingGrid = grids.get('buildings');
     const normalBuildingGrid = new Uint8Array(RG * RG);
     const poiBuildingGrid = new Uint8Array(RG * RG);
@@ -2525,9 +2657,12 @@ function render(){
         target[i] = ID.BLD;
       }
     }
-    rasterized.semantic = { buildingKinds, bldStyle, normalBuildingGrid, poiBuildingGrid };
+    rasterized.semantic = {
+      stamp:semanticStamp, buildingKinds, buildingDescs, buildingAnchors,
+      bldStyle, normalBuildingGrid, poiBuildingGrid,
+    };
   }
-  const { buildingKinds, bldStyle, normalBuildingGrid, poiBuildingGrid } = rasterized.semantic;
+  const { buildingKinds, buildingDescs, buildingAnchors, bldStyle, normalBuildingGrid, poiBuildingGrid } = rasterized.semantic;
   const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
   drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
@@ -2577,8 +2712,6 @@ function render(){
      icon / dot / cluster はリゾルバーがワールド座標で確定済み。
      ここでは範囲内の確定データを画面座標へ変換して描くだけで、
      パンしても選抜・表示順・アイコンと点の切り替えは一切起きない。 --- */
-  const resolvedView = collectResolvedFacilities();
-  if (resolvedView.pendingTiles) ensureTilesAround().catch(console.error);
   const worldToScreen = (wx, wy) => [wx - TILE.x * W - viewOffset.x, wy - TILE.y * H - viewOffset.y];
   const facilitiesInView = resolvedView.facilities
     .map(f => ({ ...f, pt:worldToScreen(f.worldX, f.worldY), visualRadius:f.collisionRadius }))
@@ -2832,7 +2965,7 @@ function render(){
   }
 
   if (o.buildings){
-    drawGrid(normalBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds }, true);
+    drawGrid(normalBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
     renderOrder.push('Z3:building');
   }
   for (const option of layerOrder){
@@ -2842,7 +2975,7 @@ function render(){
     renderOrder.push(`Z3:bridge:${option}`);
   }
   if (o.buildings){
-    drawGrid(poiBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds }, true);
+    drawGrid(poiBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
     renderOrder.push('Z3:poiBuilding');
   }
 
@@ -2909,6 +3042,8 @@ function render(){
     layerOrder:[...layerOrder],
     renderOrder:[...renderOrder],
     buildingKindCounts:{ ...buildingKindCounts },
+    buildingBandCounts:countBy(buildingDescs.filter(Boolean), d => String(d.band)),
+    buildingCategoryCounts:countBy(buildingDescs.filter(Boolean).filter(d => d.glyph), d => d.glyph),
     pattern:{
       id:ACTIVE_PATTERN.id,
       slug:ACTIVE_PATTERN.slug,

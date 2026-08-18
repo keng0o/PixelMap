@@ -128,4 +128,4 @@
   ];
 
   global.PixelMapIconPatterns = patterns;
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);
