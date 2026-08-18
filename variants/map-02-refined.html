@@ -723,7 +723,7 @@ document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
 document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISPLAY_SCALE);
-document.title = CELL_ONLY_MODE ? 'PixelMap｜2×2単色セル検証' : 'PixelMap｜本番マップ';
+document.title = CELL_ONLY_MODE ? 'PixelMap｜2×2ピクセルアート検証' : 'PixelMap｜本番マップ';
 
 function patternUrl(patternId){
   const params = new URLSearchParams(PAGE_PARAMS);
@@ -865,7 +865,9 @@ const P = {
 
 function T(draw){
   const c = document.createElement('canvas');
-  c.width = c.height = CPX;
+  // 標準用マップチップはcell2でも16シーンpxで構築し、後段で
+  // 4×4個の原子セルへ変換する。完成した地図画像は量子化しない。
+  c.width = c.height = STANDARD_CPX;
   const g = c.getContext('2d');
   g.imageSmoothingEnabled = false;
   draw(g, (x,y,w,h,col)=>fillAssetRect(g,x,y,w,h,col));
@@ -1233,6 +1235,9 @@ function rasterizeGrid(layers, options){
   // レイヤーごとに独立したグリッドを持ち、チェック順に合成できるようにする。
   // 0 = GRASS は未描画セルも兼ねるため、grass 以外は drawGrid の transparent で読み分ける。
   const grids = new Map();
+  // cell2では塗り幅とは別に交通の中心線を保持し、縁取り・中央線・
+  // レール・枕木を原子セルの多層として再構成する。
+  const transportCenters = new Map();
   const featureCountsByOption = Object.create(null);
   const countFeatures = (option, count) => {
     featureCountsByOption[option] = (featureCountsByOption[option] || 0) + count;
@@ -1240,6 +1245,10 @@ function rasterizeGrid(layers, options){
   const layerGrid = option => {
     if (!grids.has(option)) grids.set(option, new Uint8Array(RG * RG));
     return grids.get(option);
+  };
+  const centerGrid = option => {
+    if (!transportCenters.has(option)) transportCenters.set(option, new Uint8Array(RG * RG));
+    return transportCenters.get(option);
   };
   const oc = document.createElement('canvas');
   oc.width = oc.height = RG;
@@ -1581,11 +1590,13 @@ function rasterizeGrid(layers, options){
   }
   function lineStamp(option, fs, id, thick){
     const grid = layerGrid(option);
+    const center = CELL_ONLY_MODE ? centerGrid(option) : null;
     for (const f of fs){
       for (const ln of f.geom){
         for (let i = 0; i + 1 < ln.length; i++){
           traverse(gx(ln[i][0]), gy(ln[i][1]), gx(ln[i+1][0]), gy(ln[i+1][1]), (cx, cy) => {
             if (CELL_ONLY_MODE){
+              setCell(center, cx, cy, 1);
               setCellBrush(grid, cx, cy, id, (thick ? 2 : 1) * CELL_DETAIL_SCALE);
             } else {
               setCell(grid, cx, cy, id);
@@ -1668,7 +1679,7 @@ function rasterizeGrid(layers, options){
     },
     feature => paintGeometry(feature, 1.5, 1.25)
   );
-  return { grids, bldGrid, bldUnits, unitByRingKey, bldArea, featureCountsByOption, size:RG };
+  return { grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea, featureCountsByOption, size:RG };
 }
 let rasterizationCache = { layers:null, originX:null, originY:null, result:null };
 function getRasterizedGrid(layers, options){
@@ -1758,24 +1769,231 @@ function solidMapCellCenter(gx, gy){
   return [originX + (gx + .5) * CPX, originY + (gy + .5) * CPX];
 }
 
-function drawSolidCellGrid(grid, option, stats, transparent = true){
+const CELL_MAP_CHIP_CACHE = new Map();
+const CELL_TEMPLATE_SIZE = STANDARD_CPX / CPX;
+const positiveModulo = (value, divisor) => ((value % divisor) + divisor) % divisor;
+const rgbKey = rgba => `${rgba[0]},${rgba[1]},${rgba[2]}`;
+const rgbaHex = rgba => '#' + rgba.slice(0, 3).map(value => value.toString(16).padStart(2, '0')).join('');
+
+function cellTemplateForCanvas(canvas, cacheKey, priorityColors = []){
+  if (CELL_MAP_CHIP_CACHE.has(cacheKey)) return CELL_MAP_CHIP_CACHE.get(cacheKey);
+  const source = canvas.getContext('2d', { willReadFrequently:true })
+    .getImageData(0, 0, canvas.width, canvas.height).data;
+  const cellsAcross = Math.ceil(canvas.width / CPX);
+  const cellsDown = Math.ceil(canvas.height / CPX);
+  const priority = new Set(priorityColors.map(color => rgbKey(solidCellRgba(color))));
+  const colors = new Array(cellsAcross * cellsDown).fill(null);
+  for (let cy = 0; cy < cellsDown; cy++){
+    for (let cx = 0; cx < cellsAcross; cx++){
+      const counts = new Map();
+      for (let py = cy * CPX; py < Math.min(canvas.height, (cy + 1) * CPX); py++){
+        for (let px = cx * CPX; px < Math.min(canvas.width, (cx + 1) * CPX); px++){
+          const index = (py * canvas.width + px) * 4;
+          if (source[index + 3] < 64) continue;
+          const key = `${source[index]},${source[index + 1]},${source[index + 2]}`;
+          counts.set(key, (counts.get(key) || 0) + 1);
+        }
+      }
+      let selected = null, selectedCount = -1;
+      for (const [key, count] of counts){
+        if (priority.has(key) && count >= CPX * CPX * .25 && count > selectedCount){
+          selected = key; selectedCount = count;
+        }
+      }
+      if (!selected){
+        for (const [key, count] of counts){
+          if (count > selectedCount){ selected = key; selectedCount = count; }
+        }
+      }
+      if (selected) colors[cy * cellsAcross + cx] = rgbaHex(selected.split(',').map(Number));
+    }
+  }
+  const template = { colors, width:cellsAcross, height:cellsDown };
+  CELL_MAP_CHIP_CACHE.set(cacheKey, template);
+  return template;
+}
+
+function cellMapChipTemplate(name){
+  const canvas = TILES[name];
+  if (!canvas) return null;
+  return cellTemplateForCanvas(canvas, `map-chip:${name}`, [P.outline, P.foam, P.rail, P.tie, P.win, GLYPH_WHITE]);
+}
+
+function worldFineCell(gx, gy){
+  return [gridOriginX + gx, gridOriginY + gy];
+}
+function standardCellCoordinates(gx, gy){
+  const [wx, wy] = worldFineCell(gx, gy);
+  return [Math.floor(wx / CELL_DETAIL_SCALE), Math.floor(wy / CELL_DETAIL_SCALE)];
+}
+function standardCellHash(gx, gy){
+  const [wx, wy] = standardCellCoordinates(gx, gy);
+  return ((wx * 7349 + wy * 9151 + TILE.x) % 97 + 97) % 97;
+}
+function cellMapChipColor(name, gx, gy){
+  const template = cellMapChipTemplate(name);
+  if (!template) return null;
+  const [wx, wy] = worldFineCell(gx, gy);
+  const tx = positiveModulo(wx, template.width);
+  const ty = positiveModulo(wy, template.height);
+  return template.colors[ty * template.width + tx];
+}
+
+function surfaceChipName(id, gx, gy){
+  const h = standardCellHash(gx, gy);
+  if (id === ID.GRASS) return h < 5 ? 'tuft' : h < 8 ? 'flower' : h < 34 ? 'grass0' : h < 60 ? 'grass1' : 'grass2';
+  if (id === ID.FOREST) return h < 48 ? 'forestBroad0' : h < 78 ? 'forestBroad1' : 'forestPine';
+  if (id === ID.WOODS) return h < 35 ? 'woodsCopse0' : h < 70 ? 'woodsCopse1' : 'woodsOpen';
+  if (id === ID.PARK) return h < 50 ? 'parkPocket0' : 'parkPocket1';
+  if (id === ID.PARK_MEDIUM) return h < 30 ? 'parkTree' : h < 58 ? 'parkMeadow' : h < 74 ? 'parkFlower' : h < 86 ? 'bench' : 'lawn';
+  if (id === ID.PARK_LARGE){
+    const [wx, wy] = standardCellCoordinates(gx, gy);
+    return positiveModulo(wx, 13) === 0 ? 'parkPromenadeV' : positiveModulo(wy, 11) === 0 ? 'parkPromenadeH'
+      : h < 56 ? 'parkMeadow' : h < 76 ? 'parkGrove' : h < 86 ? 'parkGrandGarden' : 'lawn';
+  }
+  if (id === ID.DIRT) return 'dirt';
+  if (id === ID.PAVE) return 'pave';
+  if (id === ID.GRAVEL) return 'gravel';
+  if (id === ID.FARM) return 'farm';
+  if (id === ID.SAND) return 'sand';
+  if (id === ID.ROCK) return 'rock';
+  if (id === ID.WETLAND) return 'wetland';
+  if (id === ID.ICE) return 'ice';
+  if (id === ID.MEADOW) return 'meadow';
+  if (id === ID.TERRAIN_OTHER) return 'terrainOther';
+  if (id === ID.FIELD) return 'field';
+  if (id === ID.WATER) return positiveModulo(standardCellCoordinates(gx, gy)[0] + standardCellCoordinates(gx, gy)[1], 2) ? 'water1' : 'water0';
+  return null;
+}
+
+function cellSurfaceBoundary(grid, x, y, id){
   const RG = GRID + 2;
   const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
+  const neighbors = [at(x-1,y), at(x+1,y), at(x,y-1), at(x,y+1)];
+  const h = standardCellHash(x, y);
+  if (id === ID.PARK_RESERVE)
+    return neighbors.every(value => value === ID.PARK_RESERVE) ? null : (h % 3 ? P.treeDk : P.treeMd);
+  if (id === ID.WATER && neighbors.some(value => value !== ID.WATER)) return P.foam;
+  if (id === ID.FOREST && neighbors.some(value => value !== ID.FOREST)) return h % 4 ? P.forestDeep : P.forestLight;
+  if (id === ID.WOODS && neighbors.some(value => value !== ID.WOODS)) return h % 4 ? P.woodsDeep : P.woodsLight;
+  if (isPark(id) && neighbors.some(value => !isPark(value) && value !== ID.FOREST && value !== ID.WOODS))
+    return h % 4 ? P.treeDk : P.treeMd;
+  return undefined;
+}
+
+function drawCellPixelArtSurfaceGrid(grid, option, stats, transparent = true){
+  const RG = GRID + 2;
   for (let y = 0; y < RG; y++){
     for (let x = 0; x < RG; x++){
-      const id = at(x, y);
+      const id = grid[y * RG + x];
       if (transparent && id === ID.GRASS) continue;
-      if (id === ID.PARK_RESERVE &&
-          at(x-1,y) === ID.PARK_RESERVE && at(x+1,y) === ID.PARK_RESERVE &&
-          at(x,y-1) === ID.PARK_RESERVE && at(x,y+1) === ID.PARK_RESERVE) continue;
-      const color = CELL_COLOR_BY_OPTION[option] || CELL_COLOR_BY_ID.get(id);
+      const boundary = cellSurfaceBoundary(grid, x, y, id);
+      if (id === ID.PARK_RESERVE && boundary === null) continue;
+      const chipName = surfaceChipName(id, x, y);
+      const baseColor = CELL_COLOR_BY_OPTION[option] || CELL_COLOR_BY_ID.get(id);
+      const chipColor = chipName ? cellMapChipColor(chipName, x, y) : null;
+      const color = boundary || chipColor || baseColor;
       paintSolidMapCell(x, y, color, option, stats);
+      if (boundary){ stats.boundaryCells++; continue; }
+      if (chipColor && chipColor.toLowerCase() !== String(baseColor || '').toLowerCase()) stats.groundPatternCells++;
     }
   }
 }
 
-function drawSolidBuildingGrid(grid, bldGrid, buildingKinds, buildingDescs, layer, stats){
+function paintDarkenedMapCell(gx, gy, factor, layer, stats){
+  if (gx < 0 || gy < 0 || gx >= stats.gridSize || gy >= stats.gridSize) return;
+  const pixelIndex = (gy * stats.gridSize + gx) * 4;
+  if (!stats.pixelData[pixelIndex + 3]) return;
+  const color = '#' + [0,1,2].map(offset => Math.round(stats.pixelData[pixelIndex + offset] * factor).toString(16).padStart(2,'0')).join('');
+  paintSolidMapCell(gx, gy, color, layer, stats);
+}
+
+function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, bridge = false){
   const RG = GRID + 2;
+  const has = (x, y) => x >= 0 && y >= 0 && x < RG && y < RG && grid[y * RG + x] !== ID.GRASS;
+  const centered = (x, y) => centerGrid && x >= 0 && y >= 0 && x < RG && y < RG && centerGrid[y * RG + x];
+  const tunnel = ['subway','roadTunnels','pathTunnels','railTunnels'].includes(option);
+  const rail = ['rail','subway','railTunnels','aerialways'].includes(option);
+  const roadStyle = SMOOTH_ROAD_STYLE[option];
+  const dashOn = (x, y, span = 8) => {
+    const [wx, wy] = worldFineCell(x, y);
+    return positiveModulo(wx + wy * 3, span) < Math.ceil(span / 2);
+  };
+
+  if (option === 'ferries'){
+    for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
+      if (!centered(x, y) || !dashOn(x, y, 10)) continue;
+      paintSolidMapCell(x, y, P.foam, option, stats);
+      stats.roadCenterCells++;
+    }
+    return;
+  }
+
+  const fill = roadStyle?.fill || (rail ? P.gravel : CELL_COLOR_BY_OPTION[option] || P.pave);
+  const edge = bridge ? P.outline : roadStyle?.edge || (rail ? P.gravelDk : option === 'paths' ? P.trailDot : P.paveDk);
+  for (let y = 0; y < RG; y++){
+    for (let x = 0; x < RG; x++){
+      if (!has(x, y) || (tunnel && !dashOn(x, y))) continue;
+      const boundary = !has(x-1,y) || !has(x+1,y) || !has(x,y-1) || !has(x,y+1);
+      paintSolidMapCell(x, y, boundary ? edge : fill, option, stats);
+      if (boundary){
+        if (rail) stats.boundaryCells++;
+        else stats.roadCasingCells++;
+      }
+    }
+  }
+
+  if (rail){
+    for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
+      if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
+      const horizontal = centered(x-1,y) || centered(x+1,y);
+      const vertical = centered(x,y-1) || centered(x,y+1);
+      const useHorizontal = horizontal || !vertical;
+      const [wx, wy] = worldFineCell(x, y);
+      if (positiveModulo(useHorizontal ? wx : wy, 3) === 0){
+        for (let d = -2; d <= 2; d++){
+          const tx = useHorizontal ? x : x + d, ty = useHorizontal ? y + d : y;
+          if (has(tx, ty)) paintSolidMapCell(tx, ty, P.tie, option, stats);
+        }
+        stats.railTieCells++;
+      }
+      for (const offset of [-1,1]){
+        const rx = useHorizontal ? x : x + offset, ry = useHorizontal ? y + offset : y;
+        if (has(rx, ry)) paintSolidMapCell(rx, ry, P.rail, option, stats);
+      }
+    }
+    return;
+  }
+
+  if (roadStyle?.center){
+    for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
+      if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
+      const [wx, wy] = worldFineCell(x, y);
+      const period = option === 'regionalRoads' ? 7 : 9;
+      if (positiveModulo(wx + wy, period) >= Math.ceil(period * .55)) continue;
+      paintSolidMapCell(x, y, roadStyle.center, option, stats);
+      stats.roadCenterCells++;
+    }
+  } else if (centerGrid && ['paths','tracks','piers','transportationOther'].includes(option)){
+    const detail = option === 'tracks' ? P.gravelDk : option === 'paths' ? P.trail : P.pave;
+    for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
+      if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
+      paintSolidMapCell(x, y, detail, option, stats);
+      stats.roadCenterCells++;
+    }
+  }
+}
+
+function drawCellPixelArtBuildingGrid(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats){
+  const RG = GRID + 2;
+  const isCell = (x, y) => x >= 0 && y >= 0 && x < RG && y < RG && grid[y * RG + x] === ID.BLD;
+  const southEdges = new Map();
+  for (let y = 1; y < RG; y++) for (let x = 0; x < RG; x++){
+    if (!isCell(x, y) && isCell(x, y - 1)){
+      paintDarkenedMapCell(x, y, .68, `${layer}:shadow`, stats);
+      stats.buildingDetailCells++;
+    }
+  }
   for (let y = 0; y < RG; y++){
     for (let x = 0; x < RG; x++){
       const index = y * RG + x;
@@ -1783,11 +2001,57 @@ function drawSolidBuildingGrid(grid, bldGrid, buildingKinds, buildingDescs, laye
       const buildingIndex = bldGrid[index];
       const desc = buildingDescs[buildingIndex];
       const kind = buildingKinds[buildingIndex] || 'normal';
-      const color = kind === 'normal'
-        ? (desc?.pal?.[0] || P.roofA)
-        : (desc?.accent || desc?.pal?.[0] || P.roofA);
+      const pal = desc?.pal || ROOFPAL[0];
+      const same = (nx, ny) => isCell(nx, ny) && bldGrid[ny * RG + nx] === buildingIndex;
+      const above = same(x, y-1), below = same(x, y+1), left = same(x-1,y), right = same(x+1,y);
+      const [wx, wy] = worldFineCell(x, y);
+      let color = pal[0];
+      if (!below){
+        color = above ? P.wall : pal[1];
+        if (above && positiveModulo(wx, 4) === 1) color = P.win;
+      } else if (!above) color = pal[2];
+      else if ((!left || !right) && positiveModulo(wy, 3) !== 1) color = P.outline;
+      else if (positiveModulo(wx * 3 + wy * 5 + buildingIndex, 17) === 0) color = pal[1];
       paintSolidMapCell(x, y, color, layer, stats);
+      if (color !== pal[0]) stats.buildingDetailCells++;
+      if (!below){
+        const edge = southEdges.get(buildingIndex);
+        if (!edge || y > edge.y) southEdges.set(buildingIndex, { y, minX:x, maxX:x });
+        else if (y === edge.y){ edge.minX = Math.min(edge.minX, x); edge.maxX = Math.max(edge.maxX, x); }
+      }
     }
+  }
+
+  const paintIfBuilding = (bi, x, y, color) => {
+    if (x < 0 || y < 0 || x >= RG || y >= RG || bldGrid[y * RG + x] !== bi || grid[y * RG + x] !== ID.BLD) return;
+    paintSolidMapCell(x, y, color, `${layer}:details`, stats);
+    stats.buildingDetailCells++;
+  };
+  for (let bi = 1; bi < buildingKinds.length; bi++){
+    const anchor = buildingAnchors?.[bi];
+    const desc = buildingDescs[bi];
+    const kind = buildingKinds[bi] || 'normal';
+    if (!anchor){
+      const edge = southEdges.get(bi);
+      if (edge) paintIfBuilding(bi, Math.round((edge.minX + edge.maxX) / 2), edge.y, P.door);
+      continue;
+    }
+    const accent = desc?.accent || desc?.pal?.[0] || P.roofA;
+    if (kind === 'hospital'){
+      for (const [dx,dy] of [[0,-2],[0,-1],[-2,0],[-1,0],[0,0],[1,0],[2,0],[0,1],[0,2]])
+        paintIfBuilding(bi, anchor.gx + dx, anchor.gy + dy, dx === 0 && dy === 0 ? GLYPH_WHITE : '#48a050');
+    } else if (kind === 'convenience'){
+      ['#48a058','#f8d038','#5078d8'].forEach((color, row) => {
+        for (let dx = -3; dx <= 3; dx++) paintIfBuilding(bi, anchor.gx + dx, anchor.gy + row, color);
+      });
+    } else if (kind === 'mixed'){
+      ['#e05038','#f8d038','#5078d8'].forEach((color, column) =>
+        paintIfBuilding(bi, anchor.ex - 1 + column, anchor.ey, color));
+    } else if (kind === 'poi' && desc?.glyph){
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
+        paintIfBuilding(bi, anchor.gx + dx, anchor.gy + dy, dx === 0 || dy === 0 ? GLYPH_WHITE : accent);
+    }
+    paintIfBuilding(bi, anchor.ex, anchor.ey, P.door);
   }
 }
 
@@ -2176,7 +2440,11 @@ function drawParkGrid(grid){
    6. スプライト・ラベル（前版から流用、パレットのみ調整）
    ===================================================== */
 const OUT = P.outline;
-const px = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+let spritePaintContext = ctx;
+const px = (x, y, w, h, c) => {
+  spritePaintContext.fillStyle = c;
+  spritePaintContext.fillRect(x, y, w, h);
+};
 
 /* --- スプライト共通: 輪郭は接地部だけ。陰影で立体感を出す --- */
 const sh = (hex, f = 0.72) => {                 // 暗く
@@ -2550,6 +2818,34 @@ function spriteFor(props, size = 'M', variant = 0){
   }
   return { label: e.label, draw };
 }
+const CELL_SPRITE_TEMPLATE_CACHE = new Map();
+function cellSpriteTemplateFor(item){
+  const spriteKey = CLASS2SPRITE[item.props.subclass] || CLASS2SPRITE[item.props.class] || 'generic';
+  const stationVariant = isStationProps(item.props) ? featureName(item.props) : '';
+  const cacheKey = `cell-sprite:${spriteKey}:${item.size}:${item.variant}:${stationVariant}`;
+  if (CELL_SPRITE_TEMPLATE_CACHE.has(cacheKey)) return CELL_SPRITE_TEMPLATE_CACHE.get(cacheKey);
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 192;
+  const paint = canvas.getContext('2d');
+  paint.imageSmoothingEnabled = false;
+  const anchorX = 96, anchorY = 152;
+  const previousContext = spritePaintContext;
+  try {
+    spritePaintContext = paint;
+    paint.save();
+    paint.translate(anchorX, anchorY);
+    paint.scale(2, 2);
+    spriteFor(item.props, item.size, item.variant).draw(0, 0);
+    paint.restore();
+  } finally {
+    spritePaintContext = previousContext;
+  }
+  const template = cellTemplateForCanvas(canvas, cacheKey, [OUT, GLYPH_WHITE, categoryTone(item.category)]);
+  template.anchorX = Math.floor(anchorX / CPX);
+  template.anchorY = Math.floor(anchorY / CPX);
+  CELL_SPRITE_TEMPLATE_CACHE.set(cacheKey, template);
+  return template;
+}
 function alphaColor(hex, alpha){
   const value = String(hex || '#78828a').replace('#','');
   if (!/^[0-9a-f]{6}$/i.test(value)) return `rgba(120,130,138,${alpha})`;
@@ -2866,7 +3162,7 @@ function render(){
 
   /* --- 地形のマップグリッド + 建物情報 --- */
   const rasterized = getRasterizedGrid(tileLayers, o);
-  const { grids, bldGrid, bldUnits, unitByRingKey, bldArea, featureCountsByOption } = rasterized;
+  const { grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea, featureCountsByOption } = rasterized;
   const RG = GRID + 2;
   const worldToGridCell = (wx, wy) => [
     Math.floor(wx / CPX) - TILE.x * GRID - gridOriginX,
@@ -2883,6 +3179,13 @@ function render(){
     cellizedFeatures:0,
     facilitySymbols:0,
     terrainSymbols:0,
+    groundPatternCells:0,
+    boundaryCells:0,
+    roadCasingCells:0,
+    roadCenterCells:0,
+    railTieCells:0,
+    buildingDetailCells:0,
+    spriteCells:0,
     flushed:false,
   };
 
@@ -2965,7 +3268,7 @@ function render(){
   }
   const { buildingKinds, buildingDescs, buildingAnchors, bldStyle, normalBuildingGrid, poiBuildingGrid } = rasterized.semantic;
   const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
-  if (CELL_ONLY_MODE) drawSolidCellGrid(emptyGrid, 'grass', cellRenderingStats, false);
+  if (CELL_ONLY_MODE) drawCellPixelArtSurfaceGrid(emptyGrid, 'grass', cellRenderingStats, false);
   else drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
   /* 本番道路は16pxセルへ落とさず、MVTの元形状を2シーンpx
@@ -3077,7 +3380,7 @@ function render(){
     return counts;
   }, {});
   document.getElementById('stats').innerHTML =
-    (CELL_ONLY_MODE ? `<span>描画: ${MAP_CELL_LOGICAL_SIZE}×${MAP_CELL_LOGICAL_SIZE}論理px単色セル</span>` : '')+
+    (CELL_ONLY_MODE ? `<span>描画: ${MAP_CELL_LOGICAL_SIZE}×${MAP_CELL_LOGICAL_SIZE}論理px原子セルのピクセルアート</span>` : '')+
     `<span>普通建物: ${buildingKindCounts.normal || 0}</span>`+
     `<span>病院: ${buildingKindCounts.hospital || 0}</span>`+
     `<span>コンビニ: ${buildingKindCounts.convenience || 0}</span>`+
@@ -3170,23 +3473,73 @@ function render(){
   function drawCellFacilityMarker(item, size, layer){
     const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
     const tone = categoryTone(item.category);
-    const cells = size === 'L'
-      ? [
-          [-1,-1,OUT],[0,-1,OUT],[1,-1,OUT],
-          [-1,0,OUT],[0,0,tone],[1,0,OUT],
-          [-1,1,OUT],[0,1,OUT],[1,1,OUT],
-        ]
-      : size === 'M'
-        ? [[0,-1,OUT],[-1,0,OUT],[0,0,tone],[1,0,OUT],[0,1,OUT]]
-        : [[0,0,tone]];
-    for (const [dx, dy, color] of cells){
-      paintLegacyCellBlock(
-        gx + dx * CELL_DETAIL_SCALE,
-        gy + dy * CELL_DETAIL_SCALE,
-        color,
-        layer,
-        cellRenderingStats
-      );
+    const radius = size === 'L' ? Math.min(6, 3 + Math.floor(Math.sqrt(item.count || 1) / 2)) : 2;
+    for (let dy = -radius; dy <= radius; dy++){
+      for (let dx = -radius; dx <= radius; dx++){
+        const edge = Math.abs(dx) === radius || Math.abs(dy) === radius;
+        const corner = Math.abs(dx) === radius && Math.abs(dy) === radius;
+        if (corner && radius > 2) continue;
+        paintSolidMapCell(gx + dx, gy + dy, edge ? OUT : tone, layer, cellRenderingStats);
+        cellRenderingStats.spriteCells++;
+      }
+    }
+    if (size === 'L'){
+      const pips = Math.max(2, Math.min(4, Math.round((item.count || 4) / 3)));
+      const pipCells = [[0,-1],[1,0],[0,1],[-1,0]];
+      for (let index = 0; index < pips; index++){
+        const [dx, dy] = pipCells[index];
+        paintSolidMapCell(gx + dx, gy + dy, GLYPH_WHITE, layer, cellRenderingStats);
+        cellRenderingStats.spriteCells++;
+      }
+    }
+    item.cellPt = solidMapCellCenter(gx, gy);
+    cellRenderingStats.facilitySymbols++;
+    return item.cellPt;
+  }
+
+  function drawCellPatternMarker(item, gx, gy, layer){
+    const tone = categoryTone(item.category);
+    const marker = ACTIVE_PATTERN.marker;
+    const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[item.category] || 1);
+    const radius = Math.max(3, Math.round(5 * visualScale));
+    const paint = (x, y, color) => {
+      paintSolidMapCell(x, y, color, layer, cellRenderingStats);
+      cellRenderingStats.spriteCells++;
+    };
+    if (marker === 'tower'){
+      const height = Math.max(5, Math.min(17, Math.round((14 + item.metrics.height * .42) / CPX)));
+      const x = gx + radius;
+      for (let y = gy - height; y <= gy; y++){
+        paint(x, y, OUT); paint(x + 1, y, tone);
+        if (positiveModulo(y, 3) === 0) paint(x + 1, y, GLYPH_WHITE);
+      }
+    } else if (marker === 'flag' || marker === 'beacon'){
+      const x = gx - radius;
+      for (let y = gy - radius * 2; y <= gy; y++) paint(x, y, OUT);
+      for (let dx = 1; dx <= radius + 1; dx++) paint(x + dx, gy - radius * 2, tone);
+    } else if (marker === 'corners' || marker === 'microgrid'){
+      for (const [dx,dy] of [[-radius,-radius],[radius,-radius],[-radius,radius],[radius,radius]]) paint(gx + dx, gy + dy, tone);
+    } else {
+      for (let dx = -radius; dx <= radius; dx++){
+        paint(gx + dx, gy + 1, OUT);
+        if (Math.abs(dx) < radius) paint(gx + dx, gy, tone);
+      }
+    }
+  }
+
+  function drawCellSprite(item, layer){
+    const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
+    const template = cellSpriteTemplateFor(item);
+    item.visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[item.category] || 1);
+    item.visualRadius = 24 * item.visualScale + Math.max(0, item.assetCount - 1) * 8;
+    drawCellPatternMarker(item, gx, gy, `${layer}:marker`);
+    for (let ty = 0; ty < template.height; ty++){
+      for (let tx = 0; tx < template.width; tx++){
+        const color = template.colors[ty * template.width + tx];
+        if (!color) continue;
+        paintSolidMapCell(gx + tx - template.anchorX, gy + ty - template.anchorY, color, layer, cellRenderingStats);
+        cellRenderingStats.spriteCells++;
+      }
     }
     item.cellPt = solidMapCellCenter(gx, gy);
     cellRenderingStats.facilitySymbols++;
@@ -3235,7 +3588,7 @@ function render(){
     drawCellDots();
     drawCellClusters();
     for (const p of drawnIcons){
-      const [x, y] = drawCellFacilityMarker(p, p.size, 'poi');
+      const [x, y] = drawCellSprite(p, 'poi');
       const radius = Math.max(28, p.visualRadius);
       hitAreas.push({ x:x - radius, y:y - radius*1.9, w:radius*2, h:radius*2.1, p:p.props, kind:'poi' });
     }
@@ -3361,7 +3714,11 @@ function render(){
             : kind === 'ridge' || kind === 'arete' ? '#8d7655' : P.rock;
       const cells = new Set();
       if (f.type === 1){
-        cells.add(`${anchorX},${anchorY}`);
+        // 2px原子セルの三角形。火山は山頂の火口色を追加する。
+        for (let row = 0; row < 5; row++){
+          const half = Math.floor(row / 2);
+          for (let dx = -half; dx <= half; dx++) cells.add(`${anchorX + dx},${anchorY - 2 + row}`);
+        }
       } else {
         for (const line of f.geom){
           for (let index = 1; index < line.length; index++){
@@ -3374,8 +3731,18 @@ function render(){
       for (const key of cells){
         const [x, y] = key.split(',').map(Number);
         if (x < 0 || y < 0 || x >= RG || y >= RG) continue;
-        paintLegacyCellBlock(x, y, color, 'terrainSymbols', cellRenderingStats);
+        const [wx, wy] = worldFineCell(x, y);
+        if (f.type !== 1 && (kind === 'ridge' || kind === 'arete') && positiveModulo(wx + wy * 3, 7) >= 4) continue;
+        const pointRow = y - anchorY + 2;
+        const pointHalf = Math.floor(pointRow / 2);
+        const pointOutline = f.type === 1 && (pointRow === 0 || pointRow === 4 || Math.abs(x - anchorX) === pointHalf);
+        paintSolidMapCell(x, y, pointOutline ? OUT : color, 'terrainSymbols', cellRenderingStats);
+        if (f.type !== 1 && kind === 'cliff'){
+          paintSolidMapCell(x + 1, y, P.rockDk, 'terrainSymbols', cellRenderingStats);
+        }
       }
+      if (f.type === 1 && kind === 'volcano')
+        paintSolidMapCell(anchorX, anchorY - 1, '#f8d038', 'terrainSymbols', cellRenderingStats);
       if (!cells.size) continue;
       const point = solidMapCellCenter(anchorX, anchorY);
       terrainCellPoints.set(f, point);
@@ -3448,7 +3815,7 @@ function render(){
         // duplicate repaint so the cell-write diagnostics remain meaningful.
         if (option !== 'grass'){
           const grid = grids.get(option);
-          if (grid) drawSolidCellGrid(grid, option, cellRenderingStats, true);
+          if (grid) drawCellPixelArtSurfaceGrid(grid, option, cellRenderingStats, true);
         }
         countCellFeatures(option);
       }
@@ -3480,7 +3847,7 @@ function render(){
     if (!o[option] || !z2Routes.has(option)) continue;
     if (CELL_ONLY_MODE){
       const grid = grids.get(option);
-      if (grid) drawSolidCellGrid(grid, option, cellRenderingStats, true);
+      if (grid) drawCellPixelArtTransportGrid(grid, option, cellRenderingStats, transportCenters.get(option));
       countCellFeatures(option);
     }
     else if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option);
@@ -3494,7 +3861,7 @@ function render(){
 
   if (o.buildings){
     if (CELL_ONLY_MODE){
-      drawSolidBuildingGrid(normalBuildingGrid, bldGrid, buildingKinds, buildingDescs, 'buildings', cellRenderingStats);
+      drawCellPixelArtBuildingGrid(normalBuildingGrid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, 'buildings', cellRenderingStats);
       countCellFeatures('buildings');
     } else {
       drawGrid(normalBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
@@ -3506,7 +3873,7 @@ function render(){
     const bridgeOption = `bridge:${option}`;
     if (CELL_ONLY_MODE){
       const grid = grids.get(bridgeOption);
-      if (grid) drawSolidCellGrid(grid, option, cellRenderingStats, true);
+      if (grid) drawCellPixelArtTransportGrid(grid, option, cellRenderingStats, transportCenters.get(bridgeOption), true);
       countCellFeatures(bridgeOption);
     }
     else if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option, true);
@@ -3518,7 +3885,7 @@ function render(){
   }
   if (o.buildings){
     if (CELL_ONLY_MODE)
-      drawSolidBuildingGrid(poiBuildingGrid, bldGrid, buildingKinds, buildingDescs, 'poiBuildings', cellRenderingStats);
+      drawCellPixelArtBuildingGrid(poiBuildingGrid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, 'poiBuildings', cellRenderingStats);
     else
       drawGrid(poiBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
     renderOrder.push('Z3:poiBuilding');
@@ -3634,6 +4001,7 @@ function render(){
     cellRendering:{
       enabled:CELL_ONLY_MODE,
       mode:RENDER_MODE,
+      styleProfile:CELL_ONLY_MODE ? 'standard-pixel-art' : 'standard',
       cellLogicalPixels:MAP_CELL_LOGICAL_SIZE,
       cellScenePixels:CPX,
       gridCellsPerSide:GRID,
@@ -3644,6 +4012,13 @@ function render(){
       terrainSymbols:CELL_ONLY_MODE ? cellRenderingStats.terrainSymbols : 0,
       paintedCells:CELL_ONLY_MODE ? cellRenderingStats.paintedCells : 0,
       occupiedCells:CELL_ONLY_MODE ? cellRenderingStats.occupiedCells : 0,
+      groundPatternCells:CELL_ONLY_MODE ? cellRenderingStats.groundPatternCells : 0,
+      boundaryCells:CELL_ONLY_MODE ? cellRenderingStats.boundaryCells : 0,
+      roadCasingCells:CELL_ONLY_MODE ? cellRenderingStats.roadCasingCells : 0,
+      roadCenterCells:CELL_ONLY_MODE ? cellRenderingStats.roadCenterCells : 0,
+      railTieCells:CELL_ONLY_MODE ? cellRenderingStats.railTieCells : 0,
+      buildingDetailCells:CELL_ONLY_MODE ? cellRenderingStats.buildingDetailCells : 0,
+      spriteCells:CELL_ONLY_MODE ? cellRenderingStats.spriteCells : 0,
       layerCells:CELL_ONLY_MODE ? { ...cellRenderingStats.layerCells } : {},
     },
     resolver:{

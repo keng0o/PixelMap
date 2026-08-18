@@ -29,9 +29,19 @@ test('意味セルバッファを不透明色で合成し最近傍でセル全�
   assert.match(html, /new ImageData\(stats\.pixelData, size, size\)/);
   assert.match(html, /ctx\.imageSmoothingEnabled = false/);
   assert.match(html, /ctx\.drawImage\(cellCompositeCanvas, originX, originY, size \* CPX, size \* CPX\)/);
-  assert.match(html, /function drawSolidCellGrid\(grid, option, stats, transparent = true\)/);
+  assert.match(html, /function drawCellPixelArtSurfaceGrid\(grid, option, stats, transparent = true\)/);
   assert.match(html, /singleColorCells:CELL_ONLY_MODE/);
   assert.match(html, /semanticCellBuffer:CELL_ONLY_MODE/);
+});
+
+test('標準16シーンpxマップチップを4×4原子セルテンプレートへ変換する', () => {
+  assert.match(html, /c\.width = c\.height = STANDARD_CPX/);
+  assert.match(html, /const CELL_TEMPLATE_SIZE = STANDARD_CPX \/ CPX/);
+  assert.match(html, /function cellTemplateForCanvas\(canvas, cacheKey, priorityColors = \[\]\)/);
+  assert.match(html, /count >= CPX \* CPX \* \.25/);
+  assert.match(html, /function cellMapChipColor\(name, gx, gy\)/);
+  assert.match(html, /positiveModulo\(wx, template\.width\)/);
+  assert.match(html, /styleProfile:CELL_ONLY_MODE \? 'standard-pixel-art' : 'standard'/);
 });
 
 test('細分化しても公園・建物の意味分類は96セル基準を維持する', () => {
@@ -40,11 +50,23 @@ test('細分化しても公園・建物の意味分類は96セル基準を維持
   assert.match(html, /geomAreaCells:Math\.abs\(outer\.signed\) \* \(STANDARD_GRID \/ buildingExtent\) \*\* 2/);
 });
 
-test('セルモードの地形・交通・建物は精細描画を迂回する', () => {
-  assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawSolidCellGrid\(grid, option, cellRenderingStats/);
-  assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawSolidBuildingGrid\(normalBuildingGrid/);
+test('セルモードの地形・交通・建物は専用ピクセルアート経路を使う', () => {
+  assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtSurfaceGrid\(grid, option, cellRenderingStats/);
+  assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtTransportGrid\(grid, option, cellRenderingStats, transportCenters\.get\(option\)\)/);
+  assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtBuildingGrid\(normalBuildingGrid/);
   assert.match(html, /else if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option\)/);
   assert.match(html, /else if \(tunnelOptions\.has\(option\)\) drawTunnelLayer\(option\)/);
+});
+
+test('地表模様と水際・林縁・公園境界を世界座標固定でセル描画する', () => {
+  assert.match(html, /function standardCellCoordinates\(gx, gy\)/);
+  assert.match(html, /Math\.floor\(wx \/ CELL_DETAIL_SCALE\)/);
+  assert.match(html, /function surfaceChipName\(id, gx, gy\)/);
+  for (const chip of ['forestBroad0','woodsCopse0','parkPocket0','farm','pave','sand','rock','wetland','water0'])
+    assert.match(html, new RegExp(`'${chip}'`), chip);
+  assert.match(html, /function cellSurfaceBoundary\(grid, x, y, id\)/);
+  assert.match(html, /id === ID\.WATER[\s\S]*?P\.foam/);
+  assert.match(html, /id === ID\.PARK_RESERVE[\s\S]*?neighbors\.every/);
 });
 
 test('地下交通もセルモード用グリッドへ分類する', () => {
@@ -56,17 +78,46 @@ test('地下交通もセルモード用グリッドへ分類する', () => {
 
 test('交通線は4連結を保ち、cell2では従来幅へ4倍展開する', () => {
   assert.match(html, /function traverse\(x0, y0, x1, y1, visit\)/);
+  assert.match(html, /const transportCenters = new Map\(\)/);
+  assert.match(html, /setCell\(center, cx, cy, 1\)/);
   assert.match(html, /setCellBrush\(grid, cx, cy, id, \(thick \? 2 : 1\) \* CELL_DETAIL_SCALE\)/);
   assert.match(html, /c\.lineWidth = lineWidth \* CELL_DETAIL_SCALE/);
 });
 
-test('施設はS・M・Lの旧セル形状を4×4個のcell2へ展開する', () => {
+test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分ける', () => {
+  assert.match(html, /function drawCellPixelArtTransportGrid\(grid, option, stats, centerGrid = null, bridge = false\)/);
+  assert.match(html, /paintSolidMapCell\(x, y, boundary \? edge : fill/);
+  assert.match(html, /paintSolidMapCell\(x, y, roadStyle\.center/);
+  assert.match(html, /for \(const offset of \[-1,1\]\)/);
+  assert.match(html, /paintSolidMapCell\(tx, ty, P\.tie/);
+  assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
+});
+
+test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで描く', () => {
+  assert.match(html, /function drawCellPixelArtBuildingGrid\(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats\)/);
+  assert.match(html, /paintDarkenedMapCell\(x, y, \.68/);
+  assert.match(html, /if \(!below\)[\s\S]*?P\.wall/);
+  assert.match(html, /kind === 'hospital'/);
+  assert.match(html, /kind === 'convenience'/);
+  assert.match(html, /kind === 'mixed'/);
+  assert.match(html, /kind === 'poi' && desc\?\.glyph/);
+});
+
+test('POIは既存スプライトを2×2セルテンプレートへ変換しクリック領域を維持する', () => {
+  assert.match(html, /let spritePaintContext = ctx/);
+  assert.match(html, /function cellSpriteTemplateFor\(item\)/);
+  assert.match(html, /spriteFor\(item\.props, item\.size, item\.variant\)\.draw\(0, 0\)/);
+  assert.match(html, /function drawCellSprite\(item, layer\)/);
+  assert.match(html, /drawCellPatternMarker\(item, gx, gy/);
+  assert.match(html, /const \[x, y\] = drawCellSprite\(p, 'poi'\)/);
+  assert.match(html, /w:radius\*2, h:radius\*2\.1/);
+});
+
+test('点とクラスターも輪郭・カテゴリ色・ピップを原子セルで描く', () => {
   assert.match(html, /function drawCellFacilityMarker\(item, size, layer\)/);
-  assert.match(html, /size === 'L'[\s\S]*?\[-1,-1,OUT\][\s\S]*?\[0,0,tone\][\s\S]*?size === 'M'/);
-  assert.match(html, /\[\[0,-1,OUT\],\[-1,0,OUT\],\[0,0,tone\],\[1,0,OUT\],\[0,1,OUT\]\]/);
-  assert.match(html, /: \[\[0,0,tone\]\]/);
-  assert.match(html, /function paintLegacyCellBlock\(gx, gy, color, layer, stats\)/);
-  assert.match(html, /gx \+ dx \* CELL_DETAIL_SCALE/);
+  assert.match(html, /const radius = size === 'L'/);
+  assert.match(html, /edge \? OUT : tone/);
+  assert.match(html, /paintSolidMapCell\(gx \+ dx, gy \+ dy, GLYPH_WHITE/);
   assert.match(html, /function drawCellPoi\(\)/);
   assert.match(html, /drawCellFacilityMarker\(c, 'L', 'clusters'\)/);
   assert.match(html, /w:STANDARD_CPX \* 3, h:STANDARD_CPX \* 3/);
@@ -80,11 +131,16 @@ test('地形記号をセル化してから名称と現在地を重ねる', () =>
   assert.ok(cellBranch.indexOf('flushSolidCellBuffer(cellRenderingStats)') < cellBranch.indexOf('cellLabelDrawers[option]()'));
   assert.ok(html.indexOf('drawCurrentLocation();') > html.indexOf('cellLabelDrawers[option]();'));
   assert.match(html, /terrainNames:drawCellTerrainNames/);
-  assert.match(html, /paintLegacyCellBlock\(x, y, color, 'terrainSymbols', cellRenderingStats\)/);
+  assert.match(html, /paintSolidMapCell\(x, y, pointOutline \? OUT : color, 'terrainSymbols', cellRenderingStats\)/);
+  assert.match(html, /kind === 'volcano'[\s\S]*?'#f8d038'/);
 });
 
 test('セル描画の件数を診断情報へ公開する', () => {
-  for (const field of ['gridCellsPerSide','cellizedFeatures','facilitySymbols','terrainSymbols','paintedCells','occupiedCells','layerCells'])
+  for (const field of [
+    'gridCellsPerSide','cellizedFeatures','facilitySymbols','terrainSymbols','paintedCells','occupiedCells',
+    'groundPatternCells','boundaryCells','roadCasingCells','roadCenterCells','railTieCells',
+    'buildingDetailCells','spriteCells','layerCells',
+  ])
     assert.match(html, new RegExp(`${field}:`), field);
   assert.match(html, /cellLogicalPixels:MAP_CELL_LOGICAL_SIZE/);
   assert.match(html, /cellScenePixels:CPX/);
