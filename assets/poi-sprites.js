@@ -109,10 +109,16 @@
     townhall:{label:'役所',draw:(x,y)=>{const r=house(x,y,'#687078',P.wall,true);px(r.x+r.w/2,r.y-4,1,4,P.trunk);px(r.x+r.w/2+1,r.y-4,4,2,'#f8d038');}},
     place_of_worship:{label:'神社・寺',draw:(x,y)=>{px(x-8,y-14,16,2,P.roofA);px(x-8,y-14,16,1,hi(P.roofA));px(x-8,y-12,16,1,sh(P.roofA,.7));px(x-6,y-10,12,2,P.roofADk);px(x-6,y-8,2,8,P.roofADk);px(x+4,y-8,2,8,P.roofADk);px(x-5,y-8,1,8,sh(P.roofADk,.8));px(x+5,y-8,1,8,sh(P.roofADk,.8));px(x-6,y-1,2,1,sh(P.roofADk,.5));px(x+4,y-1,2,1,sh(P.roofADk,.5));}},
     attraction:{label:'名所',draw:(x,y)=>signPost(x,y,'#f8d038',(cx,cy)=>{px(cx-1,cy-13,2,2,P.roofA);px(cx-3,cy-11,6,1,P.roofA);})},
+    monument:{label:'トロフィー記念塔',draw:(x,y)=>{yard(x,y,12);px(x-9,y-22,3,7,'#d6a93f');px(x+6,y-22,3,7,'#d6a93f');px(x-11,y-22,3,3,'#f0cf5a');px(x+8,y-22,3,3,'#f0cf5a');px(x-8,y-25,16,5,'#f0cf5a');px(x-6,y-20,12,6,'#e6bd4d');px(x-3,y-14,6,7,'#d6a93f');px(x-7,y-7,14,3,'#6fa7a2');px(x-10,y-4,20,4,'#456b6b');px(x-1,y-23,2,2,'#d95072');}},
+    castle:{label:'宝箱の城塞',draw:(x,y)=>{yard(x,y,20);block(x-16,y-14,32,14,'#d6a88f');px(x-18,y-17,8,17,'#a45f58');px(x+10,y-17,8,17,'#a45f58');px(x-17,y-20,6,4,'#f0d1bd');px(x+11,y-20,6,4,'#f0d1bd');px(x-8,y-17,16,4,'#f0d1bd');px(x-6,y-24,12,8,'#70507f');px(x-4,y-27,8,4,'#a882c5');px(x-14,y-10,28,3,'#f0d1bd');px(x-2,y-11,5,7,'#6f3f46');px(x-1,y-9,3,3,'#f0cf5a');px(x-1,y-8,1,3,'#70507f');}},
+    gallery:{label:'ブックギャラリー',draw:(x,y)=>{yard(x,y,17);block(x-13,y-12,26,12,'#a45f58');px(x-3,y-9,6,9,'#6f3f46');px(x-16,y-22,15,5,'#f8eee5');px(x-15,y-25,13,4,'#f8eee5');px(x-12,y-27,10,3,'#f8eee5');px(x+1,y-22,15,5,'#f8eee5');px(x+2,y-25,13,4,'#f8eee5');px(x+2,y-27,10,3,'#f8eee5');px(x-1,y-24,2,9,'#d6a88f');for(let i=0;i<3;i++){px(x-12,y-23+i*3,8,1,'#d6a88f');px(x+4,y-23+i*3,8,1,'#d6a88f');}px(x-14,y-16,28,3,'#6f3f46');}},
     museum:{label:'博物館',draw:(x,y)=>{const r=house(x,y,'#a0a070');px(r.x+3,r.y+6,2,8,'#e0d8c0');px(r.x+7,r.y+6,2,8,'#e0d8c0');px(r.x+11,r.y+6,2,8,'#e0d8c0');}},
+    theatre:{label:'仮面劇場',draw:(x,y)=>{yard(x,y,18);block(x-14,y-12,28,12,'#a45f58');roofBar(x-16,y-17,32,5,'#f0d1bd');px(x-5,y-11,10,11,'#6f3f46');px(x-11,y-27,9,9,'#f8eee5');px(x+2,y-27,9,9,'#f8eee5');px(x-9,y-24,2,2,'#70507f');px(x-5,y-24,2,2,'#70507f');px(x+4,y-24,2,2,'#70507f');px(x+8,y-24,2,2,'#70507f');px(x-8,y-21,5,1,'#d95072');px(x+4,y-20,5,1,'#d95072');px(x-1,y-29,2,6,'#f0cf5a');px(x-4,y-28,8,2,'#f0cf5a');}},
     cinema:{label:'劇場・映画館',draw:(x,y)=>stall(x,y,'#a04878',(sx,sy)=>{px(sx+4,sy+7,2,2,'#f8d038');px(sx+8,sy+8,2,2,'#f8d038');})},
     park:{label:'公園',draw:(x,y)=>{px(x-6,y-2,12,2,'rgba(24,40,16,.3)');px(x-5,y-17,10,1,P.treeMd);px(x-6,y-16,12,2,P.treeMd);px(x-7,y-15,14,6,P.treeMd);px(x-4,y-17,5,1,hi(P.treeMd));px(x-4,y-16,5,3,P.treeLt);px(x+1,y-12,5,3,P.treeDk);px(x-6,y-10,12,1,P.treeDk);px(x-1,y-8,2,6,P.trunk);px(x-1,y-3,2,1,sh(P.trunk,.55));px(x-10,y-4,5,4,P.treeMd);px(x-10,y-1,5,1,P.treeDk);px(x-9,y-4,2,1,P.treeLt);px(x+6,y-4,5,4,P.treeMd);px(x+6,y-1,5,1,P.treeDk);px(x+7,y-4,2,1,P.treeLt);}},
+    zoo:{label:'クリーチャー塔',draw:(x,y)=>{yard(x,y,14);block(x-9,y-20,18,20,'#6fa7a2');px(x-11,y-30,22,10,'#a45f58');px(x-8,y-33,16,4,'#a45f58');px(x-1,y-37,2,4,'#6f3f46');px(x-7,y-27,3,3,'#f0cf5a');px(x+4,y-27,3,3,'#f0cf5a');px(x-4,y-22,8,2,'#6f3f46');px(x-3,y-15,2,3,'#456b6b');px(x+2,y-15,2,3,'#456b6b');px(x-4,y-7,8,7,'#456b6b');px(x-11,y-19,3,7,'#d95072');px(x+8,y-19,3,7,'#d95072');}},
     parking:{label:'駐車場',draw:(x,y)=>signPost(x,y,P.roofB,(cx,cy)=>{px(cx-1,cy-13,1,4,'#f8f0d8');px(cx,cy-13,2,2,'#f8f0d8');})},
+    charge_hub:{label:'ギア充電工房',draw:(x,y)=>{yard(x,y,19);block(x-16,y-14,32,14,'#6fa7a2');px(x-13,y-19,7,6,'#456b6b');px(x-11,y-24,3,6,'#a882c5');px(x+5,y-20,8,7,'#456b6b');px(x+7,y-25,3,6,'#a882c5');px(x-6,y-11,12,11,'#456b6b');px(x-10,y-10,3,3,'#f0d1bd');px(x+7,y-10,3,3,'#f0d1bd');px(x-3,y-8,6,6,'#a882c5');px(x-1,y-7,2,2,'#f0cf5a');px(x-2,y-5,2,3,'#f0cf5a');px(x,y-5,2,1,'#f0cf5a');px(x-17,y-16,34,3,'#6f3f46');}},
     generic:{label:'施設',draw:(x,y)=>signPost(x,y,P.dirt)},
   };
 
@@ -126,14 +132,16 @@
     station:'transit',bus:'transit',shop:'commerce',mall:'commerce',grocery:'food',restaurant:'food',
     fast_food:'food',cafe:'food',bar:'food',hotel:'stay',hospital:'health',pharmacy:'health',school:'civic',
     library:'civic',bank:'civic',post:'civic',police:'civic',fire_station:'civic',townhall:'civic',
-    place_of_worship:'landmark',attraction:'landmark',museum:'landmark',cinema:'landmark',park:'nature',
-    parking:'service',generic:'generic',
+    place_of_worship:'landmark',attraction:'landmark',monument:'landmark',castle:'landmark',gallery:'landmark',
+    museum:'landmark',theatre:'landmark',cinema:'landmark',park:'nature',zoo:'nature',
+    parking:'service',charge_hub:'service',generic:'generic',
   };
   const categoryLabels = Object.fromEntries(categories.map(category => [category.id,category.label]));
   const classToSprite = global.PixelMapFacilityResolver?.CLASS2SPRITE || {};
   const typesBySprite = {};
   for(const [type,sprite] of Object.entries(classToSprite)) (typesBySprite[sprite] ||= []).push(type);
 
+  const referenceIds = new Set(['monument','castle','gallery','theatre','zoo','charge_hub']);
   const assets = Object.freeze(Object.entries(SPRITES).map(([id,entry]) => {
     const category = categoryBySprite[id];
     const sizes = ['S','M','L'].filter(size => typeof entry[size] === 'function');
@@ -145,6 +153,7 @@
       poiTypes:Object.freeze(typesBySprite[id] || []),
       sizes:Object.freeze(sizes.length ? sizes : ['M']),
       previewSize:entry.M ? 'M' : entry.S ? 'S' : entry.L ? 'L' : 'M',
+      inspired:referenceIds.has(id),
     });
   }));
 

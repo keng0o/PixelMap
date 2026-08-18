@@ -37,10 +37,10 @@
     bank:'bank', atm:'bank', money:'bank',
     post:'post', police:'police', fire_station:'fire_station', town_hall:'townhall', townhall:'townhall',
     place_of_worship:'place_of_worship',
-    attraction:'attraction', monument:'attraction', castle:'attraction', art_gallery:'museum', museum:'museum',
-    theatre:'cinema', cinema:'cinema', music:'cinema', entertainment:'cinema',
-    park:'park', garden:'park', playground:'park', dog_park:'park', pitch:'park', stadium:'park', golf:'park', swimming:'park', zoo:'park',
-    parking:'parking', fuel:'parking', charging_station:'parking',
+    attraction:'attraction', monument:'monument', castle:'castle', art_gallery:'gallery', museum:'museum',
+    theatre:'theatre', cinema:'cinema', music:'cinema', entertainment:'cinema',
+    park:'park', garden:'park', playground:'park', dog_park:'park', pitch:'park', stadium:'park', golf:'park', swimming:'park', zoo:'zoo',
+    parking:'parking', fuel:'parking', charging_station:'charge_hub',
   };
   const CATEGORY_KEYS = {
     health:new Set(['hospital','doctors','dentist','veterinary','pharmacy','clinic']),

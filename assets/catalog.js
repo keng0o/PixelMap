@@ -16,8 +16,12 @@
   function visibleAssets(){
     const query = normalize(state.query.trim());
     return assets.filter(asset => {
-      const inCategory = state.category === 'all' || asset.category === state.category;
-      const haystack = normalize([asset.id, asset.label, asset.categoryLabel, ...asset.poiTypes].join(' '));
+      const inCategory = state.category === 'all'
+        || (state.category === 'reference' ? asset.inspired : asset.category === state.category);
+      const haystack = normalize([
+        asset.id, asset.label, asset.categoryLabel, ...asset.poiTypes,
+        asset.inspired ? 'reference mix 新作 参照テイスト' : '',
+      ].join(' '));
       return inCategory && (!query || haystack.includes(query));
     });
   }
@@ -39,6 +43,7 @@
   function renderFilters(){
     filters.replaceChildren(
       makeFilter('all', 'すべて', assets.length),
+      makeFilter('reference', '参照テイスト', assets.filter(asset => asset.inspired).length),
       ...categories.map(category => makeFilter(
         category.id,
         category.label,
@@ -60,7 +65,7 @@
 
   function makeCard(asset, index){
     const article = document.createElement('article');
-    article.className = 'asset-card';
+    article.className = `asset-card${asset.inspired ? ' is-inspired' : ''}`;
     article.dataset.number = String(index + 1).padStart(2, '0');
 
     const preview = document.createElement('div');
@@ -69,6 +74,12 @@
     canvas.setAttribute('aria-label', `${asset.label}のマップ表示`);
     catalog.render(canvas, asset.id, asset.previewSize);
     preview.appendChild(canvas);
+    if(asset.inspired){
+      const badge = document.createElement('span');
+      badge.className = 'reference-badge';
+      badge.textContent = 'REFERENCE MIX';
+      preview.appendChild(badge);
+    }
 
     const copy = document.createElement('div');
     copy.className = 'card-copy';
@@ -119,6 +130,7 @@
 
   document.getElementById('totalCount').textContent = String(assets.length);
   document.getElementById('categoryCount').textContent = String(categories.length);
+  document.getElementById('referenceCount').textContent = String(assets.filter(asset => asset.inspired).length);
   renderFilters();
   renderGrid();
 })();
