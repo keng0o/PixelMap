@@ -9,6 +9,8 @@ await import('../assets/poi-sprites.js');
 const resolver = globalThis.PixelMapFacilityResolver;
 const catalog = globalThis.PixelMapPoiSprites;
 const inspiredIds = ['monument','castle','gallery','theatre','zoo','charge_hub'];
+const candidateIds = ['office','civic_hall','burger_stand','grand_station','owl_library',
+  'university','college','wing_post','art_museum','menagerie'];
 
 test('参照イメージを取り入れた6アセットが実際のPOI属性へ割り当てられる', () => {
   assert.equal(resolver.CLASS2SPRITE.monument, 'monument');
@@ -19,12 +21,23 @@ test('参照イメージを取り入れた6アセットが実際のPOI属性へ�
   assert.equal(resolver.CLASS2SPRITE.charging_station, 'charge_hub');
 });
 
-test('assets.html用カタログは32点・参照テイスト6点でマッピング欠落がない', () => {
-  assert.equal(catalog.assets.length, 32);
-  assert.deepEqual(catalog.assets.filter(asset => asset.inspired).map(asset => asset.id), inspiredIds);
+test('assets.html用カタログは42点・参照テイスト16点でマッピング欠落がない', () => {
+  assert.equal(catalog.assets.length, 42);
+  assert.deepEqual(
+    catalog.assets.filter(asset => asset.inspired).map(asset => asset.id),
+    [...inspiredIds, ...candidateIds],
+  );
   const assetIds = new Set(catalog.assets.map(asset => asset.id));
   for(const spriteId of Object.values(resolver.CLASS2SPRITE)) assert.ok(assetIds.has(spriteId), spriteId);
   for(const asset of catalog.assets) assert.equal(typeof asset.categoryLabel, 'string');
+});
+
+test('新テイスト候補10点はアセットのみで、マップのPOI属性へは未接続', () => {
+  const wired = new Set(Object.values(resolver.CLASS2SPRITE));
+  for(const id of candidateIds){
+    assert.ok(catalog.assets.some(asset => asset.id === id && asset.inspired), id);
+    assert.ok(!wired.has(id), `${id} はCLASS2SPRITEに接続しない`);
+  }
 });
 
 test('現行マップの描画辞書にも新作6アセットが実装されている', async () => {

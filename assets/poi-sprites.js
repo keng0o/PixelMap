@@ -119,6 +119,17 @@
     zoo:{label:'クリーチャー塔',draw:(x,y)=>{yard(x,y,14);block(x-9,y-20,18,20,'#6fa7a2');px(x-11,y-30,22,10,'#a45f58');px(x-8,y-33,16,4,'#a45f58');px(x-1,y-37,2,4,'#6f3f46');px(x-7,y-27,3,3,'#f0cf5a');px(x+4,y-27,3,3,'#f0cf5a');px(x-4,y-22,8,2,'#6f3f46');px(x-3,y-15,2,3,'#456b6b');px(x+2,y-15,2,3,'#456b6b');px(x-4,y-7,8,7,'#456b6b');px(x-11,y-19,3,7,'#d95072');px(x+8,y-19,3,7,'#d95072');}},
     parking:{label:'駐車場',draw:(x,y)=>signPost(x,y,P.roofB,(cx,cy)=>{px(cx-1,cy-13,1,4,'#f8f0d8');px(cx,cy-13,2,2,'#f8f0d8');})},
     charge_hub:{label:'ギア充電工房',draw:(x,y)=>{yard(x,y,19);block(x-16,y-14,32,14,'#6fa7a2');px(x-13,y-19,7,6,'#456b6b');px(x-11,y-24,3,6,'#a882c5');px(x+5,y-20,8,7,'#456b6b');px(x+7,y-25,3,6,'#a882c5');px(x-6,y-11,12,11,'#456b6b');px(x-10,y-10,3,3,'#f0d1bd');px(x+7,y-10,3,3,'#f0d1bd');px(x-3,y-8,6,6,'#a882c5');px(x-1,y-7,2,2,'#f0cf5a');px(x-2,y-5,2,3,'#f0cf5a');px(x,y-5,2,1,'#f0cf5a');px(x-17,y-16,34,3,'#6f3f46');}},
+    /* --- 新テイスト候補（未接続・カタログのみ） --- */
+    office:{label:'クリスタル商会',draw:(x,y)=>{yard(x,y,15);block(x-9,y-24,18,24,'#6fa7a2');px(x-10,y-27,20,3,'#456b6b');px(x-10,y-27,20,1,hi('#456b6b'));px(x-1,y-32,2,2,'#f0cf5a');px(x-2,y-30,4,3,'#e6bd4d');px(x-1,y-30,2,1,hi('#f0cf5a'));for(let row=0;row<2;row++)for(let i=0;i<3;i++){px(x-7+i*5,y-22+row*6,4,4,'#a882c5');px(x-7+i*5,y-22+row*6,4,1,hi('#a882c5'));}px(x-7,y-10,4,4,'#a882c5');px(x+3,y-10,4,4,'#a882c5');px(x-3,y-7,6,7,'#456b6b');px(x-2,y-6,4,6,'#6f3f46');px(x,y-4,1,2,'#f0cf5a');}},
+    civic_hall:{label:'王章の役場',draw:(x,y)=>{yard(x,y,19);block(x-14,y-13,28,13,'#f0d1bd');px(x-16,y-16,32,3,'#a45f58');px(x-16,y-16,32,1,hi('#a45f58'));px(x-6,y-23,12,7,'#f8eee5');px(x-4,y-24,8,1,'#a45f58');px(x-7,y-16,14,1,sh('#f8eee5',.8));px(x-2,y-21,4,4,'#f0cf5a');px(x-1,y-20,2,2,'#d6a93f');px(x-15,y-23,1,7,'#6f3f46');px(x-14,y-23,3,4,'#d95072');px(x+14,y-23,1,7,'#6f3f46');px(x+11,y-23,3,4,'#d95072');px(x-11,y-10,2,10,'#f8eee5');px(x+9,y-10,2,10,'#f8eee5');px(x-7,y-9,3,3,'#a882c5');px(x+4,y-9,3,3,'#a882c5');px(x-2,y-6,4,6,'#6f3f46');px(x,y-4,1,1,'#f0cf5a');}},
+    burger_stand:{label:'ジャンボバーガー屋台',draw:(x,y)=>{yard(x,y,13);block(x-9,y-8,18,8,'#d6a88f');px(x-9,y-8,18,1,sh('#d6a88f',.7));px(x-7,y-19,14,3,'#f0cf5a');px(x-5,y-20,10,1,'#f0cf5a');px(x-5,y-20,10,1,hi('#f0cf5a'));px(x-8,y-16,16,2,'#e6bd4d');px(x-4,y-19,1,1,'#f8eee5');px(x+1,y-18,1,1,'#f8eee5');px(x-1,y-17,1,1,'#f8eee5');px(x-8,y-14,16,2,'#6fa7a2');px(x-7,y-12,14,2,'#6f3f46');px(x-9,y-10,18,2,'#f0cf5a');px(x-5,y-6,10,4,'#456b6b');px(x-4,y-5,8,3,'#f8eee5');px(x+1,y-5,2,2,'#d95072');}},
+    grand_station:{label:'大時計の停車場',draw:(x,y)=>{yard(x,y,20);block(x-15,y-12,30,12,'#f0d1bd');px(x-17,y-17,34,3,'#a45f58');px(x-17,y-17,34,1,hi('#a45f58'));px(x-14,y-20,28,3,'#a45f58');px(x-10,y-23,20,3,'#a45f58');px(x-10,y-23,20,1,hi('#a45f58'));px(x-4,y-22,8,8,'#f8eee5');px(x-4,y-22,8,1,hi('#f8eee5'));px(x-2,y-20,4,4,'#f0cf5a');px(x-1,y-19,1,2,'#6f3f46');px(x,y-18,1,1,'#6f3f46');for(let i=0;i<8;i++)px(x-15+i*4,y-12,4,2,i%2?'#f8eee5':'#6fa7a2');px(x-3,y-8,6,8,'#6f3f46');px(x-2,y-7,4,7,'#456b6b');px(x-11,y-8,4,4,'#a882c5');px(x+7,y-8,4,4,'#a882c5');}},
+    owl_library:{label:'フクロウ文庫',draw:(x,y)=>{yard(x,y,14);block(x-9,y-18,18,18,'#d6a88f');px(x-10,y-21,20,3,'#a45f58');px(x-10,y-21,20,1,hi('#a45f58'));px(x-3,y-24,6,3,'#a45f58');px(x-3,y-26,2,2,'#6f3f46');px(x+1,y-26,2,2,'#6f3f46');px(x-7,y-17,6,6,'#f8eee5');px(x+1,y-17,6,6,'#f8eee5');px(x-5,y-15,2,2,'#f0cf5a');px(x+3,y-15,2,2,'#f0cf5a');px(x-1,y-13,2,2,'#e6bd4d');px(x-7,y-6,3,6,'#70507f');px(x-3,y-6,3,6,'#d95072');px(x+1,y-6,3,6,'#6fa7a2');px(x+5,y-6,3,6,'#e6bd4d');px(x-7,y-6,11,1,hi('#f8eee5'));}},
+    university:{label:'賢者の学府',draw:(x,y)=>{yard(x,y,24);block(x-19,y-13,38,13,'#f8eee5');px(x-20,y-15,40,2,'#d6a88f');px(x-20,y-15,40,1,hi('#d6a88f'));px(x-6,y-22,12,7,'#6fa7a2');px(x-4,y-24,8,2,'#6fa7a2');px(x-4,y-24,8,1,hi('#6fa7a2'));px(x-1,y-28,2,4,'#f0cf5a');px(x-2,y-26,4,1,'#f0cf5a');px(x-19,y-21,5,8,'#a45f58');px(x-20,y-23,7,2,'#6f3f46');px(x+14,y-21,5,8,'#a45f58');px(x+13,y-23,7,2,'#6f3f46');for(let i=0;i<7;i++)px(x-16+i*5,y-10,3,3,'#a882c5');px(x-3,y-7,6,7,'#6f3f46');px(x-2,y-6,4,6,'#70507f');}},
+    college:{label:'魔導カレッジ',draw:(x,y)=>{yard(x,y,17);block(x-12,y-14,24,14,'#f0d1bd');px(x-13,y-18,26,4,'#70507f');px(x-13,y-18,26,1,hi('#70507f'));px(x-1,y-26,2,8,'#456b6b');px(x-3,y-27,6,2,'#a882c5');px(x,y-31,1,4,'#f0cf5a');px(x+1,y-30,2,1,'#f0cf5a');px(x-9,y-12,3,4,'#a882c5');px(x-3,y-12,3,4,'#a882c5');px(x+3,y-12,3,4,'#a882c5');px(x+8,y-14,3,6,'#d95072');px(x+9,y-8,1,1,'#d95072');px(x-2,y-6,5,6,'#6f3f46');px(x-1,y-4,1,1,'#f0cf5a');}},
+    wing_post:{label:'翼の郵便小屋',draw:(x,y)=>{yard(x,y,13);block(x-8,y-11,16,11,'#f8eee5');px(x-9,y-14,18,3,'#d95072');px(x-9,y-14,18,1,hi('#d95072'));px(x-4,y-21,8,5,'#f0d1bd');px(x-4,y-21,8,1,hi('#f0d1bd'));px(x-3,y-20,2,1,'#d6a88f');px(x+1,y-20,2,1,'#d6a88f');px(x-1,y-19,2,1,'#d6a88f');px(x-8,y-20,4,2,'#f0cf5a');px(x-11,y-21,3,2,'#e6bd4d');px(x+4,y-20,4,2,'#f0cf5a');px(x+8,y-21,3,2,'#e6bd4d');px(x-5,y-8,4,3,'#a882c5');px(x+1,y-8,4,8,'#6f3f46');px(x+2,y-6,2,1,'#f0cf5a');}},
+    art_museum:{label:'額縁美術館',draw:(x,y)=>{yard(x,y,18);block(x-13,y-11,26,11,'#f8eee5');px(x-11,y-9,2,9,'#f0d1bd');px(x-5,y-9,2,9,'#f0d1bd');px(x+3,y-9,2,9,'#f0d1bd');px(x+9,y-9,2,9,'#f0d1bd');px(x-12,y-27,24,16,'#e6bd4d');px(x-12,y-27,24,1,hi('#f0cf5a'));px(x-10,y-25,20,12,'#d6a93f');px(x-9,y-24,18,10,'#6fa7a2');px(x+3,y-23,3,3,'#f0cf5a');px(x-9,y-18,8,4,'#70507f');px(x-3,y-16,12,2,'#456b6b');px(x-2,y-6,4,6,'#6f3f46');}},
+    menagerie:{label:'モンスター牧場',draw:(x,y)=>{yard(x,y,20);for(let i=0;i<5;i++)px(x-16+i*8,y-9,2,5,'#456b6b');px(x-16,y-6,32,2,'#456b6b');px(x-16,y-6,32,1,hi('#456b6b'));block(x-9,y-16,18,10,'#a45f58');px(x-10,y-19,20,3,'#6f3f46');px(x-10,y-19,20,1,hi('#a45f58'));px(x-9,y-23,3,4,'#f0d1bd');px(x+6,y-23,3,4,'#f0d1bd');px(x-3,y-11,6,5,'#6f3f46');px(x-2,y-10,4,4,'#70507f');px(x+8,y-14,7,7,'#a882c5');px(x+9,y-16,2,2,'#70507f');px(x+12,y-16,2,2,'#70507f');px(x+9,y-12,2,2,'#f0cf5a');px(x+12,y-12,2,2,'#f0cf5a');px(x+10,y-9,3,1,'#6f3f46');}},
     generic:{label:'施設',draw:(x,y)=>signPost(x,y,P.dirt)},
   };
 
@@ -135,13 +146,20 @@
     place_of_worship:'landmark',attraction:'landmark',monument:'landmark',castle:'landmark',gallery:'landmark',
     museum:'landmark',theatre:'landmark',cinema:'landmark',park:'nature',zoo:'nature',
     parking:'service',charge_hub:'service',generic:'generic',
+    office:'commerce',civic_hall:'civic',burger_stand:'food',grand_station:'transit',owl_library:'civic',
+    university:'civic',college:'civic',wing_post:'civic',art_museum:'landmark',menagerie:'nature',
   };
   const categoryLabels = Object.fromEntries(categories.map(category => [category.id,category.label]));
   const classToSprite = global.PixelMapFacilityResolver?.CLASS2SPRITE || {};
   const typesBySprite = {};
   for(const [type,sprite] of Object.entries(classToSprite)) (typesBySprite[sprite] ||= []).push(type);
 
-  const referenceIds = new Set(['monument','castle','gallery','theatre','zoo','charge_hub']);
+  const referenceIds = new Set([
+    'monument','castle','gallery','theatre','zoo','charge_hub',
+    // 新テイスト候補（マップ未接続・カタログのみ）
+    'office','civic_hall','burger_stand','grand_station','owl_library',
+    'university','college','wing_post','art_museum','menagerie',
+  ]);
   const assets = Object.freeze(Object.entries(SPRITES).map(([id,entry]) => {
     const category = categoryBySprite[id];
     const sizes = ['S','M','L'].filter(size => typeof entry[size] === 'function');

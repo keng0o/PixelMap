@@ -100,7 +100,8 @@
     const mappingLabel = document.createElement('span');
     mappingLabel.textContent = 'POI';
     const mappingValue = document.createElement('code');
-    mappingValue.textContent = asset.poiTypes.length ? asset.poiTypes.join(' / ') : '未対応属性のフォールバック';
+    mappingValue.textContent = asset.poiTypes.length ? asset.poiTypes.join(' / ')
+      : asset.id === 'generic' ? '未対応属性のフォールバック' : '未接続（新テイスト候補）';
     mapping.append(mappingLabel, mappingValue);
 
     copy.append(heading, mapping);
