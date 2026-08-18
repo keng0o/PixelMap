@@ -68,6 +68,13 @@ test('テストページでは道路を例外にせず交通線すべてを共�
   assert.doesNotMatch(html, /function drawSmoothRoadLayer/);
 });
 
+test('共通レンダラーの反復装飾で鉄道の枕木を線幅内に描く', () => {
+  assert.match(html, /rail:\{ width:4, casing:2, fill:P\.tie, edge:P\.rail,[\s\S]*?repeatDecoration:\{ spacing:16, width:2, color:P\.rail \}/);
+  assert.match(html, /const drawRepeatedDecoration = \(decoration, span\) =>/);
+  assert.match(html, /const decorationSpan = Math\.max\([\s\S]*?width \+ casing \* 2 - ASSET_SCENE_PIXEL/);
+  assert.match(html, /drawRepeatedDecoration\(style\.repeatDecoration, decorationSpan\)/);
+});
+
 test('1マップ・2マップ・4マップは共通の1px描画エンジンを使う', () => {
   assert.match(oneMap, /variants\/map-02-refined\.html\?embedded=1/);
   assert.equal((twoMap.match(/variants\/map-02-refined\.html\?embedded=1/g) || []).length, 2);

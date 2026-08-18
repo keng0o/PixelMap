@@ -1217,7 +1217,8 @@ const DIRECT_TRANSPORT_STYLE = {
   raceways:{ width:8, casing:2, fill:P.road, edge:P.roadDk },
   ferries:{ width:2, casing:0, fill:P.foam, edge:P.waterDk, dash:[12,8] },
   piers:{ width:4, casing:2, fill:P.pave, edge:P.paveDk },
-  rail:{ width:4, casing:2, fill:P.tie, edge:P.rail },
+  rail:{ width:4, casing:2, fill:P.tie, edge:P.rail,
+    repeatDecoration:{ spacing:16, width:2, color:P.rail } },
   subway:{ width:4, casing:2, fill:P.tie, edge:P.rail, dash:[12,8] },
   aerialways:{ width:2, casing:2, fill:P.tie, edge:P.rail, dash:[8,8] },
   localRoads:{ width:14, casing:2, fill:'#c6c6c0', edge:'#8e8e88', center:null },
@@ -2889,6 +2890,41 @@ function render(){
         }
       }
     };
+    const drawRepeatedDecoration = (decoration, span) => {
+      if (!decoration || span <= 0) return;
+      const spacing = Math.max(ASSET_SCENE_PIXEL, decoration.spacing);
+      const halfSpan = span / 2;
+      const snap = value => Math.round(value / ASSET_SCENE_PIXEL) * ASSET_SCENE_PIXEL;
+      ctx.save();
+      ctx.beginPath();
+      ctx.lineCap = 'butt';
+      for (const feature of lineFeatures){
+        for (const line of feature.geom){
+          const points = line.map(point);
+          let next = spacing / 2;
+          for (let index = 1; index < points.length; index++){
+            const [x0,y0] = points[index - 1];
+            const [x1,y1] = points[index];
+            const dx = x1 - x0, dy = y1 - y0;
+            const length = Math.hypot(dx,dy);
+            if (!length) continue;
+            const nx = -dy / length, ny = dx / length;
+            while (next <= length){
+              const ratio = next / length;
+              const cx = x0 + dx * ratio, cy = y0 + dy * ratio;
+              ctx.moveTo(snap(cx - nx * halfSpan), snap(cy - ny * halfSpan));
+              ctx.lineTo(snap(cx + nx * halfSpan), snap(cy + ny * halfSpan));
+              next += spacing;
+            }
+            next -= length;
+          }
+        }
+      }
+      ctx.strokeStyle = decoration.color;
+      ctx.lineWidth = decoration.width;
+      ctx.stroke();
+      ctx.restore();
+    };
 
     ctx.save();
     ctx.lineCap = 'round';
@@ -2935,6 +2971,14 @@ function render(){
       ctx.setLineDash(style.dash || []);
       ctx.stroke();
       ctx.setLineDash([]);
+      if (style.repeatDecoration){
+        // 端点の1px丸め分を内側へ逃がし、反復模様で線の全幅を広げない。
+        const decorationSpan = Math.max(
+          ASSET_SCENE_PIXEL,
+          width + casing * 2 - ASSET_SCENE_PIXEL
+        );
+        drawRepeatedDecoration(style.repeatDecoration, decorationSpan);
+      }
       if (style.center){
         traceLines();
         ctx.strokeStyle = style.center;
