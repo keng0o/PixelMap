@@ -23,11 +23,32 @@ button,input{font:inherit}
 .eyebrow{margin:0 0 12px;color:var(--green);font-size:11px;letter-spacing:3px}
 h1{margin:0;font-size:clamp(30px,6vw,56px);font-weight:400;letter-spacing:.12em;text-shadow:4px 4px 0 var(--green-dark)}
 .lede{max-width:680px;margin:18px auto 0;color:#d8d0b8;font-size:14px;line-height:1.9}
+.jump-links{display:flex;justify-content:center;gap:8px;margin-top:22px}
+.jump-links a{padding:7px 12px;border:1px solid #56564f;color:var(--muted);font-size:11px;text-decoration:none}
+.jump-links a:hover{border-color:var(--green);color:var(--green)}
 .hero-stats{display:flex;justify-content:center;gap:clamp(28px,8vw,88px);margin-top:34px}
 .hero-stats div{display:grid;gap:2px}
 .hero-stats strong{font-size:25px;font-weight:400}
 .hero-stats span{color:#83806f;font-size:9px;letter-spacing:2px}
 main{width:min(1180px,calc(100% - 32px));margin:0 auto}
+.catalog-section{scroll-margin-top:20px}
+.section-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:3px 20px;margin:0 0 18px;padding-bottom:13px;border-bottom:1px solid #4c4a43}
+.section-heading p{grid-column:1/-1;margin:0;color:var(--green);font-size:9px;letter-spacing:2px}
+.section-heading h2{margin:0;font-size:24px;font-weight:400;letter-spacing:.08em}
+.section-heading span{color:#8f8b7d;font-size:10px;letter-spacing:1px}
+.layer-groups{display:grid;gap:34px}
+.layer-group-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px}
+.layer-group-heading h3{margin:0;color:#f8d038;font-size:16px;font-weight:400}
+.layer-group-heading span{color:#777468;font-size:9px;letter-spacing:1px}
+.layer-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.layer-card{position:relative;min-width:0;border:1px solid #4c4a43;background:#111119;overflow:hidden}
+.layer-card::before{content:attr(data-number);position:absolute;z-index:2;top:7px;left:8px;padding:2px 4px;color:#101018;background:#88c860;font-size:8px;letter-spacing:1px}
+.layer-preview{background:#7cbc54;border-bottom:1px solid #35352f}
+.layer-preview canvas{display:block;width:100%;height:auto;aspect-ratio:8/5}
+.layer-copy{display:grid;gap:4px;padding:10px 11px 11px}
+.layer-copy h3{margin:0;font-size:13px;font-weight:400;line-height:1.45}
+.layer-copy code{color:#777468;font-size:9px;overflow-wrap:anywhere}
+.poi-section{margin-top:62px}
 .controls{position:sticky;top:10px;z-index:10;padding:12px;background:rgba(16,16,24,.94);border:2px solid var(--paper);box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--paper),0 8px 28px rgba(0,0,0,.32);backdrop-filter:blur(8px)}
 .search{height:44px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#202028;border:1px solid #56564f}
 .search>span{font-size:22px;color:var(--green)}
@@ -58,13 +79,14 @@ kbd{padding:2px 7px;border:1px solid #5c5a50;color:#8e8b7c;background:#17171e;fo
 .poi-mapping code{overflow-wrap:anywhere;color:#9c998e;font-size:9px;line-height:1.65}
 .empty{padding:64px 20px;text-align:center;color:#8e8a7a;border:1px dashed #56534a}
 footer{width:min(1180px,calc(100% - 32px));display:flex;justify-content:space-between;margin:54px auto 0;padding:20px 0 34px;border-top:1px solid #44423b;color:#68665e;font-size:9px;letter-spacing:2px}
-@media(max-width:980px){.asset-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:980px){.asset-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.layer-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.hero-stats{gap:clamp(18px,5vw,48px)}}
 @media(max-width:720px){
-  .hero{padding-top:66px}.asset-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .hero{padding-top:66px}.asset-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.layer-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .controls{top:6px}.result-line span:last-child{display:none}
+  .section-heading{grid-template-columns:1fr}.section-heading span{display:none}
 }
 @media(max-width:520px){
-  .asset-grid{grid-template-columns:1fr}.hero-stats{gap:20px}.hero-stats strong{font-size:21px}
+  .asset-grid{grid-template-columns:1fr}.layer-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:18px 28px}.hero-stats strong{font-size:21px}
   .lede br{display:none}footer{display:grid;gap:8px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
