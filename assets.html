@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#181820">
-<title>カワサキタウン｜ピクセルアセット図鑑</title>
+<title>PixelMap｜POIアセット一覧</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
@@ -13,12 +13,12 @@
 <body>
   <header class="hero">
     <a class="back-link" href="index.html" aria-label="マップへ戻る">← MAP</a>
-    <p class="eyebrow">KAWASAKI TOWN / ASSET ARCHIVE</p>
-    <h1>ピクセルアセット図鑑</h1>
-    <p class="lede">島と村のマップから着想した、形の異なる110個のマップ用ドット絵。<br>1マス16pxのマップ実寸で比較表示しています。</p>
+    <p class="eyebrow">PIXELMAP / LIVE POI ASSETS</p>
+    <h1>POIアセット一覧</h1>
+    <p class="lede">現在のマップでPOIの描画に使用しているアセットだけを掲載しています。<br>カードには対応するPOI属性とサイズ展開を表示します。</p>
     <div class="hero-stats" aria-label="アセット統計">
-      <div><strong id="totalCount">110</strong><span>ASSETS</span></div>
-      <div><strong id="collectionCount">6</strong><span>COLLECTIONS</span></div>
+      <div><strong id="totalCount">26</strong><span>POI ASSETS</span></div>
+      <div><strong id="categoryCount">10</strong><span>CATEGORIES</span></div>
       <div><strong>16</strong><span>PX / MAP TILE</span></div>
     </div>
   </header>
@@ -27,45 +27,28 @@
     <section class="controls" aria-label="アセットの絞り込み">
       <label class="search">
         <span aria-hidden="true">⌕</span>
-        <input id="searchInput" type="search" placeholder="名前・キーワードで検索" autocomplete="off">
+        <input id="searchInput" type="search" placeholder="名前・ID・POI属性で検索" autocomplete="off">
         <kbd>/</kbd>
       </label>
       <div id="filters" class="filters" role="group" aria-label="カテゴリ"></div>
     </section>
 
     <div class="result-line" aria-live="polite">
-      <span><b id="resultCount">110</b> 個を表示</span>
-      <span>すべて同じマップ縮尺で表示</span>
+      <span><b id="resultCount">26</b> 個を表示</span>
+      <span>MAPで使用中のアセットのみ</span>
     </div>
 
-    <section id="assetGrid" class="asset-grid" aria-label="ピクセルアセット一覧"></section>
+    <section id="assetGrid" class="asset-grid" aria-label="POIアセット一覧"></section>
     <p id="emptyState" class="empty" hidden>条件に合うアセットがありません。</p>
   </main>
 
   <footer>
-    <span>110 UNIQUE SILHOUETTES</span>
-    <span>NO COLOR-ONLY VARIANTS</span>
+    <span>26 LIVE POI ASSETS</span>
+    <span>UNMAPPED POI → GENERIC</span>
   </footer>
 
-  <dialog id="assetDialog" class="asset-dialog">
-    <button class="close-dialog" type="button" aria-label="閉じる">×</button>
-    <div class="dialog-preview"><canvas id="detailCanvas" width="576" height="480"></canvas></div>
-    <div class="dialog-copy">
-      <p id="detailCategory" class="detail-category"></p>
-      <h2 id="detailName"></h2>
-      <code id="detailId"></code>
-      <p id="detailScale" class="detail-scale"></p>
-      <p id="detailKeywords" class="detail-keywords"></p>
-      <button id="downloadButton" class="download" type="button">マップ実寸PNGを保存 ↓</button>
-    </div>
-  </dialog>
-
-  <script src="assets/group-homes.js"></script>
-  <script src="assets/group-civic.js"></script>
-  <script src="assets/group-stations.js"></script>
-  <script src="assets/group-nature.js"></script>
-  <script src="assets/group-transport.js"></script>
-  <script src="assets/group-landmarks.js"></script>
+  <script src="assets/facility-resolver.js"></script>
+  <script src="assets/poi-sprites.js"></script>
   <script src="assets/catalog.js"></script>
 </body>
 </html>

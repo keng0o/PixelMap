@@ -1,0 +1,179 @@
+((global) => {
+  'use strict';
+
+  const P = Object.freeze({
+    outline:'#302838', treeDk:'#2c6030', treeMd:'#3e8840', treeLt:'#5cb050', trunk:'#785030',
+    dirt:'#d0b078', dirtDk:'#b09058', roofA:'#e05038', roofADk:'#b03828', roofB:'#5078d8',
+    wall:'#f0e4c8', win:'#3868a0',
+  });
+  let ctx = null;
+  const px = (x, y, w, h, color) => { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); };
+  const sh = (hex, factor = .72) => {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgb(${Math.round(((n>>16)&255)*factor)},${Math.round(((n>>8)&255)*factor)},${Math.round((n&255)*factor)})`;
+  };
+  const hi = (hex, factor = 1.28) => {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgb(${Math.min(255,Math.round(((n>>16)&255)*factor))},${Math.min(255,Math.round(((n>>8)&255)*factor))},${Math.min(255,Math.round((n&255)*factor))})`;
+  };
+
+  function block(x, y, width, height, color){
+    px(x,y,width,height,color);
+    px(x+width-1,y,1,height,sh(color,.85));
+    px(x,y+height-2,width,2,sh(color,.82));
+    px(x,y+height-1,width,1,sh(color,.5));
+  }
+  function roofBar(x, y, width, height, color){
+    px(x,y,width,height,color);
+    px(x,y,width,1,hi(color));
+    px(x,y+height-1,width,1,sh(color,.7));
+  }
+  function win(x, y, width, height){
+    px(x,y,width,height,P.win);
+    px(x,y,width,1,'#c8e4f4');
+  }
+  function sign(x, y, width){
+    px(x,y,width,2,'#f8f0d8');
+    px(x,y+2,width,1,sh('#f8f0d8',.65));
+  }
+  function yard(cx, cy, width){
+    px(cx-width,cy-2,width*2,5,'#8cc864');
+    px(cx-width,cy+2,width*2,1,'#78b452');
+    for(let i=-width;i<width-1;i+=3) px(cx+i,cy+1,2,2,P.treeMd);
+    px(cx-width+2,cy-1,1,1,'#f87890');
+    px(cx+width-4,cy-1,1,1,'#f8f8f8');
+    px(cx-1,cy+3,2,1,'#f8d038');
+  }
+  function house(cx, cy, roof, wall = P.wall, wide = false){
+    const half = wide ? 9 : 7, x = cx-half, y = cy-15;
+    yard(cx,cy,half+5);
+    block(x+2,y+5,half*2-4,10,wall);
+    roofBar(x,y+1,half*2,4,roof);
+    px(x-1,y+2,1,2,roof); px(x+half*2,y+2,1,2,roof);
+    px(x+2,y+5,half*2-4,1,sh(wall,.7));
+    win(x+3,y+7,3,3); win(x+half*2-6,y+7,3,3); win(x+half-2,y+8,4,4);
+    return {x,y,w:half*2,h:15};
+  }
+  function stall(cx, cy, awning, deco){
+    const x=cx-7,y=cy-13;
+    yard(cx,cy,10); block(x+2,y+5,10,8,P.wall); roofBar(x,y+1,14,4,awning);
+    px(x-1,y+2,1,2,awning); px(x+14,y+2,1,2,awning); px(x+2,y+5,10,1,sh(P.wall,.7));
+    deco?.(x,y);
+  }
+  function signPost(cx, cy, plate, deco){
+    px(cx-1,cy-9,2,9,P.trunk); px(cx-1,cy-1,2,1,sh(P.trunk,.55));
+    px(cx-5,cy-14,10,6,plate); px(cx-5,cy-14,10,1,hi(plate));
+    px(cx+4,cy-14,1,6,sh(plate,.8)); px(cx-5,cy-9,10,1,sh(plate,.7));
+    deco?.(cx,cy);
+  }
+
+  const SPRITES = {
+    station:{ label:'鉄道駅',
+      S:(x,y)=>{ yard(x,y,14);block(x-7,y-10,14,10,P.wall);roofBar(x-9,y-14,18,4,P.roofA);px(x-7,y-10,14,1,sh(P.wall,.7));sign(x-4,y-9,8);win(x-5,y-6,3,3);win(x-1,y-6,3,4);win(x+3,y-6,3,3); },
+      M:(x,y)=>{ yard(x,y,18);block(x-12,y-12,24,12,P.wall);roofBar(x-14,y-18,28,5,P.roofA);roofBar(x-4,y-23,8,2,P.roofA);px(x-3,y-21,6,4,'#f8f0d8');px(x+2,y-21,1,4,sh('#f8f0d8',.8));px(x-1,y-20,2,2,P.outline);for(let i=0;i<7;i++)px(x-14+i*4,y-13,4,2,i%2?'#f8f0d8':P.roofA);px(x-12,y-11,24,1,sh(P.wall,.7));sign(x-5,y-10,10);win(x-10,y-7,4,4);win(x+6,y-7,4,4);win(x-4,y-7,8,5);px(x-1,y-7,2,5,P.wall); },
+      L:(x,y)=>{ yard(x,y,24);block(x-18,y-15,36,15,P.wall);roofBar(x-20,y-21,40,6,P.roofA);roofBar(x-5,y-28,10,2,P.roofA);px(x-4,y-26,8,5,'#f8f0d8');px(x+3,y-26,1,5,sh('#f8f0d8',.8));px(x-1,y-25,2,3,P.outline);for(let i=0;i<10;i++)px(x-20+i*4,y-15,4,2,i%2?'#f8f0d8':P.roofA);px(x-18,y-13,36,1,sh(P.wall,.7));sign(x-8,y-12,16);win(x-14,y-9,28,6);for(let i=1;i<=3;i++)px(x-14+i*7,y-9,1,6,P.wall);px(x-14,y-3,28,1,sh(P.wall,.8)); },
+    },
+    bus:{label:'バス停',draw:(x,y)=>signPost(x,y,P.roofB,(cx,cy)=>px(cx-2,cy-12,4,2,'#f8f0d8'))},
+    shop:{label:'お店',
+      S:(x,y)=>stall(x,y,P.roofB,(sx,sy)=>{for(let i=0;i<5;i++)px(sx+i*3,sy+1,1,3,'#f8f0d8');}),
+      L:(x,y)=>{const r=house(x,y,P.roofB,P.wall,true);for(let i=0;i<6;i++)px(r.x+i*3,r.y+1,1,3,'#f8f0d8');},
+    },
+    mall:{label:'モール',
+      M:(x,y)=>{const r=house(x,y,P.roofB,P.wall,true);for(let i=0;i<6;i++)px(r.x+i*3,r.y+1,1,3,'#f8f0d8');},
+      L:(x,y)=>{yard(x,y,23);block(x-17,y-17,34,17,P.wall);px(x-8,y-23,16,5,'#f8d038');px(x-8,y-23,16,1,hi('#f8d038'));px(x+7,y-23,1,5,sh('#f8d038',.8));px(x-6,y-21,12,2,P.outline);for(let i=0;i<9;i++)px(x-17+i*4,y-14,4,3,i%2?'#f8f0d8':P.roofB);px(x-17,y-11,34,1,sh(P.wall,.7));win(x-14,y-9,10,6);win(x-3,y-9,6,6);win(x+4,y-9,10,6);},
+    },
+    grocery:{label:'食料品店',draw:(x,y)=>stall(x,y,'#58a048',(sx,sy)=>px(sx+5,sy+8,4,3,'#f89040'))},
+    restaurant:{label:'レストラン',draw:(x,y)=>stall(x,y,'#f89040',(sx,sy)=>{px(sx+4,sy+7,6,2,'#f8f0d8');px(sx+6,sy+7,1,2,P.roofADk);})},
+    fast_food:{label:'ファストフード',draw:(x,y)=>stall(x,y,'#e8b048',(sx,sy)=>{px(sx+4,sy+8,6,2,'#f8d038');px(sx+4,sy+7,6,1,P.dirt);})},
+    cafe:{label:'カフェ',draw:(x,y)=>stall(x,y,P.trunk,(sx,sy)=>{px(sx+4,sy+7,5,4,'#f8f0d8');px(sx+9,sy+8,1,2,'#f8f0d8');px(sx+5,sy+5,1,2,'#c8c8d0');px(sx+7,sy+5,1,2,'#c8c8d0');})},
+    bar:{label:'酒場',draw:(x,y)=>stall(x,y,'#a04878',(sx,sy)=>{px(sx+5,sy+7,4,3,'#f8d038');px(sx+6,sy+10,2,1,'#f8f0d8');})},
+    hotel:{label:'宿屋',
+      S:(x,y)=>{const r=house(x,y,'#8860c8');px(r.x+r.w/2-2,r.y-3,4,3,'#f8d038');px(r.x+r.w/2-2,r.y-3,4,1,hi('#f8d038'));},
+      L:(x,y)=>{yard(x,y,16);block(x-10,y-27,20,27,'#e8e0d0');px(x-11,y-29,22,2,'#8860c8');px(x-11,y-29,22,1,hi('#8860c8'));for(let row=0;row<4;row++)for(let i=0;i<4;i++){const lit=(row*4+i)%3===0;px(x-8+i*5,y-25+row*5,3,3,lit?'#f8d038':P.win);px(x-8+i*5,y-25+row*5,3,1,lit?'#fce88a':'#c8e4f4');}win(x-3,y-5,6,4);px(x-2,y-32,4,3,'#f8d038');px(x-2,y-32,4,1,hi('#f8d038'));},
+    },
+    hospital:{label:'病院',
+      S:(x,y)=>{house(x,y,'#e8e0d0','#f8f8f0');px(x+10,y-15,6,6,'#f8f8f0');px(x+10,y-15,6,1,hi('#f8f8f0'));px(x+15,y-15,1,6,sh('#f8f8f0',.8));px(x+12,y-14,2,4,'#48a050');px(x+11,y-13,4,2,'#48a050');px(x+10,y-9,6,1,sh('#f8f8f0',.6));},
+      L:(x,y)=>{yard(x,y,18);block(x-12,y-26,24,26,'#f8f8f0');px(x-13,y-28,26,2,'#c8c8c0');px(x-13,y-28,26,1,hi('#c8c8c0'));px(x-1,y-25,3,9,P.roofA);px(x-4,y-22,9,3,P.roofA);px(x-1,y-25,3,1,hi(P.roofA));for(let i=0;i<5;i++){win(x-10+i*5,y-16,3,3);win(x-10+i*5,y-11,3,3);}win(x-4,y-6,8,4);},
+    },
+    pharmacy:{label:'薬屋',draw:(x,y)=>signPost(x,y,'#f8f8f0',(cx,cy)=>{px(cx-1,cy-13,2,4,'#48a050');px(cx-2,cy-12,4,2,'#48a050');})},
+    school:{label:'学校',
+      S:(x,y)=>{yard(x,y,16);px(x-11,y-14,22,2,'#8890a0');px(x-11,y-14,22,1,hi('#8890a0'));block(x-10,y-12,20,12,P.wall);px(x-10,y-12,20,1,sh(P.wall,.7));win(x-7,y-9,3,3);win(x-2,y-9,3,3);win(x+4,y-9,3,3);px(x+12,y-19,1,19,'#a8a8b0');px(x+13,y-19,5,3,P.roofA);px(x+13,y-19,5,1,hi(P.roofA));},
+      M:(x,y)=>{yard(x,y,21);px(x-15,y-16,30,2,'#8890a0');px(x-15,y-16,30,1,hi('#8890a0'));block(x-14,y-14,28,14,P.wall);px(x-14,y-14,28,1,sh(P.wall,.7));for(let i=0;i<6;i++)win(x-13+i*5,y-12,3,3);for(let i=0;i<6;i++)win(x-13+i*5,y-7,3,3);roofBar(x-3,y-23,7,2,P.roofA);px(x-2,y-21,5,5,'#f8f0d8');px(x+2,y-21,1,5,sh('#f8f0d8',.8));px(x-1,y-19,2,2,P.outline);px(x+17,y-24,1,24,'#a8a8b0');px(x+18,y-24,6,4,P.roofA);px(x+18,y-24,6,1,hi(P.roofA));},
+      L:(x,y)=>{yard(x,y,27);px(x-20,y-21,40,2,'#8890a0');px(x-20,y-21,40,1,hi('#8890a0'));block(x-19,y-19,38,19,P.wall);px(x-19,y-19,38,1,sh(P.wall,.7));for(let row=0;row<3;row++)for(let i=0;i<8;i++)win(x-18+i*5,y-17+row*5,3,3);roofBar(x-5,y-28,11,2,P.roofA);px(x-4,y-26,9,5,'#f8f0d8');px(x+4,y-26,1,5,sh('#f8f0d8',.8));px(x-1,y-25,2,3,P.outline);px(x+22,y-30,1,30,'#a8a8b0');px(x+23,y-30,7,4,P.roofA);px(x+23,y-30,7,1,hi(P.roofA));},
+    },
+    library:{label:'図書館',draw:(x,y)=>{const r=house(x,y,'#786048');px(r.x+4,r.y+7,3,5,'#8860c8');px(r.x+8,r.y+7,3,5,P.roofB);}},
+    bank:{label:'銀行',draw:(x,y)=>signPost(x,y,'#f8d038',(cx,cy)=>{px(cx-2,cy-13,4,4,'#b89020');px(cx-1,cy-12,2,2,'#f8d038');})},
+    post:{label:'郵便',draw:(x,y)=>{px(x-2,y-11,4,11,P.roofA);px(x-2,y-11,4,1,hi(P.roofA));px(x+1,y-11,1,11,sh(P.roofA,.8));px(x-2,y-9,4,1,'#f8f0d8');px(x-2,y-1,4,1,sh(P.roofA,.5));}},
+    police:{label:'交番',draw:(x,y)=>{const r=house(x,y,'#4058a8');px(r.x+r.w/2-1,r.y+1,2,2,'#f8d038');}},
+    fire_station:{label:'消防署',draw:(x,y)=>house(x,y,P.roofADk)},
+    townhall:{label:'役所',draw:(x,y)=>{const r=house(x,y,'#687078',P.wall,true);px(r.x+r.w/2,r.y-4,1,4,P.trunk);px(r.x+r.w/2+1,r.y-4,4,2,'#f8d038');}},
+    place_of_worship:{label:'神社・寺',draw:(x,y)=>{px(x-8,y-14,16,2,P.roofA);px(x-8,y-14,16,1,hi(P.roofA));px(x-8,y-12,16,1,sh(P.roofA,.7));px(x-6,y-10,12,2,P.roofADk);px(x-6,y-8,2,8,P.roofADk);px(x+4,y-8,2,8,P.roofADk);px(x-5,y-8,1,8,sh(P.roofADk,.8));px(x+5,y-8,1,8,sh(P.roofADk,.8));px(x-6,y-1,2,1,sh(P.roofADk,.5));px(x+4,y-1,2,1,sh(P.roofADk,.5));}},
+    attraction:{label:'名所',draw:(x,y)=>signPost(x,y,'#f8d038',(cx,cy)=>{px(cx-1,cy-13,2,2,P.roofA);px(cx-3,cy-11,6,1,P.roofA);})},
+    museum:{label:'博物館',draw:(x,y)=>{const r=house(x,y,'#a0a070');px(r.x+3,r.y+6,2,8,'#e0d8c0');px(r.x+7,r.y+6,2,8,'#e0d8c0');px(r.x+11,r.y+6,2,8,'#e0d8c0');}},
+    cinema:{label:'劇場・映画館',draw:(x,y)=>stall(x,y,'#a04878',(sx,sy)=>{px(sx+4,sy+7,2,2,'#f8d038');px(sx+8,sy+8,2,2,'#f8d038');})},
+    park:{label:'公園',draw:(x,y)=>{px(x-6,y-2,12,2,'rgba(24,40,16,.3)');px(x-5,y-17,10,1,P.treeMd);px(x-6,y-16,12,2,P.treeMd);px(x-7,y-15,14,6,P.treeMd);px(x-4,y-17,5,1,hi(P.treeMd));px(x-4,y-16,5,3,P.treeLt);px(x+1,y-12,5,3,P.treeDk);px(x-6,y-10,12,1,P.treeDk);px(x-1,y-8,2,6,P.trunk);px(x-1,y-3,2,1,sh(P.trunk,.55));px(x-10,y-4,5,4,P.treeMd);px(x-10,y-1,5,1,P.treeDk);px(x-9,y-4,2,1,P.treeLt);px(x+6,y-4,5,4,P.treeMd);px(x+6,y-1,5,1,P.treeDk);px(x+7,y-4,2,1,P.treeLt);}},
+    parking:{label:'駐車場',draw:(x,y)=>signPost(x,y,P.roofB,(cx,cy)=>{px(cx-1,cy-13,1,4,'#f8f0d8');px(cx,cy-13,2,2,'#f8f0d8');})},
+    generic:{label:'施設',draw:(x,y)=>signPost(x,y,P.dirt)},
+  };
+
+  const categories = Object.freeze([
+    {id:'transit',label:'交通'}, {id:'commerce',label:'商業'}, {id:'food',label:'飲食'},
+    {id:'stay',label:'宿泊'}, {id:'health',label:'医療'}, {id:'civic',label:'公共'},
+    {id:'landmark',label:'観光'}, {id:'nature',label:'自然'}, {id:'service',label:'サービス'},
+    {id:'generic',label:'その他'},
+  ]);
+  const categoryBySprite = {
+    station:'transit',bus:'transit',shop:'commerce',mall:'commerce',grocery:'food',restaurant:'food',
+    fast_food:'food',cafe:'food',bar:'food',hotel:'stay',hospital:'health',pharmacy:'health',school:'civic',
+    library:'civic',bank:'civic',post:'civic',police:'civic',fire_station:'civic',townhall:'civic',
+    place_of_worship:'landmark',attraction:'landmark',museum:'landmark',cinema:'landmark',park:'nature',
+    parking:'service',generic:'generic',
+  };
+  const categoryLabels = Object.fromEntries(categories.map(category => [category.id,category.label]));
+  const classToSprite = global.PixelMapFacilityResolver?.CLASS2SPRITE || {};
+  const typesBySprite = {};
+  for(const [type,sprite] of Object.entries(classToSprite)) (typesBySprite[sprite] ||= []).push(type);
+
+  const assets = Object.freeze(Object.entries(SPRITES).map(([id,entry]) => {
+    const category = categoryBySprite[id];
+    const sizes = ['S','M','L'].filter(size => typeof entry[size] === 'function');
+    return Object.freeze({
+      id,
+      label:entry.label,
+      category,
+      categoryLabel:categoryLabels[category],
+      poiTypes:Object.freeze(typesBySprite[id] || []),
+      sizes:Object.freeze(sizes.length ? sizes : ['M']),
+      previewSize:entry.M ? 'M' : entry.S ? 'S' : entry.L ? 'L' : 'M',
+    });
+  }));
+
+  function paintBackdrop(target){
+    target.fillStyle='#b8cb82';target.fillRect(0,0,288,240);
+    for(let y=0;y<5;y++)for(let x=0;x<6;x++)if((x+y)%2===0){target.fillStyle='#b4c77d';target.fillRect(x*48,y*48,48,48);}
+    target.fillStyle='#a0b570';
+    [[21,36],[261,24],[30,195],[246,183],[78,51],[216,105]].forEach(([x,y])=>target.fillRect(x,y,3,3));
+    target.fillStyle='#c8d995';
+    [[51,21],[264,75],[15,129],[174,30],[225,165]].forEach(([x,y])=>target.fillRect(x,y,3,3));
+    target.fillStyle='rgba(48,40,56,.11)';
+    for(let x=48;x<288;x+=48)target.fillRect(x,0,3,240);
+    for(let y=48;y<240;y+=48)target.fillRect(0,y,288,3);
+  }
+
+  function render(canvas, id, size='M'){
+    const entry = SPRITES[id] || SPRITES.generic;
+    const draw = entry[size] || entry.M || entry.S || entry.L || entry.draw;
+    canvas.width=288;canvas.height=240;
+    const target=canvas.getContext('2d');
+    target.imageSmoothingEnabled=false;
+    paintBackdrop(target);
+    target.save();target.translate(144,207);target.scale(3,3);
+    target.fillStyle='rgba(24,40,16,.3)';target.fillRect(-7,-1,14,3);
+    ctx=target;
+    draw(0,0);
+    ctx=null;
+    target.restore();
+  }
+
+  global.PixelMapPoiSprites = Object.freeze({assets,categories,render});
+})(window);
