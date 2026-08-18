@@ -81,9 +81,10 @@ test('現行マップの描画辞書にも新作6アセットが実装されて�
   for(const id of inspiredIds) assert.match(spriteBlock, new RegExp(`\\n\\s*${id}\\s*:`), id);
 });
 
-test('しろポップ10点はテスト用マップだけに接続される', async () => {
+test('しろポップ10点はアセット候補に残すがマップへは接続しない', async () => {
   const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
-  for(const id of popIds) assert.ok(html.includes(id), id);
-  assert.match(html, /TEST_MODE \? 'pop' : 'reference'/);
-  assert.match(html, /TEST_MODE && key\.startsWith\('pop_'\)/);
+  for(const id of popIds) assert.ok(catalog.assets.some(asset => asset.id === id), id);
+  for(const id of popIds) assert.ok(!html.includes(id), `${id} はマップへ接続しない`);
+  assert.match(html, /dataset\.assetTaste = 'reference'/);
+  assert.doesNotMatch(html, /TEST_MODE|TEST_POP_SPRITES/);
 });

@@ -38,41 +38,24 @@ test('全アセットを論理ピクセルグリッドへそろえる', () => {
   assert.match(html, /assetLogicalPixel:1/);
 });
 
-test('本番埋め込みにはテスト用表示CSSを適用しない', () => {
-  assert.match(html, /html\[data-map-mode="test"\] #map/);
-  assert.doesNotMatch(html, /html\[data-map-mode="production"\][^{]*#map/);
+test('単体ページも本番と同じモード・パターン・アセットを使う', () => {
+  assert.match(html, /const requestedPatternId = String\(PAGE_PARAMS\.get\('pattern'\) \|\| '07'\)\.padStart\(2, '0'\)/);
+  assert.match(html, /dataset\.mapMode = 'production'/);
+  assert.match(html, /dataset\.assetTaste = 'reference'/);
+  assert.doesNotMatch(html, /TEST_MODE|data-map-mode="test"|TEST_POP|TEST_TRANSPORT/);
 });
 
 test('道路は元形状を1論理px単位で直接描画する', () => {
   assert.match(html, /const SMOOTH_ROAD_OPTIONS = new Set\(\['localRoads','regionalRoads','majorRoads','motorways'\]\)/);
-  assert.match(html, /function drawDirectTransportLayer\(option, bridge = false\)/);
+  assert.match(html, /function drawSmoothRoadLayer\(option, bridge = false\)/);
   assert.match(html, /Math\.round\(x \/ 2\) \* 2/);
-  assert.match(html, /if \(directTransport\) drawDirectTransportLayer\(option\)/);
-  assert.match(html, /if \(directTransport\) drawDirectTransportLayer\(option, true\)/);
+  assert.match(html, /if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option\)/);
+  assert.match(html, /if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option, true\)/);
 });
 
-test('テストページの交通線は種別と橋を問わず4論理px・外周1論理pxにそろえる', () => {
-  assert.match(html, /const TEST_TRANSPORT_SCENE_WIDTH = 8/);
-  assert.match(html, /const TEST_TRANSPORT_SCENE_CASING = 2/);
-  assert.match(html, /const width = directTestTransport \? TEST_TRANSPORT_SCENE_WIDTH : style\.width \+ bridgeWidth/);
-  assert.match(html, /const casing = directTestTransport \? TEST_TRANSPORT_SCENE_CASING : style\.casing/);
-  assert.match(html, /const areaCasing = directTestTransport\s*\? TEST_TRANSPORT_SCENE_CASING/);
-});
-
-test('テストページでは道路を例外にせず交通線すべてを共通レンダラーへ通す', () => {
-  for (const option of ['paths','tracks','raceways','ferries','piers','rail','subway','aerialways',
-    'localRoads','regionalRoads','majorRoads','motorways','transportationOther']){
-    assert.match(html, new RegExp(`['"]${option}['"]`), option);
-  }
-  assert.match(html, /TEST_MODE\s*\? DIRECT_TRANSPORT_OPTIONS\.has\(option\)\s*:\s*SMOOTH_ROAD_OPTIONS\.has\(option\)/);
-  assert.doesNotMatch(html, /function drawSmoothRoadLayer/);
-});
-
-test('共通レンダラーの反復装飾で鉄道の枕木を線幅内に描く', () => {
-  assert.match(html, /rail:\{ width:4, casing:2, fill:P\.tie, edge:P\.rail,[\s\S]*?repeatDecoration:\{ spacing:16, width:2, color:P\.rail \}/);
-  assert.match(html, /const drawRepeatedDecoration = \(decoration, span\) =>/);
-  assert.match(html, /const decorationSpan = Math\.max\([\s\S]*?width \+ casing \* 2 - SCENE_PIXELS_PER_LOGICAL_PIXEL/);
-  assert.match(html, /drawRepeatedDecoration\(style\.repeatDecoration, decorationSpan\)/);
+test('鉄道は本番と同じタイル模様を使う', () => {
+  assert.match(html, /case ID\.RAIL:[\s\S]*?const TIE = [\s\S]*?if \(con\.L\) TIE/);
+  assert.doesNotMatch(html, /repeatDecoration|drawRepeatedDecoration/);
 });
 
 test('1マップ・2マップ・4マップは共通の論理ピクセル描画エンジンを使う', () => {

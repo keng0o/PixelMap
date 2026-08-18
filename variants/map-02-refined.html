@@ -403,32 +403,6 @@
     cursor:default;
   }
   body.capture-mode #captureBadge{ display:block; }
-  /* テスト用1マップだけは、768×768論理pxの出力画像を整数倍で表示する。
-     枠と倍率が合わない分は中央で切り抜き、非整数縮小は行わない。 */
-  html[data-map-mode="test"]{ --map-display-scale:1; }
-  html[data-map-mode="test"] .map-frame{
-    width:min(calc(92vw + 12px), 712px);
-    height:min(calc(92vw + 12px), 712px);
-    overflow:hidden;
-  }
-  html[data-map-mode="test"] #map{
-    display:block;
-    width:calc(768px * var(--map-display-scale));
-    height:calc(768px * var(--map-display-scale));
-    max-width:none;
-    flex:none;
-  }
-  html[data-map-mode="test"] body.capture-mode .map-frame{
-    width:780px;
-    height:780px;
-  }
-  @media (max-width:760px), (max-height:500px){
-    html[data-map-mode="test"] .map-frame{
-      width:100vw;
-      height:100vh;
-      height:100dvh;
-    }
-  }
   @media (prefers-reduced-motion: reduce){ #msg .cursor{ animation:none; } }
 </style>
 </head>
@@ -703,12 +677,11 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
-const TEST_MODE = !EMBEDDED;
 const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
 const ICON_PATTERNS = Array.isArray(window.PixelMapIconPatterns) ? window.PixelMapIconPatterns : [];
-const requestedPatternId = TEST_MODE ? '06' : String(PAGE_PARAMS.get('pattern') || '07').padStart(2, '0');
+const requestedPatternId = String(PAGE_PARAMS.get('pattern') || '07').padStart(2, '0');
 // 表示倍率は1に固定する。論理ピクセル密度やシーン解像度とは別の値。
 // 旧 ?pixel=2 を含むpixel指定も表示倍率へ影響させない。
 const REQUESTED_DISPLAY_SCALE = 1;
@@ -740,14 +713,14 @@ document.body.classList.toggle('shared-controls', SHARED_CONTROLS);
 document.body.classList.toggle('capture-mode', CAPTURE_MODE);
 document.documentElement.style.setProperty('--pattern-accent', ACTIVE_PATTERN.palette.transit || ACTIVE_PATTERN.palette.generic);
 document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.palette.generic || '#78828a');
-document.documentElement.dataset.mapMode = TEST_MODE ? 'test' : 'production';
-document.documentElement.dataset.assetTaste = TEST_MODE ? 'pop' : 'reference';
+document.documentElement.dataset.mapMode = 'production';
+document.documentElement.dataset.assetTaste = 'reference';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
 document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISPLAY_SCALE);
-document.title = 'PixelMap｜テスト用1マップ';
+document.title = 'PixelMap｜本番マップ';
 
 function patternUrl(patternId){
   const params = new URLSearchParams(PAGE_PARAMS);
@@ -1214,28 +1187,12 @@ const TRANSPORT_STYLE = {
   transportationOther:{ id:ID.PATH, thick:false, polygonId:ID.PAVE },
 };
 const SMOOTH_ROAD_OPTIONS = new Set(['localRoads','regionalRoads','majorRoads','motorways']);
-const DIRECT_TRANSPORT_OPTIONS = new Set([
-  'paths','tracks','raceways','ferries','piers','rail','subway','aerialways',
-  'localRoads','regionalRoads','majorRoads','motorways','transportationOther',
-]);
-const DIRECT_TRANSPORT_STYLE = {
-  paths:{ width:2, casing:0, fill:P.trailDot, edge:P.dirtDk },
-  tracks:{ width:4, casing:2, fill:P.gravelLt, edge:P.gravelDk },
-  raceways:{ width:8, casing:2, fill:P.road, edge:P.roadDk },
-  ferries:{ width:2, casing:0, fill:P.foam, edge:P.waterDk, dash:[12,8] },
-  piers:{ width:4, casing:2, fill:P.pave, edge:P.paveDk },
-  rail:{ width:4, casing:2, fill:P.tie, edge:P.rail,
-    repeatDecoration:{ spacing:16, width:2, color:P.rail } },
-  subway:{ width:4, casing:2, fill:P.tie, edge:P.rail, dash:[12,8] },
-  aerialways:{ width:2, casing:2, fill:P.tie, edge:P.rail, dash:[8,8] },
+const SMOOTH_ROAD_STYLE = {
   localRoads:{ width:14, casing:2, fill:'#c6c6c0', edge:'#8e8e88', center:null },
   regionalRoads:{ width:16, casing:2, fill:'#d0d0ca', edge:'#9e9e98', center:'#f8f0d8' },
   majorRoads:{ width:20, casing:2, fill:'#d8c890', edge:'#a89058', center:'#e8b840' },
   motorways:{ width:28, casing:3, fill:'#d8c890', edge:'#8f7848', center:'#f8d878' },
-  transportationOther:{ width:2, casing:0, fill:P.paveDk, edge:P.gravelDk },
 };
-const TEST_TRANSPORT_SCENE_WIDTH = 8;
-const TEST_TRANSPORT_SCENE_CASING = 2;
 /* 建物の分類・配色は building-styles.js が唯一の正典。
    ROOFPALはマップチップ生成と後方互換のためのエイリアス。 */
 const BUILDING_STYLES = window.PixelMapBuildingStyles;
@@ -2394,46 +2351,13 @@ const SPRITES = {
 // このページは確定済みの施設データを描くだけで、選抜の再計算は行わない。
 const RESOLVER = window.PixelMapFacilityResolver;
 const { CLASS2SPRITE, isStationProps, tierValue } = RESOLVER;
-const POI_ASSETS = window.PixelMapPoiSprites;
-const TEST_POP_SPRITES_BY_TYPE = Object.freeze({
-  office:'pop_office',
-  town_hall:'pop_townhall',
-  townhall:'pop_townhall',
-  fast_food:'pop_fastfood',
-  university:'pop_university',
-  college:'pop_college',
-  post:'pop_post',
-  art_gallery:'pop_art_museum',
-  museum:'pop_art_museum',
-  zoo:'pop_zoo',
-});
-const TEST_POP_SPRITES_BY_RESOLVED_KEY = Object.freeze({
-  station:'pop_station',
-  library:'pop_library',
-});
-const TEST_SPRITE_FALLBACKS = Object.freeze({
-  monument:'attraction',
-  castle:'attraction',
-  gallery:'museum',
-  theatre:'cinema',
-  zoo:'park',
-  charge_hub:'parking',
-});
 function categoryTone(category){
   return ACTIVE_PATTERN.palette[category] || ACTIVE_PATTERN.palette.generic || '#78828a';
 }
 function spriteFor(props, size = 'M', variant = 0){
-  const resolvedKey = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
-  const typeKey = props.subclass || props.class || '';
-  const popKey = TEST_POP_SPRITES_BY_TYPE[typeKey] || TEST_POP_SPRITES_BY_RESOLVED_KEY[resolvedKey];
-  const key = TEST_MODE ? (popKey || TEST_SPRITE_FALLBACKS[resolvedKey] || resolvedKey) : resolvedKey;
-  const popAsset = TEST_MODE && key.startsWith('pop_')
-    ? POI_ASSETS.assets.find(asset => asset.id === key)
-    : null;
-  const e = popAsset || SPRITES[key];
-  const baseDraw = popAsset
-    ? (x,y) => POI_ASSETS.draw(ctx,key,x,y,size)
-    : (e[size] || e.M || e.S || e.L || e.draw);
+  const key = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
+  const e = SPRITES[key];
+  const baseDraw = e[size] || e.M || e.S || e.L || e.draw;
   let draw = baseDraw;
   // 川崎駅(JR系=緑)と京急川崎駅(京急=赤)を、世界観を変えず小旗で判別可能にする。
   if (isStationProps(props)){
@@ -2866,11 +2790,11 @@ function render(){
   const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
   drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
-  /* テストページの交通線はすべて、MVTの元形状を2シーンpx
-     （出力画像上1論理px）の論理ピクセルグリッドへ直接描く。共通の外形・本体・中央線
-     ストロークを使い、道路だけを例外的な描画経路にしない。 */
-  function drawDirectTransportLayer(option, bridge = false){
-    const style = DIRECT_TRANSPORT_STYLE[option];
+  /* 本番道路は16pxセルへ落とさず、MVTの元形状を2シーンpx
+     （出力画像上1論理px）のグリッドへ直接描く。外形・舗装・中央線を
+     別ストロークにすることで、交差点をつなげたまま細かな曲線を保つ。 */
+  function drawSmoothRoadLayer(option, bridge = false){
+    const style = SMOOTH_ROAD_STYLE[option];
     if (!style) return;
     const features = L('transportation').filter(feature => {
       if (transportationOption(feature) !== option) return false;
@@ -2897,54 +2821,11 @@ function render(){
         }
       }
     };
-    const drawRepeatedDecoration = (decoration, span) => {
-      if (!decoration || span <= 0) return;
-      const spacing = Math.max(SCENE_PIXELS_PER_LOGICAL_PIXEL, decoration.spacing);
-      const halfSpan = span / 2;
-      const snap = value => Math.round(value / SCENE_PIXELS_PER_LOGICAL_PIXEL) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
-      ctx.save();
-      ctx.beginPath();
-      ctx.lineCap = 'butt';
-      for (const feature of lineFeatures){
-        for (const line of feature.geom){
-          const points = line.map(point);
-          let next = spacing / 2;
-          for (let index = 1; index < points.length; index++){
-            const [x0,y0] = points[index - 1];
-            const [x1,y1] = points[index];
-            const dx = x1 - x0, dy = y1 - y0;
-            const length = Math.hypot(dx,dy);
-            if (!length) continue;
-            const nx = -dy / length, ny = dx / length;
-            while (next <= length){
-              const ratio = next / length;
-              const cx = x0 + dx * ratio, cy = y0 + dy * ratio;
-              ctx.moveTo(snap(cx - nx * halfSpan), snap(cy - ny * halfSpan));
-              ctx.lineTo(snap(cx + nx * halfSpan), snap(cy + ny * halfSpan));
-              next += spacing;
-            }
-            next -= length;
-          }
-        }
-      }
-      ctx.strokeStyle = decoration.color;
-      ctx.lineWidth = decoration.width;
-      ctx.stroke();
-      ctx.restore();
-    };
 
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    // テストページでは交通種別や橋による太さの差をなくす。
-    // 8シーンpx＝4論理px、2シーンpx＝1論理pxの外周に統一する。
-    const directTestTransport = TEST_MODE && DIRECT_TRANSPORT_OPTIONS.has(option);
-    const bridgeWidth = !TEST_MODE && bridge ? 4 : 0;
-    const width = directTestTransport ? TEST_TRANSPORT_SCENE_WIDTH : style.width + bridgeWidth;
-    const casing = directTestTransport ? TEST_TRANSPORT_SCENE_CASING : style.casing;
-    const areaCasing = directTestTransport
-      ? TEST_TRANSPORT_SCENE_CASING
-      : style.casing + (!TEST_MODE && bridge ? 2 : 0);
+    const width = style.width + (bridge ? 4 : 0);
     if (areaFeatures.length){
       for (const feature of areaFeatures){
         ctx.beginPath();
@@ -2956,36 +2837,21 @@ function render(){
           ctx.closePath();
         }
         ctx.fillStyle = style.fill;
+        ctx.strokeStyle = style.edge;
+        ctx.lineWidth = style.casing * 2 + (bridge ? 4 : 0);
         ctx.fill('evenodd');
-        if (style.edge && areaCasing){
-          ctx.strokeStyle = style.edge;
-          ctx.lineWidth = areaCasing * 2;
-          ctx.stroke();
-        }
+        ctx.stroke();
       }
     }
     if (lineFeatures.length){
-      if (style.edge && casing){
-        traceLines();
-        ctx.strokeStyle = style.edge;
-        ctx.lineWidth = width + casing * 2;
-        ctx.setLineDash(style.dash || []);
-        ctx.stroke();
-      }
+      traceLines();
+      ctx.strokeStyle = style.edge;
+      ctx.lineWidth = width + style.casing * 2;
+      ctx.stroke();
       traceLines();
       ctx.strokeStyle = style.fill;
       ctx.lineWidth = width;
-      ctx.setLineDash(style.dash || []);
       ctx.stroke();
-      ctx.setLineDash([]);
-      if (style.repeatDecoration){
-        // 端点の1論理px丸め分を内側へ逃がし、反復模様で線の全幅を広げない。
-        const decorationSpan = Math.max(
-          SCENE_PIXELS_PER_LOGICAL_PIXEL,
-          width + casing * 2 - SCENE_PIXELS_PER_LOGICAL_PIXEL
-        );
-        drawRepeatedDecoration(style.repeatDecoration, decorationSpan);
-      }
       if (style.center){
         traceLines();
         ctx.strokeStyle = style.center;
@@ -3288,10 +3154,7 @@ function render(){
   drawRasterGroup('Z1', z1Water);
   for (const option of layerOrder){
     if (!o[option] || !z2Routes.has(option)) continue;
-    const directTransport = TEST_MODE
-      ? DIRECT_TRANSPORT_OPTIONS.has(option)
-      : SMOOTH_ROAD_OPTIONS.has(option);
-    if (directTransport) drawDirectTransportLayer(option);
+    if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option);
     else if (tunnelOptions.has(option)) drawTunnelLayer(option);
     else {
       const grid = grids.get(option);
@@ -3306,10 +3169,7 @@ function render(){
   }
   for (const option of layerOrder){
     if (!o[option] || !bridgeOptions.has(option)) continue;
-    const directTransport = TEST_MODE
-      ? DIRECT_TRANSPORT_OPTIONS.has(option)
-      : SMOOTH_ROAD_OPTIONS.has(option);
-    if (directTransport) drawDirectTransportLayer(option, true);
+    if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option, true);
     else {
       const grid = grids.get(`bridge:${option}`);
       if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);
@@ -4173,25 +4033,12 @@ syncAllLayersToggle();
 locateBtn.addEventListener('click', locateMe);
 
 const mapFrame = document.querySelector('.map-frame');
-function updateDisplayScale(){
-  if (!TEST_MODE) return;
-  let effectiveScale = REQUESTED_DISPLAY_SCALE;
-  if (!CAPTURE_MODE && window.matchMedia(MOBILE_QUERY).matches){
-    const requiredSpan = Math.max(mapFrame.clientWidth, mapFrame.clientHeight);
-    effectiveScale = Math.max(effectiveScale, Math.ceil(requiredSpan / PRESENTATION_SIZE));
-  }
-  document.documentElement.style.setProperty('--map-display-scale', effectiveScale);
-  document.documentElement.dataset.pixelScale = String(effectiveScale);
-  if (window.PixelMapDiagnostics?.pixel) window.PixelMapDiagnostics.pixel.effectiveScale = effectiveScale;
-  if (window.PixelMapStudy) window.PixelMapStudy.pixelScale = effectiveScale;
-}
 function centerMobileMap(){
-  if (!TEST_MODE && !SHARED_CONTROLS && !window.matchMedia(MOBILE_QUERY).matches) return;
+  if (!SHARED_CONTROLS && !window.matchMedia(MOBILE_QUERY).matches) return;
   mapFrame.scrollLeft = Math.max(0, (mapFrame.scrollWidth - mapFrame.clientWidth) / 2);
   mapFrame.scrollTop = Math.max(0, (mapFrame.scrollHeight - mapFrame.clientHeight) / 2);
 }
 function syncPixelViewport(){
-  updateDisplayScale();
   requestAnimationFrame(centerMobileMap);
 }
 syncPixelViewport();
@@ -4209,8 +4056,8 @@ boot().finally(async () => {
   window.PixelMapStudy = {
     ready,
     captureReady:ready && (!CAPTURE_MODE || tileCache.size >= 9),
-    mode:TEST_MODE ? 'test' : 'production',
-    assetTaste:TEST_MODE ? 'pop' : 'reference',
+    mode:'production',
+    assetTaste:'reference',
     pattern:ACTIVE_PATTERN,
     pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_DISPLAY_SCALE),
     pixelRequestedScale:REQUESTED_DISPLAY_SCALE,
