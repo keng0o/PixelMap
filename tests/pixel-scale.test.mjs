@@ -23,6 +23,16 @@ test('施設の構成ドットはテストモードだけ2シーンpxへ固定�
   assert.match(html, /ctx\.scale\(spritePixelScale, spritePixelScale\)/);
 });
 
+test('全アセットを1論理pxの共通グリッドで構成する', () => {
+  assert.match(html, /const ASSET_SCENE_PIXEL = TEST_MODE \? 2 : 1/);
+  assert.match(html, /function quantizeAssetRect\(x,y,w,h\)/);
+  assert.match(html, /Math\.floor\(x\/ASSET_SCENE_PIXEL\)\*ASSET_SCENE_PIXEL/);
+  assert.match(html, /Math\.ceil\(\(x\+w\)\/ASSET_SCENE_PIXEL\)\*ASSET_SCENE_PIXEL/);
+  assert.match(html, /draw\(g, \(x,y,w,h,col\)=>fillAssetRect\(g,x,y,w,h,col\)\)/);
+  assert.match(html, /if\(TEST_MODE\) document\.documentElement\.dataset\.assetPixelSize = '1'/);
+  assert.match(html, /\.\.\.\(TEST_MODE \? \{[\s\S]*?assetLogicalPixel:1/);
+});
+
 test('本番埋め込みにはテスト用表示CSSを適用しない', () => {
   assert.match(html, /html\[data-map-mode="test"\] #map/);
   assert.doesNotMatch(html, /html\[data-map-mode="production"\][^{]*#map/);

@@ -745,6 +745,7 @@ document.documentElement.dataset.assetTaste = TEST_MODE ? 'pop' : 'reference';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_PIXEL_SCALE);
 document.documentElement.dataset.pixelScale = String(REQUESTED_PIXEL_SCALE);
+if(TEST_MODE) document.documentElement.dataset.assetPixelSize = '1';
 document.documentElement.style.setProperty('--pixel-display-scale', REQUESTED_PIXEL_SCALE);
 document.title = 'PixelMap｜テスト用1マップ';
 
@@ -796,6 +797,43 @@ const presentationCtx = TEST_MODE ? cv.getContext('2d') : ctx;
 ctx.imageSmoothingEnabled = false;
 presentationCtx.imageSmoothingEnabled = false;
 const W = sceneCanvas.width, H = sceneCanvas.height;
+const ASSET_SCENE_PIXEL = TEST_MODE ? 2 : 1;
+
+// The test page is presented at half the scene resolution. Keep every authored
+// asset pixel on a 2x2 scene block so it becomes exactly one visible pixel.
+function quantizeAssetRect(x,y,w,h){
+  if(!TEST_MODE || w<=0 || h<=0) return {x,y,w,h};
+  const x0=Math.floor(x/ASSET_SCENE_PIXEL)*ASSET_SCENE_PIXEL;
+  const y0=Math.floor(y/ASSET_SCENE_PIXEL)*ASSET_SCENE_PIXEL;
+  const x1=Math.ceil((x+w)/ASSET_SCENE_PIXEL)*ASSET_SCENE_PIXEL;
+  const y1=Math.ceil((y+h)/ASSET_SCENE_PIXEL)*ASSET_SCENE_PIXEL;
+  return {
+    x:x0,
+    y:y0,
+    w:Math.max(ASSET_SCENE_PIXEL,x1-x0),
+    h:Math.max(ASSET_SCENE_PIXEL,y1-y0)
+  };
+}
+
+function fillAssetRect(target,x,y,w,h,color){
+  const rect=quantizeAssetRect(x,y,w,h);
+  target.fillStyle=color;
+  target.fillRect(rect.x,rect.y,rect.w,rect.h);
+}
+
+if(TEST_MODE){
+  const nativeFillRect=ctx.fillRect.bind(ctx);
+  ctx.fillRect=(x,y,w,h)=>{
+    // Facility sprites are authored at 1 px and already drawn at 2x in the scene.
+    const transform=ctx.getTransform();
+    if(Math.max(Math.abs(transform.a),Math.abs(transform.d))>=ASSET_SCENE_PIXEL){
+      nativeFillRect(x,y,w,h);
+      return;
+    }
+    const rect=quantizeAssetRect(x,y,w,h);
+    nativeFillRect(rect.x,rect.y,rect.w,rect.h);
+  };
+}
 const GRID = 96, CPX = 16;                 // 96×96マス・1マス16px（見かけ2/3サイズ）
 const TILE = { z:14, x:14549, y:6460 };
 const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
@@ -846,7 +884,7 @@ function T(draw){
   c.width = c.height = CPX;
   const g = c.getContext('2d');
   g.imageSmoothingEnabled = false;
-  draw(g, (x,y,w,h,col)=>{ g.fillStyle=col; g.fillRect(x,y,w,h); });
+  draw(g, (x,y,w,h,col)=>fillAssetRect(g,x,y,w,h,col));
   return c;
 }
 let TILES = {};
@@ -3277,6 +3315,12 @@ function render(){
       sceneSize:SCENE_SIZE,
       presentationSize:TEST_MODE ? PRESENTATION_SIZE : SCENE_SIZE,
       scenePixelsPerLogicalPixel:TEST_MODE ? 2 : 1,
+      ...(TEST_MODE ? {
+        assetLogicalPixel:1,
+        assetScenePixel:ASSET_SCENE_PIXEL,
+        quantizedAssetTiles:true,
+        quantizedSceneRects:true,
+      } : {}),
     },
     resolver:{
       algorithmVersion:RESOLVER.ALGORITHM_VERSION,
@@ -4088,6 +4132,7 @@ boot().finally(async () => {
     pattern:ACTIVE_PATTERN,
     pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_PIXEL_SCALE),
     pixelRequestedScale:REQUESTED_PIXEL_SCALE,
+    ...(TEST_MODE ? { assetPixelSize:1 } : {}),
     presentationSize:TEST_MODE ? PRESENTATION_SIZE : SCENE_SIZE,
     location:HAS_INITIAL_LOCATION ? { name:INITIAL_PLACE, latitude:INITIAL_LAT, longitude:INITIAL_LON } : null,
     viewport:viewportState(),
