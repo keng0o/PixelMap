@@ -1207,14 +1207,27 @@ const TRANSPORT_STYLE = {
   transportationOther:{ id:ID.PATH, thick:false, polygonId:ID.PAVE },
 };
 const SMOOTH_ROAD_OPTIONS = new Set(['localRoads','regionalRoads','majorRoads','motorways']);
-const SMOOTH_ROAD_STYLE = {
+const DIRECT_TRANSPORT_OPTIONS = new Set([
+  'paths','tracks','raceways','ferries','piers','rail','subway','aerialways',
+  'localRoads','regionalRoads','majorRoads','motorways','transportationOther',
+]);
+const DIRECT_TRANSPORT_STYLE = {
+  paths:{ width:2, casing:0, fill:P.trailDot, edge:P.dirtDk },
+  tracks:{ width:4, casing:2, fill:P.gravelLt, edge:P.gravelDk },
+  raceways:{ width:8, casing:2, fill:P.road, edge:P.roadDk },
+  ferries:{ width:2, casing:0, fill:P.foam, edge:P.waterDk, dash:[12,8] },
+  piers:{ width:4, casing:2, fill:P.pave, edge:P.paveDk },
+  rail:{ width:4, casing:2, fill:P.tie, edge:P.rail },
+  subway:{ width:4, casing:2, fill:P.tie, edge:P.rail, dash:[12,8] },
+  aerialways:{ width:2, casing:2, fill:P.tie, edge:P.rail, dash:[8,8] },
   localRoads:{ width:14, casing:2, fill:'#c6c6c0', edge:'#8e8e88', center:null },
   regionalRoads:{ width:16, casing:2, fill:'#d0d0ca', edge:'#9e9e98', center:'#f8f0d8' },
   majorRoads:{ width:20, casing:2, fill:'#d8c890', edge:'#a89058', center:'#e8b840' },
   motorways:{ width:28, casing:3, fill:'#d8c890', edge:'#8f7848', center:'#f8d878' },
+  transportationOther:{ width:2, casing:0, fill:P.paveDk, edge:P.gravelDk },
 };
-const TEST_ROAD_SCENE_WIDTH = 16;
-const TEST_ROAD_SCENE_CASING = 2;
+const TEST_TRANSPORT_SCENE_WIDTH = 8;
+const TEST_TRANSPORT_SCENE_CASING = 2;
 /* 建物の分類・配色は building-styles.js が唯一の正典。
    ROOFPALはタイル焼き込みと後方互換のためのエイリアス。 */
 const BUILDING_STYLES = window.PixelMapBuildingStyles;
@@ -2845,11 +2858,11 @@ function render(){
   const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
   drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
-  /* 道路は16pxセルへ落とさず、MVTの元形状を2シーンpx
-     （表示上1論理px）のグリッドへ直接描く。外形・舗装・中央線を
-     別ストロークにすることで、交差点をつなげたまま細かな曲線を保つ。 */
-  function drawSmoothRoadLayer(option, bridge = false){
-    const style = SMOOTH_ROAD_STYLE[option];
+  /* テストページの交通線はすべて、MVTの元形状を2シーンpx
+     （表示上1論理px）のグリッドへ直接描く。共通の外形・本体・中央線
+     ストロークを使い、道路だけを例外的な描画経路にしない。 */
+  function drawDirectTransportLayer(option, bridge = false){
+    const style = DIRECT_TRANSPORT_STYLE[option];
     if (!style) return;
     const features = L('transportation').filter(feature => {
       if (transportationOption(feature) !== option) return false;
@@ -2880,11 +2893,15 @@ function render(){
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    // テストページでは道路種別や橋による太さの差をなくす。
-    // 16シーンpx＝表示8px、2シーンpx＝表示1pxの外周に統一する。
-    const width = TEST_MODE ? TEST_ROAD_SCENE_WIDTH : style.width + (bridge ? 4 : 0);
-    const casing = TEST_MODE ? TEST_ROAD_SCENE_CASING : style.casing;
-    const areaCasing = TEST_MODE ? TEST_ROAD_SCENE_CASING : style.casing + (bridge ? 2 : 0);
+    // テストページでは交通種別や橋による太さの差をなくす。
+    // 8シーンpx＝表示4px、2シーンpx＝表示1pxの外周に統一する。
+    const directTestTransport = TEST_MODE && DIRECT_TRANSPORT_OPTIONS.has(option);
+    const bridgeWidth = !TEST_MODE && bridge ? 4 : 0;
+    const width = directTestTransport ? TEST_TRANSPORT_SCENE_WIDTH : style.width + bridgeWidth;
+    const casing = directTestTransport ? TEST_TRANSPORT_SCENE_CASING : style.casing;
+    const areaCasing = directTestTransport
+      ? TEST_TRANSPORT_SCENE_CASING
+      : style.casing + (!TEST_MODE && bridge ? 2 : 0);
     if (areaFeatures.length){
       for (const feature of areaFeatures){
         ctx.beginPath();
@@ -2896,21 +2913,28 @@ function render(){
           ctx.closePath();
         }
         ctx.fillStyle = style.fill;
-        ctx.strokeStyle = style.edge;
-        ctx.lineWidth = areaCasing * 2;
         ctx.fill('evenodd');
-        ctx.stroke();
+        if (style.edge && areaCasing){
+          ctx.strokeStyle = style.edge;
+          ctx.lineWidth = areaCasing * 2;
+          ctx.stroke();
+        }
       }
     }
     if (lineFeatures.length){
-      traceLines();
-      ctx.strokeStyle = style.edge;
-      ctx.lineWidth = width + casing * 2;
-      ctx.stroke();
+      if (style.edge && casing){
+        traceLines();
+        ctx.strokeStyle = style.edge;
+        ctx.lineWidth = width + casing * 2;
+        ctx.setLineDash(style.dash || []);
+        ctx.stroke();
+      }
       traceLines();
       ctx.strokeStyle = style.fill;
       ctx.lineWidth = width;
+      ctx.setLineDash(style.dash || []);
       ctx.stroke();
+      ctx.setLineDash([]);
       if (style.center){
         traceLines();
         ctx.strokeStyle = style.center;
@@ -3213,7 +3237,10 @@ function render(){
   drawRasterGroup('Z1', z1Water);
   for (const option of layerOrder){
     if (!o[option] || !z2Routes.has(option)) continue;
-    if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option);
+    const directTransport = TEST_MODE
+      ? DIRECT_TRANSPORT_OPTIONS.has(option)
+      : SMOOTH_ROAD_OPTIONS.has(option);
+    if (directTransport) drawDirectTransportLayer(option);
     else if (tunnelOptions.has(option)) drawTunnelLayer(option);
     else {
       const grid = grids.get(option);
@@ -3228,7 +3255,10 @@ function render(){
   }
   for (const option of layerOrder){
     if (!o[option] || !bridgeOptions.has(option)) continue;
-    if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option, true);
+    const directTransport = TEST_MODE
+      ? DIRECT_TRANSPORT_OPTIONS.has(option)
+      : SMOOTH_ROAD_OPTIONS.has(option);
+    if (directTransport) drawDirectTransportLayer(option, true);
     else {
       const grid = grids.get(`bridge:${option}`);
       if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);

@@ -45,18 +45,27 @@ test('本番埋め込みにはテスト用表示CSSを適用しない', () => {
 
 test('全マップの道路は元形状を1論理px単位で直接描画する', () => {
   assert.match(html, /const SMOOTH_ROAD_OPTIONS = new Set\(\['localRoads','regionalRoads','majorRoads','motorways'\]\)/);
-  assert.match(html, /function drawSmoothRoadLayer\(option, bridge = false\)/);
+  assert.match(html, /function drawDirectTransportLayer\(option, bridge = false\)/);
   assert.match(html, /Math\.round\(x \/ 2\) \* 2/);
-  assert.match(html, /if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option\)/);
-  assert.match(html, /if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option, true\)/);
+  assert.match(html, /if \(directTransport\) drawDirectTransportLayer\(option\)/);
+  assert.match(html, /if \(directTransport\) drawDirectTransportLayer\(option, true\)/);
 });
 
-test('テストページの道路は種別と橋を問わず表示8px・外周1pxに揃える', () => {
-  assert.match(html, /const TEST_ROAD_SCENE_WIDTH = 16/);
-  assert.match(html, /const TEST_ROAD_SCENE_CASING = 2/);
-  assert.match(html, /const width = TEST_MODE \? TEST_ROAD_SCENE_WIDTH : style\.width \+ \(bridge \? 4 : 0\)/);
-  assert.match(html, /const casing = TEST_MODE \? TEST_ROAD_SCENE_CASING : style\.casing/);
-  assert.match(html, /const areaCasing = TEST_MODE \? TEST_ROAD_SCENE_CASING : style\.casing \+ \(bridge \? 2 : 0\)/);
+test('テストページの交通線は種別と橋を問わず表示4px・外周1pxに揃える', () => {
+  assert.match(html, /const TEST_TRANSPORT_SCENE_WIDTH = 8/);
+  assert.match(html, /const TEST_TRANSPORT_SCENE_CASING = 2/);
+  assert.match(html, /const width = directTestTransport \? TEST_TRANSPORT_SCENE_WIDTH : style\.width \+ bridgeWidth/);
+  assert.match(html, /const casing = directTestTransport \? TEST_TRANSPORT_SCENE_CASING : style\.casing/);
+  assert.match(html, /const areaCasing = directTestTransport\s*\? TEST_TRANSPORT_SCENE_CASING/);
+});
+
+test('テストページでは道路を例外にせず交通線すべてを共通レンダラーへ通す', () => {
+  for (const option of ['paths','tracks','raceways','ferries','piers','rail','subway','aerialways',
+    'localRoads','regionalRoads','majorRoads','motorways','transportationOther']){
+    assert.match(html, new RegExp(`['"]${option}['"]`), option);
+  }
+  assert.match(html, /TEST_MODE\s*\? DIRECT_TRANSPORT_OPTIONS\.has\(option\)\s*:\s*SMOOTH_ROAD_OPTIONS\.has\(option\)/);
+  assert.doesNotMatch(html, /function drawSmoothRoadLayer/);
 });
 
 test('1マップ・2マップ・4マップは共通の1px描画エンジンを使う', () => {
