@@ -677,8 +677,8 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
-const CELL_ONLY_MODE = !EMBEDDED && PAGE_PARAMS.get('render') === 'cell8';
-const RENDER_MODE = CELL_ONLY_MODE ? 'cell8' : 'standard';
+const CELL_ONLY_MODE = !EMBEDDED && PAGE_PARAMS.get('render') === 'cell2';
+const RENDER_MODE = CELL_ONLY_MODE ? 'cell2' : 'standard';
 const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
@@ -723,7 +723,7 @@ document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
 document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISPLAY_SCALE);
-document.title = CELL_ONLY_MODE ? 'PixelMap｜8×8単色セル検証' : 'PixelMap｜本番マップ';
+document.title = CELL_ONLY_MODE ? 'PixelMap｜2×2単色セル検証' : 'PixelMap｜本番マップ';
 
 function patternUrl(patternId){
   const params = new URLSearchParams(PAGE_PARAMS);
@@ -767,8 +767,8 @@ const cv = document.getElementById('map');
   描画単位（詳細は TERMINOLOGY.md）
   - 論理ピクセル: 768×768の出力画像を構成する最小単位
   - シーンピクセル: 1536×1536の作業用キャンバスの座標単位
-  - マップセル: 地物種別を保持する96×96マップグリッドの1セル
-  1論理px = 2×2シーンpx、1マップセル = 16×16シーンpx = 8×8論理px。
+  - マップセル: 地物種別を保持する正方形グリッドの1セル
+  1論理px = 2×2シーンpx。標準描画は8×8論理px、cell2は2×2論理px。
 */
 const SCENE_SIZE = 1536;
 const PRESENTATION_SIZE = SCENE_SIZE / 2;
@@ -815,7 +815,10 @@ ctx.fillRect=(x,y,w,h)=>{
   const rect=quantizeAssetRect(x,y,w,h);
   nativeFillRect(rect.x,rect.y,rect.w,rect.h);
 };
-const GRID = 96, CPX = 16;                 // 96×96セル・1セル16シーンpx（8論理px）
+const STANDARD_GRID = 96, STANDARD_CPX = 16;
+const CELL_DETAIL_SCALE = CELL_ONLY_MODE ? 4 : 1;
+const GRID = STANDARD_GRID * CELL_DETAIL_SCALE;
+const CPX = STANDARD_CPX / CELL_DETAIL_SCALE;
 const MAP_CELL_LOGICAL_SIZE = CPX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
 const TILE = { z:14, x:14549, y:6460 };
 const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
@@ -832,7 +835,7 @@ function presentScene(){
 }
 
 /* =====================================================
-   3. 16シーンpx（8論理px）のマップチップ（GB風パレット）
+   3. 標準描画用16シーンpx（8論理px）マップチップ（GB風パレット）
    ===================================================== */
 const P = {
   outline:'#302838',
@@ -1243,6 +1246,7 @@ function rasterizeGrid(layers, options){
   const c = oc.getContext('2d', { willReadFrequently: true });
   const extent = layers.transportation?.extent || layers.building?.extent || 4096;
   const S = GRID / extent;
+  const semanticS = STANDARD_GRID / extent;
   const L = n => (layers[n] ? layers[n].features : []);
   const gx = x => x * S - gridOriginX;
   const gy = y => y * S - gridOriginY;
@@ -1286,10 +1290,15 @@ function rasterizeGrid(layers, options){
   }
   function paintGeometry(feature, lineWidth = 1, pointSize = 1){
     if (feature.type === 3){ polyPath(feature.geom); c.fill('evenodd'); }
-    else if (feature.type === 2){ linePath(feature.geom); c.lineWidth = lineWidth; c.stroke(); }
+    else if (feature.type === 2){ linePath(feature.geom); c.lineWidth = lineWidth * CELL_DETAIL_SCALE; c.stroke(); }
     else if (feature.type === 1){
       for (const line of feature.geom) for (const point of line)
-        c.fillRect(gx(point[0]) - pointSize / 2, gy(point[1]) - pointSize / 2, pointSize, pointSize);
+        c.fillRect(
+          gx(point[0]) - pointSize * CELL_DETAIL_SCALE / 2,
+          gy(point[1]) - pointSize * CELL_DETAIL_SCALE / 2,
+          pointSize * CELL_DETAIL_SCALE,
+          pointSize * CELL_DETAIL_SCALE
+        );
     }
   }
 
@@ -1300,7 +1309,7 @@ function rasterizeGrid(layers, options){
       for (let i = 0; i + 1 < ring.length; i++)
         twiceArea += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
     }
-    return Math.abs(twiceArea) * .5 * S * S;
+    return Math.abs(twiceArea) * .5 * semanticS * semanticS;
   }
 
   const PARK_SURFACE_CLASSES = new Set(['park','garden','recreation_ground']);
@@ -1511,11 +1520,12 @@ function rasterizeGrid(layers, options){
         props:f.props,
         rings:[outer.pts, ...(outer.holes || [])],
         ringKey:`r:${Math.round(minX)},${Math.round(minY)},${Math.round(maxX)},${Math.round(maxY)}`,
-        geomAreaCells:Math.abs(outer.signed) * (GRID / buildingExtent) ** 2,
+        // 意味分類は標準96セル基準のままにし、cell2の細分化で変化させない。
+        geomAreaCells:Math.abs(outer.signed) * (STANDARD_GRID / buildingExtent) ** 2,
       });
     }
   }
-  const bldArea = new Uint16Array(bldUnits.length + 1);
+  const bldArea = new Uint32Array(bldUnits.length + 1);
   bldUnits.forEach((u, i) => {
     if (!unitByRingKey.has(u.ringKey)) unitByRingKey.set(u.ringKey, i + 1);
     let cnt = 0;
@@ -1544,6 +1554,12 @@ function rasterizeGrid(layers, options){
   const setCell = (grid, cx, cy, id) => {
     if (cx >= 0 && cy >= 0 && cx < RG && cy < RG) grid[cy * RG + cx] = id;
   };
+  const setCellBrush = (grid, cx, cy, id, span) => {
+    const start = -Math.floor(span / 2);
+    for (let dy = 0; dy < span; dy++)
+      for (let dx = 0; dx < span; dx++)
+        setCell(grid, cx + start + dx, cy + start + dy, id);
+  };
   // Amanatides–Woo のボクセル走査。1ステップで進むのは必ず1軸だけなので
   // 斜め線も自動的に「ギザギザの階段」になり、経路セルが途切れない。
   function traverse(x0, y0, x1, y1, visit){
@@ -1569,8 +1585,12 @@ function rasterizeGrid(layers, options){
       for (const ln of f.geom){
         for (let i = 0; i + 1 < ln.length; i++){
           traverse(gx(ln[i][0]), gy(ln[i][1]), gx(ln[i+1][0]), gy(ln[i+1][1]), (cx, cy) => {
-            setCell(grid, cx, cy, id);
-            if (thick){ setCell(grid, cx + 1, cy, id); setCell(grid, cx, cy + 1, id); }
+            if (CELL_ONLY_MODE){
+              setCellBrush(grid, cx, cy, id, (thick ? 2 : 1) * CELL_DETAIL_SCALE);
+            } else {
+              setCell(grid, cx, cy, id);
+              if (thick){ setCell(grid, cx + 1, cy, id); setCell(grid, cx, cy + 1, id); }
+            }
           });
         }
       }
@@ -1635,7 +1655,7 @@ function rasterizeGrid(layers, options){
   }
   for (const { layer, option, features } of transportationLines.values()){
     const style = TRANSPORT_STYLE[option] || TRANSPORT_STYLE.transportationOther;
-    if (style.id === ID.RAIL) railStamp(layer, features);
+    if (style.id === ID.RAIL && !CELL_ONLY_MODE) railStamp(layer, features);
     else lineStamp(layer, features, style.id, style.thick);
     countFeatures(layer, features.length);
   }
@@ -1670,16 +1690,66 @@ const cellHash = (x, y) => {
   return ((wx * 7349 + wy * 9151 + TILE.x) % 97 + 97) % 97;
 };
 
+const cellCompositeCanvas = document.createElement('canvas');
+const cellCompositeContext = cellCompositeCanvas.getContext('2d');
+const CELL_RGBA_CACHE = new Map();
+function solidCellRgba(color){
+  if (CELL_RGBA_CACHE.has(color)) return CELL_RGBA_CACHE.get(color);
+  const value = String(color).trim();
+  const hex = value.startsWith('#') ? value.slice(1) : '';
+  const expanded = hex.length === 3 ? hex.split('').map(part => part + part).join('') : hex;
+  const rgba = /^[0-9a-f]{6}$/i.test(expanded)
+    ? [
+        Number.parseInt(expanded.slice(0, 2), 16),
+        Number.parseInt(expanded.slice(2, 4), 16),
+        Number.parseInt(expanded.slice(4, 6), 16),
+        255,
+      ]
+    : [0, 0, 0, 255];
+  CELL_RGBA_CACHE.set(color, rgba);
+  return rgba;
+}
+
 function paintSolidMapCell(gx, gy, color, layer, stats){
-  if (!color) return;
+  if (!color || !stats?.pixelData || gx < 0 || gy < 0 || gx >= stats.gridSize || gy >= stats.gridSize) return;
+  const index = gy * stats.gridSize + gx;
+  const pixelIndex = index * 4;
+  const rgba = solidCellRgba(color);
+  stats.pixelData[pixelIndex] = rgba[0];
+  stats.pixelData[pixelIndex + 1] = rgba[1];
+  stats.pixelData[pixelIndex + 2] = rgba[2];
+  stats.pixelData[pixelIndex + 3] = rgba[3];
+  stats.paintedCells++;
+  if (!stats.occupiedMask[index]){
+    stats.occupiedMask[index] = 1;
+    stats.occupiedCells++;
+  }
+  stats.layerCells[layer] = (stats.layerCells[layer] || 0) + 1;
+}
+
+function paintLegacyCellBlock(gx, gy, color, layer, stats){
+  const start = -Math.floor(CELL_DETAIL_SCALE / 2);
+  for (let dy = 0; dy < CELL_DETAIL_SCALE; dy++)
+    for (let dx = 0; dx < CELL_DETAIL_SCALE; dx++)
+      paintSolidMapCell(gx + start + dx, gy + start + dy, color, layer, stats);
+}
+
+function flushSolidCellBuffer(stats){
+  const size = stats.gridSize;
+  if (cellCompositeCanvas.width !== size || cellCompositeCanvas.height !== size){
+    cellCompositeCanvas.width = size;
+    cellCompositeCanvas.height = size;
+  }
+  cellCompositeContext.putImageData(new ImageData(stats.pixelData, size, size), 0, 0);
   const originX = Math.round(gridShiftX / SCENE_PIXELS_PER_LOGICAL_PIXEL) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
   const originY = Math.round(gridShiftY / SCENE_PIXELS_PER_LOGICAL_PIXEL) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
-  ctx.fillStyle = color;
-  nativeFillRect(originX + gx * CPX, originY + gy * CPX, CPX, CPX);
-  if (!stats) return;
-  stats.paintedCells++;
-  stats.occupiedCells.add(`${gridOriginX + gx},${gridOriginY + gy}`);
-  stats.layerCells[layer] = (stats.layerCells[layer] || 0) + 1;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(cellCompositeCanvas, originX, originY, size * CPX, size * CPX);
+  ctx.restore();
+  stats.flushed = true;
 }
 
 function solidMapCellCenter(gx, gy){
@@ -2803,13 +2873,17 @@ function render(){
     Math.floor(wy / CPX) - TILE.y * GRID - gridOriginY,
   ];
   const cellRenderingStats = {
+    gridSize:RG,
+    pixelData:CELL_ONLY_MODE ? new Uint8ClampedArray(RG * RG * 4) : null,
+    occupiedMask:CELL_ONLY_MODE ? new Uint8Array(RG * RG) : null,
     paintedCells:0,
-    occupiedCells:new Set(),
+    occupiedCells:0,
     layerCells:Object.create(null),
     countedFeatureOptions:new Set(),
     cellizedFeatures:0,
     facilitySymbols:0,
     terrainSymbols:0,
+    flushed:false,
   };
 
   /* --- リゾルバーの確定施設データ（アイコンにも建物の用途分類にも使う） --- */
@@ -2858,8 +2932,8 @@ function render(){
         let [ax, ay] = worldToGridCell(facility.worldX, facility.worldY);
         if (unitAt(ax, ay) !== bi){
           let found = false;
-          for (let dy = -1; dy <= 1 && !found; dy++)
-            for (let dx = -1; dx <= 1 && !found; dx++)
+          for (let dy = -CELL_DETAIL_SCALE; dy <= CELL_DETAIL_SCALE && !found; dy++)
+            for (let dx = -CELL_DETAIL_SCALE; dx <= CELL_DETAIL_SCALE && !found; dx++)
               if (unitAt(ax + dx, ay + dy) === bi){ ax += dx; ay += dy; found = true; }
           if (!found) ax = -1;
         }
@@ -3106,9 +3180,13 @@ function render(){
         ? [[0,-1,OUT],[-1,0,OUT],[0,0,tone],[1,0,OUT],[0,1,OUT]]
         : [[0,0,tone]];
     for (const [dx, dy, color] of cells){
-      const x = gx + dx, y = gy + dy;
-      if (x < 0 || y < 0 || x >= RG || y >= RG) continue;
-      paintSolidMapCell(x, y, color, layer, cellRenderingStats);
+      paintLegacyCellBlock(
+        gx + dx * CELL_DETAIL_SCALE,
+        gy + dy * CELL_DETAIL_SCALE,
+        color,
+        layer,
+        cellRenderingStats
+      );
     }
     item.cellPt = solidMapCellCenter(gx, gy);
     cellRenderingStats.facilitySymbols++;
@@ -3126,7 +3204,8 @@ function render(){
     for (const c of clusterMarks){
       const [x, y] = drawCellFacilityMarker(c, 'L', 'clusters');
       hitAreas.push({
-        x:x - CPX * 1.5, y:y - CPX * 1.5, w:CPX * 3, h:CPX * 3,
+        x:x - STANDARD_CPX * 1.5, y:y - STANDARD_CPX * 1.5,
+        w:STANDARD_CPX * 3, h:STANDARD_CPX * 3,
         p:{ name:`まとまった施設（${c.count}件）`, class:'cluster' }, kind:'cluster',
       });
     }
@@ -3295,7 +3374,7 @@ function render(){
       for (const key of cells){
         const [x, y] = key.split(',').map(Number);
         if (x < 0 || y < 0 || x >= RG || y >= RG) continue;
-        paintSolidMapCell(x, y, color, 'terrainSymbols', cellRenderingStats);
+        paintLegacyCellBlock(x, y, color, 'terrainSymbols', cellRenderingStats);
       }
       if (!cells.size) continue;
       const point = solidMapCellCenter(anchorX, anchorY);
@@ -3459,6 +3538,8 @@ function render(){
       drawCellTerrainSymbols();
       renderOrder.push('Z4:terrainSymbols');
     }
+    // 地図地物と記号を意味セルバッファへ合成し終えてから、名称を鮮明に重ねる。
+    flushSolidCellBuffer(cellRenderingStats);
     for (const option of layerOrder){
       if (!o[option] || !cellLabelDrawers[option]) continue;
       cellLabelDrawers[option]();
@@ -3555,12 +3636,14 @@ function render(){
       mode:RENDER_MODE,
       cellLogicalPixels:MAP_CELL_LOGICAL_SIZE,
       cellScenePixels:CPX,
+      gridCellsPerSide:GRID,
       singleColorCells:CELL_ONLY_MODE,
+      semanticCellBuffer:CELL_ONLY_MODE,
       cellizedFeatures:CELL_ONLY_MODE ? cellRenderingStats.cellizedFeatures : 0,
       facilitySymbols:CELL_ONLY_MODE ? cellRenderingStats.facilitySymbols : 0,
       terrainSymbols:CELL_ONLY_MODE ? cellRenderingStats.terrainSymbols : 0,
       paintedCells:CELL_ONLY_MODE ? cellRenderingStats.paintedCells : 0,
-      occupiedCells:CELL_ONLY_MODE ? cellRenderingStats.occupiedCells.size : 0,
+      occupiedCells:CELL_ONLY_MODE ? cellRenderingStats.occupiedCells : 0,
       layerCells:CELL_ONLY_MODE ? { ...cellRenderingStats.layerCells } : {},
     },
     resolver:{
