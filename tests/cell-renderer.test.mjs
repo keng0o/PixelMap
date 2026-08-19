@@ -76,17 +76,18 @@ test('地下交通もセルモード用グリッドへ分類する', () => {
   assert.match(html, /else layer = 'roadTunnels'/);
 });
 
-test('交通線は4連結を保ち、cell2では従来幅へ4倍展開する', () => {
+test('交通線は4連結を保ち、cell2では細街路だけ最小1セル・他は従来幅へ展開する', () => {
   assert.match(html, /function traverse\(x0, y0, x1, y1, visit\)/);
   assert.match(html, /const transportCenters = new Map\(\)/);
   assert.match(html, /setCell\(center, cx, cy, 1\)/);
-  assert.match(html, /setCellBrush\(grid, cx, cy, id, \(thick \? 2 : 1\) \* CELL_DETAIL_SCALE\)/);
+  assert.match(html, /minimumMinorRoute \? 1 : \(thick \? 2 : 1\) \* CELL_DETAIL_SCALE/);
   assert.match(html, /c\.lineWidth = lineWidth \* CELL_DETAIL_SCALE/);
 });
 
 test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分ける', () => {
   assert.match(html, /function drawCellPixelArtTransportGrid\(grid, option, stats, centerGrid = null, bridge = false\)/);
-  assert.match(html, /paintSolidMapCell\(x, y, boundary \? edge : fill/);
+  assert.match(html, /const color = minimumMinorRoute[\s\S]*?: boundary \? edge : fill/);
+  assert.match(html, /paintSolidMapCell\(x, y, color, option, stats\)/);
   assert.match(html, /paintSolidMapCell\(x, y, roadStyle\.center/);
   assert.match(html, /for \(const offset of \[-1,1\]\)/);
   assert.match(html, /paintSolidMapCell\(tx, ty, P\.tie/);

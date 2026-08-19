@@ -53,6 +53,18 @@ test('道路は元形状を1論理px単位で直接描画する', () => {
   assert.match(html, /if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option, true\)/);
 });
 
+test('単体ページの生活道路と歩道・小径は各描画モードの最小幅にする', () => {
+  assert.match(html, /const STANDALONE_MINIMUM_MINOR_ROUTES = !EMBEDDED/);
+  assert.match(html, /const MINIMUM_ROUTE_SCENE_WIDTH = SCENE_PIXELS_PER_LOGICAL_PIXEL/);
+  assert.match(html, /width:STANDALONE_MINIMUM_MINOR_ROUTES \? MINIMUM_ROUTE_SCENE_WIDTH : 14/);
+  assert.match(html, /casing:STANDALONE_MINIMUM_MINOR_ROUTES \? 0 : 2/);
+  assert.match(html, /\['localRoads','paths'\]\.includes\(routeOption\)/);
+  assert.match(html, /minimumMinorRoute \? 1 : \(thick \? 2 : 1\) \* CELL_DETAIL_SCALE/);
+  assert.match(html, /if \(STANDALONE_MINIMUM_MINOR_ROUTES\)\{[\s\S]*?const lineWidth = MINIMUM_ROUTE_SCENE_WIDTH;[\s\S]*?ctx\.fillStyle = P\.trail;/);
+  assert.match(html, /minorRoutes:\{[\s\S]*?standaloneMinimum:STANDALONE_MINIMUM_MINOR_ROUTES/);
+  assert.match(html, /localRoadWidth:CELL_ONLY_MODE[\s\S]*?pathWidth:CELL_ONLY_MODE/);
+});
+
 test('鉄道は本番と同じタイル模様を使う', () => {
   assert.match(html, /case ID\.RAIL:[\s\S]*?const TIE = [\s\S]*?if \(con\.L\) TIE/);
   assert.doesNotMatch(html, /repeatDecoration|drawRepeatedDecoration/);

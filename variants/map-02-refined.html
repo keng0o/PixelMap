@@ -781,6 +781,10 @@ ctx.imageSmoothingEnabled = false;
 presentationCtx.imageSmoothingEnabled = false;
 const W = sceneCanvas.width, H = sceneCanvas.height;
 const SCENE_PIXELS_PER_LOGICAL_PIXEL = 2;
+// 単体検証ページでは細街路を出力画像の最小単位（1論理px）で描く。
+// embedded表示は既存の1・2・4マップの見た目を維持する。
+const STANDALONE_MINIMUM_MINOR_ROUTES = !EMBEDDED;
+const MINIMUM_ROUTE_SCENE_WIDTH = SCENE_PIXELS_PER_LOGICAL_PIXEL;
 
 // アセットの輪郭を論理ピクセルグリッドへそろえる。
 // 1論理pxは2×2シーンpxで、出力画像ではちょうど1pxになる。
@@ -1220,7 +1224,11 @@ const TRANSPORT_STYLE = {
 };
 const SMOOTH_ROAD_OPTIONS = new Set(['localRoads','regionalRoads','majorRoads','motorways']);
 const SMOOTH_ROAD_STYLE = {
-  localRoads:{ width:14, casing:2, fill:'#c6c6c0', edge:'#8e8e88', center:null },
+  localRoads:{
+    width:STANDALONE_MINIMUM_MINOR_ROUTES ? MINIMUM_ROUTE_SCENE_WIDTH : 14,
+    casing:STANDALONE_MINIMUM_MINOR_ROUTES ? 0 : 2,
+    fill:'#c6c6c0', edge:'#8e8e88', center:null,
+  },
   regionalRoads:{ width:16, casing:2, fill:'#d0d0ca', edge:'#9e9e98', center:'#f8f0d8' },
   majorRoads:{ width:20, casing:2, fill:'#d8c890', edge:'#a89058', center:'#e8b840' },
   motorways:{ width:28, casing:3, fill:'#d8c890', edge:'#8f7848', center:'#f8d878' },
@@ -1588,16 +1596,19 @@ function rasterizeGrid(layers, options){
       visit(cx, cy);
     }
   }
-  function lineStamp(option, fs, id, thick){
-    const grid = layerGrid(option);
-    const center = CELL_ONLY_MODE ? centerGrid(option) : null;
+  function lineStamp(layer, fs, id, thick, routeOption = layer){
+    const grid = layerGrid(layer);
+    const center = CELL_ONLY_MODE ? centerGrid(layer) : null;
+    const minimumMinorRoute = STANDALONE_MINIMUM_MINOR_ROUTES &&
+      ['localRoads','paths'].includes(routeOption);
     for (const f of fs){
       for (const ln of f.geom){
         for (let i = 0; i + 1 < ln.length; i++){
           traverse(gx(ln[i][0]), gy(ln[i][1]), gx(ln[i+1][0]), gy(ln[i+1][1]), (cx, cy) => {
             if (CELL_ONLY_MODE){
               setCell(center, cx, cy, 1);
-              setCellBrush(grid, cx, cy, id, (thick ? 2 : 1) * CELL_DETAIL_SCALE);
+              setCellBrush(grid, cx, cy, id,
+                minimumMinorRoute ? 1 : (thick ? 2 : 1) * CELL_DETAIL_SCALE);
             } else {
               setCell(grid, cx, cy, id);
               if (thick){ setCell(grid, cx + 1, cy, id); setCell(grid, cx, cy + 1, id); }
@@ -1667,7 +1678,7 @@ function rasterizeGrid(layers, options){
   for (const { layer, option, features } of transportationLines.values()){
     const style = TRANSPORT_STYLE[option] || TRANSPORT_STYLE.transportationOther;
     if (style.id === ID.RAIL && !CELL_ONLY_MODE) railStamp(layer, features);
-    else lineStamp(layer, features, style.id, style.thick);
+    else lineStamp(layer, features, style.id, style.thick, option);
     countFeatures(layer, features.length);
   }
   stampGroups(
@@ -1915,6 +1926,8 @@ function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, b
   const tunnel = ['subway','roadTunnels','pathTunnels','railTunnels'].includes(option);
   const rail = ['rail','subway','railTunnels','aerialways'].includes(option);
   const roadStyle = SMOOTH_ROAD_STYLE[option];
+  const minimumMinorRoute = STANDALONE_MINIMUM_MINOR_ROUTES &&
+    ['localRoads','paths'].includes(option);
   const dashOn = (x, y, span = 8) => {
     const [wx, wy] = worldFineCell(x, y);
     return positiveModulo(wx + wy * 3, span) < Math.ceil(span / 2);
@@ -1935,8 +1948,11 @@ function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, b
     for (let x = 0; x < RG; x++){
       if (!has(x, y) || (tunnel && !dashOn(x, y))) continue;
       const boundary = !has(x-1,y) || !has(x+1,y) || !has(x,y-1) || !has(x,y+1);
-      paintSolidMapCell(x, y, boundary ? edge : fill, option, stats);
-      if (boundary){
+      const color = minimumMinorRoute
+        ? (option === 'paths' ? P.trail : roadStyle.fill)
+        : boundary ? edge : fill;
+      paintSolidMapCell(x, y, color, option, stats);
+      if (boundary && !minimumMinorRoute){
         if (rail) stats.boundaryCells++;
         else stats.roadCasingCells++;
       }
@@ -2076,6 +2092,17 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
       U:at(x,y-1) === ID.PATH, D:at(x,y+1) === ID.PATH,
     };
     if (!connected.L && !connected.R && !connected.U && !connected.D) connected.L = connected.R = true;
+    if (STANDALONE_MINIMUM_MINOR_ROUTES){
+      const lineWidth = MINIMUM_ROUTE_SCENE_WIDTH;
+      const center = Math.floor(CPX / (2 * lineWidth)) * lineWidth;
+      ctx.fillStyle = P.trail;
+      if (connected.L) ctx.fillRect(bx, by + center, center + lineWidth, lineWidth);
+      if (connected.R) ctx.fillRect(bx + center, by + center, CPX - center, lineWidth);
+      if (connected.U) ctx.fillRect(bx + center, by, lineWidth, center + lineWidth);
+      if (connected.D) ctx.fillRect(bx + center, by + center, lineWidth, CPX - center);
+      ctx.fillRect(bx + center, by + center, lineWidth, lineWidth);
+      return;
+    }
     const seed = cellHash(x * 5 + 3, y * 7 + 1);
     const wiggle = (step, salt) => ((seed + step * 17 + salt * 29) % 3) - 1;
     const segments = [];
@@ -3306,7 +3333,9 @@ function render(){
     ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    const width = style.width + (bridge ? 4 : 0);
+    const minimumLocalRoad = STANDALONE_MINIMUM_MINOR_ROUTES && option === 'localRoads';
+    const bridgeExtra = bridge && !minimumLocalRoad ? 4 : 0;
+    const width = style.width + bridgeExtra;
     if (areaFeatures.length){
       for (const feature of areaFeatures){
         ctx.beginPath();
@@ -3319,16 +3348,18 @@ function render(){
         }
         ctx.fillStyle = style.fill;
         ctx.strokeStyle = style.edge;
-        ctx.lineWidth = style.casing * 2 + (bridge ? 4 : 0);
+        ctx.lineWidth = style.casing * 2 + bridgeExtra;
         ctx.fill('evenodd');
-        ctx.stroke();
+        if (ctx.lineWidth > 0) ctx.stroke();
       }
     }
     if (lineFeatures.length){
-      traceLines();
-      ctx.strokeStyle = style.edge;
-      ctx.lineWidth = width + style.casing * 2;
-      ctx.stroke();
+      if (style.casing > 0 || bridgeExtra > 0){
+        traceLines();
+        ctx.strokeStyle = style.edge;
+        ctx.lineWidth = width + style.casing * 2;
+        ctx.stroke();
+      }
       traceLines();
       ctx.strokeStyle = style.fill;
       ctx.lineWidth = width;
@@ -3997,6 +4028,17 @@ function render(){
       assetScenePixel:SCENE_PIXELS_PER_LOGICAL_PIXEL,
       quantizedAssetTiles:true,
       quantizedSceneRects:true,
+    },
+    minorRoutes:{
+      standaloneMinimum:STANDALONE_MINIMUM_MINOR_ROUTES,
+      unit:'logical-px',
+      localRoadWidth:CELL_ONLY_MODE
+        ? (STANDALONE_MINIMUM_MINOR_ROUTES ? 1 : CELL_DETAIL_SCALE) * MAP_CELL_LOGICAL_SIZE
+        : SMOOTH_ROAD_STYLE.localRoads.width / SCENE_PIXELS_PER_LOGICAL_PIXEL,
+      pathWidth:CELL_ONLY_MODE
+        ? (STANDALONE_MINIMUM_MINOR_ROUTES ? 1 : CELL_DETAIL_SCALE) * MAP_CELL_LOGICAL_SIZE
+        : STANDALONE_MINIMUM_MINOR_ROUTES ? 1 : 2,
+      casingWidth:SMOOTH_ROAD_STYLE.localRoads.casing / SCENE_PIXELS_PER_LOGICAL_PIXEL,
     },
     cellRendering:{
       enabled:CELL_ONLY_MODE,
