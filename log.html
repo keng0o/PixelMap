@@ -259,6 +259,11 @@
               <td>生活道路は本体7論理px＋片側1論理pxの縁、歩道・小径は2論理pxの従来幅を維持。</td>
             </tr>
             <tr>
+              <th scope="row">建物と道路の競合</th>
+              <td>建物輪郭を1論理px意味マスクで確定。道路と競合する棟は形を保って最大8論理px移動し、残る競合では道路の連続性を優先。POIと影も移動・道路除外へ追従。</td>
+              <td>従来の8×8論理px建物セル、通常建物／橋／POI建物の描画順を維持。</td>
+            </tr>
+            <tr>
               <th scope="row">外側UIと同期</th>
               <td>単独の地図・レイヤー操作・検証情報を表示。親ページとの同期通信なし。</td>
               <td>1マップは全画面、2マップは位置同期、4マップは4地点への共通レイヤー操作を提供。</td>
@@ -302,6 +307,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>建物を1論理px意味マスクで道路から分離</h3>
+          <time datetime="2026-08-20">2026-08-20 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>MVT建物ポリゴンから1論理pxの棟IDマスクを生成し、既存の8×8屋根・壁チップをその内部へ合成。道路と競合する棟は形・面積を保ったまま最大8論理px移動し、影とPOI位置を追従。未解決部分では地表道路を再描画し、橋は全建物の後へ統一。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone標準描画で有効。<code>?render=cell2</code>と<code>embedded=1</code>では無効。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは変更なし。既存の建物セルと描画順を維持。</dd></div>
+          <div><dt>確認内容</dt><dd>Nodeテスト75件、全4道路種別と建物を有効にしたブラウザ表示、橋の描画順、ドラッグ後の再描画、コンソールエラーなしを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>差分ログを初期化</h3>

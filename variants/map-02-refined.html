@@ -827,22 +827,28 @@ function fillAssetRect(target,x,y,w,h,color){
   target.fillRect(rect.x,rect.y,rect.w,rect.h);
 }
 
-const nativeFillRect=ctx.fillRect.bind(ctx);
-ctx.fillRect=(x,y,w,h)=>{
-  // 施設スプライトの素材座標1単位は、描画時に1論理px（2シーンpx）へ拡大済み。
-  const transform=ctx.getTransform();
-  if(Math.max(Math.abs(transform.a),Math.abs(transform.d))>=SCENE_PIXELS_PER_LOGICAL_PIXEL){
-    nativeFillRect(x,y,w,h);
-    return;
-  }
-  const rect=quantizeAssetRect(x,y,w,h);
-  nativeFillRect(rect.x,rect.y,rect.w,rect.h);
-};
+function quantizeContextFillRects(target){
+  const nativeFillRect=target.fillRect.bind(target);
+  target.fillRect=(x,y,w,h)=>{
+    // 施設スプライトの素材座標1単位は、描画時に1論理px（2シーンpx）へ拡大済み。
+    const transform=target.getTransform();
+    if(Math.max(Math.abs(transform.a),Math.abs(transform.d))>=SCENE_PIXELS_PER_LOGICAL_PIXEL){
+      nativeFillRect(x,y,w,h);
+      return;
+    }
+    const rect=quantizeAssetRect(x,y,w,h);
+    nativeFillRect(rect.x,rect.y,rect.w,rect.h);
+  };
+}
+quantizeContextFillRects(ctx);
 const STANDARD_GRID = 96, STANDARD_CPX = 16;
 const CELL_DETAIL_SCALE = CELL_ONLY_MODE ? 4 : 1;
 const GRID = STANDARD_GRID * CELL_DETAIL_SCALE;
 const CPX = STANDARD_CPX / CELL_DETAIL_SCALE;
 const MAP_CELL_LOGICAL_SIZE = CPX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
+// 単体標準ページでは、建物の意味輪郭だけを出力と同じ1論理pxで確定する。
+// cell2は2論理px原子セル、embeddedは既存ページの外観を維持する。
+const STANDALONE_PRECISE_BUILDINGS = !EMBEDDED && !CELL_ONLY_MODE;
 // 現行z14版の中心を基準に、z12・z13でも同じ地点を画面中央に置く。
 const DEFAULT_Z14_TILE = { x:14549, y:6460 };
 const ZOOM_RATIO_FROM_Z14 = 2 ** (DEFAULT_TILE_ZOOM - TILE_ZOOM);
@@ -2122,7 +2128,8 @@ function drawCellPixelArtBuildingGrid(grid, bldGrid, buildingKinds, buildingDesc
   }
 }
 
-function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
+function drawGrid(grid, bldGrid, bldStyle, options, transparent = false, drawContext = ctx){
+  const ctx = drawContext;
   const RG = GRID + 2;
   const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
   const bAt = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? 0 : bldGrid[y * RG + x];
@@ -2415,6 +2422,320 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
       }
     }
   }
+}
+
+/* =====================================================
+   単体標準ページ: 1論理px建物意味マスク
+   ===================================================== */
+const preciseBuildingLayerCanvas = document.createElement('canvas');
+preciseBuildingLayerCanvas.width = preciseBuildingLayerCanvas.height = SCENE_SIZE;
+const preciseBuildingLayerContext = preciseBuildingLayerCanvas.getContext('2d');
+preciseBuildingLayerContext.imageSmoothingEnabled = false;
+quantizeContextFillRects(preciseBuildingLayerContext);
+const preciseBuildingMaskCanvas = document.createElement('canvas');
+preciseBuildingMaskCanvas.width = preciseBuildingMaskCanvas.height = PRESENTATION_SIZE;
+const preciseBuildingMaskContext = preciseBuildingMaskCanvas.getContext('2d');
+const preciseBuildingDetailCanvas = document.createElement('canvas');
+preciseBuildingDetailCanvas.width = preciseBuildingDetailCanvas.height = PRESENTATION_SIZE;
+const preciseBuildingDetailContext = preciseBuildingDetailCanvas.getContext('2d');
+const preciseRoadMaskCanvas = document.createElement('canvas');
+preciseRoadMaskCanvas.width = preciseRoadMaskCanvas.height = PRESENTATION_SIZE;
+const preciseRoadMaskContext = preciseRoadMaskCanvas.getContext('2d', { willReadFrequently:true });
+
+// 元ポリゴンを出力画素の中心で走査する。8×8論理pxセルを膨張させず、
+// 屋根模様とは独立した棟IDの意味マスクを作る。
+function rasterizeStandaloneBuildingPixels(bldUnits){
+  const size = PRESENTATION_SIZE;
+  const owner = new Uint32Array(size * size);
+  for (let unitIndex = 0; unitIndex < bldUnits.length; unitIndex++){
+    const bi = unitIndex + 1;
+    const rings = bldUnits[unitIndex].rings.map(ring => ring.map(point => {
+      const [sceneX, sceneY] = tp(point);
+      return [sceneX / SCENE_PIXELS_PER_LOGICAL_PIXEL, sceneY / SCENE_PIXELS_PER_LOGICAL_PIXEL];
+    }));
+    let minY = Infinity, maxY = -Infinity;
+    for (const ring of rings) for (const [, y] of ring){
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+    const y0 = Math.max(0, Math.ceil(minY - .5));
+    const y1 = Math.min(size - 1, Math.floor(maxY - .5));
+    let painted = false;
+    for (let y = y0; y <= y1; y++){
+      const sampleY = y + .5;
+      const intersections = [];
+      for (const ring of rings){
+        for (let i = 0; i + 1 < ring.length; i++){
+          const [xa, ya] = ring[i], [xb, yb] = ring[i + 1];
+          if ((ya <= sampleY) !== (yb <= sampleY))
+            intersections.push(xa + (sampleY - ya) * (xb - xa) / (yb - ya));
+        }
+      }
+      intersections.sort((a, b) => a - b);
+      for (let i = 0; i + 1 < intersections.length; i += 2){
+        const x0 = Math.max(0, Math.ceil(intersections[i] - .5));
+        const x1 = Math.min(size - 1, Math.floor(intersections[i + 1] - .5));
+        for (let x = x0; x <= x1; x++){
+          owner[y * size + x] = bi;
+          painted = true;
+        }
+      }
+    }
+    // 1論理pxの中心も含まない極小棟だけ、重心位置へ最小1pxを残す。
+    if (!painted && rings[0]?.length){
+      let sx = 0, sy = 0;
+      for (const [x, y] of rings[0]){ sx += x; sy += y; }
+      const x = Math.floor(sx / rings[0].length);
+      const y = Math.floor(sy / rings[0].length);
+      if (x >= 0 && y >= 0 && x < size && y < size) owner[y * size + x] = bi;
+    }
+  }
+  const pixelCounts = new Uint32Array(bldUnits.length + 1);
+  for (const bi of owner) if (bi) pixelCounts[bi]++;
+  return { owner, pixelCounts, size };
+}
+
+// 道路の表示幅と競合した棟は、形と面積を変えず最大1マップセル
+// （標準では8論理px）だけ平行移動する。
+// 建物同士の衝突や画面外への欠損が起きる候補は採用しない。
+function displaceStandaloneBuildingsFromRoads(raster, roadMask, buildingKinds, maxDistance = 8){
+  const size = raster.size;
+  const pixelsByBuilding = Array.from({ length:raster.pixelCounts.length }, () => []);
+  for (let index = 0; index < raster.owner.length; index++){
+    const bi = raster.owner[index];
+    if (bi) pixelsByBuilding[bi].push(index);
+  }
+  const overlapCount = pixels => pixels.reduce((count, index) => count + (roadMask[index] ? 1 : 0), 0);
+  const initialOverlapPixels = pixelsByBuilding.reduce((count, pixels) => count + overlapCount(pixels), 0);
+  const candidates = [];
+  for (let dy = -maxDistance; dy <= maxDistance; dy++){
+    for (let dx = -maxDistance; dx <= maxDistance; dx++){
+      candidates.push({ dx, dy, distance:dx * dx + dy * dy });
+    }
+  }
+  candidates.sort((a, b) => a.distance - b.distance || Math.abs(a.dy) - Math.abs(b.dy) || a.dy - b.dy || a.dx - b.dx);
+
+  const occupancy = raster.owner.slice();
+  const offsets = Array.from({ length:raster.pixelCounts.length }, () => ({ dx:0, dy:0 }));
+  const conflicting = [];
+  for (let bi = 1; bi < pixelsByBuilding.length; bi++){
+    const pixels = pixelsByBuilding[bi];
+    const overlap = overlapCount(pixels);
+    if (overlap) conflicting.push({ bi, pixels, overlap });
+  }
+  conflicting.sort((a, b) => {
+    const aPoi = buildingKinds[a.bi] !== 'normal' ? 1 : 0;
+    const bPoi = buildingKinds[b.bi] !== 'normal' ? 1 : 0;
+    return bPoi - aPoi || b.pixels.length - a.pixels.length || a.bi - b.bi;
+  });
+
+  let movedBuildings = 0;
+  for (const item of conflicting){
+    const { bi, pixels } = item;
+    const touchesViewport = pixels.some(index => {
+      const x = index % size, y = Math.floor(index / size);
+      return x === 0 || y === 0 || x === size - 1 || y === size - 1;
+    });
+    if (touchesViewport) continue;
+    for (const index of pixels) if (occupancy[index] === bi) occupancy[index] = 0;
+    let best = { dx:0, dy:0, road:item.overlap, occupied:0, out:false };
+    for (const candidate of candidates){
+      let road = 0, occupied = 0, out = false;
+      for (const index of pixels){
+        const x = index % size + candidate.dx;
+        const y = Math.floor(index / size) + candidate.dy;
+        if (x < 0 || y < 0 || x >= size || y >= size){ out = true; break; }
+        const target = y * size + x;
+        if (roadMask[target]) road++;
+        if (occupancy[target]) occupied++;
+        if (occupied || road > best.road) break;
+      }
+      if (out || occupied) continue;
+      if (road < best.road || (road === best.road && candidate.distance < best.dx * best.dx + best.dy * best.dy))
+        best = { ...candidate, road, occupied:0, out:false };
+      if (best.road === 0 && candidate.distance > best.distance) break;
+    }
+    const useBest = best.road < item.overlap;
+    const dx = useBest ? best.dx : 0;
+    const dy = useBest ? best.dy : 0;
+    if (dx || dy){
+      offsets[bi] = { dx, dy };
+      movedBuildings++;
+    }
+    for (const index of pixels){
+      const x = index % size + dx;
+      const y = Math.floor(index / size) + dy;
+      occupancy[y * size + x] = bi;
+    }
+  }
+  raster.owner = occupancy;
+  raster.offsets = offsets;
+  let remainingOverlapPixels = 0;
+  for (let index = 0; index < occupancy.length; index++)
+    if (occupancy[index] && roadMask[index]) remainingOverlapPixels++;
+  return { initialOverlapPixels, remainingOverlapPixels, movedBuildings, maxDistance };
+}
+
+// 建物チップを置く粗いセルは、正確な意味マスクが触れた全セルから作る。
+// 同一セルに複数棟がある場合だけ、占有画素数（同数ならPOI）で代表棟を選ぶ。
+function preciseBuildingTextureGrid(raster, buildingKinds){
+  const RG = GRID + 2;
+  const votes = new Array(RG * RG);
+  for (let y = 0; y < raster.size; y++) for (let x = 0; x < raster.size; x++){
+    const bi = raster.owner[y * raster.size + x];
+    if (!bi) continue;
+    const sceneX = (x + .5) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+    const sceneY = (y + .5) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+    const gx = Math.floor((sceneX - gridShiftX) / CPX);
+    const gy = Math.floor((sceneY - gridShiftY) / CPX);
+    if (gx < 0 || gy < 0 || gx >= RG || gy >= RG) continue;
+    const index = gy * RG + gx;
+    const cellVotes = votes[index] || (votes[index] = new Map());
+    cellVotes.set(bi, (cellVotes.get(bi) || 0) + 1);
+  }
+  const grid = new Uint8Array(RG * RG);
+  const bldGrid = new Uint16Array(RG * RG);
+  for (let index = 0; index < votes.length; index++){
+    const cellVotes = votes[index];
+    if (!cellVotes) continue;
+    let selected = 0, selectedCount = -1;
+    for (const [bi, count] of cellVotes){
+      const selectedPoi = selected && buildingKinds[selected] !== 'normal';
+      const candidatePoi = buildingKinds[bi] !== 'normal';
+      if (count > selectedCount || (count === selectedCount && candidatePoi && !selectedPoi)){
+        selected = bi;
+        selectedCount = count;
+      }
+    }
+    grid[index] = ID.BLD;
+    bldGrid[index] = selected;
+  }
+  return { grid, bldGrid };
+}
+
+// 建物の南影だけが地表道路へ乗らないよう、実際の道路ストロークと同じ幅で
+// 論理pxマスクを作る。建物本体はこのマスクで削らない。
+function standaloneSurfaceRoadMask(options, transportationFeatures){
+  const mask = preciseRoadMaskContext;
+  mask.save();
+  mask.setTransform(1, 0, 0, 1, 0, 0);
+  mask.clearRect(0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE);
+  mask.fillStyle = '#fff';
+  mask.strokeStyle = '#fff';
+  mask.lineCap = 'round';
+  mask.lineJoin = 'round';
+  for (const feature of transportationFeatures){
+    const option = transportationOption(feature);
+    const style = SMOOTH_ROAD_STYLE[option];
+    if (!style || !options[option]) continue;
+    const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
+    const isTunnel = feature.props.brunnel === 'tunnel';
+    if (isBridge || isTunnel) continue;
+    const trace = close => {
+      mask.beginPath();
+      for (const line of feature.geom){
+        line.forEach((point, index) => {
+          const [sceneX, sceneY] = tp(point);
+          const x = Math.round(sceneX / SCENE_PIXELS_PER_LOGICAL_PIXEL);
+          const y = Math.round(sceneY / SCENE_PIXELS_PER_LOGICAL_PIXEL);
+          index ? mask.lineTo(x, y) : mask.moveTo(x, y);
+        });
+        if (close) mask.closePath();
+      }
+    };
+    if (feature.type === 3){
+      trace(true);
+      mask.fill('evenodd');
+      mask.lineWidth = style.casing;
+      if (mask.lineWidth > 0) mask.stroke();
+    } else if (feature.type === 2){
+      trace(false);
+      mask.lineWidth = (style.width + style.casing * 2) / SCENE_PIXELS_PER_LOGICAL_PIXEL;
+      mask.stroke();
+    }
+  }
+  mask.restore();
+  const rgba = mask.getImageData(0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE).data;
+  const road = new Uint8Array(PRESENTATION_SIZE * PRESENTATION_SIZE);
+  for (let i = 0; i < road.length; i++) road[i] = rgba[i * 4 + 3] >= 96 ? 1 : 0;
+  return road;
+}
+
+function putLogicalImageData(target, data){
+  target.putImageData(data, 0, 0);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(target.canvas, 0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE, 0, 0, SCENE_SIZE, SCENE_SIZE);
+  ctx.restore();
+}
+
+function drawStandalonePreciseBuildings(raster, buildingKinds, buildingDescs, buildingAnchors, bldStyle, roadMask){
+  const { grid, bldGrid } = preciseBuildingTextureGrid(raster, buildingKinds);
+  const size = raster.size;
+
+  // 最終輪郭から1論理pxの南影を作る。道路・他の建物には重ねない。
+  const shadow = preciseBuildingDetailContext.createImageData(size, size);
+  for (let y = 1; y < size; y++) for (let x = 0; x < size; x++){
+    const index = y * size + x;
+    if (raster.owner[index] || !raster.owner[index - size] || roadMask[index]) continue;
+    const pixel = index * 4;
+    shadow.data[pixel] = 24;
+    shadow.data[pixel + 1] = 32;
+    shadow.data[pixel + 2] = 20;
+    shadow.data[pixel + 3] = 72;
+  }
+  putLogicalImageData(preciseBuildingDetailContext, shadow);
+
+  // 既存の8×8論理px屋根・壁・施設記号を透明レイヤーへ描き、
+  // 1論理px意味マスクでだけ切り取る。
+  preciseBuildingLayerContext.save();
+  preciseBuildingLayerContext.setTransform(1, 0, 0, 1, 0, 0);
+  preciseBuildingLayerContext.globalCompositeOperation = 'source-over';
+  preciseBuildingLayerContext.clearRect(0, 0, SCENE_SIZE, SCENE_SIZE);
+  drawGrid(grid, bldGrid, bldStyle,
+    { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true, preciseBuildingLayerContext);
+  preciseBuildingLayerContext.globalCompositeOperation = 'destination-in';
+  preciseBuildingLayerContext.imageSmoothingEnabled = false;
+  const maskImage = preciseBuildingMaskContext.createImageData(size, size);
+  for (let i = 0; i < raster.owner.length; i++){
+    if (!raster.owner[i]) continue;
+    const pixel = i * 4;
+    maskImage.data[pixel] = maskImage.data[pixel + 1] = maskImage.data[pixel + 2] = 255;
+    maskImage.data[pixel + 3] = 255;
+  }
+  preciseBuildingMaskContext.putImageData(maskImage, 0, 0);
+  preciseBuildingLayerContext.drawImage(
+    preciseBuildingMaskCanvas,
+    0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE,
+    0, 0, SCENE_SIZE, SCENE_SIZE
+  );
+  preciseBuildingLayerContext.restore();
+  ctx.drawImage(preciseBuildingLayerCanvas, 0, 0);
+
+  // クリップ後の輪郭を1論理pxで描き直し、切断面ではなく意図したドット輪郭にする。
+  const detail = preciseBuildingDetailContext.createImageData(size, size);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
+    const index = y * size + x;
+    const bi = raster.owner[index];
+    if (!bi || raster.pixelCounts[bi] < 3) continue;
+    const north = y > 0 ? raster.owner[index - size] : 0;
+    const south = y + 1 < size ? raster.owner[index + size] : 0;
+    const west = x > 0 ? raster.owner[index - 1] : 0;
+    const east = x + 1 < size ? raster.owner[index + 1] : 0;
+    let color = null;
+    const pal = buildingDescs[bi]?.pal || ROOFPAL[0];
+    if (west !== bi || east !== bi) color = P.outline;
+    else if (south !== bi) color = pal[1];
+    else if (north !== bi) color = pal[2];
+    if (!color) continue;
+    const rgba = solidCellRgba(color);
+    const pixel = index * 4;
+    detail.data[pixel] = rgba[0];
+    detail.data[pixel + 1] = rgba[1];
+    detail.data[pixel + 2] = rgba[2];
+    detail.data[pixel + 3] = 255;
+  }
+  putLogicalImageData(preciseBuildingDetailContext, detail);
 }
 
 // 森林は他の地表と分離して描画し、連続面・林縁・植生の違いを専用アセットで表す。
@@ -3675,6 +3996,21 @@ function render(){
     ctx.setLineDash([]); ctx.globalAlpha = 1;
   }
 
+  // 建物マスクと道路競合は、建物・POIの双方が同じ移動量を参照できるよう
+  // 描画より先に一度だけ確定する。
+  let preciseBuildingRaster = null;
+  let preciseSurfaceRoadMask = null;
+  let preciseBuildingDisplacement = null;
+  let preciseBuildingRoadOverlapPixels = 0;
+  if (o.buildings && STANDALONE_PRECISE_BUILDINGS){
+    preciseBuildingRaster = rasterizeStandaloneBuildingPixels(bldUnits);
+    preciseSurfaceRoadMask = standaloneSurfaceRoadMask(o, L('transportation'));
+    preciseBuildingDisplacement = displaceStandaloneBuildingsFromRoads(
+      preciseBuildingRaster, preciseSurfaceRoadMask, buildingKinds
+    );
+    preciseBuildingRoadOverlapPixels = preciseBuildingDisplacement.remainingOverlapPixels;
+  }
+
   /* --- レイヤー統計 --- */
   const stats = {};
   for (const n in tileLayers) stats[n] = tileLayers[n].features.length;
@@ -3697,7 +4033,16 @@ function render(){
      パンしても選抜・表示順・アイコンと点の切り替えは一切起きない。 --- */
   const worldToScreen = (wx, wy) => [wx - TILE.x * W - viewOffset.x, wy - TILE.y * H - viewOffset.y];
   const facilitiesInView = resolvedView.facilities
-    .map(f => ({ ...f, pt:worldToScreen(f.worldX, f.worldY), visualRadius:f.collisionRadius }))
+    .map(f => {
+      const pt = worldToScreen(f.worldX, f.worldY);
+      const bi = f.buildingId ? (unitByRingKey.get(f.buildingId) || 0) : 0;
+      const offset = preciseBuildingRaster?.offsets?.[bi];
+      if (offset){
+        pt[0] += offset.dx * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+        pt[1] += offset.dy * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+      }
+      return { ...f, pt, visualRadius:f.collisionRadius };
+    })
     .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
   const drawnIcons = facilitiesInView.filter(p => p.representation === 'icon');
   const hiddenPois = facilitiesInView.filter(p => p.representation === 'dot');
@@ -4162,7 +4507,12 @@ function render(){
     renderOrder.push(`Z2:${option}`);
   }
 
-  if (o.buildings){
+  if (o.buildings && STANDALONE_PRECISE_BUILDINGS){
+    drawStandalonePreciseBuildings(
+      preciseBuildingRaster, buildingKinds, buildingDescs, buildingAnchors, bldStyle, preciseSurfaceRoadMask
+    );
+    renderOrder.push('Z3:buildings:precise-1px');
+  } else if (o.buildings){
     if (CELL_ONLY_MODE){
       drawCellPixelArtBuildingGrid(normalBuildingGrid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, 'buildings', cellRenderingStats);
       countCellFeatures('buildings');
@@ -4170,6 +4520,15 @@ function render(){
       drawGrid(normalBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
     }
     renderOrder.push('Z3:building');
+  }
+  // 平行移動で解消できなかった競合だけは道路を視覚的に優先する。
+  // 建物の意味マスク自体は完全なまま保持されるため、形や面積は失われない。
+  if (preciseBuildingRoadOverlapPixels){
+    for (const option of layerOrder){
+      if (!o[option] || !SMOOTH_ROAD_OPTIONS.has(option)) continue;
+      drawSmoothRoadLayer(option);
+    }
+    renderOrder.push('Z3:surface-roads:conflict-fallback');
   }
   for (const option of layerOrder){
     if (!o[option] || !bridgeOptions.has(option)) continue;
@@ -4186,7 +4545,7 @@ function render(){
     }
     renderOrder.push(`Z3:bridge:${option}`);
   }
-  if (o.buildings){
+  if (o.buildings && !STANDALONE_PRECISE_BUILDINGS){
     if (CELL_ONLY_MODE)
       drawCellPixelArtBuildingGrid(poiBuildingGrid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, 'poiBuildings', cellRenderingStats);
     else
@@ -4283,6 +4642,15 @@ function render(){
     buildingKindCounts:{ ...buildingKindCounts },
     buildingBandCounts:countBy(buildingDescs.filter(Boolean), d => String(d.band)),
     buildingCategoryCounts:countBy(buildingDescs.filter(Boolean).filter(d => d.glyph), d => d.glyph),
+    buildingGeometry:{
+      preciseLogicalPixelMask:STANDALONE_PRECISE_BUILDINGS,
+      logicalPixels:preciseBuildingRaster ? preciseBuildingRaster.owner.reduce((count, bi) => count + (bi ? 1 : 0), 0) : 0,
+      surfaceRoadOverlapPixels:preciseBuildingRoadOverlapPixels,
+      initialSurfaceRoadOverlapPixels:preciseBuildingDisplacement?.initialOverlapPixels || 0,
+      displacedBuildings:preciseBuildingDisplacement?.movedBuildings || 0,
+      maximumDisplacementLogicalPixels:preciseBuildingDisplacement?.maxDistance || 0,
+      shadowsExcludedFromSurfaceRoads:Boolean(preciseSurfaceRoadMask),
+    },
     pattern:{
       id:ACTIVE_PATTERN.id,
       slug:ACTIVE_PATTERN.slug,
