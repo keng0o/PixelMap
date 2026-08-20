@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+const worldStyle = await readFile(new URL('../assets/world-style.js', import.meta.url), 'utf8');
 const oneMap = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const twoMap = await readFile(new URL('../compare.html', import.meta.url), 'utf8');
 const fourMap = await readFile(new URL('../variants/height-stack-four-map.html', import.meta.url), 'utf8');
@@ -39,16 +40,22 @@ test('全アセットを論理ピクセルグリッドへそろえる', () => {
   assert.match(html, /assetLogicalPixel:1/);
 });
 
-test('単体ページも本番と同じモード・パターン・アセットを使う', () => {
-  assert.match(html, /const requestedPatternId = String\(PAGE_PARAMS\.get\('pattern'\) \|\| '07'\)\.padStart\(2, '0'\)/);
+test('standalone z14 POCはWorldStyleのRPGパターン、本番iframeは従来パターンを使う', () => {
+  assert.match(html, /const WORLD_STYLE = window\.PixelMapWorldStyles\.retroJrpgZ14/);
+  assert.match(html, /const requestedPatternId = String\(PAGE_PARAMS\.get\('pattern'\) \|\| \(EMBEDDED \? '07' : WORLD_STYLE\.patternId\)\)\.padStart\(2, '0'\)/);
+  assert.match(worldStyle, /patternId:'01'/);
+  assert.match(html, /const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE/);
+  assert.match(html, /dataset\.worldStyle = WORLD_STYLE_MODE \? WORLD_STYLE\.id : 'none'/);
   assert.match(html, /dataset\.mapMode = 'production'/);
   assert.match(html, /dataset\.assetTaste = 'reference'/);
   assert.doesNotMatch(html, /TEST_MODE|data-map-mode="test"|TEST_POP|TEST_TRANSPORT/);
 });
 
-test('単体ページだけがz12・z13・z14を選べ、各版で同じ中心地点を保つ', () => {
-  assert.match(html, /const SUPPORTED_STANDALONE_ZOOMS = new Set\(\[12, 13, 14\]\)/);
-  assert.match(html, /const TILE_ZOOM = !EMBEDDED && SUPPORTED_STANDALONE_ZOOMS\.has\(requestedTileZoom\)/);
+test('POCの地理精度評価はstandalone・本番ともz14に固定する', () => {
+  assert.match(html, /const DEFAULT_TILE_ZOOM = 14/);
+  assert.match(html, /const TILE_ZOOM = DEFAULT_TILE_ZOOM/);
+  assert.doesNotMatch(html, /SUPPORTED_STANDALONE_ZOOMS|requestedTileZoom/);
+  assert.match(html, /const DEFAULT_Z14_TILE = \{ x:14549, y:6460 \}/);
   assert.match(html, /const ZOOM_RATIO_FROM_Z14 = 2 \*\* \(DEFAULT_TILE_ZOOM - TILE_ZOOM\)/);
   assert.match(html, /x:\(DEFAULT_Z14_TILE\.x \+ \.5\) \/ ZOOM_RATIO_FROM_Z14/);
   assert.match(html, /const viewOffset = \{ \.\.\.DEFAULT_VIEW_OFFSET \}/);

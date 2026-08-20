@@ -16,20 +16,20 @@ test('差分ログは不要な説明・対象ページ一覧・画面内ルー�
 });
 
 test('差分ログは現行のtest専用機能と本番維持事項を記載する', () => {
-  assert.match(log, /\?zoom=12/);
   assert.match(log, /\?render=cell2/);
   assert.match(log, /神奈川県の生成GeoJSON/);
   assert.match(log, /geometry-skin-symbol\/1/);
-  assert.match(log, /連続距離corridorマスク生成器/);
+  assert.match(log, /retro-jrpg-z14/);
   assert.match(log, /pixelmap-corridor-renderer\/1/);
   assert.match(log, /z14固定/);
   assert.match(log, /2マップは位置同期/);
   assert.match(log, /4マップは4地点への共通レイヤー操作/);
-  assert.match(log, /area→structure→corridor→bridge→object→marker→dot／cluster/);
+  assert.match(log, /area→ground corridor→building→structure→bridge→object→marker→dot／cluster/);
   assert.match(log, /既存のRPG風S／M／L施設スプライト/);
   assert.match(log, /facility-resolver/);
   assert.match(log, /pixelmap-poi-asset\/1/);
-  assert.match(log, /mobile-asset-manifest\.json/);
+  assert.match(log, /WorldStyleでz14 POCのレトロJRPG表現を固定/);
+  assert.match(log, /ピクセルパーフェクト一致とExpo／Flutter移植は今回の対象外/);
   assert.match(log, /Asset Contractと共通描画基盤を正本化/);
   assert.match(log, /全7 iframe/);
   assert.match(log, /既存POIアセット描画を復旧/);

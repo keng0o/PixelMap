@@ -289,3 +289,41 @@ test('公開衝突判定はAsset Contractの実測矩形を使い座標を変更
   assert.equal(RESOLVER.facilitiesCollide(a,b,pattern),true);
   assert.deepEqual([a.worldX,a.worldY,b.worldY],[100,100,100]);
 });
+
+test('WorldStyle密度予算はrole・category・総数を安定順で制限する', () => {
+  const facilities = [
+    {key:'school',representation:'icon',semanticRole:'structure',category:'civic',selectionPriority:4,rank:2,props:{class:'school'},worldX:10,worldY:20},
+    {key:'station',representation:'icon',semanticRole:'marker',category:'transit',selectionPriority:1,rank:1,collisionProtected:true,props:{class:'railway'},worldX:30,worldY:40},
+    {key:'landmark',representation:'icon',semanticRole:'structure',category:'landmark',selectionPriority:2,rank:1,landmarkEntityId:'l-1',props:{class:'museum'},worldX:50,worldY:60},
+    {key:'shop',representation:'icon',semanticRole:'object',category:'commerce',selectionPriority:5,rank:3,props:{class:'shop'},worldX:70,worldY:80},
+    {key:'cafe',representation:'icon',semanticRole:'marker',category:'food',selectionPriority:6,rank:4,props:{class:'cafe'},worldX:90,worldY:100},
+    {key:'dot',representation:'dot',semanticRole:'marker',category:'generic',selectionPriority:0,rank:0,props:{class:'cafe'},worldX:110,worldY:120},
+  ];
+  const before = JSON.stringify(facilities);
+  const result = RESOLVER.selectViewportIcons(facilities, {
+    maxIcons:4,
+    roleCaps:{structure:2,object:1,marker:1},
+    categoryCaps:{transit:1,landmark:1,civic:1,commerce:1,food:1},
+  });
+  assert.deepEqual(result.selected.map(item => item.key), ['landmark','station','school','shop']);
+  assert.deepEqual(result.rejected.map(item => item.key), ['cafe']);
+  assert.deepEqual(result.roleCounts, {structure:2,object:1,marker:1});
+  assert.deepEqual(result.categoryCounts, {landmark:1,transit:1,civic:1,commerce:1});
+  assert.equal(JSON.stringify(facilities), before);
+  assert.equal(Object.isFrozen(result.selected), true);
+  assert.equal(Object.isFrozen(result.rejected), true);
+});
+
+test('WorldStyle密度予算は同category内でも選抜理由とkeyで決定的になる', () => {
+  const facilities = [
+    {key:'b',representation:'icon',semanticRole:'object',category:'commerce',selectionPriority:5,rank:2,props:{class:'shop'}},
+    {key:'c',representation:'icon',semanticRole:'object',category:'commerce',selectionPriority:2,rank:8,props:{class:'shop'}},
+    {key:'a',representation:'icon',semanticRole:'object',category:'commerce',selectionPriority:2,rank:8,props:{class:'shop'}},
+  ];
+  const policy = {maxIcons:10,roleCaps:{object:10},categoryCaps:{commerce:1}};
+  const first = RESOLVER.selectViewportIcons(facilities, policy);
+  const second = RESOLVER.selectViewportIcons([...facilities].reverse(), policy);
+  assert.deepEqual(first.selected.map(item => item.key), ['a']);
+  assert.deepEqual(second.selected.map(item => item.key), ['a']);
+  assert.deepEqual(first.rejected.map(item => item.key), ['c','b']);
+});

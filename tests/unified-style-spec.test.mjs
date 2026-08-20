@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
 const corridorRenderer = await readFile(new URL('../assets/corridor-renderer.js', import.meta.url), 'utf8');
 const layerAssets = await readFile(new URL('../assets/layer-assets.js', import.meta.url), 'utf8');
+const worldStyle = await readFile(new URL('../assets/world-style.js', import.meta.url), 'utf8');
 const specStart = html.indexOf('const STANDALONE_STYLE_SPEC = Object.freeze({');
 const specEnd = html.indexOf('\nfunction T(draw)', specStart);
 const spec = html.slice(specStart, specEnd);
@@ -35,9 +36,11 @@ test('道路・鉄道・水路は同じ1論理px corridorマスク生成器を�
   assert.match(html, /const masks=CORRIDOR_RENDERER\.render\(/);
   assert.match(layerAssets, /corridorRenderer\.render\(overlay\.getContext\('2d'\)/);
   assert.match(html, /const CANONICAL_CORRIDOR_RULES = LAYER_ASSET_CATALOG\.corridorRules/);
-  assert.match(spec, /rivers:CANONICAL_CORRIDOR_RULES\.rivers/);
-  assert.match(spec, /localRoads:CANONICAL_CORRIDOR_RULES\.localRoads/);
-  assert.match(spec, /rail:CANONICAL_CORRIDOR_RULES\.rail/);
+  assert.match(html, /const WORLD_CORRIDOR_RULES = Object\.freeze/);
+  assert.match(html, /WORLD_STYLE_MODE \? WORLD_STYLE\.corridor\[id\] \|\| \{\} : \{\}/);
+  assert.match(spec, /rivers:WORLD_CORRIDOR_RULES\.rivers/);
+  assert.match(spec, /localRoads:WORLD_CORRIDOR_RULES\.localRoads/);
+  assert.match(spec, /rail:WORLD_CORRIDOR_RULES\.rail/);
   assert.match(corridorRenderer, /dx\*dx\+dy\*dy<=amount\*amount/);
   assert.match(corridorRenderer, /const centerPhase=new Uint32Array/);
   assert.match(html, /drawUnifiedCorridorLayer\(option, true\)/);
@@ -60,7 +63,7 @@ test('POIは既存RPGアセットのS・M・Lと実測boundsを使う', () => {
   assert.match(spec, /anchorSource:'poi-asset-metadata'/);
   assert.match(spec, /boundsSource:'poi-asset-measurement'/);
   assert.match(spec, /sizeTiers:Object\.freeze\(\['S','M','L'\]\)/);
-  assert.match(html, /drawSprite\(spriteFor\(p\.props, p\.assetSize \|\| p\.size, p\.variant, p\.spriteKey\), p\.pt\[0\], p\.pt\[1\], p\)/);
+  assert.match(html, /drawSprite\(spriteFor\(p\.props, p\.displayAssetSize \|\| p\.assetSize \|\| p\.size, p\.variant, p\.spriteKey\), p\.pt\[0\], p\.pt\[1\], p\)/);
   assert.match(html, /drawPatternMarker\(p, cx, cy, visualScale\)/);
   assert.match(html, /drawAuxiliaryAssets\(p, cx, cy\)/);
   assert.match(html, /assetCatalog:STANDALONE_UNIFIED_STYLE \? POI_SPRITE_CATALOG : null/);
@@ -74,19 +77,22 @@ test('POIは既存RPGアセットのS・M・Lと実測boundsを使う', () => {
   assert.doesNotMatch(html, /function drawUnifiedPoiSymbol\(item\)/);
 });
 
-test('POI表示採用はfacility-resolverだけが決め、map側で再選抜しない', () => {
-  assert.match(spec, /selectionAuthority:'facility-resolver'/);
-  assert.match(html, /const drawnIcons = facilitiesInView\.filter\(p => p\.representation === 'icon'\)/);
-  assert.match(html, /drawDots\(\);[\s\S]*drawClusters\(\);/);
-  assert.match(html, /symbolSelectionOverride:false/);
+test('POIの地理判定と画面密度予算をresolverへ集約し、source座標は変えない', () => {
+  assert.match(spec, /selectionAuthority:'facility-resolver-world-style'/);
+  assert.match(html, /RESOLVER\.selectViewportIcons\(facilitiesInView, WORLD_STYLE\.density\)/);
+  assert.match(html, /WORLD_STYLE\.symbol\.minimumAssetSizeByRole\[item\.semanticRole\]/);
+  assert.match(html, /displayAssetSize:worldStyleDisplayAssetSize\(item\)/);
+  assert.match(html, /const drawnIcons = viewportIconSelection\.selected\.map/);
+  assert.match(html, /\.\.\.viewportIconSelection\.rejected/);
+  assert.match(html, /symbolSelectionOverride:WORLD_STYLE_MODE \? 'resolver-world-style-density-budget' : false/);
   assert.doesNotMatch(html, /function selectUnifiedPoiSymbols\(items\)/);
   assert.doesNotMatch(html, /unifiedSymbolKeys/);
 });
 
-test('固定compositorは衝突判定に依存せず全areaの後へ全corridorを描く', () => {
+test('固定compositorは地表corridorを建物の下、橋を建物の上へ置く', () => {
   assert.match(html, /if \(STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC\.corridor\[option\]\) continue/);
-  assert.match(html, /if \(STANDALONE_UNIFIED_STYLE\)\{[\s\S]*drawUnifiedCorridorLayer\(option\);[\s\S]*`Z3:corridor:\$\{option\}`/);
-  assert.match(html, /\? \['area','structure','corridor','bridge','object','marker','dot-cluster'\]/);
+  assert.match(html, /if \(STANDALONE_UNIFIED_STYLE\)\{[\s\S]*drawUnifiedCorridorLayer\(option\);[\s\S]*`Z2:ground-corridor:\$\{option\}`/);
+  assert.match(worldStyle, /'area','ground-corridor','building','structure','bridge','object','marker','dot-cluster'/);
   assert.match(html, /corridorRenderer:STANDALONE_UNIFIED_STYLE \? 'continuous-distance-mask'/);
   assert.match(html, /corridorPhase:STANDALONE_UNIFIED_STYLE \? 'source-line-distance'/);
   assert.doesNotMatch(html, /function displaceStandaloneBuildingsFromRoads/);
@@ -95,8 +101,21 @@ test('固定compositorは衝突判定に依存せず全areaの後へ全corridor�
 test('POI Asset Contractのroleが固定semantic z-orderを決め、座標移動では解決しない', () => {
   assert.match(html, /function drawPoiStructures\(\)/);
   assert.match(html, /function drawPoiOverlays\(\)/);
-  assert.match(html, /drawPoiIcons\(\['object'\]\);[\s\S]*drawPoiIcons\(\['marker'\]\);[\s\S]*drawDots\(\);[\s\S]*drawClusters\(\);/);
-  assert.match(html, /drawPoiStructures\(\);[\s\S]*Z2:symbol:structure[\s\S]*drawUnifiedCorridorLayer\(option\)/);
+  const overlayStart = html.indexOf('function drawPoiOverlays(){');
+  const overlayEnd = html.indexOf('function drawCellPoi(){', overlayStart);
+  const overlays = html.slice(overlayStart, overlayEnd);
+  assert.match(overlays, /drawPoiIcons\(\['object'\]\);[\s\S]*drawPoiIcons\(\['marker'\]\);/);
+  assert.doesNotMatch(overlays, /drawDots|drawClusters/);
+  assert.match(html, /dots:\(\) => \{[\s\S]*drawDots\(hiddenPois\);[\s\S]*drawClusters\(\);/);
+  assert.match(html, /drawUnifiedCorridorLayer\(option\);[\s\S]*Z2:ground-corridor:[\s\S]*drawStandalonePreciseBuildings\([\s\S]*drawPoiStructures\(\)/);
   assert.match(html, /poi:STANDALONE_UNIFIED_STYLE \? drawPoiOverlays : drawPoi/);
   assert.doesNotMatch(html, /displace.*Poi|shift.*Poi|move.*Poi/i);
+});
+
+test('WorldStyleの見た目変更はstandalone game profileだけに閉じる', () => {
+  assert.match(html, /const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE/);
+  assert.match(html, /outline:WORLD_STYLE_MODE \? WORLD_STYLE\.palette\.outline : '#302838'/);
+  assert.match(html, /!WORLD_STYLE_MODE \|\| WORLD_STYLE\.symbol\.decorateStructures/);
+  assert.match(html, /!WORLD_STYLE_MODE \|\| WORLD_STYLE\.symbol\.auxiliaryStructures/);
+  assert.match(html, /const STUDY_MODE = EMBEDDED[\s\S]*PAGE_PARAMS\.get\('layers'\) !== 'manual'[\s\S]*PAGE_PARAMS\.get\('layers'\) === 'study'/);
 });

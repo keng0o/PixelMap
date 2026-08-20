@@ -557,12 +557,13 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
-<script src="../assets/facility-resolver.js?v=3"></script>
+<script src="../assets/facility-resolver.js?v=4"></script>
 <script src="../assets/landmark-entities.js"></script>
 <script src="../assets/poi-sprites.js?v=3"></script>
 <script src="../assets/building-styles.js"></script>
 <script src="../assets/corridor-renderer.js?v=1"></script>
 <script src="../assets/layer-assets.js?v=3"></script>
+<script src="../assets/world-style.js?v=1"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -680,6 +681,7 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+const WORLD_STYLE = window.PixelMapWorldStyles.retroJrpgZ14;
 // ランドマーク補助データは単体検証ページだけで利用する。
 // map-02をiframeで共有する1・2・4マップの表示は変更しない。
 const STANDALONE_LANDMARK_MODE = !EMBEDDED;
@@ -687,13 +689,9 @@ const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojso
 const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820-2';
 let landmarkFeatureCollection = null;
 let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
+// 今回のPOCは地理精度と世界観を同一縮尺で評価するためz14へ固定する。
 const DEFAULT_TILE_ZOOM = 14;
-const SUPPORTED_STANDALONE_ZOOMS = new Set([12, 13, 14]);
-const requestedTileZoom = Number(PAGE_PARAMS.get('zoom'));
-// 縮尺違いは単体テストページだけで有効にし、既存の1・2・4マップはz14を維持する。
-const TILE_ZOOM = !EMBEDDED && SUPPORTED_STANDALONE_ZOOMS.has(requestedTileZoom)
-  ? requestedTileZoom
-  : DEFAULT_TILE_ZOOM;
+const TILE_ZOOM = DEFAULT_TILE_ZOOM;
 const CELL_ONLY_MODE = !EMBEDDED && PAGE_PARAMS.get('render') === 'cell2';
 const RENDER_MODE = CELL_ONLY_MODE ? 'cell2' : 'standard';
 // standalone標準表示では、地物を移動させず「不変の地理形状＋共通スキン＋
@@ -703,7 +701,7 @@ const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
 const ICON_PATTERNS = Array.isArray(window.PixelMapIconPatterns) ? window.PixelMapIconPatterns : [];
-const requestedPatternId = String(PAGE_PARAMS.get('pattern') || '07').padStart(2, '0');
+const requestedPatternId = String(PAGE_PARAMS.get('pattern') || (EMBEDDED ? '07' : WORLD_STYLE.patternId)).padStart(2, '0');
 // 表示倍率は1に固定する。論理ピクセル密度やシーン解像度とは別の値。
 // 旧 ?pixel=2 を含むpixel指定も表示倍率へ影響させない。
 const REQUESTED_DISPLAY_SCALE = 1;
@@ -715,7 +713,12 @@ const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPat
   assetArea:[], assetHeight:[], maxAssets:1, priority:['generic'], palette:{ generic:'#78828a' }, categoryScale:{},
 };
 const CAPTURE_MODE = PAGE_PARAMS.get('capture') === '1';
-const STUDY_MODE = PAGE_PARAMS.get('layers') !== 'manual';
+// standaloneの既定は世界観を評価するgame profile。全レイヤー比較は明示的な
+// ?layers=studyだけで有効にし、embeddedの従来既定は変更しない。
+const STUDY_MODE = EMBEDDED
+  ? PAGE_PARAMS.get('layers') !== 'manual'
+  : PAGE_PARAMS.get('layers') === 'study';
+const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE;
 const INITIAL_LAT_PARAM = PAGE_PARAMS.get('lat');
 const INITIAL_LON_PARAM = PAGE_PARAMS.get('lon');
 const HAS_INITIAL_COORDINATES = Boolean(INITIAL_LAT_PARAM?.trim() && INITIAL_LON_PARAM?.trim());
@@ -742,6 +745,7 @@ document.documentElement.dataset.renderMode = RENDER_MODE;
 document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
   ? 'geometry-skin-symbol-v1'
   : 'legacy';
+document.documentElement.dataset.worldStyle = WORLD_STYLE_MODE ? WORLD_STYLE.id : 'none';
 document.documentElement.dataset.tileZoom = String(TILE_ZOOM);
 document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
@@ -856,7 +860,7 @@ const MAP_CELL_LOGICAL_SIZE = CPX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
 // 単体標準ページでは、建物の意味輪郭だけを出力と同じ1論理pxで確定する。
 // cell2は2論理px原子セル、embeddedは既存ページの外観を維持する。
 const STANDALONE_PRECISE_BUILDINGS = !EMBEDDED && !CELL_ONLY_MODE;
-// 現行z14版の中心を基準に、z12・z13でも同じ地点を画面中央に置く。
+// z14 POCの基準地点をタイル内オフセットごと固定する。
 const DEFAULT_Z14_TILE = { x:14549, y:6460 };
 const ZOOM_RATIO_FROM_Z14 = 2 ** (DEFAULT_TILE_ZOOM - TILE_ZOOM);
 const DEFAULT_TILE_POINT = {
@@ -896,19 +900,25 @@ const CANONICAL_CORRIDOR_RULES = LAYER_ASSET_CATALOG.corridorRules;
    3. 標準描画用16シーンpx（8論理px）マップチップ（GB風パレット）
    ===================================================== */
 const P = {
-  outline:'#302838',
-  g1:'#7cbc54', g2:'#7cbc54', gDk:'#619c42', gLt:'#98d470',
+  outline:WORLD_STYLE_MODE ? WORLD_STYLE.palette.outline : '#302838',
+  g1:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grass : '#7cbc54',
+  g2:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grass : '#7cbc54',
+  gDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grassDark : '#619c42',
+  gLt:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grassLight : '#98d470',
   treeDk:'#2c6030', treeMd:'#3e8840', treeLt:'#5cb050', trunk:'#785030',
   forestFloor:'#355d38', forestDeep:'#1f4628', forestMid:'#2f7038',
   forestLight:'#57954a', forestMoss:'#83a657',
   woodsFloor:'#80b564', woodsDeep:'#477a46', woodsMid:'#62a052', woodsLight:'#a0cf7a',
   parkSmall:'#92ce69', parkMedium:'#88c764', parkLarge:'#7fbb61', parkPath:'#d8bd78',
-  road:CANONICAL_TRANSPORT_RULES.localRoads.fill,
-  roadDk:CANONICAL_TRANSPORT_RULES.localRoads.edge, roadDot:'#b4b4ae',
+  road:WORLD_STYLE_MODE ? WORLD_STYLE.palette.roadLocal : CANONICAL_TRANSPORT_RULES.localRoads.fill,
+  roadDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.roadEdge : CANONICAL_TRANSPORT_RULES.localRoads.edge,
+  roadDot:WORLD_STYLE_MODE ? '#b9a878' : '#b4b4ae',
   trail:CANONICAL_TRANSPORT_RULES.paths.fill,
   trailDot:CANONICAL_TRANSPORT_RULES.paths.detail,
-  dirt:'#d0b078', dirtDk:'#b09058',
-  pave:'#c0c0c8', paveDk:'#989ca8',
+  dirt:WORLD_STYLE_MODE ? WORLD_STYLE.palette.residential : '#d0b078',
+  dirtDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.residentialDark : '#b09058',
+  pave:WORLD_STYLE_MODE ? WORLD_STYLE.palette.commercial : '#c0c0c8',
+  paveDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.commercialDark : '#989ca8',
   gravel:'#a8a098', gravelDk:'#888078', gravelLt:'#c0b8b0',
   farm:'#d8c078', farmDk:'#b09850',
   sand:'#e8d8a0', sandDk:'#c8b478',
@@ -916,13 +926,24 @@ const P = {
   wetland:'#669c68', wetlandDk:'#39775c', wetlandWater:'#5fa7b2',
   ice:'#dcecf0', iceDk:'#a8cad8', iceLt:'#f7ffff',
   field:'#68b058', fieldAlt:'#5ca050',
-  water:'#4890e0', waterLt:'#88c0f0', waterDk:'#3068b8', foam:'#c8e8f8',
+  water:WORLD_STYLE_MODE ? WORLD_STYLE.palette.water : '#4890e0',
+  waterLt:WORLD_STYLE_MODE ? '#8bc1e5' : '#88c0f0',
+  waterDk:WORLD_STYLE_MODE ? '#326aa5' : '#3068b8',
+  foam:WORLD_STYLE_MODE ? WORLD_STYLE.palette.waterEdge : '#c8e8f8',
   roofA:'#e05038', roofADk:'#b03828', roofALt:'#f87858', roofAEdge:'#781810',
   roofB:'#5078d8', roofBDk:'#3858b0', roofBLt:'#88a0f0', roofBEdge:'#203070',
   wall:'#f0e4c8', wallDk:'#c8b490', win:'#3868a0', door:'#805028',
-  rail:CANONICAL_TRANSPORT_RULES.rail.fill,
-  tie:CANONICAL_TRANSPORT_RULES.rail.tie,
+  rail:WORLD_STYLE_MODE ? WORLD_STYLE.palette.rail : CANONICAL_TRANSPORT_RULES.rail.fill,
+  tie:WORLD_STYLE_MODE ? WORLD_STYLE.palette.railTie : CANONICAL_TRANSPORT_RULES.rail.tie,
 };
+
+// 共通corridor rendererは維持し、z14 POCの世界観差はskin overrideだけで表す。
+const WORLD_CORRIDOR_RULES = Object.freeze(Object.fromEntries(
+  Object.entries(CANONICAL_CORRIDOR_RULES).map(([id, rule]) => [id, Object.freeze({
+    ...rule,
+    ...(WORLD_STYLE_MODE ? WORLD_STYLE.corridor[id] || {} : {}),
+  })]),
+));
 
 /* =====================================================
    standalone test用 Style Spec v1
@@ -946,30 +967,30 @@ const STANDALONE_STYLE_SPEC = Object.freeze({
     anchorSource:'poi-asset-metadata',
     boundsSource:'poi-asset-measurement',
     sizeTiers:Object.freeze(['S','M','L']),
-    selectionAuthority:'facility-resolver',
+    selectionAuthority:'facility-resolver-world-style',
   }),
   corridor:Object.freeze({
-    rivers:CANONICAL_CORRIDOR_RULES.rivers,
-    streams:CANONICAL_CORRIDOR_RULES.streams,
-    canals:CANONICAL_CORRIDOR_RULES.canals,
-    drains:CANONICAL_CORRIDOR_RULES.drains,
-    waterwayOther:CANONICAL_CORRIDOR_RULES.waterwayOther,
-    localRoads:CANONICAL_CORRIDOR_RULES.localRoads,
-    regionalRoads:CANONICAL_CORRIDOR_RULES.regionalRoads,
-    majorRoads:CANONICAL_CORRIDOR_RULES.majorRoads,
-    motorways:CANONICAL_CORRIDOR_RULES.motorways,
-    paths:CANONICAL_CORRIDOR_RULES.paths,
-    tracks:CANONICAL_CORRIDOR_RULES.tracks,
-    raceways:CANONICAL_CORRIDOR_RULES.raceways,
-    ferries:CANONICAL_CORRIDOR_RULES.ferries,
-    piers:CANONICAL_CORRIDOR_RULES.piers,
-    rail:CANONICAL_CORRIDOR_RULES.rail,
-    subway:CANONICAL_CORRIDOR_RULES.subway,
-    aerialways:CANONICAL_CORRIDOR_RULES.aerialways,
-    transportationOther:CANONICAL_CORRIDOR_RULES.transportationOther,
-    roadTunnels:CANONICAL_CORRIDOR_RULES.roadTunnels,
-    pathTunnels:CANONICAL_CORRIDOR_RULES.pathTunnels,
-    railTunnels:CANONICAL_CORRIDOR_RULES.railTunnels,
+    rivers:WORLD_CORRIDOR_RULES.rivers,
+    streams:WORLD_CORRIDOR_RULES.streams,
+    canals:WORLD_CORRIDOR_RULES.canals,
+    drains:WORLD_CORRIDOR_RULES.drains,
+    waterwayOther:WORLD_CORRIDOR_RULES.waterwayOther,
+    localRoads:WORLD_CORRIDOR_RULES.localRoads,
+    regionalRoads:WORLD_CORRIDOR_RULES.regionalRoads,
+    majorRoads:WORLD_CORRIDOR_RULES.majorRoads,
+    motorways:WORLD_CORRIDOR_RULES.motorways,
+    paths:WORLD_CORRIDOR_RULES.paths,
+    tracks:WORLD_CORRIDOR_RULES.tracks,
+    raceways:WORLD_CORRIDOR_RULES.raceways,
+    ferries:WORLD_CORRIDOR_RULES.ferries,
+    piers:WORLD_CORRIDOR_RULES.piers,
+    rail:WORLD_CORRIDOR_RULES.rail,
+    subway:WORLD_CORRIDOR_RULES.subway,
+    aerialways:WORLD_CORRIDOR_RULES.aerialways,
+    transportationOther:WORLD_CORRIDOR_RULES.transportationOther,
+    roadTunnels:WORLD_CORRIDOR_RULES.roadTunnels,
+    pathTunnels:WORLD_CORRIDOR_RULES.pathTunnels,
+    railTunnels:WORLD_CORRIDOR_RULES.railTunnels,
   }),
 });
 
@@ -2627,14 +2648,39 @@ function auditStandaloneBuildingCorridorOverlap(raster, corridorMask){
   return Object.freeze({ overlapPixels, buildings:buildingIds.size });
 }
 
-// 建物チップを置く粗いセルは、正確な意味マスクが触れた全セルから作る。
+// z14では全棟のsource形状を保持しつつ、通常小規模棟だけを安定したLODへ分ける。
+// 大型・中高層・POI棟は常に詳細、住宅はringKey由来seedの共通比率で詳細化する。
+// ビューポート座標や道路との衝突を入力にしないため、パンや場所別例外で変化しない。
+function selectWorldStyleBuildingLod(raster, buildingKinds, buildingDescs, foregroundBuildingIds = new Set()){
+  const detailed = new Uint8Array(raster.pixelCounts.length);
+  let detailedBuildings = 0, quietBuildings = 0, omittedMicroBuildings = 0;
+  for (let bi = 1; bi < raster.pixelCounts.length; bi++){
+    if (!raster.pixelCounts[bi]) continue;
+    const desc = buildingDescs[bi];
+    const alwaysDetailed = foregroundBuildingIds.has(bi) || desc?.areaClass !== 'S' ||
+      (Number(desc?.band || 0) >= 3 && raster.pixelCounts[bi] >= WORLD_STYLE.building.minimumTallDetailedArea);
+    const sampled = raster.pixelCounts[bi] >= WORLD_STYLE.building.sampledMinimumArea &&
+      positiveModulo(Number(desc?.lodSeed || bi), WORLD_STYLE.building.detailedSmallModulo) === 0;
+    if (!WORLD_STYLE_MODE || alwaysDetailed || sampled){
+      detailed[bi] = 1;
+      detailedBuildings++;
+    } else if (raster.pixelCounts[bi] >= WORLD_STYLE.building.quietMinimumArea){
+      quietBuildings++;
+    } else {
+      omittedMicroBuildings++;
+    }
+  }
+  return Object.freeze({ detailed, detailedBuildings, quietBuildings, omittedMicroBuildings });
+}
+
+// 建物チップを置く粗いセルは、正確な意味マスクが触れた詳細棟のセルから作る。
 // 同一セルに複数棟がある場合だけ、占有画素数（同数ならPOI）で代表棟を選ぶ。
-function preciseBuildingTextureGrid(raster, buildingKinds){
+function preciseBuildingTextureGrid(raster, buildingKinds, detailedBuildings = null){
   const RG = GRID + 2;
   const votes = new Array(RG * RG);
   for (let y = 0; y < raster.size; y++) for (let x = 0; x < raster.size; x++){
     const bi = raster.owner[y * raster.size + x];
-    if (!bi) continue;
+    if (!bi || (detailedBuildings && !detailedBuildings[bi])) continue;
     const sceneX = (x + .5) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
     const sceneY = (y + .5) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
     const gx = Math.floor((sceneX - gridShiftX) / CPX);
@@ -2720,17 +2766,48 @@ function putLogicalImageData(target, data){
   ctx.restore();
 }
 
-function drawStandalonePreciseBuildings(raster, buildingKinds, buildingDescs, buildingAnchors, bldStyle, roadMask){
-  const { grid, bldGrid } = preciseBuildingTextureGrid(raster, buildingKinds);
+function drawStandalonePreciseBuildings(
+  raster, buildingKinds, buildingDescs, buildingAnchors, bldStyle, roadMask,
+  foregroundBuildingIds = new Set()
+){
+  const lod = selectWorldStyleBuildingLod(
+    raster, buildingKinds, buildingDescs, foregroundBuildingIds
+  );
+  const { grid, bldGrid } = preciseBuildingTextureGrid(raster, buildingKinds, lod.detailed);
   const size = raster.size;
 
+  // quiet棟も正確なfootprintのまま残すが、黒い輪郭・屋根ディテールを付けず
+  // landuse上の低コントラストareaとして扱う。1px未満相当の微小棟はLODで省略する。
+  if (WORLD_STYLE_MODE){
+    const quiet = preciseBuildingDetailContext.createImageData(size, size);
+    const fillCache = new Map();
+    for (let index = 0; index < raster.owner.length; index++){
+      const bi = raster.owner[index];
+      if (!bi || lod.detailed[bi] || raster.pixelCounts[bi] < WORLD_STYLE.building.quietMinimumArea) continue;
+      const seed = Number(buildingDescs[bi]?.lodSeed || bi);
+      const fillIndex = positiveModulo(seed, WORLD_STYLE.building.quietFills.length);
+      let rgba = fillCache.get(fillIndex);
+      if (!rgba){
+        rgba = solidCellRgba(WORLD_STYLE.building.quietFills[fillIndex]);
+        fillCache.set(fillIndex, rgba);
+      }
+      const pixel = index * 4;
+      quiet.data[pixel] = rgba[0];
+      quiet.data[pixel + 1] = rgba[1];
+      quiet.data[pixel + 2] = rgba[2];
+      quiet.data[pixel + 3] = 255;
+    }
+    putLogicalImageData(preciseBuildingDetailContext, quiet);
+  }
+
   // 最終輪郭から1論理pxの南影を作る。他の建物には重ねない。
-  // roadMaskはlegacy互換時だけ渡され、統一compositorでは後段のcorridorが
-  // 影を覆うため、ここで重なり別の切り欠きを作らない。
+  // roadMaskは地表corridor上へ建物の南影だけが落ちないように使う。
+  // 建物本体やsource geometryは削らず、全域で同じ遮蔽規則を適用する。
   const shadow = preciseBuildingDetailContext.createImageData(size, size);
   for (let y = 1; y < size; y++) for (let x = 0; x < size; x++){
     const index = y * size + x;
-    if (raster.owner[index] || !raster.owner[index - size] || roadMask?.[index]) continue;
+    const northBuilding = raster.owner[index - size];
+    if (raster.owner[index] || !northBuilding || !lod.detailed[northBuilding] || roadMask?.[index]) continue;
     const pixel = index * 4;
     shadow.data[pixel] = 24;
     shadow.data[pixel + 1] = 32;
@@ -2751,7 +2828,7 @@ function drawStandalonePreciseBuildings(raster, buildingKinds, buildingDescs, bu
   preciseBuildingLayerContext.imageSmoothingEnabled = false;
   const maskImage = preciseBuildingMaskContext.createImageData(size, size);
   for (let i = 0; i < raster.owner.length; i++){
-    if (!raster.owner[i]) continue;
+    if (!raster.owner[i] || !lod.detailed[raster.owner[i]]) continue;
     const pixel = i * 4;
     maskImage.data[pixel] = maskImage.data[pixel + 1] = maskImage.data[pixel + 2] = 255;
     maskImage.data[pixel + 3] = 255;
@@ -2770,7 +2847,7 @@ function drawStandalonePreciseBuildings(raster, buildingKinds, buildingDescs, bu
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
     const index = y * size + x;
     const bi = raster.owner[index];
-    if (!bi || raster.pixelCounts[bi] < 3) continue;
+    if (!bi || !lod.detailed[bi] || raster.pixelCounts[bi] < 3) continue;
     const north = y > 0 ? raster.owner[index - size] : 0;
     const south = y + 1 < size ? raster.owner[index + size] : 0;
     const west = x > 0 ? raster.owner[index - 1] : 0;
@@ -2789,6 +2866,7 @@ function drawStandalonePreciseBuildings(raster, buildingKinds, buildingDescs, bu
     detail.data[pixel + 3] = 255;
   }
   putLogicalImageData(preciseBuildingDetailContext, detail);
+  return lod;
 }
 
 // 森林は他の地表と分離して描画し、連続面・林縁・植生の違いを専用アセットで表す。
@@ -2930,6 +3008,8 @@ const { CLASS2SPRITE, isStationProps, tierValue } = RESOLVER;
 const POI_SPRITE_CATALOG = window.PixelMapPoiSprites;
 const POI_ASSETS_BY_ID = new Map(POI_SPRITE_CATALOG.assets.map(asset => [asset.id,asset]));
 function categoryTone(category){
+  if (WORLD_STYLE_MODE)
+    return WORLD_STYLE.poiPalette[category] || WORLD_STYLE.poiPalette.generic;
   return ACTIVE_PATTERN.palette[category] || ACTIVE_PATTERN.palette.generic || '#78828a';
 }
 function spriteFor(props, size = 'M', variant = 0, spriteKey = null){
@@ -2970,7 +3050,7 @@ const CELL_SPRITE_TEMPLATE_CACHE = new Map();
 function cellSpriteTemplateFor(item){
   const spriteKey = CLASS2SPRITE[item.props.subclass] || CLASS2SPRITE[item.props.class] || 'generic';
   const stationVariant = isStationProps(item.props) ? featureName(item.props) : '';
-  const assetSize=item.assetSize || item.size;
+  const assetSize=item.displayAssetSize || item.assetSize || item.size;
   const cacheKey = `cell-sprite:${spriteKey}:${assetSize}:${item.variant}:${stationVariant}`;
   if (CELL_SPRITE_TEMPLATE_CACHE.has(cacheKey)) return CELL_SPRITE_TEMPLATE_CACHE.get(cacheKey);
   const canvas = document.createElement('canvas');
@@ -3137,7 +3217,9 @@ function drawSprite(sp, cx, cy, p){
     bounds.width * spritePixelScale / 2,
     bounds.height * spritePixelScale,
   ) + Math.max(0, p.assetCount - 1) * 8;
-  drawPatternMarker(p, cx, cy, visualScale);
+  const semanticRole = p.semanticRole || sp.contract.semanticRole;
+  if (!WORLD_STYLE_MODE || WORLD_STYLE.symbol.decorateStructures || semanticRole !== 'structure')
+    drawPatternMarker(p, cx, cy, visualScale);
   ctx.save();
   ctx.translate(
     Math.round(cx - sp.contract.anchor.x * spritePixelScale),
@@ -3150,7 +3232,8 @@ function drawSprite(sp, cx, cy, p){
   ctx.fillRect(-7, -1, 14, 3);
   sp.draw(0, 0);
   ctx.restore();
-  drawAuxiliaryAssets(p, cx, cy);
+  if (!WORLD_STYLE_MODE || WORLD_STYLE.symbol.auxiliaryStructures || semanticRole !== 'structure')
+    drawAuxiliaryAssets(p, cx, cy);
 }
 /* 文字もドット絵に: 半分のサイズで描いて2倍に最近傍拡大する */
 function makePixelText(text, size, color, outline){
@@ -3258,6 +3341,9 @@ const STUDY_LAYER_OPTIONS = new Set([
 ]);
 if (STUDY_MODE){
   for (const input of layerInputs) input.checked = STUDY_LAYER_OPTIONS.has(optionForInput(input));
+} else if (WORLD_STYLE_MODE){
+  const defaults = new Set(WORLD_STYLE.defaultLayers);
+  for (const input of layerInputs) input.checked = defaults.has(optionForInput(input));
 }
 let layerOrder = layerInputs.filter(input => input.checked).map(optionForInput);
 const opts = () => Object.fromEntries(layerInputs.map(input => [optionForInput(input), input.checked]));
@@ -3588,13 +3674,17 @@ function render(){
       const facility = facilityByUnit[bi];
       const kind = facility && facility.metrics.kind !== 'none' ? facility.metrics.kind : 'normal';
       buildingKinds[bi] = kind;
-      buildingDescs[bi] = BUILDING_STYLES.buildingAppearance({
+      const lodSeed = BUILDING_STYLES.seedFromKey(unit.ringKey);
+      buildingDescs[bi] = {
+        ...BUILDING_STYLES.buildingAppearance({
         heightM:Number(unit.props.render_height || 0),
         areaCells:unit.geomAreaCells,
         kind,
         category:facility ? facility.category : null,
-        seed:BUILDING_STYLES.seedFromKey(unit.ringKey),
-      });
+        seed:lodSeed,
+        }),
+        lodSeed,
+      };
       if (facility){
         // 屋上マークと入口は施設のワールド座標にアンカーする（パンで動かない）
         let [ax, ay] = worldToGridCell(facility.worldX, facility.worldY);
@@ -3810,6 +3900,7 @@ function render(){
   let preciseSurfaceRoadMask = null;
   let preciseBuildingOverlapAudit = null;
   let preciseBuildingRoadOverlapPixels = 0;
+  let preciseBuildingLodStats = null;
   if (o.buildings && STANDALONE_PRECISE_BUILDINGS){
     preciseBuildingRaster = rasterizeStandaloneBuildingPixels(bldUnits);
     preciseSurfaceRoadMask = STANDALONE_UNIFIED_STYLE
@@ -3848,10 +3939,30 @@ function render(){
       return { ...f, pt, visualRadius:f.collisionRadius };
     })
     .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
-  // icon / dot / clusterの採用はfacility-resolverの結果をそのまま使う。
-  // マップ描画側で再選抜するとカタログ・Web・将来のmobileで結果が分岐する。
-  const drawnIcons = facilitiesInView.filter(p => p.representation === 'icon');
-  const hiddenPois = facilitiesInView.filter(p => p.representation === 'dot');
+  // タイル単位のicon判定は保持し、画面全体の密度予算もresolverの純粋関数で確定する。
+  // source座標・衝突結果は変更せず、WorldStyleが描画対象数だけを制限する。
+  const viewportIconSelection = WORLD_STYLE_MODE
+    ? RESOLVER.selectViewportIcons(facilitiesInView, WORLD_STYLE.density)
+    : {
+        selected:facilitiesInView.filter(p => p.representation === 'icon'),
+        rejected:[],roleCounts:{},categoryCounts:{},maxIcons:Infinity,
+      };
+  const worldStyleDisplayAssetSize = item => {
+    const sourceSize = item.assetSize || item.size || 'S';
+    const minimum = WORLD_STYLE.symbol.minimumAssetSizeByRole[item.semanticRole] || 'S';
+    return WORLD_STYLE_MODE && tierValue(sourceSize) < tierValue(minimum) ? minimum : sourceSize;
+  };
+  const drawnIcons = viewportIconSelection.selected.map(item => ({
+    ...item,
+    displayAssetSize:worldStyleDisplayAssetSize(item),
+  }));
+  const foregroundBuildingIds = new Set(drawnIcons
+    .map(item => item.buildingId ? unitByRingKey.get(item.buildingId) : 0)
+    .filter(Boolean));
+  const hiddenPois = [
+    ...facilitiesInView.filter(p => p.representation === 'dot'),
+    ...viewportIconSelection.rejected,
+  ];
   const clusterMarks = resolvedView.clusters
     .map(c => ({ ...c, pt:worldToScreen(c.worldX, c.worldY) }))
     .filter(c => c.pt[0] >= -40 && c.pt[1] >= -40 && c.pt[0] <= W + 40 && c.pt[1] <= H + 40);
@@ -4036,7 +4147,7 @@ function render(){
   function drawPoiIcons(roles){
     const allowed = new Set(roles);
     for (const p of drawnIcons.filter(item => allowed.has(semanticRoleForPoi(item)))){
-      drawSprite(spriteFor(p.props, p.assetSize || p.size, p.variant, p.spriteKey), p.pt[0], p.pt[1], p);
+      drawSprite(spriteFor(p.props, p.displayAssetSize || p.assetSize || p.size, p.variant, p.spriteKey), p.pt[0], p.pt[1], p);
       const radius = Math.max(28, p.visualRadius);
       hitAreas.push({ x:p.pt[0]-radius, y:p.pt[1]-radius*2, w:radius*2, h:radius*2.2, p:p.props, kind:'poi' });
     }
@@ -4051,11 +4162,9 @@ function render(){
     drawPoiIcons(['structure']);
   }
   function drawPoiOverlays(){
-    // 固定semantic z-order: world object → marker → dot/cluster。
+    // 固定semantic z-order: world object → marker。dot/clusterは独立レイヤー。
     drawPoiIcons(['object']);
     drawPoiIcons(['marker']);
-    drawDots();
-    drawClusters();
   }
   function drawCellPoi(){
     drawCellDots();
@@ -4257,8 +4366,7 @@ function render(){
   const tunnelOptions = new Set(['subway','roadTunnels','pathTunnels','railTunnels']);
   const drawers = {
     dots:() => {
-      if (o.poi) return;
-      drawDots(facilitiesInView.filter(p => p.representation !== 'cluster-member'));
+      drawDots(hiddenPois);
       drawClusters();
     },
     poi:STANDALONE_UNIFIED_STYLE ? drawPoiOverlays : drawPoi,
@@ -4285,8 +4393,8 @@ function render(){
   const drawRasterGroup = (z, options) => {
     for (const option of layerOrder){
       if (!o[option] || !options.has(option)) continue;
-      // 統一Style Specのcorridorは、全area（建物を含む）が確定した後の
-      // 共通合成パスで描く。個別の重なり検出ではなく全域で同じ優先順にする。
+      // 統一Style Specのcorridorは、地表areaの後・建物の前へ共通合成する。
+      // 個別の重なり検出ではなく全域で同じ優先順にする。
       if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option]) continue;
       if (CELL_ONLY_MODE){
         // The base pass already fills every map cell with grass. Avoid a
@@ -4323,7 +4431,7 @@ function render(){
   drawRasterGroup('Z1', z1Water);
   for (const option of layerOrder){
     if (!o[option] || !z2Routes.has(option)) continue;
-    // standalone標準のcorridorは建物areaの後へ一括して合成する。
+    // standalone標準のcorridorは地表areaの後へ一括して合成する。
     if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option]) continue;
     if (CELL_ONLY_MODE){
       const grid = grids.get(option);
@@ -4339,12 +4447,22 @@ function render(){
     renderOrder.push(`Z2:${option}`);
   }
 
+  // 地上corridorは地表の上・建物の下。source geometryは変えず、建物との
+  // 視覚衝突は「地上線を建物が遮蔽する」という全域共通の意味順で解決する。
+  if (STANDALONE_UNIFIED_STYLE){
+    for (const option of layerOrder){
+      if (!o[option] || !STANDALONE_STYLE_SPEC.corridor[option]) continue;
+      drawUnifiedCorridorLayer(option);
+      renderOrder.push(`Z2:ground-corridor:${option}`);
+    }
+  }
+
   if (o.buildings && STANDALONE_PRECISE_BUILDINGS){
-    drawStandalonePreciseBuildings(
+    preciseBuildingLodStats = drawStandalonePreciseBuildings(
       preciseBuildingRaster, buildingKinds, buildingDescs, buildingAnchors, bldStyle,
-      STANDALONE_UNIFIED_STYLE ? null : preciseSurfaceRoadMask
+      preciseSurfaceRoadMask, foregroundBuildingIds
     );
-    renderOrder.push(STANDALONE_UNIFIED_STYLE ? 'Z2:area:buildings:precise-1px' : 'Z3:buildings:precise-1px');
+    renderOrder.push(STANDALONE_UNIFIED_STYLE ? 'Z3:building:precise-1px' : 'Z3:buildings:precise-1px');
   } else if (o.buildings){
     if (CELL_ONLY_MODE){
       drawCellPixelArtBuildingGrid(normalBuildingGrid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, 'buildings', cellRenderingStats);
@@ -4356,19 +4474,9 @@ function render(){
   }
   if (STANDALONE_UNIFIED_STYLE && o.poi){
     // POI structureは通常建物と同じworld層。道路を避けて移動・変形せず、
-    // corridorより前へ固定合成する。object/markerは後段へ分離する。
+    // 地上corridorを遮蔽する。object/markerは後段へ分離する。
     drawPoiStructures();
-    renderOrder.push('Z2:symbol:structure');
-  }
-  // 固定compositor: area → corridor → bridge → symbol。
-  // 建物との交差有無に関係なく、道路・鉄道・水路を同じループと
-  // 1論理pxマスク生成器で描くため、斜線や長い建物にも例外を作らない。
-  if (STANDALONE_UNIFIED_STYLE){
-    for (const option of layerOrder){
-      if (!o[option] || !STANDALONE_STYLE_SPEC.corridor[option]) continue;
-      drawUnifiedCorridorLayer(option);
-      renderOrder.push(`Z3:corridor:${option}`);
-    }
+    renderOrder.push('Z3:symbol:structure');
   }
   // legacy描画だけは旧競合フォールバックを維持する。統一Style Specでは
   // 地理形状を不変にし、競合を理由に道路・建物を再配置または再描画しない。
@@ -4518,7 +4626,13 @@ function render(){
       corridorOverlapBuildings:preciseBuildingOverlapAudit?.buildings || 0,
       displacedBuildings:0,
       maximumDisplacementLogicalPixels:0,
-      shadowsExcludedFromCorridors:!STANDALONE_UNIFIED_STYLE && Boolean(preciseSurfaceRoadMask),
+      shadowsExcludedFromCorridors:Boolean(preciseSurfaceRoadMask),
+      semanticLod:preciseBuildingLodStats ? {
+        mode:WORLD_STYLE.building.mode,
+        detailedBuildings:preciseBuildingLodStats.detailedBuildings,
+        quietBuildings:preciseBuildingLodStats.quietBuildings,
+        omittedMicroBuildings:preciseBuildingLodStats.omittedMicroBuildings,
+      } : null,
     },
     styleSpec:{
       enabled:STANDALONE_UNIFIED_STYLE,
@@ -4529,15 +4643,29 @@ function render(){
       corridorContractVersion:STANDALONE_UNIFIED_STYLE ? LAYER_ASSET_CATALOG.corridorContractVersion : null,
       corridorPhase:STANDALONE_UNIFIED_STYLE ? 'source-line-distance' : 'legacy-screen-phase',
       compositor:STANDALONE_UNIFIED_STYLE
-        ? ['area','structure','corridor','bridge','object','marker','dot-cluster']
+        ? [...WORLD_STYLE.compositor]
         : ['legacy-z-order'],
       symbolRenderer:STANDALONE_UNIFIED_STYLE ? 'existing-poi-asset' : 'legacy-building-sprite',
       symbolSizeTiers:[...STANDALONE_STYLE_SPEC.symbol.sizeTiers],
       symbolSelectionAuthority:STANDALONE_STYLE_SPEC.symbol.selectionAuthority,
-      symbolSelectionOverride:false,
+      symbolSelectionOverride:WORLD_STYLE_MODE ? 'resolver-world-style-density-budget' : false,
       symbolAnchorMode:STANDALONE_UNIFIED_STYLE ? 'source-point' : 'legacy-pattern-offset',
       symbolCollisionBounds:STANDALONE_UNIFIED_STYLE ? 'poi-asset-measured-bounds' : 'legacy-radius',
       sourceGeometryImmutable:STANDALONE_UNIFIED_STYLE,
+    },
+    worldStyle:{
+      enabled:WORLD_STYLE_MODE,
+      version:WORLD_STYLE.version,
+      id:WORLD_STYLE.id,
+      tileZoom:WORLD_STYLE.tileZoom,
+      defaultProfile:WORLD_STYLE_MODE ? 'game' : STUDY_MODE ? 'study' : 'embedded',
+      density:{
+        maxIcons:WORLD_STYLE.density.maxIcons,
+        selectedIcons:drawnIcons.length,
+        rejectedIcons:viewportIconSelection.rejected.length,
+        roleCounts:{...viewportIconSelection.roleCounts},
+        categoryCounts:{...viewportIconSelection.categoryCounts},
+      },
     },
     pattern:{
       id:ACTIVE_PATTERN.id,
@@ -4616,7 +4744,7 @@ function render(){
       mixedBuildings:facilitiesInView.filter(item => item.facilityRole === 'mixed_building').length,
       selectionReasons:countBy(facilitiesInView, item => String(item.selectionReason || '').split(':')[0]),
       sizes:countBy(drawnIcons, item => item.size),
-      assetSizes:countBy(drawnIcons, item => item.assetSize || item.size),
+      assetSizes:countBy(drawnIcons, item => item.displayAssetSize || item.assetSize || item.size),
       categories:countBy(drawnIcons, item => item.category),
       semanticRoles:countBy(drawnIcons, semanticRoleForPoi),
       anchorModes:countBy(drawnIcons, item => item.anchorMode || 'legacy'),
@@ -4624,6 +4752,8 @@ function render(){
       allContractVersions:countBy(resolvedView.facilities, item => item.contractVersion || 'legacy'),
       sourceCoordinateMismatches:resolvedView.facilities.filter(item =>
         item.worldX !== item.sourceWorldX || item.worldY !== item.sourceWorldY).length,
+      viewportBudgetRejected:viewportIconSelection.rejected.length,
+      viewportRoleCounts:{...viewportIconSelection.roleCounts},
       decisionFingerprint,
       decisionFingerprintsByTile,
       assetCounts:countBy(drawnIcons, item => String(item.assetCount)),

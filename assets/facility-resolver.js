@@ -16,7 +16,7 @@
      （旧実装の4連結フラッドフィルと同じ意味論）。
      ===================================================== */
 
-  const ALGORITHM_VERSION = 'facility-resolver/3';
+  const ALGORITHM_VERSION = 'facility-resolver/4';
   const TILE_PX = 1536;            // z14表示スケール: 1タイル = 96セル × 16px
   const CELL_PX = 16;
   const CELL_AREA = CELL_PX * CELL_PX;
@@ -564,12 +564,65 @@
     };
   }
 
+  /* ---- ビューポートの表示密度 ----
+     タイルごとのicon判定は地理データとして保持し、最終画面の表示予算だけを
+     WorldStyleから受け取る。source座標やrepresentationを変更せず、描画対象の
+     安定した部分集合を返すため、場所別例外やパン依存の移動は発生しない。 */
+  function selectViewportIcons(facilities = [], { maxIcons = Infinity, roleCaps = {}, categoryCaps = {} } = {}){
+    const limit = Number.isFinite(maxIcons) ? Math.max(0, Math.floor(maxIcons)) : Infinity;
+    const capFor = role => Number.isFinite(roleCaps?.[role])
+      ? Math.max(0, Math.floor(roleCaps[role]))
+      : Infinity;
+    const categoryCapFor = category => Number.isFinite(categoryCaps?.[category])
+      ? Math.max(0, Math.floor(categoryCaps[category]))
+      : Infinity;
+    const roleOrder = { structure:0, object:1, marker:2 };
+    const candidates = facilities
+      .filter(facility => facility.representation === 'icon')
+      .slice()
+      .sort((a, b) => {
+        const aProtected = Boolean(a.collisionProtected || a.landmarkEntityId || isStationProps(a.props));
+        const bProtected = Boolean(b.collisionProtected || b.landmarkEntityId || isStationProps(b.props));
+        if (aProtected !== bProtected) return aProtected ? -1 : 1;
+        const ar = roleOrder[a.semanticRole] ?? roleOrder.marker;
+        const br = roleOrder[b.semanticRole] ?? roleOrder.marker;
+        return ar - br ||
+          (Number(a.selectionPriority) || 0) - (Number(b.selectionPriority) || 0) ||
+          (Number(a.rank) || 0) - (Number(b.rank) || 0) ||
+          String(a.key).localeCompare(String(b.key));
+      });
+    const selected = [];
+    const rejected = [];
+    const roleCounts = { structure:0, object:0, marker:0 };
+    const categoryCounts = {};
+    for (const facility of candidates){
+      const role = roleOrder[facility.semanticRole] == null ? 'marker' : facility.semanticRole;
+      const category = facility.category || 'generic';
+      if (selected.length >= limit || roleCounts[role] >= capFor(role) ||
+          (categoryCounts[category] || 0) >= categoryCapFor(category)){
+        rejected.push(facility);
+        continue;
+      }
+      selected.push(facility);
+      roleCounts[role]++;
+      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+    }
+    return Object.freeze({
+      selected:Object.freeze(selected),
+      rejected:Object.freeze(rejected),
+      roleCounts:Object.freeze({...roleCounts}),
+      categoryCounts:Object.freeze({...categoryCounts}),
+      maxIcons:limit,
+    });
+  }
+
   const api = {
     ALGORITHM_VERSION,
     TILE_PX,
     CLUSTER_BUCKET_PX,
     CLUSTER_MIN_DOTS,
     resolveTile,
+    selectViewportIcons,
     assetCollisionGeometry,
     facilitiesCollide,
     CLASS2SPRITE,

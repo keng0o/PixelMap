@@ -124,7 +124,7 @@
     <section class="panel" aria-labelledby="difference-title">
       <div class="section-heading">
         <h2 id="difference-title">現行の差分</h2>
-        <small>2026-08-20 / origin/main</small>
+        <small>2026-08-21 / standalone test</small>
       </div>
       <div class="table-wrap">
         <table>
@@ -143,12 +143,12 @@
             </tr>
             <tr>
               <th scope="row">地図ズーム</th>
-              <td>標準はz14。<code>?zoom=12</code>、<code>13</code>、<code>14</code>を選択可能。</td>
+              <td>地理精度と世界観を同じ縮尺で比較するためz14固定。URL指定でも縮尺を変更しない。</td>
               <td>既存表示を守るためz14固定。</td>
             </tr>
             <tr>
               <th scope="row">描画方式</th>
-              <td>標準描画は<code>geometry-skin-symbol/1</code>。地理形状、見た目、情報記号を分離し、corridorは<code>pixelmap-corridor-renderer/1</code>を使用。<code>?render=cell2</code> の2×2論理px検証も利用可能。</td>
+              <td>標準描画は<code>geometry-skin-symbol/1</code>と<code>retro-jrpg-z14</code> WorldStyleを使用。地理形状を変えず、色・線・合成順・POI密度を一括管理。<code>?render=cell2</code> の2×2論理px検証も利用可能。</td>
               <td>標準描画のみ。<code>cell2</code>指定は適用しない。</td>
             </tr>
             <tr>
@@ -158,23 +158,23 @@
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
-              <td>全て同じ連続距離corridorマスク生成器と整数幅を使用。縦・横・斜めの外形規則を共通化し、道路種別・レール・水路の差は内部スキンで表現。アセットカタログも同じrendererを使用。</td>
+              <td>全て同じ<code>pixelmap-corridor-renderer/1</code>連続距離マスク生成器と整数幅を使用。縦・横・斜めの外形規則を共通化し、道路種別・レール・水路の差はWorldStyleの内部スキンで表現。</td>
               <td>各レイヤー固有の従来描画と線幅を維持。</td>
             </tr>
             <tr>
               <th scope="row">建物とcorridorの重なり</th>
-              <td>MVT建物形状を1論理px意味マスクで一度だけ確定し、衝突後の移動・変形・部分修正は行わない。全域でarea→structure→corridor→bridge→object→marker→dot／clusterの固定順に合成し、重なりは診断値として記録。</td>
+              <td>MVT建物形状を1論理px意味マスクで一度だけ確定し、衝突後の移動・変形・場所別修正は行わない。通常小規模棟はringKey固定のsemantic LODで低コントラストarea、代表棟・大型棟・選抜POIはRPG屋根へ分ける。全域でarea→ground corridor→building→structure→bridge→object→marker→dot／clusterの固定順に合成する。</td>
               <td>従来の8×8論理px建物セル、通常建物／橋／POI建物の描画順を維持。</td>
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理。全52点がsemantic role・ground-center anchor・実測boundsを持つ。表示採用は<code>facility-resolver</code>だけが決め、source pointを動かさない。</td>
+              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理。source pointを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
               <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
             </tr>
             <tr>
-              <th scope="row">カタログ／モバイル移植</th>
-              <td>POIとcorridorの正本から<code>mobile-asset-manifest.json</code>をbuild時に生成。アンカー相対の矩形命令＋RGBA、幅・skin、固定compositorをExpo／Flutterで解釈できるデータとして公開。</td>
-              <td>本番マップの実行時にはmanifestを読み込まず、表示への影響なし。</td>
+              <th scope="row">今回のPOC評価範囲</th>
+              <td>z14のスクリーンショット比較で、地理精度と旧RPG風の世界観を評価。ピクセルパーフェクト一致とExpo／Flutter移植は今回の対象外。</td>
+              <td>既存の本番表示を維持。過去に生成したmobile manifestも今回の変更対象外。</td>
             </tr>
             <tr>
               <th scope="row">外側UIと同期</th>
@@ -191,6 +191,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>WorldStyleでz14 POCのレトロJRPG表現を固定</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd><code>retro-jrpg-z14</code> WorldStyleへ既定レイヤー、灰・緑・砂地のarea palette、道路・鉄道・水路skin、建物semantic LOD、POIのrole・category密度予算、固定compositorを集約。通常小規模棟は正確なfootprintの低コントラストarea、代表棟・大型棟・選抜POIはRPG屋根へ分け、POIを最低Mサイズで前景化した。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone標準のgame profileをz14固定で評価。全レイヤー確認は<code>?layers=study</code>、原子セル確認は<code>?render=cell2</code>として分離。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップの<code>embedded=1</code>ではWorldStyleを無効化し、従来のパターン07、色、corridor、POI装飾、レイヤー既定値を維持。モバイル移植物は更新していない。</dd></div>
+          <div><dt>確認内容</dt><dd>Nodeテスト100件とbuildを完了。z14固定、source座標不変、整数幅corridor、LOD・密度予算の決定性、standalone限定ガードを確認。同一z14の旧RPG参照とのスクリーンショット比較、本番1マップ撮影、独立視覚レビューで全項目PASS。ピクセルパーフェクト一致は合否条件にしていない。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>Asset Contractと共通描画基盤を正本化</h3>
