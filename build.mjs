@@ -8,6 +8,7 @@ const sources = [
   'four-maps.html',
   'compare.html',
   'assets.html',
+  'log.html',
   'assets',
   'data',
   'variants',
