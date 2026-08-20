@@ -24,7 +24,7 @@ test('差分ログは現行のtest専用機能と本番維持事項を記載す�
   assert.match(log, /2マップは位置同期/);
   assert.match(log, /4マップは4地点への共通レイヤー操作/);
   assert.match(log, /建物と道路の競合/);
-  assert.match(log, /建物型施設アイコン/);
+  assert.match(log, /建物型施設アイコンの道路回避を取り消し/);
   assert.match(log, /ログページの表示内容を簡素化/);
 });
 

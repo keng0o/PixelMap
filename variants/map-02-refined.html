@@ -2613,9 +2613,9 @@ function preciseBuildingTextureGrid(raster, buildingKinds){
   return { grid, bldGrid };
 }
 
-// 実際の道路ストロークと同じ幅で論理pxマスクを作る。
-// 建物の影・移動には地表道路だけ、POI配置には橋を含む可視道路を使う。
-function standaloneRoadMask(options, transportationFeatures, includeBridges){
+// 建物の南影だけが地表道路へ乗らないよう、実際の道路ストロークと同じ幅で
+// 論理pxマスクを作る。建物本体はこのマスクで削らない。
+function standaloneSurfaceRoadMask(options, transportationFeatures){
   const mask = preciseRoadMaskContext;
   mask.save();
   mask.setTransform(1, 0, 0, 1, 0, 0);
@@ -2630,7 +2630,7 @@ function standaloneRoadMask(options, transportationFeatures, includeBridges){
     if (!style || !options[option]) continue;
     const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
     const isTunnel = feature.props.brunnel === 'tunnel';
-    if (isTunnel || (isBridge && !includeBridges)) continue;
+    if (isBridge || isTunnel) continue;
     const trace = close => {
       mask.beginPath();
       for (const line of feature.geom){
@@ -2660,10 +2660,6 @@ function standaloneRoadMask(options, transportationFeatures, includeBridges){
   for (let i = 0; i < road.length; i++) road[i] = rgba[i * 4 + 3] >= 96 ? 1 : 0;
   return road;
 }
-const standaloneSurfaceRoadMask = (options, transportationFeatures) =>
-  standaloneRoadMask(options, transportationFeatures, false);
-const standaloneVisibleRoadMask = (options, transportationFeatures) =>
-  standaloneRoadMask(options, transportationFeatures, true);
 
 function putLogicalImageData(target, data){
   target.putImageData(data, 0, 0);
@@ -3270,8 +3266,7 @@ function alphaColor(hex, alpha){
   const n = parseInt(value, 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 }
-function drawCategoryShape(cx, cy, radius, category, tone, alpha = .68, drawContext = ctx){
-  const ctx = drawContext;
+function drawCategoryShape(cx, cy, radius, category, tone, alpha = .68){
   const x = Math.round(cx), y = Math.round(cy), r = Math.max(5, Math.round(radius));
   ctx.save();
   ctx.fillStyle = alphaColor(tone, alpha);
@@ -3308,21 +3303,20 @@ function drawCategoryShape(cx, cy, radius, category, tone, alpha = .68, drawCont
   ctx.fill(); ctx.stroke();
   ctx.restore();
 }
-function drawPatternMarker(p, cx, cy, visualScale, drawContext = ctx){
-  const ctx = drawContext;
+function drawPatternMarker(p, cx, cy, visualScale){
   const tone = categoryTone(p.category);
   const marker = ACTIVE_PATTERN.marker;
   const r = Math.max(14, Math.round(20 * visualScale));
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   if (marker === 'category-shape'){
-    drawCategoryShape(cx, cy - r * .25, r, p.category, tone, .62, ctx);
+    drawCategoryShape(cx, cy - r * .25, r, p.category, tone, .62);
   } else if (marker === 'flag'){
     ctx.fillStyle = OUT; ctx.fillRect(Math.round(cx-r-5), Math.round(cy-r-9), 4, r+17);
     ctx.fillStyle = tone; ctx.fillRect(Math.round(cx-r-1), Math.round(cy-r-9), r+9, 9);
     ctx.fillStyle = '#f8f0d8'; ctx.fillRect(Math.round(cx-r+3), Math.round(cy-r-6), Math.max(5,r-5), 2);
   } else if (marker === 'shield'){
-    drawCategoryShape(cx, cy-3, r, p.category === 'health' ? 'health' : 'civic', tone, .45, ctx);
+    drawCategoryShape(cx, cy-3, r, p.category === 'health' ? 'health' : 'civic', tone, .45);
   } else if (marker === 'awning'){
     ctx.fillStyle = alphaColor(tone,.8);
     for (let i = -2; i <= 2; i += 2) ctx.fillRect(Math.round(cx + i * r/3 - r/6), Math.round(cy+4), Math.ceil(r/3), 8);
@@ -3345,7 +3339,7 @@ function drawPatternMarker(p, cx, cy, visualScale, drawContext = ctx){
     ctx.fillStyle = '#f8f0d8';
     for (let y = cy-h+6; y < cy-4; y += 9) ctx.fillRect(Math.round(cx+r+1), Math.round(y), 3, 3);
   } else if (marker === 'cluster'){
-    drawCategoryShape(cx, cy+2, r * .92, 'food', tone, .35, ctx);
+    drawCategoryShape(cx, cy+2, r * .92, 'food', tone, .35);
   } else if (marker === 'beacon'){
     ctx.fillStyle = alphaColor(tone,.84);
     ctx.fillRect(Math.round(cx-3), Math.round(cy-r-16), 6, r+19);
@@ -3357,8 +3351,7 @@ function drawPatternMarker(p, cx, cy, visualScale, drawContext = ctx){
   }
   ctx.restore();
 }
-function drawAuxiliaryAssets(p, cx, cy, drawContext = ctx){
-  const ctx = drawContext;
+function drawAuxiliaryAssets(p, cx, cy){
   const extra = Math.max(0, p.assetCount - 1);
   if (!extra) return;
   const tone = categoryTone(p.category);
@@ -3387,17 +3380,16 @@ function drawAuxiliaryAssets(p, cx, cy, drawContext = ctx){
       ctx.fillStyle = '#f8f0d8'; ctx.fillRect(Math.round(cx+dx-2),Math.round(cy-8),3,7);
     } else {
       const [dx,dy] = areaOffsets[i];
-      drawCategoryShape(cx+dx*.65, cy+dy*.4, 6, p.category, tone, .92, ctx);
+      drawCategoryShape(cx+dx*.65, cy+dy*.4, 6, p.category, tone, .92);
     }
   }
   ctx.restore();
 }
-function drawSprite(sp, cx, cy, p, drawContext = ctx){
-  const ctx = drawContext;
+function drawSprite(sp, cx, cy, p){
   const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[p.category] || 1);
   p.visualScale = visualScale;
   p.visualRadius = 24 * visualScale + Math.max(0, p.assetCount - 1) * 8;
-  drawPatternMarker(p, cx, cy, visualScale, ctx);
+  drawPatternMarker(p, cx, cy, visualScale);
   ctx.save();
   ctx.translate(Math.round(cx), Math.round(cy));
   // 全マップで1アセットpx＝2シーンpxに固定し、カテゴリ倍率による
@@ -3406,123 +3398,10 @@ function drawSprite(sp, cx, cy, p, drawContext = ctx){
   ctx.scale(spritePixelScale, spritePixelScale);
   ctx.fillStyle = 'rgba(24,40,16,.3)';
   ctx.fillRect(-7, -1, 14, 3);
-  const previousContext = spritePaintContext;
-  spritePaintContext = ctx;
-  try {
-    sp.draw(0, 0);
-  } finally {
-    spritePaintContext = previousContext;
-  }
+  sp.draw(0, 0);
   ctx.restore();
-  drawAuxiliaryAssets(p, cx, cy, ctx);
+  drawAuxiliaryAssets(p, cx, cy);
 }
-
-const STANDARD_SPRITE_FOOTPRINT_CACHE = new Map();
-function standardSpriteFootprintFor(item){
-  const stationVariant = isStationProps(item.props) ? featureName(item.props) : '';
-  const cacheKey = [
-    ACTIVE_PATTERN.id, item.spriteKey, item.size, item.variant, item.category,
-    item.assetCount, Math.round(item.metrics.height || 0), stationVariant,
-  ].join(':');
-  if (STANDARD_SPRITE_FOOTPRINT_CACHE.has(cacheKey)) return STANDARD_SPRITE_FOOTPRINT_CACHE.get(cacheKey);
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 256;
-  const paint = canvas.getContext('2d', { willReadFrequently:true });
-  paint.imageSmoothingEnabled = false;
-  const anchorSceneX = 128, anchorSceneY = 200;
-  drawSprite(spriteFor(item.props, item.size, item.variant), anchorSceneX, anchorSceneY, item, paint);
-  const source = paint.getImageData(0, 0, canvas.width, canvas.height).data;
-  const offsets = [];
-  const logicalSize = canvas.width / SCENE_PIXELS_PER_LOGICAL_PIXEL;
-  const anchorX = anchorSceneX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
-  const anchorY = anchorSceneY / SCENE_PIXELS_PER_LOGICAL_PIXEL;
-  for (let y = 0; y < logicalSize; y++) for (let x = 0; x < logicalSize; x++){
-    let opaque = false;
-    for (let sy = 0; sy < SCENE_PIXELS_PER_LOGICAL_PIXEL && !opaque; sy++){
-      for (let sx = 0; sx < SCENE_PIXELS_PER_LOGICAL_PIXEL; sx++){
-        const sceneX = x * SCENE_PIXELS_PER_LOGICAL_PIXEL + sx;
-        const sceneY = y * SCENE_PIXELS_PER_LOGICAL_PIXEL + sy;
-        if (source[(sceneY * canvas.width + sceneX) * 4 + 3] >= 32){ opaque = true; break; }
-      }
-    }
-    if (opaque) offsets.push([x - anchorX, y - anchorY]);
-  }
-  const footprint = { offsets };
-  STANDARD_SPRITE_FOOTPRINT_CACHE.set(cacheKey, footprint);
-  return footprint;
-}
-
-const ROAD_AWARE_POI_CANDIDATES = (() => {
-  const candidates = [{ dx:0, dy:0 }];
-  const directions = [[0,-1],[-1,0],[1,0],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
-  for (let distance = 2; distance <= 24; distance += 2)
-    for (const [dx, dy] of directions) candidates.push({ dx:dx * distance, dy:dy * distance });
-  return candidates;
-})();
-
-// 建物型POIの実際の不透明画素を道路マスクと照合する。
-// 道路外へ置ける場合だけスプライト全体を移動し、置けない場合は小さな点へ退化させる。
-function layoutStandaloneRoadAwarePoi(facilities, visibleRoadMask){
-  const size = PRESENTATION_SIZE;
-  const occupied = new Uint8Array(size * size);
-  const icons = facilities.filter(item => item.representation === 'icon')
-    .sort((a, b) => a.selectionPriority - b.selectionPriority || a.rank - b.rank || (a.key < b.key ? -1 : 1));
-  const stats = { roadConflictIcons:0, shiftedIcons:0, demotedToDots:0, remainingSpriteRoadPixels:0 };
-  const evaluate = (item, footprint, candidate) => {
-    const anchorX = Math.round(item.pt[0] / SCENE_PIXELS_PER_LOGICAL_PIXEL) + candidate.dx;
-    const anchorY = Math.round(item.pt[1] / SCENE_PIXELS_PER_LOGICAL_PIXEL) + candidate.dy;
-    let road = 0, collision = 0, visible = 0;
-    for (const [offsetX, offsetY] of footprint.offsets){
-      const x = anchorX + offsetX, y = anchorY + offsetY;
-      if (x < 0 || y < 0 || x >= size || y >= size) continue;
-      visible++;
-      const index = y * size + x;
-      if (visibleRoadMask[index]) road++;
-      if (occupied[index]) collision++;
-      if (road || collision) break;
-    }
-    return { ...candidate, anchorX, anchorY, road, collision, visible };
-  };
-  const stamp = (footprint, placement) => {
-    for (const [offsetX, offsetY] of footprint.offsets){
-      const x = placement.anchorX + offsetX, y = placement.anchorY + offsetY;
-      if (x < 0 || y < 0 || x >= size || y >= size) continue;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++){
-        const sx = x + dx, sy = y + dy;
-        if (sx >= 0 && sy >= 0 && sx < size && sy < size) occupied[sy * size + sx] = 1;
-      }
-    }
-  };
-
-  for (const item of icons){
-    const footprint = standardSpriteFootprintFor(item);
-    const original = evaluate(item, footprint, ROAD_AWARE_POI_CANDIDATES[0]);
-    let placement = original;
-    if (original.road) stats.roadConflictIcons++;
-    if (original.road || original.collision){
-      placement = null;
-      for (const candidate of ROAD_AWARE_POI_CANDIDATES){
-        const tested = evaluate(item, footprint, candidate);
-        if (!tested.road && !tested.collision && tested.visible >= original.visible){ placement = tested; break; }
-      }
-    }
-    if (!placement || placement.road || placement.collision){
-      item.roadAwareRepresentation = 'dot';
-      stats.demotedToDots++;
-      continue;
-    }
-    if (placement.dx || placement.dy){
-      item.pt[0] += placement.dx * SCENE_PIXELS_PER_LOGICAL_PIXEL;
-      item.pt[1] += placement.dy * SCENE_PIXELS_PER_LOGICAL_PIXEL;
-      item.roadAwareOffset = { dx:placement.dx, dy:placement.dy, unit:'logical-px' };
-      stats.shiftedIcons++;
-    }
-    stats.remainingSpriteRoadPixels += placement.road;
-    stamp(footprint, placement);
-  }
-  return stats;
-}
-
 /* 文字もドット絵に: 半分のサイズで描いて2倍に最近傍拡大する */
 function makePixelText(text, size, color, outline){
   const s = Math.max(6, Math.round(size / 2));
@@ -4117,11 +3996,10 @@ function render(){
     ctx.setLineDash([]); ctx.globalAlpha = 1;
   }
 
-  // 建物マスクと道路競合は、建物・POIの双方が同じ移動量と道路占有を
-  // 参照できるよう描画より先に一度だけ確定する。
+  // 建物マスクと道路競合は、建物・POIの双方が同じ移動量を参照できるよう
+  // 描画より先に一度だけ確定する。
   let preciseBuildingRaster = null;
   let preciseSurfaceRoadMask = null;
-  let preciseVisibleRoadMask = null;
   let preciseBuildingDisplacement = null;
   let preciseBuildingRoadOverlapPixels = 0;
   if (o.buildings && STANDALONE_PRECISE_BUILDINGS){
@@ -4132,8 +4010,6 @@ function render(){
     );
     preciseBuildingRoadOverlapPixels = preciseBuildingDisplacement.remainingOverlapPixels;
   }
-  if (o.poi && STANDALONE_PRECISE_BUILDINGS)
-    preciseVisibleRoadMask = standaloneVisibleRoadMask(o, L('transportation'));
 
   /* --- レイヤー統計 --- */
   const stats = {};
@@ -4168,11 +4044,8 @@ function render(){
       return { ...f, pt, visualRadius:f.collisionRadius };
     })
     .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
-  const roadAwarePoiStats = preciseVisibleRoadMask
-    ? layoutStandaloneRoadAwarePoi(facilitiesInView, preciseVisibleRoadMask)
-    : { roadConflictIcons:0, shiftedIcons:0, demotedToDots:0, remainingSpriteRoadPixels:0 };
-  const drawnIcons = facilitiesInView.filter(p => p.representation === 'icon' && p.roadAwareRepresentation !== 'dot');
-  const hiddenPois = facilitiesInView.filter(p => p.representation === 'dot' || p.roadAwareRepresentation === 'dot');
+  const drawnIcons = facilitiesInView.filter(p => p.representation === 'icon');
+  const hiddenPois = facilitiesInView.filter(p => p.representation === 'dot');
   const clusterMarks = resolvedView.clusters
     .map(c => ({ ...c, pt:worldToScreen(c.worldX, c.worldY) }))
     .filter(c => c.pt[0] >= -40 && c.pt[1] >= -40 && c.pt[0] <= W + 40 && c.pt[1] <= H + 40);
@@ -4854,13 +4727,6 @@ function render(){
       maxHeight:drawnIcons.reduce((max, item) => Math.max(max, item.metrics.height), 0),
       maxArea:drawnIcons.reduce((max, item) => Math.max(max, item.metrics.area), 0),
       metrics:{ area:quantiles(visibleMetricItems,'area'), height:quantiles(visibleMetricItems,'height') },
-      roadAwareLayout:{
-        enabled:Boolean(preciseVisibleRoadMask),
-        unit:'logical-px',
-        maximumShift:24,
-        preservesFacilityAsDotWhenNoSpritePlacement:true,
-        ...roadAwarePoiStats,
-      },
     },
     renderMs:Number(toolbar.dataset.renderMs),
   };
