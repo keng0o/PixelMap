@@ -20,25 +20,30 @@ test('建物チップと1論理px輪郭を分離して最近傍合成する', ()
   assert.match(html, /クリップ後の輪郭を1論理pxで描き直し/);
 });
 
-test('道路競合は棟全体の平行移動を先に試し、建物画素を削除しない', () => {
-  assert.match(html, /function displaceStandaloneBuildingsFromRoads\(raster, roadMask, buildingKinds, maxDistance = 8\)/);
-  assert.match(html, /if \(occupancy\[index\] === bi\) occupancy\[index\] = 0/);
-  assert.match(html, /occupancy\[y \* size \+ x\] = bi/);
-  assert.match(html, /if \(out \|\| occupied\) continue/);
-  assert.match(html, /maximumDisplacementLogicalPixels:/);
+test('建物とcorridorは元形状を維持し、競合は診断だけ行う', () => {
+  assert.match(html, /const STANDALONE_UNIFIED_STYLE = !EMBEDDED && !CELL_ONLY_MODE/);
+  assert.match(html, /function auditStandaloneBuildingCorridorOverlap\(raster, corridorMask\)/);
+  assert.match(html, /immutableSourceGeometry:STANDALONE_UNIFIED_STYLE/);
+  assert.match(html, /displacedBuildings:0/);
+  assert.match(html, /maximumDisplacementLogicalPixels:0/);
+  assert.doesNotMatch(html, /function displaceStandaloneBuildingsFromRoads/);
+  assert.doesNotMatch(html, /preciseBuildingRaster\?\.offsets/);
 });
 
-test('影は道路から除外し、POIは移動した建物へ追従する', () => {
-  assert.match(html, /function standaloneSurfaceRoadMask\(options, transportationFeatures\)/);
-  assert.match(html, /roadMask\[index\]\) continue/);
-  assert.match(html, /const offset = preciseBuildingRaster\?\.offsets\?\.\[bi\]/);
-  assert.match(html, /pt\[0\] \+= offset\.dx \* SCENE_PIXELS_PER_LOGICAL_PIXEL/);
+test('standalone標準は影もPOIも衝突移動せず、POIを元の世界座標へ固定する', () => {
+  assert.match(html, /const pt = worldToScreen\(f\.worldX, f\.worldY\)/);
+  assert.match(html, /STANDALONE_UNIFIED_STYLE \? null : preciseSurfaceRoadMask/);
+  assert.match(html, /shadowsExcludedFromCorridors:!STANDALONE_UNIFIED_STYLE/);
+  assert.doesNotMatch(html, /pt\[0\] \+= offset/);
+  assert.doesNotMatch(html, /pt\[1\] \+= offset/);
 });
 
-test('通常・POI建物を同じ高さで描き、未解決道路と橋をその後に描く', () => {
-  const precise = html.indexOf("renderOrder.push('Z3:buildings:precise-1px')");
-  const fallback = html.indexOf("renderOrder.push('Z3:surface-roads:conflict-fallback')");
+test('固定compositorはarea、corridor、bridgeの順で全域を合成する', () => {
+  const precise = html.indexOf("'Z2:area:buildings:precise-1px'");
+  const corridor = html.indexOf('renderOrder.push(`Z3:corridor:${option}`)');
   const bridge = html.indexOf('renderOrder.push(`Z3:bridge:${option}`)');
-  assert.ok(precise >= 0 && fallback > precise && bridge > fallback);
+  assert.ok(precise >= 0 && corridor > precise && bridge > corridor);
+  assert.match(html, /compositor:STANDALONE_UNIFIED_STYLE \? \['area','corridor','bridge','symbol'\]/);
+  assert.match(html, /if \(!STANDALONE_UNIFIED_STYLE && preciseBuildingRoadOverlapPixels\)/);
   assert.match(html, /if \(o\.buildings && !STANDALONE_PRECISE_BUILDINGS\)/);
 });

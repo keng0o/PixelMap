@@ -19,11 +19,14 @@ test('差分ログは現行のtest専用機能と本番維持事項を記載す�
   assert.match(log, /\?zoom=12/);
   assert.match(log, /\?render=cell2/);
   assert.match(log, /神奈川県の生成GeoJSON/);
-  assert.match(log, /最小1論理px/);
+  assert.match(log, /geometry-skin-symbol\/1/);
+  assert.match(log, /1論理px corridorマスク生成器/);
   assert.match(log, /z14固定/);
   assert.match(log, /2マップは位置同期/);
   assert.match(log, /4マップは4地点への共通レイヤー操作/);
-  assert.match(log, /建物と道路の競合/);
+  assert.match(log, /area→corridor→bridge→symbol/);
+  assert.match(log, /16論理px/);
+  assert.match(log, /不変ジオメトリ基準の統一Style Specを導入/);
   assert.match(log, /建物型施設アイコンの道路回避を取り消し/);
   assert.match(log, /ログページの表示内容を簡素化/);
 });

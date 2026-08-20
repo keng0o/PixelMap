@@ -148,7 +148,7 @@
             </tr>
             <tr>
               <th scope="row">描画方式</th>
-              <td>標準描画に加え、<code>?render=cell2</code> の2×2論理px検証を利用可能。</td>
+              <td>標準描画は<code>geometry-skin-symbol/1</code>。地理形状、見た目、情報記号を分離。<code>?render=cell2</code> の2×2論理px検証も利用可能。</td>
               <td>標準描画のみ。<code>cell2</code>指定は適用しない。</td>
             </tr>
             <tr>
@@ -157,14 +157,19 @@
               <td>ランドマーク補助処理を無効化し、従来の施設表示を維持。</td>
             </tr>
             <tr>
-              <th scope="row">生活道路・歩道</th>
-              <td>生活道路と歩道・小径を、完成画像上の最小1論理pxで描画。</td>
-              <td>生活道路は本体7論理px＋片側1論理pxの縁、歩道・小径は2論理pxの従来幅を維持。</td>
+              <th scope="row">道路・鉄道・水路</th>
+              <td>全て同じ1論理px corridorマスク生成器と整数幅を使用。道路種別・レール・水路の差は外形ではなく内部スキンで表現。</td>
+              <td>各レイヤー固有の従来描画と線幅を維持。</td>
             </tr>
             <tr>
-              <th scope="row">建物と道路の競合</th>
-              <td>建物輪郭を1論理px意味マスクで確定。道路と競合する棟は形を保って最大8論理px移動し、残る競合では道路の連続性を優先。POIと影も移動・道路除外へ追従。</td>
+              <th scope="row">建物とcorridorの重なり</th>
+              <td>MVT建物形状を1論理px意味マスクで一度だけ確定し、衝突後の移動・変形・部分修正は行わない。全域でarea→corridor→bridge→symbolの固定順に合成し、重なりは診断値として記録。</td>
               <td>従来の8×8論理px建物セル、通常建物／橋／POI建物の描画順を維持。</td>
+            </tr>
+            <tr>
+              <th scope="row">POI</th>
+              <td>建物型POIは実際の建物ポリゴンへカテゴリスキンを適用。情報は元の世界座標に固定した16論理px・1論理px輪郭の共通シンボルで表示。世界座標64論理pxグリッドごとに優先度と安定IDで1件を採用し、位置ずらしは行わない。</td>
+              <td>S／M／Lの従来施設スプライトと配置処理を維持。</td>
             </tr>
             <tr>
               <th scope="row">外側UIと同期</th>
@@ -181,6 +186,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>不変ジオメトリ基準の統一Style Specを導入</h3>
+          <time datetime="2026-08-20">2026-08-20 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>描画をarea・corridor・symbolの3プリミティブへ整理。道路・鉄道・水路を共通の1論理pxマスクと整数幅へ統一し、建物移動を廃止。area→corridor→bridge→symbolの固定合成順、実建物スキン、16論理px固定POIシンボル、世界座標グリッド単位の決定論的な表示採用を実装。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone標準描画で有効。<code>?render=cell2</code>と<code>embedded=1</code>では従来描画を維持。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは変更なし。共有データと既存アセット定義も変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>Nodeテスト83件、ビルド、ブラウザ描画、診断情報、コンソールエラー、撮影画像の独立レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>建物型施設アイコンの道路回避を取り消し</h3>

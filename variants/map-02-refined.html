@@ -695,6 +695,9 @@ const TILE_ZOOM = !EMBEDDED && SUPPORTED_STANDALONE_ZOOMS.has(requestedTileZoom)
   : DEFAULT_TILE_ZOOM;
 const CELL_ONLY_MODE = !EMBEDDED && PAGE_PARAMS.get('render') === 'cell2';
 const RENDER_MODE = CELL_ONLY_MODE ? 'cell2' : 'standard';
+// standalone標準表示では、地物を移動させず「不変の地理形状＋共通スキン＋
+// 固定サイズのシンボル」で描く。cell2とembedded本番は従来描画を維持する。
+const STANDALONE_UNIFIED_STYLE = !EMBEDDED && !CELL_ONLY_MODE;
 const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
 const MESSAGE_ORIGIN = location.origin === 'null' ? '*' : location.origin;
@@ -735,6 +738,9 @@ document.documentElement.dataset.mapMode = 'production';
 document.documentElement.dataset.assetTaste = 'reference';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.documentElement.dataset.renderMode = RENDER_MODE;
+document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
+  ? 'geometry-skin-symbol-v1'
+  : 'legacy';
 document.documentElement.dataset.tileZoom = String(TILE_ZOOM);
 document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
@@ -914,6 +920,63 @@ const P = {
   rail:CANONICAL_TRANSPORT_RULES.rail.fill,
   tie:CANONICAL_TRANSPORT_RULES.rail.tie,
 };
+
+/* =====================================================
+   standalone test用 Style Spec v1
+   - 地理形状はMVT座標から一度だけ確定し、衝突後に移動・変形しない。
+   - area / corridor / symbol の3種類だけを描画基盤とする。
+   - 交通・水路の外形は共通corridorマスク、差異は内部スキンで表す。
+   - 建物型POIの大型完成スプライトは地理形状として使わず、実建物へ
+     building-stylesのカテゴリスキンを適用し、情報は固定シンボルで重ねる。
+   ===================================================== */
+const STANDALONE_STYLE_SPEC = Object.freeze({
+  version:'geometry-skin-symbol/1',
+  logicalPixel:1,
+  area:Object.freeze({
+    outlineWidth:1,
+    patternUnit:8,
+    geometrySource:'mvt-polygon',
+  }),
+  symbol:Object.freeze({
+    size:16,
+    outlineWidth:1,
+    anchor:'bottom-center',
+    geometrySource:'mvt-point',
+    // 位置をずらさず、世界座標グリッドごとの採用数だけを制御する。
+    // 大量追加時も画面座標や入力順に依存せず、同じ地点は同じ結果になる。
+    worldGridLogicalPixels:64,
+    maximumPerWorldCell:1,
+    minimumGapLogicalPixels:28,
+    overflow:'hidden',
+    categoryPriority:Object.freeze([
+      'landmark','transit','health','civic','service',
+      'commerce','food','stay','nature','generic',
+    ]),
+  }),
+  corridor:Object.freeze({
+    rivers:Object.freeze({source:'waterway',classes:['river'],width:4,edgeWidth:1,fill:P.water,edge:P.foam}),
+    streams:Object.freeze({source:'waterway',classes:['stream'],width:1,edgeWidth:0,fill:'#5aa2e8'}),
+    canals:Object.freeze({source:'waterway',classes:['canal'],width:2,edgeWidth:0,fill:P.water}),
+    drains:Object.freeze({source:'waterway',classes:['ditch','drain'],width:1,edgeWidth:0,fill:'#6aa8d8'}),
+    waterwayOther:Object.freeze({source:'waterway',fallback:true,width:1,edgeWidth:0,fill:P.water}),
+    localRoads:Object.freeze({source:'transportation',width:1,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.localRoads.fill}),
+    regionalRoads:Object.freeze({source:'transportation',width:8,edgeWidth:1,fill:CANONICAL_TRANSPORT_RULES.regionalRoads.fill,edge:CANONICAL_TRANSPORT_RULES.regionalRoads.edge,center:CANONICAL_TRANSPORT_RULES.regionalRoads.center,centerPeriod:13,centerOn:7}),
+    majorRoads:Object.freeze({source:'transportation',width:10,edgeWidth:1,fill:CANONICAL_TRANSPORT_RULES.majorRoads.fill,edge:CANONICAL_TRANSPORT_RULES.majorRoads.edge,center:CANONICAL_TRANSPORT_RULES.majorRoads.center,centerPeriod:17,centerOn:10}),
+    motorways:Object.freeze({source:'transportation',width:14,edgeWidth:2,fill:CANONICAL_TRANSPORT_RULES.motorways.fill,edge:CANONICAL_TRANSPORT_RULES.motorways.edge,center:CANONICAL_TRANSPORT_RULES.motorways.center,centerPeriod:17,centerOn:10}),
+    paths:Object.freeze({source:'transportation',width:1,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.paths.fill}),
+    tracks:Object.freeze({source:'transportation',width:2,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.tracks.fill,center:CANONICAL_TRANSPORT_RULES.tracks.detail,centerPeriod:7,centerOn:3}),
+    raceways:Object.freeze({source:'transportation',width:8,edgeWidth:1,fill:CANONICAL_TRANSPORT_RULES.raceways.fill,edge:CANONICAL_TRANSPORT_RULES.raceways.edge}),
+    ferries:Object.freeze({source:'transportation',width:2,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.ferries.fill,dashPeriod:10,dashOn:6}),
+    piers:Object.freeze({source:'transportation',width:2,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.piers.fill}),
+    rail:Object.freeze({source:'transportation',width:7,edgeWidth:1,fill:CANONICAL_TRANSPORT_RULES.rail.bed,edge:CANONICAL_TRANSPORT_RULES.rail.bedDark,pattern:'rail',rail:CANONICAL_TRANSPORT_RULES.rail.fill,tie:CANONICAL_TRANSPORT_RULES.rail.tie}),
+    subway:Object.freeze({source:'transportation',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.subway.fill,dashPeriod:10,dashOn:5,alpha:.3}),
+    aerialways:Object.freeze({source:'transportation',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.aerialways.bed,pattern:'rail',rail:CANONICAL_TRANSPORT_RULES.aerialways.fill,tie:CANONICAL_TRANSPORT_RULES.aerialways.tie}),
+    transportationOther:Object.freeze({source:'transportation',width:2,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.transportationOther.fill}),
+    roadTunnels:Object.freeze({source:'transportation',tunnelGroup:'road',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.roadTunnels.fill,dashPeriod:10,dashOn:5,alpha:.3}),
+    pathTunnels:Object.freeze({source:'transportation',tunnelGroup:'path',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.pathTunnels.fill,dashPeriod:10,dashOn:5,alpha:.3}),
+    railTunnels:Object.freeze({source:'transportation',tunnelGroup:'rail',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.railTunnels.fill,dashPeriod:10,dashOn:5,alpha:.3}),
+  }),
+});
 
 function T(draw){
   const c = document.createElement('canvas');
@@ -2441,6 +2504,219 @@ const preciseBuildingDetailContext = preciseBuildingDetailCanvas.getContext('2d'
 const preciseRoadMaskCanvas = document.createElement('canvas');
 preciseRoadMaskCanvas.width = preciseRoadMaskCanvas.height = PRESENTATION_SIZE;
 const preciseRoadMaskContext = preciseRoadMaskCanvas.getContext('2d', { willReadFrequently:true });
+const unifiedCorridorCanvas = document.createElement('canvas');
+unifiedCorridorCanvas.width = unifiedCorridorCanvas.height = PRESENTATION_SIZE;
+const unifiedCorridorContext = unifiedCorridorCanvas.getContext('2d');
+const unifiedAreaMaskCanvas = document.createElement('canvas');
+unifiedAreaMaskCanvas.width = unifiedAreaMaskCanvas.height = PRESENTATION_SIZE;
+const unifiedAreaMaskContext = unifiedAreaMaskCanvas.getContext('2d', { willReadFrequently:true });
+
+function walkLogicalPixelLine(x0, y0, x1, y1, visit){
+  let x = Math.round(x0), y = Math.round(y0);
+  const endX = Math.round(x1), endY = Math.round(y1);
+  const dx = Math.abs(endX - x), stepX = x < endX ? 1 : -1;
+  const dy = -Math.abs(endY - y), stepY = y < endY ? 1 : -1;
+  let error = dx + dy;
+  for (let guard = 0; guard < PRESENTATION_SIZE * 4; guard++){
+    visit(x, y);
+    if (x === endX && y === endY) break;
+    const doubled = error * 2;
+    if (doubled >= dy){ error += dy; x += stepX; }
+    if (doubled <= dx){ error += dx; y += stepY; }
+  }
+}
+
+function logicalPointForMapGeometry(point){
+  const [sceneX, sceneY] = tp(point);
+  return [
+    Math.round(sceneX / SCENE_PIXELS_PER_LOGICAL_PIXEL),
+    Math.round(sceneY / SCENE_PIXELS_PER_LOGICAL_PIXEL),
+  ];
+}
+
+function setLogicalMaskPixel(mask, x, y){
+  if (x < 0 || y < 0 || x >= PRESENTATION_SIZE || y >= PRESENTATION_SIZE) return;
+  mask[y * PRESENTATION_SIZE + x] = 1;
+}
+
+function stampLogicalMask(mask, centerX, centerY, width){
+  const size = Math.max(1, Math.round(width));
+  const start = -Math.floor(size / 2);
+  for (let dy = 0; dy < size; dy++)
+    for (let dx = 0; dx < size; dx++)
+      setLogicalMaskPixel(mask, centerX + start + dx, centerY + start + dy);
+}
+
+function expandLogicalMask(source, radius){
+  const amount = Math.max(0, Math.round(radius));
+  if (!amount) return source.slice();
+  const expanded = new Uint8Array(source.length);
+  for (let y = 0; y < PRESENTATION_SIZE; y++){
+    for (let x = 0; x < PRESENTATION_SIZE; x++){
+      if (!source[y * PRESENTATION_SIZE + x]) continue;
+      for (let dy = -amount; dy <= amount; dy++)
+        for (let dx = -amount; dx <= amount; dx++)
+          setLogicalMaskPixel(expanded, x + dx, y + dy);
+    }
+  }
+  return expanded;
+}
+
+function worldLogicalPhase(x, y, period){
+  const worldSceneX = x * SCENE_PIXELS_PER_LOGICAL_PIXEL + viewOffset.x + TILE.x * W;
+  const worldSceneY = y * SCENE_PIXELS_PER_LOGICAL_PIXEL + viewOffset.y + TILE.y * H;
+  const worldX = Math.floor(worldSceneX / SCENE_PIXELS_PER_LOGICAL_PIXEL);
+  const worldY = Math.floor(worldSceneY / SCENE_PIXELS_PER_LOGICAL_PIXEL);
+  return positiveModulo(worldX + worldY * 3, period);
+}
+
+function rasterizeUnifiedAreaFeatures(features){
+  const paint = unifiedAreaMaskContext;
+  paint.save();
+  paint.setTransform(1, 0, 0, 1, 0, 0);
+  paint.clearRect(0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE);
+  paint.fillStyle = '#fff';
+  for (const feature of features){
+    if (feature.type !== 3) continue;
+    paint.beginPath();
+    for (const ring of feature.geom){
+      ring.forEach((point, index) => {
+        const [x, y] = logicalPointForMapGeometry(point);
+        index ? paint.lineTo(x, y) : paint.moveTo(x, y);
+      });
+      paint.closePath();
+    }
+    paint.fill('evenodd');
+  }
+  paint.restore();
+  const rgba = paint.getImageData(0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE).data;
+  const mask = new Uint8Array(PRESENTATION_SIZE * PRESENTATION_SIZE);
+  for (let index = 0; index < mask.length; index++)
+    mask[index] = rgba[index * 4 + 3] >= 128 ? 1 : 0;
+  return mask;
+}
+
+function buildUnifiedCorridorMasks(features, style){
+  const fullCenter = new Uint8Array(PRESENTATION_SIZE * PRESENTATION_SIZE);
+  for (const feature of features){
+    if (feature.type === 1){
+      for (const line of feature.geom) for (const point of line){
+        const [x, y] = logicalPointForMapGeometry(point);
+        setLogicalMaskPixel(fullCenter, x, y);
+      }
+      continue;
+    }
+    if (feature.type !== 2) continue;
+    for (const line of feature.geom){
+      for (let index = 1; index < line.length; index++){
+        const [x0, y0] = logicalPointForMapGeometry(line[index - 1]);
+        const [x1, y1] = logicalPointForMapGeometry(line[index]);
+        walkLogicalPixelLine(x0, y0, x1, y1,
+          (x, y) => setLogicalMaskPixel(fullCenter, x, y));
+      }
+    }
+  }
+  const activeCenter = fullCenter.slice();
+  if (style.dashPeriod){
+    for (let y = 0; y < PRESENTATION_SIZE; y++){
+      for (let x = 0; x < PRESENTATION_SIZE; x++){
+        const index = y * PRESENTATION_SIZE + x;
+        if (activeCenter[index] && worldLogicalPhase(x, y, style.dashPeriod) >= style.dashOn)
+          activeCenter[index] = 0;
+      }
+    }
+  }
+  const body = rasterizeUnifiedAreaFeatures(features);
+  for (let y = 0; y < PRESENTATION_SIZE; y++){
+    for (let x = 0; x < PRESENTATION_SIZE; x++){
+      if (activeCenter[y * PRESENTATION_SIZE + x]) stampLogicalMask(body, x, y, style.width);
+    }
+  }
+  return {
+    center:fullCenter,
+    activeCenter,
+    body,
+    outer:expandLogicalMask(body, style.edgeWidth || 0),
+  };
+}
+
+function paintLogicalImagePixel(image, index, color, alpha = 1){
+  const rgba = solidCellRgba(color);
+  const pixel = index * 4;
+  image.data[pixel] = rgba[0];
+  image.data[pixel + 1] = rgba[1];
+  image.data[pixel + 2] = rgba[2];
+  image.data[pixel + 3] = Math.round(255 * alpha);
+}
+
+function paintUnifiedRailPattern(image, masks, style){
+  const size = PRESENTATION_SIZE;
+  const body = masks.body, center = masks.center;
+  const horizontalAt = (x, y) => {
+    const at = (px, py) => px >= 0 && py >= 0 && px < size && py < size && center[py * size + px];
+    const horizontal = Number(at(x - 1, y)) + Number(at(x + 1, y)) + Number(at(x - 2, y)) + Number(at(x + 2, y));
+    const vertical = Number(at(x, y - 1)) + Number(at(x, y + 1)) + Number(at(x, y - 2)) + Number(at(x, y + 2));
+    return horizontal >= vertical;
+  };
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
+    const index = y * size + x;
+    if (!center[index] || worldLogicalPhase(x, y, 4) !== 0) continue;
+    const horizontal = horizontalAt(x, y);
+    const half = Math.floor(style.width / 2);
+    for (let offset = -half; offset <= half; offset++){
+      const px = horizontal ? x : x + offset;
+      const py = horizontal ? y + offset : y;
+      if (px < 0 || py < 0 || px >= size || py >= size) continue;
+      const target = py * size + px;
+      if (body[target]) paintLogicalImagePixel(image, target, style.tie);
+    }
+  }
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
+    const index = y * size + x;
+    if (!center[index]) continue;
+    const horizontal = horizontalAt(x, y);
+    for (const offset of [-1, 1]){
+      const px = horizontal ? x : x + offset;
+      const py = horizontal ? y + offset : y;
+      if (px < 0 || py < 0 || px >= size || py >= size) continue;
+      const target = py * size + px;
+      if (body[target]) paintLogicalImagePixel(image, target, style.rail);
+    }
+  }
+}
+
+function renderUnifiedCorridor(features, style, bridge = false, preparedMasks = null){
+  if (!features.length) return null;
+  const bridgeStyle = bridge
+    ? { ...style, edgeWidth:Math.max(1, style.edgeWidth || 0), edge:P.outline }
+    : style;
+  const masks = preparedMasks || buildUnifiedCorridorMasks(features, bridgeStyle);
+  const image = unifiedCorridorContext.createImageData(PRESENTATION_SIZE, PRESENTATION_SIZE);
+  const alpha = bridgeStyle.alpha ?? 1;
+  for (let index = 0; index < masks.outer.length; index++){
+    if (masks.outer[index]) paintLogicalImagePixel(image, index, bridgeStyle.edge || bridgeStyle.fill, alpha);
+    if (masks.body[index]) paintLogicalImagePixel(image, index, bridgeStyle.fill, alpha);
+  }
+  if (bridgeStyle.center){
+    for (let y = 0; y < PRESENTATION_SIZE; y++) for (let x = 0; x < PRESENTATION_SIZE; x++){
+      const index = y * PRESENTATION_SIZE + x;
+      if (!masks.center[index]) continue;
+      if (worldLogicalPhase(x, y, bridgeStyle.centerPeriod) >= bridgeStyle.centerOn) continue;
+      paintLogicalImagePixel(image, index, bridgeStyle.center, alpha);
+    }
+  }
+  if (bridgeStyle.pattern === 'rail') paintUnifiedRailPattern(image, masks, bridgeStyle);
+  unifiedCorridorContext.putImageData(image, 0, 0);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(
+    unifiedCorridorCanvas,
+    0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE,
+    0, 0, SCENE_SIZE, SCENE_SIZE
+  );
+  ctx.restore();
+  return masks;
+}
 
 // 元ポリゴンを出力画素の中心で走査する。8×8論理pxセルを膨張させず、
 // 屋根模様とは独立した棟IDの意味マスクを作る。
@@ -2495,85 +2771,18 @@ function rasterizeStandaloneBuildingPixels(bldUnits){
   return { owner, pixelCounts, size };
 }
 
-// 道路の表示幅と競合した棟は、形と面積を変えず最大1マップセル
-// （標準では8論理px）だけ平行移動する。
-// 建物同士の衝突や画面外への欠損が起きる候補は採用しない。
-function displaceStandaloneBuildingsFromRoads(raster, roadMask, buildingKinds, maxDistance = 8){
-  const size = raster.size;
-  const pixelsByBuilding = Array.from({ length:raster.pixelCounts.length }, () => []);
+// 地理形状は不変に保ち、競合は診断値としてだけ記録する。
+// 表示密度が足りない場合の対応はズーム別LODで行い、衝突後の移動・変形はしない。
+function auditStandaloneBuildingCorridorOverlap(raster, corridorMask){
+  let overlapPixels = 0;
+  const buildingIds = new Set();
   for (let index = 0; index < raster.owner.length; index++){
-    const bi = raster.owner[index];
-    if (bi) pixelsByBuilding[bi].push(index);
+    const buildingId = raster.owner[index];
+    if (!buildingId || !corridorMask[index]) continue;
+    overlapPixels++;
+    buildingIds.add(buildingId);
   }
-  const overlapCount = pixels => pixels.reduce((count, index) => count + (roadMask[index] ? 1 : 0), 0);
-  const initialOverlapPixels = pixelsByBuilding.reduce((count, pixels) => count + overlapCount(pixels), 0);
-  const candidates = [];
-  for (let dy = -maxDistance; dy <= maxDistance; dy++){
-    for (let dx = -maxDistance; dx <= maxDistance; dx++){
-      candidates.push({ dx, dy, distance:dx * dx + dy * dy });
-    }
-  }
-  candidates.sort((a, b) => a.distance - b.distance || Math.abs(a.dy) - Math.abs(b.dy) || a.dy - b.dy || a.dx - b.dx);
-
-  const occupancy = raster.owner.slice();
-  const offsets = Array.from({ length:raster.pixelCounts.length }, () => ({ dx:0, dy:0 }));
-  const conflicting = [];
-  for (let bi = 1; bi < pixelsByBuilding.length; bi++){
-    const pixels = pixelsByBuilding[bi];
-    const overlap = overlapCount(pixels);
-    if (overlap) conflicting.push({ bi, pixels, overlap });
-  }
-  conflicting.sort((a, b) => {
-    const aPoi = buildingKinds[a.bi] !== 'normal' ? 1 : 0;
-    const bPoi = buildingKinds[b.bi] !== 'normal' ? 1 : 0;
-    return bPoi - aPoi || b.pixels.length - a.pixels.length || a.bi - b.bi;
-  });
-
-  let movedBuildings = 0;
-  for (const item of conflicting){
-    const { bi, pixels } = item;
-    const touchesViewport = pixels.some(index => {
-      const x = index % size, y = Math.floor(index / size);
-      return x === 0 || y === 0 || x === size - 1 || y === size - 1;
-    });
-    if (touchesViewport) continue;
-    for (const index of pixels) if (occupancy[index] === bi) occupancy[index] = 0;
-    let best = { dx:0, dy:0, road:item.overlap, occupied:0, out:false };
-    for (const candidate of candidates){
-      let road = 0, occupied = 0, out = false;
-      for (const index of pixels){
-        const x = index % size + candidate.dx;
-        const y = Math.floor(index / size) + candidate.dy;
-        if (x < 0 || y < 0 || x >= size || y >= size){ out = true; break; }
-        const target = y * size + x;
-        if (roadMask[target]) road++;
-        if (occupancy[target]) occupied++;
-        if (occupied || road > best.road) break;
-      }
-      if (out || occupied) continue;
-      if (road < best.road || (road === best.road && candidate.distance < best.dx * best.dx + best.dy * best.dy))
-        best = { ...candidate, road, occupied:0, out:false };
-      if (best.road === 0 && candidate.distance > best.distance) break;
-    }
-    const useBest = best.road < item.overlap;
-    const dx = useBest ? best.dx : 0;
-    const dy = useBest ? best.dy : 0;
-    if (dx || dy){
-      offsets[bi] = { dx, dy };
-      movedBuildings++;
-    }
-    for (const index of pixels){
-      const x = index % size + dx;
-      const y = Math.floor(index / size) + dy;
-      occupancy[y * size + x] = bi;
-    }
-  }
-  raster.owner = occupancy;
-  raster.offsets = offsets;
-  let remainingOverlapPixels = 0;
-  for (let index = 0; index < occupancy.length; index++)
-    if (occupancy[index] && roadMask[index]) remainingOverlapPixels++;
-  return { initialOverlapPixels, remainingOverlapPixels, movedBuildings, maxDistance };
+  return Object.freeze({ overlapPixels, buildings:buildingIds.size });
 }
 
 // 建物チップを置く粗いセルは、正確な意味マスクが触れた全セルから作る。
@@ -2673,11 +2882,13 @@ function drawStandalonePreciseBuildings(raster, buildingKinds, buildingDescs, bu
   const { grid, bldGrid } = preciseBuildingTextureGrid(raster, buildingKinds);
   const size = raster.size;
 
-  // 最終輪郭から1論理pxの南影を作る。道路・他の建物には重ねない。
+  // 最終輪郭から1論理pxの南影を作る。他の建物には重ねない。
+  // roadMaskはlegacy互換時だけ渡され、統一compositorでは後段のcorridorが
+  // 影を覆うため、ここで重なり別の切り欠きを作らない。
   const shadow = preciseBuildingDetailContext.createImageData(size, size);
   for (let y = 1; y < size; y++) for (let x = 0; x < size; x++){
     const index = y * size + x;
-    if (raster.owner[index] || !raster.owner[index - size] || roadMask[index]) continue;
+    if (raster.owner[index] || !raster.owner[index - size] || roadMask?.[index]) continue;
     const pixel = index * 4;
     shadow.data[pixel] = 24;
     shadow.data[pixel + 1] = 32;
@@ -3402,6 +3613,56 @@ function drawSprite(sp, cx, cy, p){
   ctx.restore();
   drawAuxiliaryAssets(p, cx, cy);
 }
+
+function drawUnifiedPoiSymbol(item){
+  const logicalSize = STANDALONE_STYLE_SPEC.symbol.size;
+  const half = Math.floor(logicalSize / 2);
+  const anchorX = Math.round(item.pt[0] / SCENE_PIXELS_PER_LOGICAL_PIXEL);
+  const anchorY = Math.round(item.pt[1] / SCENE_PIXELS_PER_LOGICAL_PIXEL);
+  const spriteKey = CLASS2SPRITE[item.props.subclass] || CLASS2SPRITE[item.props.class] || 'generic';
+  const tone = categoryTone(item.category);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.translate(
+    (anchorX - half) * SCENE_PIXELS_PER_LOGICAL_PIXEL,
+    (anchorY - logicalSize) * SCENE_PIXELS_PER_LOGICAL_PIXEL
+  );
+  ctx.scale(SCENE_PIXELS_PER_LOGICAL_PIXEL, SCENE_PIXELS_PER_LOGICAL_PIXEL);
+  const rect = (x, y, width, height, color) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, width, height);
+  };
+  // 16×16固定、1論理px輪郭、下中央アンカー。地理形状ではなく情報シンボル。
+  rect(1,0,logicalSize-2,1,OUT);
+  rect(0,1,logicalSize,logicalSize-3,OUT);
+  rect(1,1,logicalSize-2,logicalSize-5,tone);
+  rect(6,logicalSize-2,4,2,OUT);
+  rect(7,logicalSize-2,2,1,tone);
+  const ink = GLYPH_WHITE;
+  if (spriteKey === 'station' || item.category === 'transit'){
+    rect(4,3,8,2,ink); rect(5,6,2,5,ink); rect(9,6,2,5,ink); rect(4,11,8,1,ink);
+  } else if (spriteKey === 'hospital' || spriteKey === 'pharmacy' || item.category === 'health'){
+    rect(7,3,2,9,ink); rect(4,6,8,3,ink);
+  } else if (spriteKey === 'school' || spriteKey === 'university' || spriteKey === 'college'){
+    rect(5,3,2,9,ink); rect(7,3,5,3,ink); rect(7,4,3,1,tone); rect(8,8,4,4,ink);
+  } else if (item.category === 'commerce'){
+    rect(4,4,8,2,ink); rect(5,6,1,6,ink); rect(10,6,1,6,ink); rect(7,8,2,4,ink);
+  } else if (item.category === 'food'){
+    rect(4,3,2,7,ink); rect(10,3,2,9,ink); rect(5,3,1,3,tone); rect(5,9,6,2,ink);
+  } else if (item.category === 'nature'){
+    rect(7,8,2,4,ink); rect(5,4,6,5,ink); rect(6,3,4,2,ink);
+  } else if (item.category === 'stay'){
+    rect(4,5,2,7,ink); rect(5,8,7,4,ink); rect(7,6,4,2,ink);
+  } else if (item.category === 'landmark'){
+    rect(7,3,2,9,ink); rect(4,5,8,2,ink); rect(5,10,6,2,ink);
+  } else {
+    rect(4,4,8,8,ink); rect(6,6,4,4,tone);
+  }
+  ctx.restore();
+  item.visualScale = 1;
+  item.visualRadius = logicalSize * SCENE_PIXELS_PER_LOGICAL_PIXEL / 2;
+  item.unifiedSymbol = spriteKey;
+}
 /* 文字もドット絵に: 半分のサイズで描いて2倍に最近傍拡大する */
 function makePixelText(text, size, color, outline){
   const s = Math.max(6, Math.round(size / 2));
@@ -3888,6 +4149,66 @@ function render(){
   if (CELL_ONLY_MODE) drawCellPixelArtSurfaceGrid(emptyGrid, 'grass', cellRenderingStats, false);
   else drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
+  const unifiedCorridorCache = new Map();
+  const unifiedWaterwayClasses = new Set(['river','stream','canal','ditch','drain']);
+  function unifiedCorridorFeatures(option, bridge = false){
+    const style = STANDALONE_STYLE_SPEC.corridor[option];
+    if (!style) return [];
+    if (style.source === 'waterway'){
+      return L('waterway').filter(feature => {
+        const kind = feature.props.subclass || feature.props.class || '';
+        return style.fallback ? !unifiedWaterwayClasses.has(kind) : style.classes.includes(kind);
+      });
+    }
+    return L('transportation').filter(feature => {
+      const routeOption = transportationOption(feature);
+      const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
+      const isTunnel = feature.props.brunnel === 'tunnel';
+      if (style.tunnelGroup){
+        if (!isTunnel || bridge) return false;
+        if (style.tunnelGroup === 'road')
+          return ['localRoads','regionalRoads','majorRoads','motorways','raceways','transportationOther'].includes(routeOption);
+        if (style.tunnelGroup === 'path') return ['paths','tracks'].includes(routeOption);
+        return ['rail','aerialways'].includes(routeOption);
+      }
+      if (option === 'subway') return routeOption === 'subway' && !isBridge;
+      if (routeOption !== option || isTunnel) return false;
+      return bridge ? isBridge : !isBridge;
+    });
+  }
+  function unifiedCorridorEntry(option, bridge = false){
+    const key = `${option}:${bridge ? 'bridge' : 'surface'}`;
+    if (unifiedCorridorCache.has(key)) return unifiedCorridorCache.get(key);
+    const style = STANDALONE_STYLE_SPEC.corridor[option];
+    const features = unifiedCorridorFeatures(option, bridge);
+    const maskStyle = bridge
+      ? { ...style, edgeWidth:Math.max(1, style.edgeWidth || 0), edge:P.outline }
+      : style;
+    const entry = {
+      style,
+      features,
+      masks:features.length ? buildUnifiedCorridorMasks(features, maskStyle) : null,
+    };
+    unifiedCorridorCache.set(key, entry);
+    return entry;
+  }
+  function drawUnifiedCorridorLayer(option, bridge = false){
+    const entry = unifiedCorridorEntry(option, bridge);
+    if (!entry?.masks) return;
+    renderUnifiedCorridor(entry.features, entry.style, bridge, entry.masks);
+  }
+  function activeUnifiedCorridorMask(){
+    const combined = new Uint8Array(PRESENTATION_SIZE * PRESENTATION_SIZE);
+    for (const [option, style] of Object.entries(STANDALONE_STYLE_SPEC.corridor)){
+      if (!o[option] || style.tunnelGroup || option === 'subway' || option === 'ferries' || option === 'aerialways') continue;
+      const masks = unifiedCorridorEntry(option, false).masks;
+      if (!masks) continue;
+      for (let index = 0; index < combined.length; index++)
+        if (masks.body[index]) combined[index] = 1;
+    }
+    return combined;
+  }
+
   /* 本番道路は16pxセルへ落とさず、MVTの元形状を2シーンpx
      （出力画像上1論理px）のグリッドへ直接描く。外形・舗装・中央線を
      別ストロークにすることで、交差点をつなげたまま細かな曲線を保つ。 */
@@ -3996,19 +4317,21 @@ function render(){
     ctx.setLineDash([]); ctx.globalAlpha = 1;
   }
 
-  // 建物マスクと道路競合は、建物・POIの双方が同じ移動量を参照できるよう
-  // 描画より先に一度だけ確定する。
+  // 建物マスクはMVT形状から一度だけ確定する。corridorとの競合は診断するが、
+  // 建物・POIを衝突後に移動または変形させない。
   let preciseBuildingRaster = null;
   let preciseSurfaceRoadMask = null;
-  let preciseBuildingDisplacement = null;
+  let preciseBuildingOverlapAudit = null;
   let preciseBuildingRoadOverlapPixels = 0;
   if (o.buildings && STANDALONE_PRECISE_BUILDINGS){
     preciseBuildingRaster = rasterizeStandaloneBuildingPixels(bldUnits);
-    preciseSurfaceRoadMask = standaloneSurfaceRoadMask(o, L('transportation'));
-    preciseBuildingDisplacement = displaceStandaloneBuildingsFromRoads(
-      preciseBuildingRaster, preciseSurfaceRoadMask, buildingKinds
+    preciseSurfaceRoadMask = STANDALONE_UNIFIED_STYLE
+      ? activeUnifiedCorridorMask()
+      : standaloneSurfaceRoadMask(o, L('transportation'));
+    preciseBuildingOverlapAudit = auditStandaloneBuildingCorridorOverlap(
+      preciseBuildingRaster, preciseSurfaceRoadMask
     );
-    preciseBuildingRoadOverlapPixels = preciseBuildingDisplacement.remainingOverlapPixels;
+    preciseBuildingRoadOverlapPixels = preciseBuildingOverlapAudit.overlapPixels;
   }
 
   /* --- レイヤー統計 --- */
@@ -4035,16 +4358,62 @@ function render(){
   const facilitiesInView = resolvedView.facilities
     .map(f => {
       const pt = worldToScreen(f.worldX, f.worldY);
-      const bi = f.buildingId ? (unitByRingKey.get(f.buildingId) || 0) : 0;
-      const offset = preciseBuildingRaster?.offsets?.[bi];
-      if (offset){
-        pt[0] += offset.dx * SCENE_PIXELS_PER_LOGICAL_PIXEL;
-        pt[1] += offset.dy * SCENE_PIXELS_PER_LOGICAL_PIXEL;
-      }
       return { ...f, pt, visualRadius:f.collisionRadius };
     })
     .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
-  const drawnIcons = facilitiesInView.filter(p => p.representation === 'icon');
+  function unifiedSymbolStableKey(item){
+    return String(
+      item.key || item.stableKey || item.id || item.props?.osm_id ||
+      `${item.props?.class || 'poi'}:${item.props?.subclass || ''}:${item.worldX}:${item.worldY}`
+    );
+  }
+  function compareUnifiedSymbolStableKeys(a, b){
+    const keyA = unifiedSymbolStableKey(a);
+    const keyB = unifiedSymbolStableKey(b);
+    return keyA < keyB ? -1 : keyA > keyB ? 1 : 0;
+  }
+  function selectUnifiedPoiSymbols(items){
+    const policy = STANDALONE_STYLE_SPEC.symbol;
+    const scenePerCell = policy.worldGridLogicalPixels * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+    const minimumGap = policy.minimumGapLogicalPixels * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+    const priority = new Map(policy.categoryPriority.map((category, index) => [category, index]));
+    const candidates = items
+      .filter(item => item.representation === 'icon')
+      .slice()
+      .sort((a, b) =>
+        (priority.get(a.category) ?? priority.size) - (priority.get(b.category) ?? priority.size) ||
+        Number(a.selectionPriority ?? 999) - Number(b.selectionPriority ?? 999) ||
+        compareUnifiedSymbolStableKeys(a, b)
+      );
+    const accepted = [];
+    const worldCells = new Map();
+    for (const item of candidates){
+      const cellX = Math.floor(item.worldX / scenePerCell);
+      const cellY = Math.floor(item.worldY / scenePerCell);
+      const cellKey = `${cellX}:${cellY}`;
+      if ((worldCells.get(cellKey) || 0) >= policy.maximumPerWorldCell) continue;
+      let tooClose = false;
+      for (const selected of accepted){
+        if (Math.abs(selected.worldX - item.worldX) >= minimumGap ||
+            Math.abs(selected.worldY - item.worldY) >= minimumGap) continue;
+        if (Math.hypot(selected.worldX - item.worldX, selected.worldY - item.worldY) < minimumGap){
+          tooClose = true;
+          break;
+        }
+      }
+      if (tooClose) continue;
+      worldCells.set(cellKey, (worldCells.get(cellKey) || 0) + 1);
+      accepted.push(item);
+    }
+    return new Set(accepted.map(unifiedSymbolStableKey));
+  }
+  const unifiedSymbolKeys = STANDALONE_UNIFIED_STYLE
+    ? selectUnifiedPoiSymbols(resolvedView.facilities)
+    : null;
+  const drawnIcons = facilitiesInView.filter(p =>
+    p.representation === 'icon' &&
+    (!STANDALONE_UNIFIED_STYLE || unifiedSymbolKeys.has(unifiedSymbolStableKey(p)))
+  );
   const hiddenPois = facilitiesInView.filter(p => p.representation === 'dot');
   const clusterMarks = resolvedView.clusters
     .map(c => ({ ...c, pt:worldToScreen(c.worldX, c.worldY) }))
@@ -4223,13 +4592,17 @@ function render(){
     return a.pt[1] - b.pt[1] || tierValue(a.size) - tierValue(b.size);
   });
   function drawPoi(){
-    // アイコンにならなかった施設も、点またはクラスターとして必ず残す。
-    drawDots();
-    drawClusters();
+    // legacyは従来どおり点・クラスターを併記する。統一Symbol Policyでは
+    // 非採用POIを別の小記号へ置換せず、同じ世界グリッド規則で非表示にする。
+    if (!STANDALONE_UNIFIED_STYLE){
+      drawDots();
+      drawClusters();
+    }
     for (const p of drawnIcons){
-      drawSprite(spriteFor(p.props, p.size, p.variant), p.pt[0], p.pt[1], p);
-      const radius = Math.max(28, p.visualRadius);
-      hitAreas.push({ x: p.pt[0] - radius, y: p.pt[1] - radius*1.9, w: radius*2, h: radius*2.1, p: p.props, kind:'poi' });
+      if (STANDALONE_UNIFIED_STYLE) drawUnifiedPoiSymbol(p);
+      else drawSprite(spriteFor(p.props, p.size, p.variant), p.pt[0], p.pt[1], p);
+      const radius = STANDALONE_UNIFIED_STYLE ? 20 : Math.max(28, p.visualRadius);
+      hitAreas.push({ x:p.pt[0]-radius, y:p.pt[1]-radius*2, w:radius*2, h:radius*2.2, p:p.props, kind:'poi' });
     }
   }
   function drawCellPoi(){
@@ -4251,7 +4624,8 @@ function render(){
       .sort((a,b) => a.rank - b.rank);
     for (const p of stationTargets){
       const [x, y] = labelPoint(p);
-      labelWindow(featureName(p.props), x, y - (p.size === 'L' ? 154 : 130), placedRects);
+      const offset = STANDALONE_UNIFIED_STYLE ? 48 : (p.size === 'L' ? 154 : 130);
+      labelWindow(featureName(p.props), x, y - offset, placedRects);
     }
   }
   function drawParkNames(){
@@ -4272,7 +4646,8 @@ function render(){
       .slice(0, ACTIVE_PATTERN.labelLimit);
     for (const p of labelTargets){
       const [x, y] = labelPoint(p);
-      labelWindow(featureName(p.props), x, y - (p.size === 'L' ? 142 : 116), placedRects);
+      const offset = STANDALONE_UNIFIED_STYLE ? 44 : (p.size === 'L' ? 142 : 116);
+      labelWindow(featureName(p.props), x, y - offset, placedRects);
     }
   }
   function drawPlaceNames(){
@@ -4458,6 +4833,9 @@ function render(){
   const drawRasterGroup = (z, options) => {
     for (const option of layerOrder){
       if (!o[option] || !options.has(option)) continue;
+      // 統一Style Specのcorridorは、全area（建物を含む）が確定した後の
+      // 共通合成パスで描く。個別の重なり検出ではなく全域で同じ優先順にする。
+      if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option]) continue;
       if (CELL_ONLY_MODE){
         // The base pass already fills every map cell with grass. Avoid a
         // duplicate repaint so the cell-write diagnostics remain meaningful.
@@ -4493,6 +4871,8 @@ function render(){
   drawRasterGroup('Z1', z1Water);
   for (const option of layerOrder){
     if (!o[option] || !z2Routes.has(option)) continue;
+    // standalone標準のcorridorは建物areaの後へ一括して合成する。
+    if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option]) continue;
     if (CELL_ONLY_MODE){
       const grid = grids.get(option);
       if (grid) drawCellPixelArtTransportGrid(grid, option, cellRenderingStats, transportCenters.get(option));
@@ -4509,9 +4889,10 @@ function render(){
 
   if (o.buildings && STANDALONE_PRECISE_BUILDINGS){
     drawStandalonePreciseBuildings(
-      preciseBuildingRaster, buildingKinds, buildingDescs, buildingAnchors, bldStyle, preciseSurfaceRoadMask
+      preciseBuildingRaster, buildingKinds, buildingDescs, buildingAnchors, bldStyle,
+      STANDALONE_UNIFIED_STYLE ? null : preciseSurfaceRoadMask
     );
-    renderOrder.push('Z3:buildings:precise-1px');
+    renderOrder.push(STANDALONE_UNIFIED_STYLE ? 'Z2:area:buildings:precise-1px' : 'Z3:buildings:precise-1px');
   } else if (o.buildings){
     if (CELL_ONLY_MODE){
       drawCellPixelArtBuildingGrid(normalBuildingGrid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, 'buildings', cellRenderingStats);
@@ -4521,9 +4902,19 @@ function render(){
     }
     renderOrder.push('Z3:building');
   }
-  // 平行移動で解消できなかった競合だけは道路を視覚的に優先する。
-  // 建物の意味マスク自体は完全なまま保持されるため、形や面積は失われない。
-  if (preciseBuildingRoadOverlapPixels){
+  // 固定compositor: area → corridor → bridge → symbol。
+  // 建物との交差有無に関係なく、道路・鉄道・水路を同じループと
+  // 1論理pxマスク生成器で描くため、斜線や長い建物にも例外を作らない。
+  if (STANDALONE_UNIFIED_STYLE){
+    for (const option of layerOrder){
+      if (!o[option] || !STANDALONE_STYLE_SPEC.corridor[option]) continue;
+      drawUnifiedCorridorLayer(option);
+      renderOrder.push(`Z3:corridor:${option}`);
+    }
+  }
+  // legacy描画だけは旧競合フォールバックを維持する。統一Style Specでは
+  // 地理形状を不変にし、競合を理由に道路・建物を再配置または再描画しない。
+  if (!STANDALONE_UNIFIED_STYLE && preciseBuildingRoadOverlapPixels){
     for (const option of layerOrder){
       if (!o[option] || !SMOOTH_ROAD_OPTIONS.has(option)) continue;
       drawSmoothRoadLayer(option);
@@ -4538,6 +4929,8 @@ function render(){
       if (grid) drawCellPixelArtTransportGrid(grid, option, cellRenderingStats, transportCenters.get(bridgeOption), true);
       countCellFeatures(bridgeOption);
     }
+    else if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option])
+      drawUnifiedCorridorLayer(option, true);
     else if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option, true);
     else {
       const grid = grids.get(bridgeOption);
@@ -4644,12 +5037,33 @@ function render(){
     buildingCategoryCounts:countBy(buildingDescs.filter(Boolean).filter(d => d.glyph), d => d.glyph),
     buildingGeometry:{
       preciseLogicalPixelMask:STANDALONE_PRECISE_BUILDINGS,
+      immutableSourceGeometry:STANDALONE_UNIFIED_STYLE,
       logicalPixels:preciseBuildingRaster ? preciseBuildingRaster.owner.reduce((count, bi) => count + (bi ? 1 : 0), 0) : 0,
-      surfaceRoadOverlapPixels:preciseBuildingRoadOverlapPixels,
-      initialSurfaceRoadOverlapPixels:preciseBuildingDisplacement?.initialOverlapPixels || 0,
-      displacedBuildings:preciseBuildingDisplacement?.movedBuildings || 0,
-      maximumDisplacementLogicalPixels:preciseBuildingDisplacement?.maxDistance || 0,
-      shadowsExcludedFromSurfaceRoads:Boolean(preciseSurfaceRoadMask),
+      corridorOverlapPixels:preciseBuildingRoadOverlapPixels,
+      corridorOverlapBuildings:preciseBuildingOverlapAudit?.buildings || 0,
+      displacedBuildings:0,
+      maximumDisplacementLogicalPixels:0,
+      shadowsExcludedFromCorridors:!STANDALONE_UNIFIED_STYLE && Boolean(preciseSurfaceRoadMask),
+    },
+    styleSpec:{
+      enabled:STANDALONE_UNIFIED_STYLE,
+      version:STANDALONE_STYLE_SPEC.version,
+      primitives:['area','corridor','symbol'],
+      corridorRenderer:STANDALONE_UNIFIED_STYLE ? 'logical-pixel-mask' : 'legacy-mixed',
+      compositor:STANDALONE_UNIFIED_STYLE ? ['area','corridor','bridge','symbol'] : ['legacy-z-order'],
+      symbolRenderer:STANDALONE_UNIFIED_STYLE ? 'fixed-source-anchored' : 'legacy-building-sprite',
+      symbolLogicalPixels:STANDALONE_STYLE_SPEC.symbol.size,
+      sourceGeometryImmutable:STANDALONE_UNIFIED_STYLE,
+      symbolPolicy:{
+        worldGridLogicalPixels:STANDALONE_STYLE_SPEC.symbol.worldGridLogicalPixels,
+        maximumPerWorldCell:STANDALONE_STYLE_SPEC.symbol.maximumPerWorldCell,
+        minimumGapLogicalPixels:STANDALONE_STYLE_SPEC.symbol.minimumGapLogicalPixels,
+        overflow:STANDALONE_STYLE_SPEC.symbol.overflow,
+        selected:drawnIcons.length,
+        suppressed:STANDALONE_UNIFIED_STYLE
+          ? facilitiesInView.filter(item => item.representation === 'icon').length - drawnIcons.length
+          : 0,
+      },
     },
     pattern:{
       id:ACTIVE_PATTERN.id,
@@ -4675,11 +5089,17 @@ function render(){
       unit:'logical-px',
       localRoadWidth:CELL_ONLY_MODE
         ? (STANDALONE_MINIMUM_MINOR_ROUTES ? 1 : CELL_DETAIL_SCALE) * MAP_CELL_LOGICAL_SIZE
-        : SMOOTH_ROAD_STYLE.localRoads.width / SCENE_PIXELS_PER_LOGICAL_PIXEL,
+        : STANDALONE_UNIFIED_STYLE
+          ? STANDALONE_STYLE_SPEC.corridor.localRoads.width
+          : SMOOTH_ROAD_STYLE.localRoads.width / SCENE_PIXELS_PER_LOGICAL_PIXEL,
       pathWidth:CELL_ONLY_MODE
         ? (STANDALONE_MINIMUM_MINOR_ROUTES ? 1 : CELL_DETAIL_SCALE) * MAP_CELL_LOGICAL_SIZE
-        : STANDALONE_MINIMUM_MINOR_ROUTES ? 1 : 2,
-      casingWidth:SMOOTH_ROAD_STYLE.localRoads.casing / SCENE_PIXELS_PER_LOGICAL_PIXEL,
+        : STANDALONE_UNIFIED_STYLE
+          ? STANDALONE_STYLE_SPEC.corridor.paths.width
+          : STANDALONE_MINIMUM_MINOR_ROUTES ? 1 : 2,
+      casingWidth:STANDALONE_UNIFIED_STYLE
+        ? STANDALONE_STYLE_SPEC.corridor.localRoads.edgeWidth
+        : SMOOTH_ROAD_STYLE.localRoads.casing / SCENE_PIXELS_PER_LOGICAL_PIXEL,
     },
     cellRendering:{
       enabled:CELL_ONLY_MODE,
