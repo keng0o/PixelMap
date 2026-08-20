@@ -682,7 +682,7 @@ const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window
 // map-02をiframeで共有する1・2・4マップの表示は変更しない。
 const STANDALONE_LANDMARK_MODE = !EMBEDDED;
 const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260820';
-const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820';
+const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820-2';
 let landmarkFeatureCollection = null;
 let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
 const DEFAULT_TILE_ZOOM = 14;

@@ -63,12 +63,17 @@ test('ズーム別に親施設、代表子施設、詳細施設を段階表示�
   assert.equal(z16.has('Cinecittà'), true);
 });
 
-test('overrideは生成データを変更せず別名と配置候補を実行時に重ねる', () => {
+test('overrideは生成データを変更せず別名とOSM形状中心を実行時に重ねる', () => {
   const source = generated.features.find(feature => feature.properties.id === 'way/690489941');
   const merged = collection.features.find(feature => feature.properties.id === 'way/690489941');
+  const club = collection.features.find(feature => feature.properties.id === 'way/158883031');
   assert.equal(source.properties.aliases, undefined);
   assert.ok(merged.properties.aliases.includes('ラ チッタデッラ'));
-  assert.equal(merged.properties.icon_anchor_candidates.length, 3);
+  assert.deepEqual(merged.properties.icon_anchor, [139.6977663, 35.5281594]);
+  assert.deepEqual(club.properties.icon_anchor, [139.6972369, 35.5278097]);
+  assert.equal(API.geometryContains(merged.geometry, merged.properties.icon_anchor), true);
+  assert.equal(API.geometryContains(club.geometry, club.properties.icon_anchor), true);
+  assert.equal(merged.properties.icon_anchor_candidates, undefined);
   assert.equal(collection.properties.overrides_schema, 'pixelmap-landmark-overrides/1');
 });
 

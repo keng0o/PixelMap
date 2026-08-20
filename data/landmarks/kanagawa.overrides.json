@@ -8,19 +8,17 @@
         "ラ・チッタデッラ",
         "LA CITTADELLA"
       ],
-      "icon_anchor": [139.6981233408, 35.5286504965],
-      "icon_anchor_candidates": [
-        [139.6981233408, 35.5286504965],
-        [139.6983330, 35.5287800],
-        [139.6976338, 35.5285788]
-      ]
+      "icon_anchor": [139.6977663, 35.5281594],
+      "anchor_source": "osm_geometry_center"
     },
     "way/158883031": {
       "aliases": [
         "CLUB CITTA’",
         "CLUB CITTA",
         "クラブチッタ"
-      ]
+      ],
+      "icon_anchor": [139.6972369, 35.5278097],
+      "anchor_source": "osm_geometry_center"
     },
     "way/689642930": {
       "aliases": [
