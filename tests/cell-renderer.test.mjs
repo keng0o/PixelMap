@@ -107,7 +107,7 @@ test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで�
 test('POIは既存スプライトを2×2セルテンプレートへ変換しクリック領域を維持する', () => {
   assert.match(html, /let spritePaintContext = ctx/);
   assert.match(html, /function cellSpriteTemplateFor\(item\)/);
-  assert.match(html, /spriteFor\(item\.props, item\.size, item\.variant\)\.draw\(0, 0\)/);
+  assert.match(html, /spriteFor\(item\.props, assetSize, item\.variant, item\.spriteKey\)\.draw\(0, 0\)/);
   assert.match(html, /function drawCellSprite\(item, layer\)/);
   assert.match(html, /drawCellPatternMarker\(item, gx, gy/);
   assert.match(html, /const \[x, y\] = drawCellSprite\(p, 'poi'\)/);

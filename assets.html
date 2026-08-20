@@ -15,10 +15,11 @@
     <a class="back-link" href="index.html" aria-label="マップへ戻る">← MAP</a>
     <p class="eyebrow">PIXELMAP / ALL MAP ASSETS</p>
     <h1>マップアセット一覧</h1>
-    <p class="lede">草地・水域・土地利用・交通・建物・地名を含む全62レイヤーと、POIアセット52点の正典です。交通レイヤーの描画方式・色・論理px寸法はマップと共有され、プレビューを押すと1マス＝1pxの拡大図が開きます。</p>
+    <p class="lede">草地・水域・土地利用・交通・建物・地名を含む全62レイヤーと、POIアセット52点の正典です。交通レイヤーはマップと同じ連続距離マスク描画、POIは同じAsset Contractを使い、プレビューを押すと1マス＝1pxの拡大図が開きます。</p>
     <nav class="jump-links" aria-label="アセット種別">
       <a href="#mapLayers">地図レイヤー</a>
       <a href="#poiAssets">POIアセット</a>
+      <a href="assets/mobile-asset-manifest.json">Mobile JSON</a>
     </nav>
     <div class="hero-stats" aria-label="アセット統計">
       <div><strong id="totalCount">52</strong><span>POI ASSETS</span></div>
@@ -71,7 +72,8 @@
 
   <script src="assets/facility-resolver.js?v=65"></script>
   <script src="assets/poi-sprites.js?v=65"></script>
-  <script src="assets/layer-assets.js?v=65"></script>
+  <script src="assets/corridor-renderer.js?v=1"></script>
+  <script src="assets/layer-assets.js?v=66"></script>
   <script src="assets/catalog.js?v=65"></script>
 </body>
 </html>

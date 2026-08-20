@@ -198,6 +198,30 @@
     pop_university:'pop',pop_college:'pop',pop_post:'pop',pop_art_museum:'pop',pop_zoo:'pop',
   };
   const tasteLabels = Object.fromEntries(tastes.map(taste => [taste.id,taste.label]));
+  /*
+    POI Asset Contract v1
+    ---------------------
+    地物の座標や道路形状をアセットに合わせて動かさない。すべてのPOIは
+    「地面中央のsource point」を共通anchorにし、実際の占有範囲はdraw結果から
+    sizeごとにmeasureする。semanticRoleだけが合成順と衝突余白の意味を決める。
+    このデータはWeb描画だけでなく、将来のExpo / Flutter用manifestの正本になる。
+  */
+  const ASSET_CONTRACT_VERSION = 'pixelmap-poi-asset/1';
+  const GROUND_CENTER_ANCHOR = Object.freeze({kind:'ground-center',x:0,y:0});
+  const roleBySprite = Object.freeze({
+    station:'structure',bus:'marker',shop:'structure',mall:'structure',grocery:'structure',
+    restaurant:'structure',fast_food:'structure',cafe:'structure',bar:'structure',hotel:'structure',
+    hospital:'structure',pharmacy:'marker',school:'structure',library:'structure',bank:'marker',
+    post:'marker',police:'structure',fire_station:'structure',townhall:'structure',
+    place_of_worship:'object',attraction:'marker',monument:'object',castle:'structure',
+    gallery:'structure',museum:'structure',theatre:'structure',cinema:'structure',park:'object',
+    zoo:'structure',parking:'marker',charge_hub:'structure',office:'structure',civic_hall:'structure',
+    burger_stand:'structure',grand_station:'structure',owl_library:'structure',university:'structure',
+    college:'structure',wing_post:'structure',art_museum:'structure',menagerie:'structure',
+    pop_office:'structure',pop_townhall:'structure',pop_fastfood:'structure',pop_station:'structure',
+    pop_library:'structure',pop_university:'structure',pop_college:'structure',pop_post:'marker',
+    pop_art_museum:'structure',pop_zoo:'structure',generic:'marker',
+  });
   const assets = Object.freeze(Object.entries(SPRITES).map(([id,entry]) => {
     const category = categoryBySprite[id];
     const sizes = ['S','M','L'].filter(size => typeof entry[size] === 'function');
@@ -213,8 +237,15 @@
       taste,
       tasteLabel:taste ? tasteLabels[taste] : null,
       inspired:Boolean(taste),
+      contractVersion:ASSET_CONTRACT_VERSION,
+      semanticRole:roleBySprite[id],
+      renderer:'pixel-procedural',
+      assetPixelScale:2,
+      anchor:GROUND_CENTER_ANCHOR,
+      boundsSource:'measured-draw-output',
     });
   }));
+  const assetsById = new Map(assets.map(asset => [asset.id,asset]));
 
   function paintBackdrop(target){
     target.fillStyle='#b8cb82';target.fillRect(0,0,288,240);
@@ -274,5 +305,42 @@
     return measurement;
   }
 
-  global.PixelMapPoiSprites = Object.freeze({assets,categories,tastes,draw,render,measure});
+  function contract(id, size='M'){
+    const asset = assetsById.get(id) || assetsById.get('generic');
+    const resolvedSize = asset.sizes.includes(size) ? size : asset.previewSize;
+    return Object.freeze({
+      version:ASSET_CONTRACT_VERSION,
+      id:asset.id,
+      semanticRole:asset.semanticRole,
+      renderer:asset.renderer,
+      assetPixelScale:asset.assetPixelScale,
+      size:resolvedSize,
+      anchor:asset.anchor,
+      bounds:measure(asset.id,resolvedSize),
+    });
+  }
+
+  const commandCache=new Map();
+  function commands(id,size='M'){
+    const assetContract=contract(id,size);
+    const cacheKey=`${assetContract.id}:${assetContract.size}`;
+    if(commandCache.has(cacheKey)) return commandCache.get(cacheKey);
+    const operations=[];
+    const commandTarget={
+      fillStyle:'#000000',
+      fillRect(x,y,width,height){
+        if(!Number.isFinite(x+y+width+height) || width<=0 || height<=0) return;
+        operations.push(Object.freeze({x,y,width,height,color:String(this.fillStyle)}));
+      },
+    };
+    draw(commandTarget,assetContract.id,0,0,assetContract.size);
+    const result=Object.freeze(operations);
+    commandCache.set(cacheKey,result);
+    return result;
+  }
+
+  global.PixelMapPoiSprites = Object.freeze({
+    contractVersion:ASSET_CONTRACT_VERSION,
+    assets,categories,tastes,draw,render,measure,contract,commands,
+  });
 })(window);

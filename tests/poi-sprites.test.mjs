@@ -67,6 +67,45 @@ test('全POIのS/M/L実寸が透明描画の外接矩形と一致する', () => 
   }
 });
 
+test('全52件が同じPOI Asset Contractを持ち、role・ground anchor・実測boundsに欠落がない', () => {
+  assert.equal(catalog.contractVersion, 'pixelmap-poi-asset/1');
+  const allowedRoles = new Set(['structure','object','marker']);
+  const roleCounts = {structure:0,object:0,marker:0};
+  for(const asset of catalog.assets){
+    assert.equal(asset.contractVersion, catalog.contractVersion, asset.id);
+    assert.ok(allowedRoles.has(asset.semanticRole), `${asset.id} semanticRole`);
+    roleCounts[asset.semanticRole]++;
+    assert.equal(asset.renderer, 'pixel-procedural', `${asset.id} renderer`);
+    assert.equal(asset.assetPixelScale, 2, `${asset.id} scale`);
+    assert.deepEqual(asset.anchor, {kind:'ground-center',x:0,y:0}, `${asset.id} anchor`);
+    assert.equal(asset.boundsSource, 'measured-draw-output', `${asset.id} boundsSource`);
+    for(const size of asset.sizes){
+      const contract = catalog.contract(asset.id,size);
+      assert.equal(contract.id, asset.id);
+      assert.equal(contract.size, size);
+      assert.equal(contract.semanticRole, asset.semanticRole);
+      assert.deepEqual(contract.anchor, asset.anchor);
+      assert.deepEqual(contract.bounds, catalog.measure(asset.id,size));
+    }
+  }
+  assert.ok(roleCounts.structure > 0);
+  assert.ok(roleCounts.object > 0);
+  assert.ok(roleCounts.marker > 0);
+});
+
+test('各POIはmobile renderer向けに同じ描画矩形命令を公開する', () => {
+  for(const asset of catalog.assets){
+    for(const size of asset.sizes){
+      const commands=catalog.commands(asset.id,size);
+      assert.ok(commands.length>0,`${asset.id}:${size}`);
+      assert.ok(commands.every(command =>
+        Number.isFinite(command.x+command.y+command.width+command.height) &&
+        command.width>0 && command.height>0 && typeof command.color==='string'),`${asset.id}:${size}`);
+      assert.equal(catalog.commands(asset.id,size),commands,`${asset.id}:${size} cache`);
+    }
+  }
+});
+
 test('新テイスト候補20点はアセットのみで、マップのPOI属性へは未接続', () => {
   const wired = new Set(Object.values(resolver.CLASS2SPRITE));
   for(const id of [...candidateIds, ...popIds]){
@@ -75,10 +114,12 @@ test('新テイスト候補20点はアセットのみで、マップのPOI属性
   }
 });
 
-test('現行マップの描画辞書にも新作6アセットが実装されている', async () => {
+test('現行マップは重複描画辞書を持たず、新作6点を含む正本カタログだけを描く', async () => {
   const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
-  const spriteBlock = html.slice(html.indexOf('const SPRITES = {'), html.indexOf('// 施設の分類・重要度・サイズ判定'));
-  for(const id of inspiredIds) assert.match(spriteBlock, new RegExp(`\\n\\s*${id}\\s*:`), id);
+  assert.doesNotMatch(html, /const SPRITES = \{/);
+  assert.match(html, /const POI_SPRITE_CATALOG = window\.PixelMapPoiSprites/);
+  assert.match(html, /POI_SPRITE_CATALOG\.draw\(/);
+  for(const id of inspiredIds) assert.ok(catalog.assets.some(asset => asset.id === id), id);
 });
 
 test('しろポップ10点はアセット候補に残すがマップへは接続しない', async () => {

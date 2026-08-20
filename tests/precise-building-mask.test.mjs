@@ -38,12 +38,12 @@ test('standalone標準は影もPOIも衝突移動せず、POIを元の世界座�
   assert.doesNotMatch(html, /pt\[1\] \+= offset/);
 });
 
-test('固定compositorはarea、corridor、bridgeの順で全域を合成する', () => {
+test('固定compositorはarea、structure、corridor、bridge、overlayの順で全域を合成する', () => {
   const precise = html.indexOf("'Z2:area:buildings:precise-1px'");
   const corridor = html.indexOf('renderOrder.push(`Z3:corridor:${option}`)');
   const bridge = html.indexOf('renderOrder.push(`Z3:bridge:${option}`)');
   assert.ok(precise >= 0 && corridor > precise && bridge > corridor);
-  assert.match(html, /compositor:STANDALONE_UNIFIED_STYLE \? \['area','corridor','bridge','symbol'\]/);
+  assert.match(html, /\? \['area','structure','corridor','bridge','object','marker','dot-cluster'\]/);
   assert.match(html, /if \(!STANDALONE_UNIFIED_STYLE && preciseBuildingRoadOverlapPixels\)/);
   assert.match(html, /if \(o\.buildings && !STANDALONE_PRECISE_BUILDINGS\)/);
 });

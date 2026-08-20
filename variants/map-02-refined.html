@@ -557,11 +557,12 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
-<script src="../assets/facility-resolver.js"></script>
+<script src="../assets/facility-resolver.js?v=3"></script>
 <script src="../assets/landmark-entities.js"></script>
-<script src="../assets/poi-sprites.js"></script>
+<script src="../assets/poi-sprites.js?v=3"></script>
 <script src="../assets/building-styles.js"></script>
-<script src="../assets/layer-assets.js"></script>
+<script src="../assets/corridor-renderer.js?v=1"></script>
+<script src="../assets/layer-assets.js?v=3"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -887,7 +888,9 @@ function presentScene(){
 // 単体ページの交通表現はassetsページの定義を唯一の正典として使う。
 // embedded表示は既存の1・2・4マップを変えないため、生活道路だけ旧寸法を維持する。
 const LAYER_ASSET_CATALOG = window.PixelMapLayerAssets;
+const CORRIDOR_RENDERER = window.PixelMapCorridorRenderer;
 const CANONICAL_TRANSPORT_RULES = LAYER_ASSET_CATALOG.transportRules;
+const CANONICAL_CORRIDOR_RULES = LAYER_ASSET_CATALOG.corridorRules;
 
 /* =====================================================
    3. 標準描画用16シーンpx（8論理px）マップチップ（GB風パレット）
@@ -926,8 +929,8 @@ const P = {
    - 地理形状はMVT座標から一度だけ確定し、衝突後に移動・変形しない。
    - area / corridor / symbol の3種類だけを描画基盤とする。
    - 交通・水路の外形は共通corridorマスク、差異は内部スキンで表す。
-   - 建物型POIの大型完成スプライトは地理形状として使わず、実建物へ
-     building-stylesのカテゴリスキンを適用し、情報は固定シンボルで重ねる。
+   - POIは既存のRPGアセットを使い、表示採用はfacility-resolverだけが決める。
+     geometry側はsource pointを動かさず、asset側がS/M/L・anchor・boundsを持つ。
    ===================================================== */
 const STANDALONE_STYLE_SPEC = Object.freeze({
   version:'geometry-skin-symbol/1',
@@ -938,43 +941,35 @@ const STANDALONE_STYLE_SPEC = Object.freeze({
     geometrySource:'mvt-polygon',
   }),
   symbol:Object.freeze({
-    size:16,
-    outlineWidth:1,
-    anchor:'bottom-center',
-    geometrySource:'mvt-point',
-    // 位置をずらさず、世界座標グリッドごとの採用数だけを制御する。
-    // 大量追加時も画面座標や入力順に依存せず、同じ地点は同じ結果になる。
-    worldGridLogicalPixels:64,
-    maximumPerWorldCell:1,
-    minimumGapLogicalPixels:28,
-    overflow:'hidden',
-    categoryPriority:Object.freeze([
-      'landmark','transit','health','civic','service',
-      'commerce','food','stay','nature','generic',
-    ]),
+    renderer:'poi-asset',
+    geometrySource:'resolver-source-world-point',
+    anchorSource:'poi-asset-metadata',
+    boundsSource:'poi-asset-measurement',
+    sizeTiers:Object.freeze(['S','M','L']),
+    selectionAuthority:'facility-resolver',
   }),
   corridor:Object.freeze({
-    rivers:Object.freeze({source:'waterway',classes:['river'],width:4,edgeWidth:1,fill:P.water,edge:P.foam}),
-    streams:Object.freeze({source:'waterway',classes:['stream'],width:1,edgeWidth:0,fill:'#5aa2e8'}),
-    canals:Object.freeze({source:'waterway',classes:['canal'],width:2,edgeWidth:0,fill:P.water}),
-    drains:Object.freeze({source:'waterway',classes:['ditch','drain'],width:1,edgeWidth:0,fill:'#6aa8d8'}),
-    waterwayOther:Object.freeze({source:'waterway',fallback:true,width:1,edgeWidth:0,fill:P.water}),
-    localRoads:Object.freeze({source:'transportation',width:1,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.localRoads.fill}),
-    regionalRoads:Object.freeze({source:'transportation',width:8,edgeWidth:1,fill:CANONICAL_TRANSPORT_RULES.regionalRoads.fill,edge:CANONICAL_TRANSPORT_RULES.regionalRoads.edge,center:CANONICAL_TRANSPORT_RULES.regionalRoads.center,centerPeriod:13,centerOn:7}),
-    majorRoads:Object.freeze({source:'transportation',width:10,edgeWidth:1,fill:CANONICAL_TRANSPORT_RULES.majorRoads.fill,edge:CANONICAL_TRANSPORT_RULES.majorRoads.edge,center:CANONICAL_TRANSPORT_RULES.majorRoads.center,centerPeriod:17,centerOn:10}),
-    motorways:Object.freeze({source:'transportation',width:14,edgeWidth:2,fill:CANONICAL_TRANSPORT_RULES.motorways.fill,edge:CANONICAL_TRANSPORT_RULES.motorways.edge,center:CANONICAL_TRANSPORT_RULES.motorways.center,centerPeriod:17,centerOn:10}),
-    paths:Object.freeze({source:'transportation',width:1,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.paths.fill}),
-    tracks:Object.freeze({source:'transportation',width:2,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.tracks.fill,center:CANONICAL_TRANSPORT_RULES.tracks.detail,centerPeriod:7,centerOn:3}),
-    raceways:Object.freeze({source:'transportation',width:8,edgeWidth:1,fill:CANONICAL_TRANSPORT_RULES.raceways.fill,edge:CANONICAL_TRANSPORT_RULES.raceways.edge}),
-    ferries:Object.freeze({source:'transportation',width:2,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.ferries.fill,dashPeriod:10,dashOn:6}),
-    piers:Object.freeze({source:'transportation',width:2,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.piers.fill}),
-    rail:Object.freeze({source:'transportation',width:7,edgeWidth:1,fill:CANONICAL_TRANSPORT_RULES.rail.bed,edge:CANONICAL_TRANSPORT_RULES.rail.bedDark,pattern:'rail',rail:CANONICAL_TRANSPORT_RULES.rail.fill,tie:CANONICAL_TRANSPORT_RULES.rail.tie}),
-    subway:Object.freeze({source:'transportation',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.subway.fill,dashPeriod:10,dashOn:5,alpha:.3}),
-    aerialways:Object.freeze({source:'transportation',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.aerialways.bed,pattern:'rail',rail:CANONICAL_TRANSPORT_RULES.aerialways.fill,tie:CANONICAL_TRANSPORT_RULES.aerialways.tie}),
-    transportationOther:Object.freeze({source:'transportation',width:2,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.transportationOther.fill}),
-    roadTunnels:Object.freeze({source:'transportation',tunnelGroup:'road',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.roadTunnels.fill,dashPeriod:10,dashOn:5,alpha:.3}),
-    pathTunnels:Object.freeze({source:'transportation',tunnelGroup:'path',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.pathTunnels.fill,dashPeriod:10,dashOn:5,alpha:.3}),
-    railTunnels:Object.freeze({source:'transportation',tunnelGroup:'rail',width:3,edgeWidth:0,fill:CANONICAL_TRANSPORT_RULES.railTunnels.fill,dashPeriod:10,dashOn:5,alpha:.3}),
+    rivers:CANONICAL_CORRIDOR_RULES.rivers,
+    streams:CANONICAL_CORRIDOR_RULES.streams,
+    canals:CANONICAL_CORRIDOR_RULES.canals,
+    drains:CANONICAL_CORRIDOR_RULES.drains,
+    waterwayOther:CANONICAL_CORRIDOR_RULES.waterwayOther,
+    localRoads:CANONICAL_CORRIDOR_RULES.localRoads,
+    regionalRoads:CANONICAL_CORRIDOR_RULES.regionalRoads,
+    majorRoads:CANONICAL_CORRIDOR_RULES.majorRoads,
+    motorways:CANONICAL_CORRIDOR_RULES.motorways,
+    paths:CANONICAL_CORRIDOR_RULES.paths,
+    tracks:CANONICAL_CORRIDOR_RULES.tracks,
+    raceways:CANONICAL_CORRIDOR_RULES.raceways,
+    ferries:CANONICAL_CORRIDOR_RULES.ferries,
+    piers:CANONICAL_CORRIDOR_RULES.piers,
+    rail:CANONICAL_CORRIDOR_RULES.rail,
+    subway:CANONICAL_CORRIDOR_RULES.subway,
+    aerialways:CANONICAL_CORRIDOR_RULES.aerialways,
+    transportationOther:CANONICAL_CORRIDOR_RULES.transportationOther,
+    roadTunnels:CANONICAL_CORRIDOR_RULES.roadTunnels,
+    pathTunnels:CANONICAL_CORRIDOR_RULES.pathTunnels,
+    railTunnels:CANONICAL_CORRIDOR_RULES.railTunnels,
   }),
 });
 
@@ -2511,55 +2506,12 @@ const unifiedAreaMaskCanvas = document.createElement('canvas');
 unifiedAreaMaskCanvas.width = unifiedAreaMaskCanvas.height = PRESENTATION_SIZE;
 const unifiedAreaMaskContext = unifiedAreaMaskCanvas.getContext('2d', { willReadFrequently:true });
 
-function walkLogicalPixelLine(x0, y0, x1, y1, visit){
-  let x = Math.round(x0), y = Math.round(y0);
-  const endX = Math.round(x1), endY = Math.round(y1);
-  const dx = Math.abs(endX - x), stepX = x < endX ? 1 : -1;
-  const dy = -Math.abs(endY - y), stepY = y < endY ? 1 : -1;
-  let error = dx + dy;
-  for (let guard = 0; guard < PRESENTATION_SIZE * 4; guard++){
-    visit(x, y);
-    if (x === endX && y === endY) break;
-    const doubled = error * 2;
-    if (doubled >= dy){ error += dy; x += stepX; }
-    if (doubled <= dx){ error += dx; y += stepY; }
-  }
-}
-
 function logicalPointForMapGeometry(point){
   const [sceneX, sceneY] = tp(point);
   return [
     Math.round(sceneX / SCENE_PIXELS_PER_LOGICAL_PIXEL),
     Math.round(sceneY / SCENE_PIXELS_PER_LOGICAL_PIXEL),
   ];
-}
-
-function setLogicalMaskPixel(mask, x, y){
-  if (x < 0 || y < 0 || x >= PRESENTATION_SIZE || y >= PRESENTATION_SIZE) return;
-  mask[y * PRESENTATION_SIZE + x] = 1;
-}
-
-function stampLogicalMask(mask, centerX, centerY, width){
-  const size = Math.max(1, Math.round(width));
-  const start = -Math.floor(size / 2);
-  for (let dy = 0; dy < size; dy++)
-    for (let dx = 0; dx < size; dx++)
-      setLogicalMaskPixel(mask, centerX + start + dx, centerY + start + dy);
-}
-
-function expandLogicalMask(source, radius){
-  const amount = Math.max(0, Math.round(radius));
-  if (!amount) return source.slice();
-  const expanded = new Uint8Array(source.length);
-  for (let y = 0; y < PRESENTATION_SIZE; y++){
-    for (let x = 0; x < PRESENTATION_SIZE; x++){
-      if (!source[y * PRESENTATION_SIZE + x]) continue;
-      for (let dy = -amount; dy <= amount; dy++)
-        for (let dx = -amount; dx <= amount; dx++)
-          setLogicalMaskPixel(expanded, x + dx, y + dy);
-    }
-  }
-  return expanded;
 }
 
 function worldLogicalPhase(x, y, period){
@@ -2570,119 +2522,16 @@ function worldLogicalPhase(x, y, period){
   return positiveModulo(worldX + worldY * 3, period);
 }
 
-function rasterizeUnifiedAreaFeatures(features){
-  const paint = unifiedAreaMaskContext;
-  paint.save();
-  paint.setTransform(1, 0, 0, 1, 0, 0);
-  paint.clearRect(0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE);
-  paint.fillStyle = '#fff';
-  for (const feature of features){
-    if (feature.type !== 3) continue;
-    paint.beginPath();
-    for (const ring of feature.geom){
-      ring.forEach((point, index) => {
-        const [x, y] = logicalPointForMapGeometry(point);
-        index ? paint.lineTo(x, y) : paint.moveTo(x, y);
-      });
-      paint.closePath();
-    }
-    paint.fill('evenodd');
-  }
-  paint.restore();
-  const rgba = paint.getImageData(0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE).data;
-  const mask = new Uint8Array(PRESENTATION_SIZE * PRESENTATION_SIZE);
-  for (let index = 0; index < mask.length; index++)
-    mask[index] = rgba[index * 4 + 3] >= 128 ? 1 : 0;
-  return mask;
-}
-
 function buildUnifiedCorridorMasks(features, style){
-  const fullCenter = new Uint8Array(PRESENTATION_SIZE * PRESENTATION_SIZE);
-  for (const feature of features){
-    if (feature.type === 1){
-      for (const line of feature.geom) for (const point of line){
-        const [x, y] = logicalPointForMapGeometry(point);
-        setLogicalMaskPixel(fullCenter, x, y);
-      }
-      continue;
-    }
-    if (feature.type !== 2) continue;
-    for (const line of feature.geom){
-      for (let index = 1; index < line.length; index++){
-        const [x0, y0] = logicalPointForMapGeometry(line[index - 1]);
-        const [x1, y1] = logicalPointForMapGeometry(line[index]);
-        walkLogicalPixelLine(x0, y0, x1, y1,
-          (x, y) => setLogicalMaskPixel(fullCenter, x, y));
-      }
-    }
-  }
-  const activeCenter = fullCenter.slice();
-  if (style.dashPeriod){
-    for (let y = 0; y < PRESENTATION_SIZE; y++){
-      for (let x = 0; x < PRESENTATION_SIZE; x++){
-        const index = y * PRESENTATION_SIZE + x;
-        if (activeCenter[index] && worldLogicalPhase(x, y, style.dashPeriod) >= style.dashOn)
-          activeCenter[index] = 0;
-      }
-    }
-  }
-  const body = rasterizeUnifiedAreaFeatures(features);
-  for (let y = 0; y < PRESENTATION_SIZE; y++){
-    for (let x = 0; x < PRESENTATION_SIZE; x++){
-      if (activeCenter[y * PRESENTATION_SIZE + x]) stampLogicalMask(body, x, y, style.width);
-    }
-  }
-  return {
-    center:fullCenter,
-    activeCenter,
-    body,
-    outer:expandLogicalMask(body, style.edgeWidth || 0),
-  };
-}
-
-function paintLogicalImagePixel(image, index, color, alpha = 1){
-  const rgba = solidCellRgba(color);
-  const pixel = index * 4;
-  image.data[pixel] = rgba[0];
-  image.data[pixel + 1] = rgba[1];
-  image.data[pixel + 2] = rgba[2];
-  image.data[pixel + 3] = Math.round(255 * alpha);
-}
-
-function paintUnifiedRailPattern(image, masks, style){
-  const size = PRESENTATION_SIZE;
-  const body = masks.body, center = masks.center;
-  const horizontalAt = (x, y) => {
-    const at = (px, py) => px >= 0 && py >= 0 && px < size && py < size && center[py * size + px];
-    const horizontal = Number(at(x - 1, y)) + Number(at(x + 1, y)) + Number(at(x - 2, y)) + Number(at(x + 2, y));
-    const vertical = Number(at(x, y - 1)) + Number(at(x, y + 1)) + Number(at(x, y - 2)) + Number(at(x, y + 2));
-    return horizontal >= vertical;
-  };
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
-    const index = y * size + x;
-    if (!center[index] || worldLogicalPhase(x, y, 4) !== 0) continue;
-    const horizontal = horizontalAt(x, y);
-    const half = Math.floor(style.width / 2);
-    for (let offset = -half; offset <= half; offset++){
-      const px = horizontal ? x : x + offset;
-      const py = horizontal ? y + offset : y;
-      if (px < 0 || py < 0 || px >= size || py >= size) continue;
-      const target = py * size + px;
-      if (body[target]) paintLogicalImagePixel(image, target, style.tie);
-    }
-  }
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++){
-    const index = y * size + x;
-    if (!center[index]) continue;
-    const horizontal = horizontalAt(x, y);
-    for (const offset of [-1, 1]){
-      const px = horizontal ? x : x + offset;
-      const py = horizontal ? y + offset : y;
-      if (px < 0 || py < 0 || px >= size || py >= size) continue;
-      const target = py * size + px;
-      if (body[target]) paintLogicalImagePixel(image, target, style.rail);
-    }
-  }
+  return CORRIDOR_RENDERER.buildMasks({
+    width:PRESENTATION_SIZE,
+    height:PRESENTATION_SIZE,
+    features,
+    style,
+    pointFor:logicalPointForMapGeometry,
+    phaseAt:(x,y)=>worldLogicalPhase(x,y,65521),
+    maskContext:unifiedAreaMaskContext,
+  });
 }
 
 function renderUnifiedCorridor(features, style, bridge = false, preparedMasks = null){
@@ -2690,23 +2539,16 @@ function renderUnifiedCorridor(features, style, bridge = false, preparedMasks = 
   const bridgeStyle = bridge
     ? { ...style, edgeWidth:Math.max(1, style.edgeWidth || 0), edge:P.outline }
     : style;
-  const masks = preparedMasks || buildUnifiedCorridorMasks(features, bridgeStyle);
-  const image = unifiedCorridorContext.createImageData(PRESENTATION_SIZE, PRESENTATION_SIZE);
-  const alpha = bridgeStyle.alpha ?? 1;
-  for (let index = 0; index < masks.outer.length; index++){
-    if (masks.outer[index]) paintLogicalImagePixel(image, index, bridgeStyle.edge || bridgeStyle.fill, alpha);
-    if (masks.body[index]) paintLogicalImagePixel(image, index, bridgeStyle.fill, alpha);
-  }
-  if (bridgeStyle.center){
-    for (let y = 0; y < PRESENTATION_SIZE; y++) for (let x = 0; x < PRESENTATION_SIZE; x++){
-      const index = y * PRESENTATION_SIZE + x;
-      if (!masks.center[index]) continue;
-      if (worldLogicalPhase(x, y, bridgeStyle.centerPeriod) >= bridgeStyle.centerOn) continue;
-      paintLogicalImagePixel(image, index, bridgeStyle.center, alpha);
-    }
-  }
-  if (bridgeStyle.pattern === 'rail') paintUnifiedRailPattern(image, masks, bridgeStyle);
-  unifiedCorridorContext.putImageData(image, 0, 0);
+  const masks=CORRIDOR_RENDERER.render(unifiedCorridorContext,{
+    width:PRESENTATION_SIZE,
+    height:PRESENTATION_SIZE,
+    features,
+    style:bridgeStyle,
+    pointFor:logicalPointForMapGeometry,
+    phaseAt:(x,y)=>worldLogicalPhase(x,y,65521),
+    maskContext:unifiedAreaMaskContext,
+    preparedMasks,
+  });
   ctx.save();
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
@@ -3080,341 +2922,22 @@ const hi = (hex, f = 1.28) => {                 // 明るく
   const n = parseInt(hex.slice(1), 16);
   return `rgb(${Math.min(255,Math.round(((n>>16)&255)*f))},${Math.min(255,Math.round(((n>>8)&255)*f))},${Math.min(255,Math.round((n&255)*f))})`;
 };
-function block(x, y, w, h, col){                // 壁: 右側面の陰 + 足元の陰 + 接地線
-  px(x, y, w, h, col);
-  px(x + w - 1, y, 1, h, sh(col, 0.85));
-  px(x, y + h - 2, w, 2, sh(col, 0.82));
-  px(x, y + h - 1, w, 1, sh(col, 0.5));
-}
-function roofBar(x, y, w, h, col){              // 屋根: 棟のハイライト + 軒先の陰
-  px(x, y, w, h, col);
-  px(x, y, w, 1, hi(col));
-  px(x, y + h - 1, w, 1, sh(col, 0.7));
-}
-function winF(x, y, w, h){                      // 窓: 上桟の光
-  px(x, y, w, h, P.win);
-  px(x, y, w, 1, '#c8e4f4');
-}
-function sign(x, y, w){                         // 看板
-  px(x, y, w, 2, '#f8f0d8');
-  px(x, y + 2, w, 1, sh('#f8f0d8', 0.65));
-}
-function yard(cx, cy, w){
-  // 建物のまわりの庭: 芝生 + 植えこみ + 花
-  px(cx - w, cy - 2, w * 2, 5, '#8cc864');
-  px(cx - w, cy + 2, w * 2, 1, '#78b452');
-  for (let i = -w; i < w - 1; i += 3)
-    px(cx + i, cy + 1, 2, 2, P.treeMd);
-  px(cx - w + 2, cy - 1, 1, 1, '#f87890');
-  px(cx + w - 4, cy - 1, 1, 1, '#f8f8f8');
-  px(cx - 1, cy + 3, 2, 1, '#f8d038');
-}
-function house(cx, cy, roof, wall = P.wall, wide = false){
-  const hw = wide ? 9 : 7, x = cx - hw, y = cy - 15;
-  yard(cx, cy, hw + 5);
-  block(x + 2, y + 5, hw*2 - 4, 10, wall);
-  roofBar(x, y + 1, hw*2, 4, roof);
-  px(x - 1, y + 2, 1, 2, roof);                 // 軒の張り出し
-  px(x + hw*2, y + 2, 1, 2, roof);
-  px(x + 2, y + 5, hw*2 - 4, 1, sh(wall, 0.7)); // 壁に落ちる軒の影
-  winF(x + 3, y + 7, 3, 3);
-  winF(x + hw*2 - 6, y + 7, 3, 3);
-  winF(x + hw - 2, y + 8, 4, 4);
-  return { x, y, w: hw*2, h: 15 };
-}
-function stall(cx, cy, awn, deco){
-  const x = cx - 7, y = cy - 13;
-  yard(cx, cy, 10);
-  block(x + 2, y + 5, 10, 8, P.wall);
-  roofBar(x, y + 1, 14, 4, awn);
-  px(x - 1, y + 2, 1, 2, awn);
-  px(x + 14, y + 2, 1, 2, awn);
-  px(x + 2, y + 5, 10, 1, sh(P.wall, 0.7));
-  deco && deco(x, y);
-}
-function signPost(cx, cy, plate, deco){
-  px(cx - 1, cy - 9, 2, 9, P.trunk);
-  px(cx - 1, cy - 1, 2, 1, sh(P.trunk, 0.55));  // 接地
-  px(cx - 5, cy - 14, 10, 6, plate);
-  px(cx - 5, cy - 14, 10, 1, hi(plate));
-  px(cx + 4, cy - 14, 1, 6, sh(plate, 0.8));
-  px(cx - 5, cy - 9, 10, 1, sh(plate, 0.7));
-  deco && deco(cx, cy);
-}
-const SPRITES = {
-  station:  { label:'鉄道駅',
-    S:(x,y)=>{                                   // 小さな駅舎
-      yard(x, y, 14);
-      block(x-7, y-10, 14, 10, P.wall);
-      roofBar(x-9, y-14, 18, 4, P.roofA);
-      px(x-7, y-10, 14, 1, sh(P.wall, 0.7));
-      sign(x-4, y-9, 8);
-      winF(x-5, y-6, 3, 3);
-      winF(x-1, y-6, 3, 4);
-      winF(x+3, y-6, 3, 3);
-    },
-    M:(x,y)=>{                                   // 標準の駅舎
-      yard(x, y, 18);
-      block(x-12, y-12, 24, 12, P.wall);
-      roofBar(x-14, y-18, 28, 5, P.roofA);
-      roofBar(x-4, y-23, 8, 2, P.roofA);         // 切妻
-      px(x-3, y-21, 6, 4, '#f8f0d8');
-      px(x+2, y-21, 1, 4, sh('#f8f0d8', 0.8));
-      px(x-1, y-20, 2, 2, P.outline);            // 時計
-      for (let i = 0; i < 7; i++)                // ひさし(赤白)
-        px(x-14 + i*4, y-13, 4, 2, i % 2 ? '#f8f0d8' : P.roofA);
-      px(x-12, y-11, 24, 1, sh(P.wall, 0.7));
-      sign(x-5, y-10, 10);
-      winF(x-10, y-7, 4, 4);
-      winF(x+6, y-7, 4, 4);
-      winF(x-4, y-7, 8, 5);
-      px(x-1, y-7, 2, 5, P.wall);
-    },
-    L:(x,y)=>{                                   // 大ターミナル駅
-      yard(x, y, 24);
-      block(x-18, y-15, 36, 15, P.wall);
-      roofBar(x-20, y-21, 40, 6, P.roofA);
-      roofBar(x-5, y-28, 10, 2, P.roofA);        // 時計塔
-      px(x-4, y-26, 8, 5, '#f8f0d8');
-      px(x+3, y-26, 1, 5, sh('#f8f0d8', 0.8));
-      px(x-1, y-25, 2, 3, P.outline);
-      for (let i = 0; i < 10; i++)               // 長いひさし
-        px(x-20 + i*4, y-15, 4, 2, i % 2 ? '#f8f0d8' : P.roofA);
-      px(x-18, y-13, 36, 1, sh(P.wall, 0.7));
-      sign(x-8, y-12, 16);
-      winF(x-14, y-9, 28, 6);                    // ガラスの正面
-      for (let i = 1; i <= 3; i++)
-        px(x-14 + i*7, y-9, 1, 6, P.wall);       // 柱
-      px(x-14, y-3, 28, 1, sh(P.wall, 0.8));     // 腰壁
-    },
-  },
-  bus:      { label:'バス停',      draw:(x,y)=>signPost(x,y,P.roofB, (cx,cy)=>px(cx-2,cy-12,4,2,'#f8f0d8')) },
-  shop:     { label:'お店',
-    S:(x,y)=>stall(x,y,P.roofB, (sx,sy)=>{ for(let i=0;i<5;i++) px(sx+i*3, sy+1, 1, 3, '#f8f0d8'); }),
-    L:(x,y)=>{
-      const r = house(x,y,P.roofB,P.wall,true);
-      for(let i=0;i<6;i++) px(r.x+i*3, r.y+1, 1, 3, '#f8f0d8');
-    },
-  },
-  mall:     { label:'モール',
-    M:(x,y)=>{ const r = house(x,y,P.roofB,P.wall,true); for(let i=0;i<6;i++) px(r.x+i*3, r.y+1, 1, 3, '#f8f0d8'); },
-    L:(x,y)=>{                                   // デパート
-      yard(x, y, 23);
-      block(x-17, y-17, 34, 17, P.wall);
-      px(x-8, y-23, 16, 5, '#f8d038');           // 屋上看板
-      px(x-8, y-23, 16, 1, hi('#f8d038'));
-      px(x+7, y-23, 1, 5, sh('#f8d038', 0.8));
-      px(x-6, y-21, 12, 2, P.outline);
-      for (let i = 0; i < 9; i++)                // 長いひさし
-        px(x-17 + i*4, y-14, 4, 3, i % 2 ? '#f8f0d8' : P.roofB);
-      px(x-17, y-11, 34, 1, sh(P.wall, 0.7));
-      winF(x-14, y-9, 10, 6);                    // ショーウィンドウ
-      winF(x-3, y-9, 6, 6);
-      winF(x+4, y-9, 10, 6);
-    },
-  },
-  grocery:  { label:'食料品店',    draw:(x,y)=>stall(x,y,'#58a048', (sx,sy)=>{ px(sx+5,sy+8,4,3,'#f89040'); }) },
-  restaurant:{label:'レストラン',  draw:(x,y)=>stall(x,y,'#f89040', (sx,sy)=>{ px(sx+4,sy+7,6,2,'#f8f0d8'); px(sx+6,sy+7,1,2,P.roofADk); }) },
-  fast_food:{ label:'ファストフード', draw:(x,y)=>stall(x,y,'#e8b048', (sx,sy)=>{ px(sx+4,sy+8,6,2,'#f8d038'); px(sx+4,sy+7,6,1,P.dirt); }) },
-  cafe:     { label:'カフェ',      draw:(x,y)=>stall(x,y,P.trunk, (sx,sy)=>{ px(sx+4,sy+7,5,4,'#f8f0d8'); px(sx+9,sy+8,1,2,'#f8f0d8'); px(sx+5,sy+5,1,2,'#c8c8d0'); px(sx+7,sy+5,1,2,'#c8c8d0'); }) },
-  bar:      { label:'酒場',        draw:(x,y)=>stall(x,y,'#a04878', (sx,sy)=>{ px(sx+5,sy+7,4,3,'#f8d038'); px(sx+6,sy+10,2,1,'#f8f0d8'); }) },
-  hotel:    { label:'宿屋',
-    S:(x,y)=>{ const r = house(x,y,'#8860c8'); px(r.x+r.w/2-2, r.y-3, 4, 3, '#f8d038'); px(r.x+r.w/2-2, r.y-3, 4, 1, hi('#f8d038')); },
-    L:(x,y)=>{                                   // 高層ホテル
-      yard(x, y, 16);
-      block(x-10, y-27, 20, 27, '#e8e0d0');
-      px(x-11, y-29, 22, 2, '#8860c8');
-      px(x-11, y-29, 22, 1, hi('#8860c8'));
-      for (let r = 0; r < 4; r++)                // 窓(点灯まばら)
-        for (let i = 0; i < 4; i++){
-          const lit = (r*4 + i) % 3 === 0;
-          px(x-8 + i*5, y-25 + r*5, 3, 3, lit ? '#f8d038' : P.win);
-          px(x-8 + i*5, y-25 + r*5, 3, 1, lit ? '#fce88a' : '#c8e4f4');
-        }
-      winF(x-3, y-5, 6, 4);
-      px(x-2, y-32, 4, 3, '#f8d038');            // 屋上サイン
-      px(x-2, y-32, 4, 1, hi('#f8d038'));
-    },
-  },
-  hospital: { label:'病院',
-    S:(x,y)=>{                                   // クリニック
-      house(x,y,'#e8e0d0','#f8f8f0');
-      px(x+10, y-15, 6, 6, '#f8f8f0');           // 十字の看板
-      px(x+10, y-15, 6, 1, hi('#f8f8f0'));
-      px(x+15, y-15, 1, 6, sh('#f8f8f0', 0.8));
-      px(x+12, y-14, 2, 4, '#48a050');
-      px(x+11, y-13, 4, 2, '#48a050');
-      px(x+10, y-9, 6, 1, sh('#f8f8f0', 0.6));
-    },
-    L:(x,y)=>{                                   // 大病院
-      yard(x, y, 18);
-      block(x-12, y-26, 24, 26, '#f8f8f0');
-      px(x-13, y-28, 26, 2, '#c8c8c0');
-      px(x-13, y-28, 26, 1, hi('#c8c8c0'));
-      px(x-1, y-25, 3, 9, P.roofA);              // 赤十字
-      px(x-4, y-22, 9, 3, P.roofA);
-      px(x-1, y-25, 3, 1, hi(P.roofA));
-      for (let i = 0; i < 5; i++){
-        winF(x-10 + i*5, y-16, 3, 3);
-        winF(x-10 + i*5, y-11, 3, 3);
-      }
-      winF(x-4, y-6, 8, 4);
-    },
-  },
-  pharmacy: { label:'薬屋',        draw:(x,y)=>signPost(x,y,'#f8f8f0', (cx,cy)=>{ px(cx-1,cy-13,2,4,'#48a050'); px(cx-2,cy-12,4,2,'#48a050'); }) },
-  school:   { label:'学校',
-    S:(x,y)=>{                                   // 小さな校舎
-      yard(x, y, 16);
-      px(x-11, y-14, 22, 2, '#8890a0');
-      px(x-11, y-14, 22, 1, hi('#8890a0'));
-      block(x-10, y-12, 20, 12, P.wall);
-      px(x-10, y-12, 20, 1, sh(P.wall, 0.7));
-      winF(x-7, y-9, 3, 3);
-      winF(x-2, y-9, 3, 3);
-      winF(x+4, y-9, 3, 3);
-      px(x+12, y-19, 1, 19, '#a8a8b0');
-      px(x+13, y-19, 5, 3, P.roofA);
-      px(x+13, y-19, 5, 1, hi(P.roofA));
-    },
-    M:(x,y)=>{                                   // 標準の校舎
-      yard(x, y, 21);
-      px(x-15, y-16, 30, 2, '#8890a0');
-      px(x-15, y-16, 30, 1, hi('#8890a0'));
-      block(x-14, y-14, 28, 14, P.wall);
-      px(x-14, y-14, 28, 1, sh(P.wall, 0.7));
-      for (let i = 0; i < 6; i++) winF(x-13 + i*5, y-12, 3, 3);
-      for (let i = 0; i < 6; i++) winF(x-13 + i*5, y-7, 3, 3);
-      roofBar(x-3, y-23, 7, 2, P.roofA);         // 時計塔
-      px(x-2, y-21, 5, 5, '#f8f0d8');
-      px(x+2, y-21, 1, 5, sh('#f8f0d8', 0.8));
-      px(x-1, y-19, 2, 2, P.outline);
-      px(x+17, y-24, 1, 24, '#a8a8b0');
-      px(x+18, y-24, 6, 4, P.roofA);
-      px(x+18, y-24, 6, 1, hi(P.roofA));
-    },
-    L:(x,y)=>{                                   // 大きな校舎(3階建て)
-      yard(x, y, 27);
-      px(x-20, y-21, 40, 2, '#8890a0');
-      px(x-20, y-21, 40, 1, hi('#8890a0'));
-      block(x-19, y-19, 38, 19, P.wall);
-      px(x-19, y-19, 38, 1, sh(P.wall, 0.7));
-      for (let r = 0; r < 3; r++)
-        for (let i = 0; i < 8; i++)
-          winF(x-18 + i*5, y-17 + r*5, 3, 3);
-      roofBar(x-5, y-28, 11, 2, P.roofA);        // 時計塔
-      px(x-4, y-26, 9, 5, '#f8f0d8');
-      px(x+4, y-26, 1, 5, sh('#f8f0d8', 0.8));
-      px(x-1, y-25, 2, 3, P.outline);
-      px(x+22, y-30, 1, 30, '#a8a8b0');
-      px(x+23, y-30, 7, 4, P.roofA);
-      px(x+23, y-30, 7, 1, hi(P.roofA));
-    },
-  },
-  library:  { label:'図書館',      draw:(x,y)=>{ const r = house(x,y,'#786048'); px(r.x+4, r.y+7, 3, 5, '#8860c8'); px(r.x+8, r.y+7, 3, 5, P.roofB); } },
-  bank:     { label:'銀行',        draw:(x,y)=>signPost(x,y,'#f8d038', (cx,cy)=>{ px(cx-2,cy-13,4,4,'#b89020'); px(cx-1,cy-12,2,2,'#f8d038'); }) },
-  post:     { label:'郵便',        draw:(x,y)=>{
-    px(x-2, y-11, 4, 11, P.roofA);               // 赤いポスト
-    px(x-2, y-11, 4, 1, hi(P.roofA));
-    px(x+1, y-11, 1, 11, sh(P.roofA, 0.8));
-    px(x-2, y-9, 4, 1, '#f8f0d8');
-    px(x-2, y-1, 4, 1, sh(P.roofA, 0.5));
-  }},
-  police:   { label:'交番',        draw:(x,y)=>{ const r = house(x,y,'#4058a8'); px(r.x+r.w/2-1, r.y+1, 2, 2, '#f8d038'); } },
-  fire_station:{label:'消防署',    draw:(x,y)=>house(x,y,P.roofADk) },
-  townhall: { label:'役所',        draw:(x,y)=>{ const r = house(x,y,'#687078',P.wall,true); px(r.x+r.w/2, r.y-4, 1, 4, P.trunk); px(r.x+r.w/2+1, r.y-4, 4, 2, '#f8d038'); } },
-  place_of_worship:{label:'神社・寺', draw:(x,y)=>{  // 鳥居
-    px(x-8, y-14, 16, 2, P.roofA);
-    px(x-8, y-14, 16, 1, hi(P.roofA));
-    px(x-8, y-12, 16, 1, sh(P.roofA, 0.7));
-    px(x-6, y-10, 12, 2, P.roofADk);
-    px(x-6, y-8, 2, 8, P.roofADk);
-    px(x+4, y-8, 2, 8, P.roofADk);
-    px(x-5, y-8, 1, 8, sh(P.roofADk, 0.8));
-    px(x+5, y-8, 1, 8, sh(P.roofADk, 0.8));
-    px(x-6, y-1, 2, 1, sh(P.roofADk, 0.5));
-    px(x+4, y-1, 2, 1, sh(P.roofADk, 0.5));
-  }},
-  attraction:{label:'名所',        draw:(x,y)=>signPost(x,y,'#f8d038', (cx,cy)=>{ px(cx-1,cy-13,2,2,P.roofA); px(cx-3,cy-11,6,1,P.roofA); }) },
-  monument:{ label:'トロフィー記念塔', draw:(x,y)=>{
-    yard(x,y,12);
-    px(x-9,y-22,3,7,'#d6a93f'); px(x+6,y-22,3,7,'#d6a93f');
-    px(x-11,y-22,3,3,'#f0cf5a'); px(x+8,y-22,3,3,'#f0cf5a');
-    px(x-8,y-25,16,5,'#f0cf5a'); px(x-6,y-20,12,6,'#e6bd4d');
-    px(x-3,y-14,6,7,'#d6a93f'); px(x-7,y-7,14,3,'#6fa7a2'); px(x-10,y-4,20,4,'#456b6b');
-    px(x-1,y-23,2,2,'#d95072');
-  }},
-  castle:{ label:'宝箱の城塞', draw:(x,y)=>{
-    yard(x,y,20); block(x-16,y-14,32,14,'#d6a88f');
-    px(x-18,y-17,8,17,'#a45f58'); px(x+10,y-17,8,17,'#a45f58');
-    px(x-17,y-20,6,4,'#f0d1bd'); px(x+11,y-20,6,4,'#f0d1bd'); px(x-8,y-17,16,4,'#f0d1bd');
-    px(x-6,y-24,12,8,'#70507f'); px(x-4,y-27,8,4,'#a882c5'); px(x-14,y-10,28,3,'#f0d1bd');
-    px(x-2,y-11,5,7,'#6f3f46'); px(x-1,y-9,3,3,'#f0cf5a'); px(x-1,y-8,1,3,'#70507f');
-  }},
-  gallery:{ label:'ブックギャラリー', draw:(x,y)=>{
-    yard(x,y,17); block(x-13,y-12,26,12,'#a45f58'); px(x-3,y-9,6,9,'#6f3f46');
-    px(x-16,y-22,15,5,'#f8eee5'); px(x-15,y-25,13,4,'#f8eee5'); px(x-12,y-27,10,3,'#f8eee5');
-    px(x+1,y-22,15,5,'#f8eee5'); px(x+2,y-25,13,4,'#f8eee5'); px(x+2,y-27,10,3,'#f8eee5');
-    px(x-1,y-24,2,9,'#d6a88f');
-    for(let i=0;i<3;i++){ px(x-12,y-23+i*3,8,1,'#d6a88f'); px(x+4,y-23+i*3,8,1,'#d6a88f'); }
-    px(x-14,y-16,28,3,'#6f3f46');
-  }},
-  museum:   { label:'博物館',      draw:(x,y)=>{ const r = house(x,y,'#a0a070'); px(r.x+3,r.y+6,2,8,'#e0d8c0'); px(r.x+7,r.y+6,2,8,'#e0d8c0'); px(r.x+11,r.y+6,2,8,'#e0d8c0'); } },
-  theatre:{ label:'仮面劇場', draw:(x,y)=>{
-    yard(x,y,18); block(x-14,y-12,28,12,'#a45f58'); roofBar(x-16,y-17,32,5,'#f0d1bd');
-    px(x-5,y-11,10,11,'#6f3f46'); px(x-11,y-27,9,9,'#f8eee5'); px(x+2,y-27,9,9,'#f8eee5');
-    px(x-9,y-24,2,2,'#70507f'); px(x-5,y-24,2,2,'#70507f'); px(x+4,y-24,2,2,'#70507f'); px(x+8,y-24,2,2,'#70507f');
-    px(x-8,y-21,5,1,'#d95072'); px(x+4,y-20,5,1,'#d95072');
-    px(x-1,y-29,2,6,'#f0cf5a'); px(x-4,y-28,8,2,'#f0cf5a');
-  }},
-  cinema:   { label:'劇場・映画館', draw:(x,y)=>stall(x,y,'#a04878', (sx,sy)=>{ px(sx+4,sy+7,2,2,'#f8d038'); px(sx+8,sy+8,2,2,'#f8d038'); }) },
-  park:     { label:'公園', draw:(x,y)=>{
-    // 大きな木と植えこみ
-    px(x-6, y-2, 12, 2, 'rgba(24,40,16,.3)');    // 木陰
-    px(x-5, y-17, 10, 1, P.treeMd);
-    px(x-6, y-16, 12, 2, P.treeMd);
-    px(x-7, y-15, 14, 6, P.treeMd);
-    px(x-4, y-17, 5, 1, hi(P.treeMd));
-    px(x-4, y-16, 5, 3, P.treeLt);
-    px(x+1, y-12, 5, 3, P.treeDk);
-    px(x-6, y-10, 12, 1, P.treeDk);
-    px(x-1, y-8, 2, 6, P.trunk);
-    px(x-1, y-3, 2, 1, sh(P.trunk, 0.55));
-    px(x-10, y-4, 5, 4, P.treeMd);               // 植えこみ(左)
-    px(x-10, y-1, 5, 1, P.treeDk);
-    px(x-9,  y-4, 2, 1, P.treeLt);
-    px(x+6,  y-4, 5, 4, P.treeMd);               // 植えこみ(右)
-    px(x+6,  y-1, 5, 1, P.treeDk);
-    px(x+7,  y-4, 2, 1, P.treeLt);
-  }},
-  zoo:{ label:'クリーチャー塔', draw:(x,y)=>{
-    yard(x,y,14); block(x-9,y-20,18,20,'#6fa7a2');
-    px(x-11,y-30,22,10,'#a45f58'); px(x-8,y-33,16,4,'#a45f58'); px(x-1,y-37,2,4,'#6f3f46');
-    px(x-7,y-27,3,3,'#f0cf5a'); px(x+4,y-27,3,3,'#f0cf5a'); px(x-4,y-22,8,2,'#6f3f46');
-    px(x-3,y-15,2,3,'#456b6b'); px(x+2,y-15,2,3,'#456b6b'); px(x-4,y-7,8,7,'#456b6b');
-    px(x-11,y-19,3,7,'#d95072'); px(x+8,y-19,3,7,'#d95072');
-  }},
-  parking:  { label:'駐車場',      draw:(x,y)=>signPost(x,y,P.roofB, (cx,cy)=>{ px(cx-1,cy-13,1,4,'#f8f0d8'); px(cx,cy-13,2,2,'#f8f0d8'); }) },
-  charge_hub:{ label:'ギア充電工房', draw:(x,y)=>{
-    yard(x,y,19); block(x-16,y-14,32,14,'#6fa7a2');
-    px(x-13,y-19,7,6,'#456b6b'); px(x-11,y-24,3,6,'#a882c5');
-    px(x+5,y-20,8,7,'#456b6b'); px(x+7,y-25,3,6,'#a882c5');
-    px(x-6,y-11,12,11,'#456b6b'); px(x-10,y-10,3,3,'#f0d1bd'); px(x+7,y-10,3,3,'#f0d1bd');
-    px(x-3,y-8,6,6,'#a882c5'); px(x-1,y-7,2,2,'#f0cf5a'); px(x-2,y-5,2,3,'#f0cf5a'); px(x,y-5,2,1,'#f0cf5a');
-    px(x-17,y-16,34,3,'#6f3f46');
-  }},
-  generic:  { label:'施設',        draw:(x,y)=>signPost(x,y,P.dirt) },
-};
+/* POI本体はassets/poi-sprites.jsのAsset Contractを唯一の正本として描画する。 */
 // 施設の分類・重要度・サイズ判定はリゾルバーモジュールが唯一の正典。
 // このページは確定済みの施設データを描くだけで、選抜の再計算は行わない。
 const RESOLVER = window.PixelMapFacilityResolver;
 const { CLASS2SPRITE, isStationProps, tierValue } = RESOLVER;
+const POI_SPRITE_CATALOG = window.PixelMapPoiSprites;
+const POI_ASSETS_BY_ID = new Map(POI_SPRITE_CATALOG.assets.map(asset => [asset.id,asset]));
 function categoryTone(category){
   return ACTIVE_PATTERN.palette[category] || ACTIVE_PATTERN.palette.generic || '#78828a';
 }
-function spriteFor(props, size = 'M', variant = 0){
-  const key = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
-  const e = SPRITES[key];
-  const baseDraw = e[size] || e.M || e.S || e.L || e.draw;
+function spriteFor(props, size = 'M', variant = 0, spriteKey = null){
+  const key = spriteKey || CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
+  const asset = POI_ASSETS_BY_ID.get(key) || POI_ASSETS_BY_ID.get('generic');
+  const assetContract = POI_SPRITE_CATALOG.contract(asset.id,size);
+  const baseDraw = (x,y) => POI_SPRITE_CATALOG.draw(
+    spritePaintContext,asset.id,x,y,assetContract.size);
   let draw = baseDraw;
   // 川崎駅(JR系=緑)と京急川崎駅(京急=赤)を、世界観を変えず小旗で判別可能にする。
   if (isStationProps(props)){
@@ -3441,13 +2964,14 @@ function spriteFor(props, size = 'M', variant = 0){
       px(x+10,y-13,5,1,'#f8d878'); px(x+14,y-13,1,4,'#b08028');
     };
   }
-  return { label: e.label, draw };
+  return { id:asset.id,label:asset.label,contract:assetContract,draw };
 }
 const CELL_SPRITE_TEMPLATE_CACHE = new Map();
 function cellSpriteTemplateFor(item){
   const spriteKey = CLASS2SPRITE[item.props.subclass] || CLASS2SPRITE[item.props.class] || 'generic';
   const stationVariant = isStationProps(item.props) ? featureName(item.props) : '';
-  const cacheKey = `cell-sprite:${spriteKey}:${item.size}:${item.variant}:${stationVariant}`;
+  const assetSize=item.assetSize || item.size;
+  const cacheKey = `cell-sprite:${spriteKey}:${assetSize}:${item.variant}:${stationVariant}`;
   if (CELL_SPRITE_TEMPLATE_CACHE.has(cacheKey)) return CELL_SPRITE_TEMPLATE_CACHE.get(cacheKey);
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 192;
@@ -3460,7 +2984,7 @@ function cellSpriteTemplateFor(item){
     paint.save();
     paint.translate(anchorX, anchorY);
     paint.scale(2, 2);
-    spriteFor(item.props, item.size, item.variant).draw(0, 0);
+    spriteFor(item.props, assetSize, item.variant, item.spriteKey).draw(0, 0);
     paint.restore();
   } finally {
     spritePaintContext = previousContext;
@@ -3598,70 +3122,35 @@ function drawAuxiliaryAssets(p, cx, cy){
 }
 function drawSprite(sp, cx, cy, p){
   const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[p.category] || 1);
+  const spritePixelScale = sp.contract.assetPixelScale;
+  const bounds = sp.contract.bounds;
   p.visualScale = visualScale;
-  p.visualRadius = 24 * visualScale + Math.max(0, p.assetCount - 1) * 8;
+  p.assetContract = sp.contract;
+  p.visualBounds = {
+    left:cx + (bounds.left - sp.contract.anchor.x) * spritePixelScale,
+    top:cy + (bounds.top - sp.contract.anchor.y) * spritePixelScale,
+    right:cx + (bounds.right - sp.contract.anchor.x) * spritePixelScale,
+    bottom:cy + (bounds.bottom - sp.contract.anchor.y) * spritePixelScale,
+  };
+  p.visualRadius = Math.max(
+    24 * visualScale,
+    bounds.width * spritePixelScale / 2,
+    bounds.height * spritePixelScale,
+  ) + Math.max(0, p.assetCount - 1) * 8;
   drawPatternMarker(p, cx, cy, visualScale);
   ctx.save();
-  ctx.translate(Math.round(cx), Math.round(cy));
+  ctx.translate(
+    Math.round(cx - sp.contract.anchor.x * spritePixelScale),
+    Math.round(cy - sp.contract.anchor.y * spritePixelScale),
+  );
   // 全マップで1アセットpx＝2シーンpxに固定し、カテゴリ倍率による
   // 分数幅をなくす。S/M/Lはアセット外形そのもので表現する。
-  const spritePixelScale = 2;
   ctx.scale(spritePixelScale, spritePixelScale);
   ctx.fillStyle = 'rgba(24,40,16,.3)';
   ctx.fillRect(-7, -1, 14, 3);
   sp.draw(0, 0);
   ctx.restore();
   drawAuxiliaryAssets(p, cx, cy);
-}
-
-function drawUnifiedPoiSymbol(item){
-  const logicalSize = STANDALONE_STYLE_SPEC.symbol.size;
-  const half = Math.floor(logicalSize / 2);
-  const anchorX = Math.round(item.pt[0] / SCENE_PIXELS_PER_LOGICAL_PIXEL);
-  const anchorY = Math.round(item.pt[1] / SCENE_PIXELS_PER_LOGICAL_PIXEL);
-  const spriteKey = CLASS2SPRITE[item.props.subclass] || CLASS2SPRITE[item.props.class] || 'generic';
-  const tone = categoryTone(item.category);
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  ctx.translate(
-    (anchorX - half) * SCENE_PIXELS_PER_LOGICAL_PIXEL,
-    (anchorY - logicalSize) * SCENE_PIXELS_PER_LOGICAL_PIXEL
-  );
-  ctx.scale(SCENE_PIXELS_PER_LOGICAL_PIXEL, SCENE_PIXELS_PER_LOGICAL_PIXEL);
-  const rect = (x, y, width, height, color) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, width, height);
-  };
-  // 16×16固定、1論理px輪郭、下中央アンカー。地理形状ではなく情報シンボル。
-  rect(1,0,logicalSize-2,1,OUT);
-  rect(0,1,logicalSize,logicalSize-3,OUT);
-  rect(1,1,logicalSize-2,logicalSize-5,tone);
-  rect(6,logicalSize-2,4,2,OUT);
-  rect(7,logicalSize-2,2,1,tone);
-  const ink = GLYPH_WHITE;
-  if (spriteKey === 'station' || item.category === 'transit'){
-    rect(4,3,8,2,ink); rect(5,6,2,5,ink); rect(9,6,2,5,ink); rect(4,11,8,1,ink);
-  } else if (spriteKey === 'hospital' || spriteKey === 'pharmacy' || item.category === 'health'){
-    rect(7,3,2,9,ink); rect(4,6,8,3,ink);
-  } else if (spriteKey === 'school' || spriteKey === 'university' || spriteKey === 'college'){
-    rect(5,3,2,9,ink); rect(7,3,5,3,ink); rect(7,4,3,1,tone); rect(8,8,4,4,ink);
-  } else if (item.category === 'commerce'){
-    rect(4,4,8,2,ink); rect(5,6,1,6,ink); rect(10,6,1,6,ink); rect(7,8,2,4,ink);
-  } else if (item.category === 'food'){
-    rect(4,3,2,7,ink); rect(10,3,2,9,ink); rect(5,3,1,3,tone); rect(5,9,6,2,ink);
-  } else if (item.category === 'nature'){
-    rect(7,8,2,4,ink); rect(5,4,6,5,ink); rect(6,3,4,2,ink);
-  } else if (item.category === 'stay'){
-    rect(4,5,2,7,ink); rect(5,8,7,4,ink); rect(7,6,4,2,ink);
-  } else if (item.category === 'landmark'){
-    rect(7,3,2,9,ink); rect(4,5,8,2,ink); rect(5,10,6,2,ink);
-  } else {
-    rect(4,4,8,8,ink); rect(6,6,4,4,tone);
-  }
-  ctx.restore();
-  item.visualScale = 1;
-  item.visualRadius = logicalSize * SCENE_PIXELS_PER_LOGICAL_PIXEL / 2;
-  item.unifiedSymbol = spriteKey;
 }
 /* 文字もドット絵に: 半分のサイズで描いて2倍に最近傍拡大する */
 function makePixelText(text, size, color, outline){
@@ -3822,6 +3311,10 @@ function makeLandmarkFacility(feature, coordinate){
   const size = props.icon_size || (props.role === 'complex' ? 'L' : 'M');
   const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[category] || 1);
   const assetCount = 1;
+  const spriteKey = CLASS2SPRITE[renderClass] ||
+    (POI_ASSETS_BY_ID.has(renderClass) ? renderClass : 'generic');
+  const collisionGeometry = RESOLVER.assetCollisionGeometry(
+    POI_SPRITE_CATALOG,spriteKey,size,ACTIVE_PATTERN,category,assetCount);
   const [worldX, worldY] = landmarkWorldPoint(coordinate);
   const entityProps = {
     name:props.name,
@@ -3841,7 +3334,7 @@ function makeLandmarkFacility(feature, coordinate){
     buildingId:null,
     facilityRole:props.role === 'complex' ? 'landmark_complex' : 'signature_venue',
     category,
-    spriteKey:renderClass,
+    spriteKey,
     variant:0,
     importance:1,
     rank:Number(props.rank ?? 1),
@@ -3853,10 +3346,13 @@ function makeLandmarkFacility(feature, coordinate){
     size,
     assetCount,
     visualScale,
-    collisionRadius:24 * visualScale,
+    ...collisionGeometry,
     selectionPriority:props.role === 'complex' ? 35 : 25,
+    sourceWorldX:worldX,
+    sourceWorldY:worldY,
     worldX,
     worldY,
+    anchorMode:'source-point',
     representation:'icon',
     selectionReason:'landmark-guaranteed',
     landmarkEntity:true,
@@ -3866,14 +3362,7 @@ function makeLandmarkFacility(feature, coordinate){
   };
 }
 function landmarkFacilitiesCollide(a, b){
-  const dx = a.worldX - b.worldX, dy = a.worldY - b.worldY;
-  const important = isStationProps(a.props) || isStationProps(b.props) || a.size === 'L' || b.size === 'L';
-  const baseGap = important ? 86 : a.spriteKey === b.spriteKey ? 74 : 56;
-  const scale = a.spriteKey === b.spriteKey ? (ACTIVE_PATTERN.sameGapScale || 1) : (ACTIVE_PATTERN.gapScale || 1);
-  const visualScale = Math.max(.62, (a.visualScale + b.visualScale) / 2);
-  const minGap = Math.max(baseGap * scale * visualScale,
-    a.collisionRadius + b.collisionRadius + 6);
-  return dx * dx + dy * dy < minGap * minGap;
+  return RESOLVER.facilitiesCollide(a,b,ACTIVE_PATTERN);
 }
 function applyStandaloneLandmarks(resolvedView){
   if (!STANDALONE_LANDMARK_MODE || !landmarkFeatureCollection || !LANDMARK_ENTITY_API)
@@ -3924,8 +3413,8 @@ function applyStandaloneLandmarks(resolvedView){
     suppressedKeys.add(facility.key);
   }
 
-  // 代表子施設を実建物位置へ先に固定し、親複合施設は敷地内候補から
-  // 駅・代表子施設と衝突しない地点を選ぶ。
+  // ランドマークも正本のsource pointへ固定する。衝突時に候補点へ動かさず、
+  // 下位の通常施設をdot/hiddenへ落とすことで座標と世界形状を不変に保つ。
   const occupied = facilities.filter(facility =>
     facility.representation === 'icon' && isStationProps(facility.props));
   const landmarkFacilities = [];
@@ -3933,26 +3422,24 @@ function applyStandaloneLandmarks(resolvedView){
     Number(a.properties.role === 'complex') - Number(b.properties.role === 'complex') ||
     LANDMARK_ENTITY_API.featureId(a).localeCompare(LANDMARK_ENTITY_API.featureId(b)));
   for (const feature of placementOrder){
-    const props = feature.properties || {};
-    const configured = Array.isArray(props.icon_anchor_candidates) && props.icon_anchor_candidates.length
-      ? props.icon_anchor_candidates
-      : [LANDMARK_ENTITY_API.anchorOf(feature)];
-    const candidates = configured.filter(coordinate => Array.isArray(coordinate) && coordinate.length >= 2);
-    if (!candidates.length) continue;
-    let chosen = makeLandmarkFacility(feature, candidates[0]);
-    for (const coordinate of candidates){
-      const candidate = makeLandmarkFacility(feature, coordinate);
-      chosen = candidate;
-      if (!occupied.some(other => landmarkFacilitiesCollide(candidate, other))) break;
+    const coordinate=LANDMARK_ENTITY_API.anchorOf(feature);
+    if (!coordinate) continue;
+    const facility=makeLandmarkFacility(feature,coordinate);
+    const blocker=occupied.find(other => landmarkFacilitiesCollide(facility,other));
+    if (blocker){
+      facility.representation='dot';
+      facility.selectionReason=`collision:${blocker.key}`;
+    } else {
+      occupied.push(facility);
     }
-    landmarkFacilities.push(chosen);
-    occupied.push(chosen);
+    landmarkFacilities.push(facility);
   }
 
   // ランドマークと衝突する通常施設はhiddenへ退かす。駅は常に残す。
   for (const facility of facilities){
     if (facility.representation === 'hidden' || isStationProps(facility.props)) continue;
-    if (!landmarkFacilities.some(landmark => landmarkFacilitiesCollide(facility, landmark))) continue;
+    if (!landmarkFacilities.some(landmark =>
+      landmark.representation === 'icon' && landmarkFacilitiesCollide(facility, landmark))) continue;
     facility.representation = 'hidden';
     facility.selectionReason = 'landmark-collision';
     suppressedKeys.add(facility.key);
@@ -4361,59 +3848,9 @@ function render(){
       return { ...f, pt, visualRadius:f.collisionRadius };
     })
     .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
-  function unifiedSymbolStableKey(item){
-    return String(
-      item.key || item.stableKey || item.id || item.props?.osm_id ||
-      `${item.props?.class || 'poi'}:${item.props?.subclass || ''}:${item.worldX}:${item.worldY}`
-    );
-  }
-  function compareUnifiedSymbolStableKeys(a, b){
-    const keyA = unifiedSymbolStableKey(a);
-    const keyB = unifiedSymbolStableKey(b);
-    return keyA < keyB ? -1 : keyA > keyB ? 1 : 0;
-  }
-  function selectUnifiedPoiSymbols(items){
-    const policy = STANDALONE_STYLE_SPEC.symbol;
-    const scenePerCell = policy.worldGridLogicalPixels * SCENE_PIXELS_PER_LOGICAL_PIXEL;
-    const minimumGap = policy.minimumGapLogicalPixels * SCENE_PIXELS_PER_LOGICAL_PIXEL;
-    const priority = new Map(policy.categoryPriority.map((category, index) => [category, index]));
-    const candidates = items
-      .filter(item => item.representation === 'icon')
-      .slice()
-      .sort((a, b) =>
-        (priority.get(a.category) ?? priority.size) - (priority.get(b.category) ?? priority.size) ||
-        Number(a.selectionPriority ?? 999) - Number(b.selectionPriority ?? 999) ||
-        compareUnifiedSymbolStableKeys(a, b)
-      );
-    const accepted = [];
-    const worldCells = new Map();
-    for (const item of candidates){
-      const cellX = Math.floor(item.worldX / scenePerCell);
-      const cellY = Math.floor(item.worldY / scenePerCell);
-      const cellKey = `${cellX}:${cellY}`;
-      if ((worldCells.get(cellKey) || 0) >= policy.maximumPerWorldCell) continue;
-      let tooClose = false;
-      for (const selected of accepted){
-        if (Math.abs(selected.worldX - item.worldX) >= minimumGap ||
-            Math.abs(selected.worldY - item.worldY) >= minimumGap) continue;
-        if (Math.hypot(selected.worldX - item.worldX, selected.worldY - item.worldY) < minimumGap){
-          tooClose = true;
-          break;
-        }
-      }
-      if (tooClose) continue;
-      worldCells.set(cellKey, (worldCells.get(cellKey) || 0) + 1);
-      accepted.push(item);
-    }
-    return new Set(accepted.map(unifiedSymbolStableKey));
-  }
-  const unifiedSymbolKeys = STANDALONE_UNIFIED_STYLE
-    ? selectUnifiedPoiSymbols(resolvedView.facilities)
-    : null;
-  const drawnIcons = facilitiesInView.filter(p =>
-    p.representation === 'icon' &&
-    (!STANDALONE_UNIFIED_STYLE || unifiedSymbolKeys.has(unifiedSymbolStableKey(p)))
-  );
+  // icon / dot / clusterの採用はfacility-resolverの結果をそのまま使う。
+  // マップ描画側で再選抜するとカタログ・Web・将来のmobileで結果が分岐する。
+  const drawnIcons = facilitiesInView.filter(p => p.representation === 'icon');
   const hiddenPois = facilitiesInView.filter(p => p.representation === 'dot');
   const clusterMarks = resolvedView.clusters
     .map(c => ({ ...c, pt:worldToScreen(c.worldX, c.worldY) }))
@@ -4591,19 +4028,34 @@ function render(){
     if (ACTIVE_PATTERN.drawOrder === 'category') return categoryIndex(b) - categoryIndex(a) || a.pt[1] - b.pt[1];
     return a.pt[1] - b.pt[1] || tierValue(a.size) - tierValue(b.size);
   });
-  function drawPoi(){
-    // legacyは従来どおり点・クラスターを併記する。統一Symbol Policyでは
-    // 非採用POIを別の小記号へ置換せず、同じ世界グリッド規則で非表示にする。
-    if (!STANDALONE_UNIFIED_STYLE){
-      drawDots();
-      drawClusters();
-    }
-    for (const p of drawnIcons){
-      if (STANDALONE_UNIFIED_STYLE) drawUnifiedPoiSymbol(p);
-      else drawSprite(spriteFor(p.props, p.size, p.variant), p.pt[0], p.pt[1], p);
-      const radius = STANDALONE_UNIFIED_STYLE ? 20 : Math.max(28, p.visualRadius);
+  const semanticRoleForPoi = p => {
+    if (p.semanticRole) return p.semanticRole;
+    const id = CLASS2SPRITE[p.props.subclass] || CLASS2SPRITE[p.props.class] || 'generic';
+    return POI_ASSETS_BY_ID.get(id)?.semanticRole || 'marker';
+  };
+  function drawPoiIcons(roles){
+    const allowed = new Set(roles);
+    for (const p of drawnIcons.filter(item => allowed.has(semanticRoleForPoi(item)))){
+      drawSprite(spriteFor(p.props, p.assetSize || p.size, p.variant, p.spriteKey), p.pt[0], p.pt[1], p);
+      const radius = Math.max(28, p.visualRadius);
       hitAreas.push({ x:p.pt[0]-radius, y:p.pt[1]-radius*2, w:radius*2, h:radius*2.2, p:p.props, kind:'poi' });
     }
+  }
+  function drawPoi(){
+    // legacy/cell以外の従来合成。表示採用はresolverの結果をそのまま使う。
+    drawPoiIcons(['structure','object','marker']);
+    drawDots();
+    drawClusters();
+  }
+  function drawPoiStructures(){
+    drawPoiIcons(['structure']);
+  }
+  function drawPoiOverlays(){
+    // 固定semantic z-order: world object → marker → dot/cluster。
+    drawPoiIcons(['object']);
+    drawPoiIcons(['marker']);
+    drawDots();
+    drawClusters();
   }
   function drawCellPoi(){
     drawCellDots();
@@ -4624,7 +4076,7 @@ function render(){
       .sort((a,b) => a.rank - b.rank);
     for (const p of stationTargets){
       const [x, y] = labelPoint(p);
-      const offset = STANDALONE_UNIFIED_STYLE ? 48 : (p.size === 'L' ? 154 : 130);
+      const offset = p.size === 'L' ? 154 : 130;
       labelWindow(featureName(p.props), x, y - offset, placedRects);
     }
   }
@@ -4646,7 +4098,7 @@ function render(){
       .slice(0, ACTIVE_PATTERN.labelLimit);
     for (const p of labelTargets){
       const [x, y] = labelPoint(p);
-      const offset = STANDALONE_UNIFIED_STYLE ? 44 : (p.size === 'L' ? 142 : 116);
+      const offset = p.size === 'L' ? 142 : 116;
       labelWindow(featureName(p.props), x, y - offset, placedRects);
     }
   }
@@ -4809,7 +4261,7 @@ function render(){
       drawDots(facilitiesInView.filter(p => p.representation !== 'cluster-member'));
       drawClusters();
     },
-    poi:drawPoi,
+    poi:STANDALONE_UNIFIED_STYLE ? drawPoiOverlays : drawPoi,
     stationNames:drawStationNames,
     parkNames:drawParkNames,
     poiNames:drawPoiNames,
@@ -4901,6 +4353,12 @@ function render(){
       drawGrid(normalBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
     }
     renderOrder.push('Z3:building');
+  }
+  if (STANDALONE_UNIFIED_STYLE && o.poi){
+    // POI structureは通常建物と同じworld層。道路を避けて移動・変形せず、
+    // corridorより前へ固定合成する。object/markerは後段へ分離する。
+    drawPoiStructures();
+    renderOrder.push('Z2:symbol:structure');
   }
   // 固定compositor: area → corridor → bridge → symbol。
   // 建物との交差有無に関係なく、道路・鉄道・水路を同じループと
@@ -4996,6 +4454,23 @@ function render(){
     counts[key] = (counts[key] || 0) + 1;
     return counts;
   }, {});
+  const decisionFingerprintFor = items => items
+    .map(item => `${item.key}|${item.representation}|${item.worldX.toFixed(3)}|${item.worldY.toFixed(3)}|${item.assetSize || item.size}`)
+    .sort()
+    .reduce((hash,value) => {
+      for(let index=0;index<value.length;index++) hash=Math.imul(hash^value.charCodeAt(index),16777619);
+      return hash>>>0;
+    },2166136261).toString(16).padStart(8,'0');
+  const decisionFingerprint = decisionFingerprintFor(resolvedView.facilities);
+  const decisionItemsByTile = new Map();
+  for(const item of resolvedView.facilities){
+    const key=`${Math.floor(item.sourceWorldX/W)}/${Math.floor(item.sourceWorldY/H)}`;
+    if(!decisionItemsByTile.has(key)) decisionItemsByTile.set(key,[]);
+    decisionItemsByTile.get(key).push(item);
+  }
+  const decisionFingerprintsByTile=Object.fromEntries([...decisionItemsByTile]
+    .sort(([a],[b])=>a.localeCompare(b))
+    .map(([key,items])=>[key,{count:items.length,fingerprint:decisionFingerprintFor(items)}]));
   const visibleMetricItems = facilitiesInView.filter(item => item.pt[0] >= 0 && item.pt[1] >= 0 && item.pt[0] <= W && item.pt[1] <= H);
   const quantiles = (items, key) => {
     const values = items.map(item => item.metrics[key]).sort((a,b) => a-b);
@@ -5049,21 +4524,20 @@ function render(){
       enabled:STANDALONE_UNIFIED_STYLE,
       version:STANDALONE_STYLE_SPEC.version,
       primitives:['area','corridor','symbol'],
-      corridorRenderer:STANDALONE_UNIFIED_STYLE ? 'logical-pixel-mask' : 'legacy-mixed',
-      compositor:STANDALONE_UNIFIED_STYLE ? ['area','corridor','bridge','symbol'] : ['legacy-z-order'],
-      symbolRenderer:STANDALONE_UNIFIED_STYLE ? 'fixed-source-anchored' : 'legacy-building-sprite',
-      symbolLogicalPixels:STANDALONE_STYLE_SPEC.symbol.size,
+      corridorRenderer:STANDALONE_UNIFIED_STYLE ? 'continuous-distance-mask' : 'legacy-mixed',
+      corridorRendererVersion:STANDALONE_UNIFIED_STYLE ? CORRIDOR_RENDERER.version : null,
+      corridorContractVersion:STANDALONE_UNIFIED_STYLE ? LAYER_ASSET_CATALOG.corridorContractVersion : null,
+      corridorPhase:STANDALONE_UNIFIED_STYLE ? 'source-line-distance' : 'legacy-screen-phase',
+      compositor:STANDALONE_UNIFIED_STYLE
+        ? ['area','structure','corridor','bridge','object','marker','dot-cluster']
+        : ['legacy-z-order'],
+      symbolRenderer:STANDALONE_UNIFIED_STYLE ? 'existing-poi-asset' : 'legacy-building-sprite',
+      symbolSizeTiers:[...STANDALONE_STYLE_SPEC.symbol.sizeTiers],
+      symbolSelectionAuthority:STANDALONE_STYLE_SPEC.symbol.selectionAuthority,
+      symbolSelectionOverride:false,
+      symbolAnchorMode:STANDALONE_UNIFIED_STYLE ? 'source-point' : 'legacy-pattern-offset',
+      symbolCollisionBounds:STANDALONE_UNIFIED_STYLE ? 'poi-asset-measured-bounds' : 'legacy-radius',
       sourceGeometryImmutable:STANDALONE_UNIFIED_STYLE,
-      symbolPolicy:{
-        worldGridLogicalPixels:STANDALONE_STYLE_SPEC.symbol.worldGridLogicalPixels,
-        maximumPerWorldCell:STANDALONE_STYLE_SPEC.symbol.maximumPerWorldCell,
-        minimumGapLogicalPixels:STANDALONE_STYLE_SPEC.symbol.minimumGapLogicalPixels,
-        overflow:STANDALONE_STYLE_SPEC.symbol.overflow,
-        selected:drawnIcons.length,
-        suppressed:STANDALONE_UNIFIED_STYLE
-          ? facilitiesInView.filter(item => item.representation === 'icon').length - drawnIcons.length
-          : 0,
-      },
     },
     pattern:{
       id:ACTIVE_PATTERN.id,
@@ -5142,7 +4616,16 @@ function render(){
       mixedBuildings:facilitiesInView.filter(item => item.facilityRole === 'mixed_building').length,
       selectionReasons:countBy(facilitiesInView, item => String(item.selectionReason || '').split(':')[0]),
       sizes:countBy(drawnIcons, item => item.size),
+      assetSizes:countBy(drawnIcons, item => item.assetSize || item.size),
       categories:countBy(drawnIcons, item => item.category),
+      semanticRoles:countBy(drawnIcons, semanticRoleForPoi),
+      anchorModes:countBy(drawnIcons, item => item.anchorMode || 'legacy'),
+      contractVersions:countBy(drawnIcons, item => item.contractVersion || 'legacy'),
+      allContractVersions:countBy(resolvedView.facilities, item => item.contractVersion || 'legacy'),
+      sourceCoordinateMismatches:resolvedView.facilities.filter(item =>
+        item.worldX !== item.sourceWorldX || item.worldY !== item.sourceWorldY).length,
+      decisionFingerprint,
+      decisionFingerprintsByTile,
       assetCounts:countBy(drawnIcons, item => String(item.assetCount)),
       maxHeight:drawnIcons.reduce((max, item) => Math.max(max, item.metrics.height), 0),
       maxArea:drawnIcons.reduce((max, item) => Math.max(max, item.metrics.area), 0),
@@ -5299,7 +4782,9 @@ function resolveTileFacilities(x, y){
   const cached = resolvedTiles.get(key);
   if (cached && cached.generation === tileGeneration) return cached.result;
   const result = RESOLVER.resolveTile({
-    tileX:x, tileY:y, pattern:ACTIVE_PATTERN, getTile:resolverGetTile,
+    tileX:x,tileY:y,pattern:ACTIVE_PATTERN,getTile:resolverGetTile,
+    assetCatalog:STANDALONE_UNIFIED_STYLE ? POI_SPRITE_CATALOG : null,
+    sourceAnchored:STANDALONE_UNIFIED_STYLE,
   });
   if (result) resolvedTiles.set(key, { generation:tileGeneration, result });
   return result;
@@ -5470,6 +4955,8 @@ async function boot(){
     setMsg(DEFAULT_MSG);
   } catch (e) {
     console.error(e);
+    window.PixelMapBootError = {name:e?.name || 'Error',message:String(e?.message || e),stack:String(e?.stack || '')};
+    document.documentElement.dataset.bootError = String(e?.message || e);
     showLoadError();
   } finally {
     locateBtn.disabled = false;

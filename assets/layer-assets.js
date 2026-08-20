@@ -1,6 +1,8 @@
 ((global) => {
   'use strict';
 
+  const corridorRenderer=global.PixelMapCorridorRenderer;
+
   const groups = Object.freeze([
     {
       id:'nature', label:'自然・水域', items:[
@@ -118,7 +120,7 @@
     }),
     tracks:Object.freeze({
       renderer:'cell', gridKind:'path', polygonKind:'gravel', thick:false,
-      cellSize:8, logicalWidth:2, fill:'#b8a47c', detail:'#888078',
+      cellSize:8, logicalWidth:2, fill:'#b8a47c', detail:'#888078', detailDash:[3,4],
     }),
     raceways:Object.freeze({
       renderer:'cell', gridKind:'roadMajor', polygonKind:'roadMajor', thick:true,
@@ -126,7 +128,7 @@
     }),
     ferries:Object.freeze({
       renderer:'cell', gridKind:'path', polygonKind:'path', thick:false,
-      cellSize:8, logicalWidth:2, fill:'#c8e8f8', dashed:true,
+      cellSize:8, logicalWidth:2, fill:'#c8e8f8', dashed:true, dash:[6,4],
     }),
     piers:Object.freeze({
       renderer:'cell', gridKind:'path', polygonKind:'pave', thick:false,
@@ -135,6 +137,7 @@
     rail:Object.freeze({
       renderer:'rail-cell', gridKind:'rail', polygonKind:'gravel', thick:false,
       cellSize:8, bedWidth:8, railWidth:1, railCount:2,
+      corridorWidth:7, corridorCasing:1, tiePeriod:4,
       fill:'#404048', tie:'#786048', bed:'#a8a098', bedDark:'#888078', bedLight:'#c0b8b0',
     }),
     subway:Object.freeze({
@@ -144,6 +147,7 @@
     aerialways:Object.freeze({
       renderer:'rail-cell', gridKind:'rail', polygonKind:'gravel', thick:false,
       cellSize:8, bedWidth:8, railWidth:1, railCount:2,
+      corridorWidth:3, corridorCasing:0, tiePeriod:4,
       fill:'#404048', tie:'#786048', bed:'#a8a098', bedDark:'#888078', bedLight:'#c0b8b0',
     }),
     transportationOther:Object.freeze({
@@ -151,37 +155,80 @@
       cellSize:8, logicalWidth:2, fill:'#dcc890', detail:'#c4ac70',
     }),
     roadTunnels:Object.freeze({
-      renderer:'direct-dash', logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
+      renderer:'direct-dash', tunnelGroup:'road', logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
     }),
     pathTunnels:Object.freeze({
-      renderer:'direct-dash', logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
+      renderer:'direct-dash', tunnelGroup:'path', logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
     }),
     railTunnels:Object.freeze({
-      renderer:'direct-dash', logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
+      renderer:'direct-dash', tunnelGroup:'rail', logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
     }),
   });
 
-  function metricForTransport(id){
-    const rule=transportRules[id];
-    if(!rule) return Object.freeze({kind:'line',label:'1 px LINE',lineWidth:1,width:32,height:16});
+  /*
+    Corridor Asset Contract v1
+    --------------------------
+    source geometryは道路・線路・水路の区別なくcenterline/polygonのまま保持する。
+    widthとcasingは全方向で同じ距離マスクにだけ使い、道路らしさ・線路らしさは
+    skin fieldsで表す。カタログ、単体map、将来のmobile rendererが同じ正本を読む。
+  */
+  const CORRIDOR_CONTRACT_VERSION = 'pixelmap-corridor-asset/1';
+  const waterwayRules = Object.freeze({
+    rivers:Object.freeze({source:'waterway',classes:Object.freeze(['river']),width:4,edgeWidth:1,fill:'#4890e0',edge:'#c8e8f8'}),
+    streams:Object.freeze({source:'waterway',classes:Object.freeze(['stream']),width:1,edgeWidth:0,fill:'#5aa2e8'}),
+    canals:Object.freeze({source:'waterway',classes:Object.freeze(['canal']),width:2,edgeWidth:0,fill:'#4890e0'}),
+    drains:Object.freeze({source:'waterway',classes:Object.freeze(['ditch','drain']),width:1,edgeWidth:0,fill:'#6aa8d8'}),
+    waterwayOther:Object.freeze({source:'waterway',fallback:true,width:1,edgeWidth:0,fill:'#4890e0'}),
+  });
+
+  function transportCorridorContract(id,rule){
+    const width=Math.max(1,Math.round(rule.corridorWidth ?? rule.logicalWidth ?? rule.bedWidth ?? 1));
+    const edgeWidth=Math.max(0,Math.ceil(rule.corridorCasing ?? rule.casing ?? 0));
+    const contract={
+      version:CORRIDOR_CONTRACT_VERSION,id,source:'transportation',
+      geometrySource:'mvt-source-geometry',renderer:'corridor-distance-mask',
+      width,edgeWidth,fill:rule.renderer==='rail-cell' ? rule.bed : rule.fill,
+    };
+    if(rule.edge || rule.bedDark) contract.edge=rule.edge || rule.bedDark;
+    if(rule.center){
+      contract.center=rule.center;
+      contract.centerPeriod=(rule.dash?.[0] || 1)+(rule.dash?.[1] || 0);
+      contract.centerOn=rule.dash?.[0] || 1;
+    } else if(rule.detail){
+      contract.center=rule.detail;
+      contract.centerPeriod=(rule.detailDash?.[0] || 1)+(rule.detailDash?.[1] || 0);
+      contract.centerOn=rule.detailDash?.[0] || 1;
+    }
+    if(rule.dashed || rule.renderer==='direct-dash'){
+      contract.dashPeriod=(rule.dash?.[0] || 1)+(rule.dash?.[1] || 0);
+      contract.dashOn=rule.dash?.[0] || 1;
+    }
+    if(rule.alpha != null) contract.alpha=rule.alpha;
+    if(rule.tunnelGroup) contract.tunnelGroup=rule.tunnelGroup;
     if(rule.renderer==='rail-cell'){
-      return Object.freeze({
-        kind:'cell-route',
-        label:`${rule.cellSize}×${rule.cellSize} px CELL / ${rule.railWidth} px × ${rule.railCount} RAILS`,
-        width:rule.cellSize,height:rule.cellSize,cellSize:rule.cellSize,
-        railWidth:rule.railWidth,railCount:rule.railCount,
-      });
+      contract.pattern='rail';contract.rail=rule.fill;contract.tie=rule.tie;
+      contract.railOffset=Math.max(1,Math.floor(width/3));
+      contract.tiePeriod=rule.tiePeriod || 4;
     }
-    if(rule.renderer==='cell'){
-      return Object.freeze({
-        kind:'cell-route',
-        label:`${rule.cellSize}×${rule.cellSize} px CELL / ${rule.logicalWidth} px LINE`,
-        width:rule.cellSize,height:rule.cellSize,cellSize:rule.cellSize,lineWidth:rule.logicalWidth,
-      });
-    }
+    return Object.freeze(contract);
+  }
+
+  const corridorRules = Object.freeze({
+    ...Object.fromEntries(Object.entries(waterwayRules).map(([id,rule]) => [id,Object.freeze({
+      version:CORRIDOR_CONTRACT_VERSION,id,geometrySource:'mvt-source-geometry',
+      renderer:'corridor-distance-mask',...rule,
+    })])),
+    ...Object.fromEntries(Object.entries(transportRules).map(([id,rule]) => [id,transportCorridorContract(id,rule)])),
+  });
+
+  function metricForTransport(id){
+    const rule=corridorRules[id];
+    if(!rule) return Object.freeze({kind:'corridor',label:'1 px CORRIDOR',lineWidth:1,width:32,height:16});
+    const outerWidth=rule.width+(rule.edgeWidth || 0)*2;
+    const skin=rule.pattern==='rail' ? ` / RAIL SKIN ${rule.tiePeriod || 4} px` : '';
     return Object.freeze({
-      kind:'line',label:`${rule.logicalWidth} px LINE / DIRECT TRACE`,lineWidth:rule.logicalWidth,
-      width:32,height:Math.max(16,Math.ceil(rule.logicalWidth)+8),
+      kind:'corridor',label:`${rule.width} px CORRIDOR${skin}`,lineWidth:outerWidth,
+      width:32,height:Math.max(16,Math.ceil(outerWidth)+8),
     });
   }
 
@@ -197,7 +244,7 @@
     if(kind==='surface' || (kind==='water' && variant==='area')){
       return Object.freeze({kind:'tile',label:'16×16 px TILE',width:16,height:16});
     }
-    if(kind==='route') return metricForTransport(id);
+    if(kind==='route' || kind==='water') return metricForTransport(id);
     if(kind==='water' || kind==='route'){
       const lineWidth=LINE_WIDTHS[variant] ?? 1;
       return Object.freeze({
@@ -278,22 +325,23 @@
     return true;
   }
 
-  function previewRouteCells(ctx,asset){
-    const rule=transportRules[asset.id];
-    const size=rule.cellSize || 8;
-    const cells=[];
-    let cx=-1,cy=14;
-    while(cx*size<ctx.canvas.width+size){
-      for(let run=0;run<5 && cx*size<ctx.canvas.width+size;run++) cells.push([++cx,cy]);
-      cells.push([cx,--cy]);
-    }
-    const occupied=new Set(cells.map(([x,y])=>`${x},${y}`));
-    for(const [x,y] of cells){
-      drawStandardTransportCell(ctx,asset.id,x*size,y*size,{
-        L:occupied.has(`${x-1},${y}`),R:occupied.has(`${x+1},${y}`),
-        U:occupied.has(`${x},${y-1}`),D:occupied.has(`${x},${y+1}`),
-      },{dashOff:rule.dashed && (x+y)%3===0});
-    }
+  function renderCorridorSample(ctx,asset,detail=false){
+    const style=corridorRules[asset.id];
+    if(!style || !corridorRenderer) return false;
+    const width=ctx.canvas.width,height=ctx.canvas.height;
+    const overlay=global.document.createElement('canvas');
+    overlay.width=width;overlay.height=height;
+    const points=detail
+      ? [[-4,Math.floor(height/2)],[width+4,Math.floor(height/2)]]
+      : [[-8,Math.floor(height*.72)],[Math.floor(width*.26),Math.floor(height*.72)],
+        [Math.floor(width*.36),Math.floor(height*.58)],[Math.floor(width*.62),Math.floor(height*.58)],
+        [Math.floor(width*.73),Math.floor(height*.43)],[width+8,Math.floor(height*.43)]];
+    corridorRenderer.render(overlay.getContext('2d'),{
+      width,height,features:[{type:2,geom:[points]}],style,
+      phaseAt:(x,y)=>x+y*3,
+    });
+    ctx.drawImage(overlay,0,0);
+    return true;
   }
   function grass(ctx){
     rect(ctx,0,0,288,180,P.grass);
@@ -364,31 +412,14 @@
       for(let y=44;y<146;y+=30){rect(ctx,50,y,48,4,P.waterLight);rect(ctx,168,y+12,62,4,P.waterDark);}
       return;
     }
-    const widths={river:34,stream:12,canal:22,drain:8,other:10};
-    const w=widths[asset.variant]||10;
-    for(let x=0;x<288;x+=6){const y=108+Math.round(Math.sin(x/45)*22);rect(ctx,x,y-w/2,7,w,asset.color);if(w>15)rect(ctx,x,y-w/2,7,3,P.foam);}
+    renderCorridorSample(ctx,asset);
   }
 
-  function steppedLine(ctx,color,width,dashed=false){
-    for(let x=0;x<288;x+=6){
-      if(dashed && Math.floor(x/24)%2)continue;
-      const y=112-Math.floor(x/36)*7+(Math.floor(x/60)%2)*12;
-      rect(ctx,x,y-width/2,7,width,color);
-    }
-  }
   function route(ctx,asset){
     const rule=transportRules[asset.id];
     if(!rule) return;
     if(asset.id==='ferries') rect(ctx,0,0,288,180,P.water);
-    if(rule.renderer==='cell' || rule.renderer==='rail-cell'){
-      previewRouteCells(ctx,asset);
-      return;
-    }
-    const dashed=rule.renderer==='direct-dash';
-    const casing=(rule.casing || 0)*2;
-    if(casing>0) steppedLine(ctx,rule.edge,rule.logicalWidth+casing,dashed);
-    steppedLine(ctx,rule.fill,rule.logicalWidth,dashed);
-    if(rule.center) steppedLine(ctx,rule.center,rule.centerWidth || 1,true);
+    renderCorridorSample(ctx,asset);
   }
 
   function building(ctx,x,y,roof){
@@ -445,33 +476,17 @@
   }
 
   function renderLineDetail(ctx,asset){
-    const metric=asset.metric;
-    const lineWidth=Math.max(1,Math.round(metric.lineWidth));
-    const y=Math.floor((canvasHeight(ctx)-lineWidth)/2);
-    const dashed=asset.variant.endsWith('Tunnel') || asset.variant==='subway' || asset.variant==='ferry' || asset.variant==='aerialway';
     const background=asset.variant==='ferry' || asset.variant==='pier' ? P.water : P.grass;
     rect(ctx,0,0,ctx.canvas.width,ctx.canvas.height,background);
-    for(let x=0;x<ctx.canvas.width;x+=dashed?10:ctx.canvas.width){
-      const segmentWidth=dashed?6:ctx.canvas.width;
-      rect(ctx,x,y,segmentWidth,lineWidth,asset.color);
-    }
+    renderCorridorSample(ctx,asset,true);
   }
-
-  function renderCellRouteDetail(ctx,asset){
-    const rule=transportRules[asset.id];
-    const background=asset.id==='ferries' ? P.water : P.grass;
-    drawStandardTransportCell(ctx,asset.id,0,0,{L:true,R:true},{background});
-  }
-
-  function canvasHeight(ctx){ return ctx.canvas?.height || 16; }
 
   function renderDetail(canvas,asset){
     const metric=asset.metric;
     canvas.width=metric.width;canvas.height=metric.height;
     const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,canvas.width,canvas.height);
     if(metric.kind==='tile') renderTileDetail(ctx,asset);
-    else if(metric.kind==='line') renderLineDetail(ctx,asset);
-    else if(metric.kind==='cell-route') renderCellRouteDetail(ctx,asset);
+    else if(metric.kind==='line' || metric.kind==='corridor') renderLineDetail(ctx,asset);
     else if(asset.variant==='buildings') building(ctx,24,24,P.roof);
     else if(asset.variant==='poi'){
       const poiCatalog=global.PixelMapPoiSprites;
@@ -493,6 +508,8 @@
   }
 
   global.PixelMapLayerAssets=Object.freeze({
-    groups,layers,transportRules,render,renderDetail,drawStandardTransportCell,
+    corridorContractVersion:CORRIDOR_CONTRACT_VERSION,
+    corridorRendererVersion:corridorRenderer?.version || null,
+    groups,layers,transportRules,corridorRules,render,renderDetail,drawStandardTransportCell,
   });
 })(window);

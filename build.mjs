@@ -1,6 +1,8 @@
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { extname, join, relative } from 'node:path';
 
+await import('./scripts/generate-mobile-asset-manifest.mjs');
+
 const root = new URL('.', import.meta.url).pathname;
 const output = join(root, 'dist', 'server');
 const sources = [

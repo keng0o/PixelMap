@@ -148,7 +148,7 @@
             </tr>
             <tr>
               <th scope="row">描画方式</th>
-              <td>標準描画は<code>geometry-skin-symbol/1</code>。地理形状、見た目、情報記号を分離。<code>?render=cell2</code> の2×2論理px検証も利用可能。</td>
+              <td>標準描画は<code>geometry-skin-symbol/1</code>。地理形状、見た目、情報記号を分離し、corridorは<code>pixelmap-corridor-renderer/1</code>を使用。<code>?render=cell2</code> の2×2論理px検証も利用可能。</td>
               <td>標準描画のみ。<code>cell2</code>指定は適用しない。</td>
             </tr>
             <tr>
@@ -158,18 +158,23 @@
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
-              <td>全て同じ1論理px corridorマスク生成器と整数幅を使用。道路種別・レール・水路の差は外形ではなく内部スキンで表現。</td>
+              <td>全て同じ連続距離corridorマスク生成器と整数幅を使用。縦・横・斜めの外形規則を共通化し、道路種別・レール・水路の差は内部スキンで表現。アセットカタログも同じrendererを使用。</td>
               <td>各レイヤー固有の従来描画と線幅を維持。</td>
             </tr>
             <tr>
               <th scope="row">建物とcorridorの重なり</th>
-              <td>MVT建物形状を1論理px意味マスクで一度だけ確定し、衝突後の移動・変形・部分修正は行わない。全域でarea→corridor→bridge→symbolの固定順に合成し、重なりは診断値として記録。</td>
+              <td>MVT建物形状を1論理px意味マスクで一度だけ確定し、衝突後の移動・変形・部分修正は行わない。全域でarea→structure→corridor→bridge→object→marker→dot／clusterの固定順に合成し、重なりは診断値として記録。</td>
               <td>従来の8×8論理px建物セル、通常建物／橋／POI建物の描画順を維持。</td>
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>建物型POIは実際の建物ポリゴンへカテゴリスキンを適用。情報は元の世界座標に固定した16論理px・1論理px輪郭の共通シンボルで表示。世界座標64論理pxグリッドごとに優先度と安定IDで1件を採用し、位置ずらしは行わない。</td>
-              <td>S／M／Lの従来施設スプライトと配置処理を維持。</td>
+              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理。全52点がsemantic role・ground-center anchor・実測boundsを持つ。表示採用は<code>facility-resolver</code>だけが決め、source pointを動かさない。</td>
+              <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
+            </tr>
+            <tr>
+              <th scope="row">カタログ／モバイル移植</th>
+              <td>POIとcorridorの正本から<code>mobile-asset-manifest.json</code>をbuild時に生成。アンカー相対の矩形命令＋RGBA、幅・skin、固定compositorをExpo／Flutterで解釈できるデータとして公開。</td>
+              <td>本番マップの実行時にはmanifestを読み込まず、表示への影響なし。</td>
             </tr>
             <tr>
               <th scope="row">外側UIと同期</th>
@@ -186,6 +191,30 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>Asset Contractと共通描画基盤を正本化</h3>
+          <time datetime="2026-08-20">2026-08-20 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>全52 POIへsemantic role・ground-center anchor・実測boundsを付与し、既存スプライト描画を<code>poi-sprites.js</code>へ一本化。通常施設とランドマークをsource point固定＋同一衝突判定へ統合。道路・鉄道・水路はmap／catalog共通の連続距離rendererへ移設し、固定semantic z-orderを実装。Expo／Flutter向けJSON manifestも正本から機械生成。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>でsource固定、実測bounds、固定compositor、共通corridor rendererを有効化。アセットカタログとmobile manifestは共有成果物。<code>?render=cell2</code>と<code>embedded=1</code>は従来描画を維持。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは見た目とz14・legacy modeを変更なし。共有モジュールは契約APIを追加したが、従来呼び出しの既定値は維持。全7 iframeの起動・同期を実画面で確認。</dd></div>
+          <div><dt>確認内容</dt><dd>全Nodeテスト、build、川崎z12／13／14・横浜・鎌倉、パン前後の共通6タイル決定ハッシュ、契約漏れ0・座標ずれ0、map／catalog撮影、2系統の独立視覚レビューPASSを確認。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>既存POIアセット描画を復旧</h3>
+          <time datetime="2026-08-20">2026-08-20 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>汎用16論理pxシンボルとmap側の世界グリッド再選抜を廃止。既存のRPG風S／M／L施設スプライト、pattern marker、補助アセット、dot／clusterを復旧し、表示採用を<code>facility-resolver</code>へ一本化。建物・POIの衝突移動廃止は維持。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone標準描画のPOI描画経路を復旧。<code>?render=cell2</code>と<code>embedded=1</code>は従来描画のまま。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは変更なし。共有POI分類とアセット定義も変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>Nodeテスト、ビルド、ブラウザ描画、POI診断、コンソールエラー、基準画像との差分、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>不変ジオメトリ基準の統一Style Specを導入</h3>

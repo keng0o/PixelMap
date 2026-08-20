@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 globalThis.window = globalThis;
+await import('../assets/corridor-renderer.js');
 await import('../assets/layer-assets.js');
 
 const catalog = globalThis.PixelMapLayerAssets;
@@ -28,14 +29,13 @@ test('レイヤー寸法は地図のタイル・線幅・可変種別を表す',
     {kind:'tile',label:'16×16 px TILE',width:16,height:16},
   );
   assert.equal(byId.localRoads.metric.lineWidth,1);
-  assert.equal(byId.motorways.metric.lineWidth,14);
-  assert.equal(byId.rivers.metric.lineWidth,1.4);
-  assert.equal(byId.roadTunnels.metric.lineWidth,2.5);
+  assert.equal(byId.motorways.metric.lineWidth,18);
+  assert.equal(byId.rivers.metric.lineWidth,6);
+  assert.equal(byId.roadTunnels.metric.lineWidth,3);
   assert.equal(byId.transportationOther.metric.lineWidth,2);
-  assert.equal(byId.transportationOther.metric.kind,'cell-route');
-  assert.equal(byId.rail.metric.kind,'cell-route');
-  assert.equal(byId.rail.metric.railWidth,1);
-  assert.equal(byId.rail.metric.railCount,2);
+  assert.equal(byId.transportationOther.metric.kind,'corridor');
+  assert.equal(byId.rail.metric.kind,'corridor');
+  assert.equal(byId.rail.metric.lineWidth,9);
   assert.equal(byId.waterwayOther.metric.lineWidth,1);
   assert.equal(byId.buildings.metric.kind,'variable');
   assert.equal(byId.stationNames.metric.kind,'variable');
@@ -48,8 +48,16 @@ test('交通レイヤーの寸法・色・描画方式はアセットカタロ�
   assert.equal(catalog.transportRules.localRoads.logicalWidth,1);
   assert.equal(catalog.transportRules.rail.renderer,'rail-cell');
   assert.equal(catalog.transportRules.rail.cellSize,8);
-  assert.match(html, /<script src="\.\.\/assets\/layer-assets\.js"><\/script>/);
+  assert.equal(catalog.corridorContractVersion,'pixelmap-corridor-asset/1');
+  assert.equal(catalog.corridorRendererVersion,'pixelmap-corridor-renderer/1');
+  assert.equal(catalog.corridorRules.rail.renderer,'corridor-distance-mask');
+  assert.equal(catalog.corridorRules.rail.pattern,'rail');
+  assert.equal(catalog.corridorRules.rivers.source,'waterway');
+  assert.equal(catalog.corridorRules.localRoads.source,'transportation');
+  assert.match(html, /<script src="\.\.\/assets\/layer-assets\.js\?v=3"><\/script>/);
+  assert.match(html, /<script src="\.\.\/assets\/corridor-renderer\.js\?v=1"><\/script>/);
   assert.match(html, /const CANONICAL_TRANSPORT_RULES = LAYER_ASSET_CATALOG\.transportRules/);
+  assert.match(html, /const CANONICAL_CORRIDOR_RULES = LAYER_ASSET_CATALOG\.corridorRules/);
   assert.match(html, /LAYER_ASSET_CATALOG\.drawStandardTransportCell/);
 });
 

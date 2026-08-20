@@ -16,7 +16,7 @@
      （旧実装の4連結フラッドフィルと同じ意味論）。
      ===================================================== */
 
-  const ALGORITHM_VERSION = 'facility-resolver/2';
+  const ALGORITHM_VERSION = 'facility-resolver/3';
   const TILE_PX = 1536;            // z14表示スケール: 1タイル = 96セル × 16px
   const CELL_PX = 16;
   const CELL_AREA = CELL_PX * CELL_PX;
@@ -129,6 +129,49 @@
   const visualScaleFor = (pattern, category) => pattern.scale * (pattern.categoryScale?.[category] || 1);
   const visualRadiusFor = (pattern, category, assetCount) =>
     24 * visualScaleFor(pattern, category) + Math.max(0, assetCount - 1) * 8;
+  function assetCollisionGeometry(assetCatalog,spriteKey,size,pattern,category,assetCount){
+    const fallbackRadius=visualRadiusFor(pattern,category,assetCount);
+    if (!assetCatalog || typeof assetCatalog.contract !== 'function') return {
+      contractVersion:null,semanticRole:null,assetBounds:null,assetAnchor:null,
+      assetSize:size,
+      collisionBounds:{left:-fallbackRadius,top:-fallbackRadius,right:fallbackRadius,bottom:fallbackRadius},
+      collisionRadius:fallbackRadius,
+    };
+    const contract=assetCatalog.contract(spriteKey,size);
+    const scale=contract.assetPixelScale || 2;
+    const extra=Math.max(6,Math.max(0,assetCount-1)*8);
+    const left=(contract.bounds.left-contract.anchor.x)*scale-extra;
+    const top=(contract.bounds.top-contract.anchor.y)*scale-extra;
+    const right=(contract.bounds.right-contract.anchor.x)*scale+extra;
+    const bottom=(contract.bounds.bottom-contract.anchor.y)*scale+extra;
+    return {
+      contractVersion:contract.version,
+      semanticRole:contract.semanticRole,
+      assetBounds:contract.bounds,
+      assetAnchor:contract.anchor,
+      assetSize:contract.size,
+      collisionBounds:{left,top,right,bottom},
+      collisionRadius:Math.max(Math.abs(left),Math.abs(top),Math.abs(right),Math.abs(bottom)),
+    };
+  }
+  function collisionBoundsOverlap(a,b,padding=0){
+    const aa=a.collisionBounds,bb=b.collisionBounds;
+    return !(
+      a.worldX+aa.right+padding < b.worldX+bb.left ||
+      b.worldX+bb.right+padding < a.worldX+aa.left ||
+      a.worldY+aa.bottom+padding < b.worldY+bb.top ||
+      b.worldY+bb.bottom+padding < a.worldY+aa.top
+    );
+  }
+  function facilitiesCollide(a,b,pattern){
+    const dx=b.worldX-a.worldX,dy=b.worldY-a.worldY;
+    const sameKind=a.spriteKey===b.spriteKey;
+    const important=isStationProps(a.props) || isStationProps(b.props) || a.size==='L' || b.size==='L';
+    const scale=sameKind ? (pattern.sameGapScale || 1) : (pattern.gapScale || 1);
+    const baseGap=important ? 86 : sameKind ? 74 : 56;
+    const scaleFactor=Math.max(.62,(a.visualScale+b.visualScale)/2);
+    return collisionBoundsOverlap(a,b,6*scale) || dx*dx+dy*dy < (baseGap*scale*scaleFactor)**2;
+  }
   function buildingPoiType(props){
     const types = [props.class, props.subclass].filter(Boolean);
     if (types.includes('hospital')) return 'hospital';
@@ -317,12 +360,17 @@
        tileX/tileY … 確定対象の正規タイル座標
        pattern     … icon-patterns.js のパターン設定
        collisionPolicy … 任意。protected-area と hidden 表現を指定できる
+       assetCatalog … 任意。POI Asset Contractの実測boundsを衝突判定に使う
+       sourceAnchored … trueならpattern snap/offsetを適用せずsource pointを保持
        getTile(x,y) … { layers, baseX, baseY } を返す（layersの座標は
                        (タイル座標-base)*extent が加算済み）。未取得なら null、
                        世界の外など恒久的に空なら { empty:true }。
      出力: 施設リスト（このタイルにアンカーを持つものだけ）。文脈9タイルが
            揃わないうちは null を返し、呼び出し側が取得後に再試行する。 */
-  function resolveTile({ tileX, tileY, pattern, getTile, collisionPolicy = null }){
+  function resolveTile({
+    tileX,tileY,pattern,getTile,collisionPolicy=null,
+    assetCatalog=null,sourceAnchored=false,
+  }){
     const context = collectContext(tileX, tileY, getTile);
     if (!context) return null;
     bindPoisToRings(context.pois, context.rings);
@@ -359,6 +407,9 @@
       const category = poiCategory(props);
       const size = patternSize(pattern, metrics, category);
       const assetCount = patternAssetCount(pattern, metrics, category);
+      const spriteKey=CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
+      const collisionGeometry=assetCollisionGeometry(
+        assetCatalog,spriteKey,size,pattern,category,assetCount);
       const idNum = Number(String(rep.poi.key).split('|')[0] || 0);
       const nameSeed = [...(featureName(props) || props.class || '')]
         .reduce((sum, ch) => sum + ch.codePointAt(0), 0);
@@ -370,7 +421,7 @@
         buildingId:group.building ? group.building.key : null,
         facilityRole:!group.building ? 'standalone' : mixed ? 'mixed_building' : 'building',
         category,
-        spriteKey:CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic',
+        spriteKey,
         variant:Math.abs((Number.isFinite(idNum) ? idNum : 0) + nameSeed) % 3,
         importance:rep.importance,
         rank:rep.rank,
@@ -378,7 +429,7 @@
         size,
         assetCount,
         visualScale:visualScaleFor(pattern, category),
-        collisionRadius:visualRadiusFor(pattern, category, assetCount),
+        ...collisionGeometry,
       };
       if (protectedAreaPriority)
         facility.collisionProtected = tenants.some(tenant => isProtectedProps(tenant.poi.props, protectedKinds));
@@ -387,8 +438,11 @@
       const sx = (Math.floor(rep.poi.x / snap) + 0.5) * snap;
       const sy = (Math.floor(rep.poi.y / snap) + 0.5) * snap;
       const [ox, oy] = patternOffsetFor(pattern, facility, sx, sy);
-      facility.worldX = sx + ox;
-      facility.worldY = sy + oy;
+      facility.sourceWorldX=rep.poi.x;
+      facility.sourceWorldY=rep.poi.y;
+      facility.worldX=sourceAnchored ? rep.poi.x : sx+ox;
+      facility.worldY=sourceAnchored ? rep.poi.y : sy+oy;
+      facility.anchorMode=sourceAnchored ? 'source-point' : 'pattern-snap-offset';
       facilities.push(facility);
     }
 
@@ -407,7 +461,6 @@
     const acceptedBuckets = new Map();
     const bucketOf = (x, y) => `${Math.floor(x / COLLISION_BUCKET_PX)}:${Math.floor(y / COLLISION_BUCKET_PX)}`;
     const gapScale = pattern.gapScale || 1;
-    const sameGapScale = pattern.sameGapScale || 1;
     const duplicateGap2 = (112 * gapScale) ** 2;
     for (const facility of facilities){
       let reason = 'icon';
@@ -427,15 +480,7 @@
               reason = `duplicate:${other.key}`;
               break search;
             }
-            const sameKind = other.spriteKey === facility.spriteKey;
-            const important = isStationProps(other.props) || isStationProps(facility.props) ||
-              other.size === 'L' || facility.size === 'L';
-            const scale = sameKind ? sameGapScale : gapScale;
-            const baseGap = important ? 86 : sameKind ? 74 : 56;
-            const scaleFactor = Math.max(.62, (facility.visualScale + other.visualScale) / 2);
-            const minGap = Math.max(baseGap * scale * scaleFactor,
-              facility.collisionRadius + other.collisionRadius + 6);
-            if (dist2 < minGap * minGap){
+            if (facilitiesCollide(facility,other,pattern)){
               reason = `collision:${other.key}`;
               break search;
             }
@@ -525,6 +570,8 @@
     CLUSTER_BUCKET_PX,
     CLUSTER_MIN_DOTS,
     resolveTile,
+    assetCollisionGeometry,
+    facilitiesCollide,
     CLASS2SPRITE,
     isStationProps,
     isHospitalProps,

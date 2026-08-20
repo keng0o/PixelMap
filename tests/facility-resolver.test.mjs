@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import '../assets/facility-resolver.js';
+
+globalThis.window=globalThis;
+await import('../assets/facility-resolver.js');
+await import('../assets/poi-sprites.js');
 
 const RESOLVER = globalThis.PixelMapFacilityResolver;
+const POI_ASSETS = globalThis.PixelMapPoiSprites;
 
 /* パターン07（skyline-stack）: 4地点比較ページが固定で使う本番パターン */
 const PATTERN_07 = {
@@ -246,4 +250,42 @@ test('レイヤー・画面状態は入力に存在しない（純粋性の担�
   resolve(tiles, 9, 10);
   const b = JSON.stringify(resolve(tiles, 10, 10));
   assert.equal(b, a);
+});
+
+test('Asset Contractモードはsource pointを動かさずS/M/L実測boundsを衝突範囲に使う', () => {
+  const sourceX=1234,sourceY=2345;
+  const tiles = new Map([['10/10',makeTile({
+    pois:[poiFeature(1,'school','原点学校',sourceX,sourceY)],
+  })]]);
+  const result=RESOLVER.resolveTile({
+    tileX:10,tileY:10,pattern:PATTERN_07,getTile:makeGetTile(tiles),
+    assetCatalog:POI_ASSETS,sourceAnchored:true,
+  });
+  const facility=result.facilities[0];
+  const expectedX=10*RESOLVER.TILE_PX+sourceX*RESOLVER.TILE_PX/EXTENT;
+  const expectedY=10*RESOLVER.TILE_PX+sourceY*RESOLVER.TILE_PX/EXTENT;
+  assert.equal(facility.sourceWorldX,expectedX);
+  assert.equal(facility.sourceWorldY,expectedY);
+  assert.equal(facility.worldX,expectedX);
+  assert.equal(facility.worldY,expectedY);
+  assert.equal(facility.anchorMode,'source-point');
+  assert.equal(facility.contractVersion,POI_ASSETS.contractVersion);
+  assert.equal(facility.semanticRole,'structure');
+  assert.equal(facility.assetSize,POI_ASSETS.contract('school',facility.size).size);
+  assert.deepEqual(facility.assetAnchor,{kind:'ground-center',x:0,y:0});
+  assert.deepEqual(facility.assetBounds,POI_ASSETS.measure('school',facility.size));
+  assert.equal(facility.collisionBounds.left,facility.assetBounds.left*2-6);
+  assert.equal(facility.collisionBounds.top,facility.assetBounds.top*2-6);
+  assert.equal(facility.collisionBounds.right,facility.assetBounds.right*2+6);
+  assert.equal(facility.collisionBounds.bottom,facility.assetBounds.bottom*2+6);
+});
+
+test('公開衝突判定はAsset Contractの実測矩形を使い座標を変更しない', () => {
+  const pattern={...PATTERN_07,gapScale:.01,sameGapScale:.01};
+  const geometry=RESOLVER.assetCollisionGeometry(POI_ASSETS,'school','L',pattern,'civic',1);
+  const a={...geometry,worldX:100,worldY:100,spriteKey:'school',size:'L',visualScale:1,props:{class:'school'}};
+  const b={...geometry,worldX:100+geometry.collisionBounds.right-geometry.collisionBounds.left-1,
+    worldY:100,spriteKey:'school',size:'L',visualScale:1,props:{class:'school'}};
+  assert.equal(RESOLVER.facilitiesCollide(a,b,pattern),true);
+  assert.deepEqual([a.worldX,a.worldY,b.worldY],[100,100,100]);
 });

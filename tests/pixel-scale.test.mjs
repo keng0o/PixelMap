@@ -24,7 +24,8 @@ test('1536シーンpxのシーンを768論理pxの出力画像へ最近傍変換
 });
 
 test('施設スプライトの素材座標1単位を1論理px（2シーンpx）で描く', () => {
-  assert.match(html, /const spritePixelScale = 2/);
+  assert.match(html, /const spritePixelScale = sp\.contract\.assetPixelScale/);
+  assert.match(html, /POI_SPRITE_CATALOG\.contract\(asset\.id,size\)/);
   assert.match(html, /ctx\.scale\(spritePixelScale, spritePixelScale\)/);
 });
 
