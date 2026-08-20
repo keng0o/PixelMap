@@ -558,6 +558,7 @@
 
 <script src="../assets/icon-patterns.js"></script>
 <script src="../assets/facility-resolver.js"></script>
+<script src="../assets/landmark-entities.js"></script>
 <script src="../assets/poi-sprites.js"></script>
 <script src="../assets/building-styles.js"></script>
 <script>
@@ -677,6 +678,12 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+// ランドマーク補助データは単体検証ページだけで利用する。
+// map-02をiframeで共有する1・2・4マップの表示は変更しない。
+const STANDALONE_LANDMARK_MODE = !EMBEDDED;
+const LANDMARK_DATA_URL = '../data/landmarks/kawasaki.geojson?v=20260820';
+let landmarkFeatureCollection = null;
+let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
 const DEFAULT_TILE_ZOOM = 14;
 const SUPPORTED_STANDALONE_ZOOMS = new Set([12, 13, 14]);
 const requestedTileZoom = Number(PAGE_PARAMS.get('zoom'));
@@ -3171,6 +3178,207 @@ const centroid = rings => {
   return ring.length ? tp([sx / ring.length, sy / ring.length]) : [0, 0];
 };
 
+/* --- 単体ページ用ランドマーク施設 ---
+   raw OSMから事前生成したGeoJSONの親施設・代表子施設を、通常POIとは別枠で
+   アイコン化する。駅の位置は動かさず、複合施設側だけ敷地内候補点を試す。 */
+const LANDMARK_ENTITY_API = window.PixelMapLandmarkEntities;
+const normalizedLandmarkName = value => String(value || '').normalize('NFKC').toLowerCase()
+  .replace(/[\s・'’`\-_.]/g, '');
+function coordinatesFromWorldPoint(worldX, worldY){
+  const n = 2 ** TILE.z;
+  const x = worldX / W / n;
+  const y = worldY / H / n;
+  return [x * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI];
+}
+function landmarkWorldPoint(coordinate){
+  const point = tilePointFromCoordinates(coordinate[1], coordinate[0]);
+  return [point.tileX * W, point.tileY * H];
+}
+function landmarkAreaCells(areaM2, latitude){
+  const metersPerTile = 40075016.686 * Math.cos(latitude * Math.PI / 180) / (2 ** TILE.z);
+  const metersPerScenePixel = metersPerTile / W;
+  return Number(areaM2 || 0) / Math.max(1, metersPerScenePixel ** 2 * STANDARD_CPX ** 2);
+}
+function makeLandmarkFacility(feature, coordinate){
+  const props = feature.properties || {};
+  const renderClass = props.render_class || props.class || 'attraction';
+  const category = props.category || 'landmark';
+  const size = props.icon_size || (props.role === 'complex' ? 'L' : 'M');
+  const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[category] || 1);
+  const assetCount = 1;
+  const [worldX, worldY] = landmarkWorldPoint(coordinate);
+  const entityProps = {
+    name:props.name,
+    'name:ja':props['name:ja'] || props.name,
+    'name:en':props['name:en'],
+    class:renderClass,
+    subclass:renderClass,
+    landmark_class:props.class,
+    osm_type:props.osm_type,
+    osm_id:props.osm_id,
+  };
+  return {
+    key:`landmark:${props.id || feature.id}`,
+    name:featureName(entityProps),
+    props:entityProps,
+    sourcePoiIds:[String(props.id || feature.id)],
+    buildingId:null,
+    facilityRole:props.role === 'complex' ? 'landmark_complex' : 'signature_venue',
+    category,
+    spriteKey:renderClass,
+    variant:0,
+    importance:1,
+    rank:Number(props.rank ?? 1),
+    metrics:{
+      area:landmarkAreaCells(props.area_m2, coordinate[1]),
+      height:Number(props.height_m || 0),
+      kind:'poi',
+    },
+    size,
+    assetCount,
+    visualScale,
+    collisionRadius:24 * visualScale,
+    selectionPriority:props.role === 'complex' ? 35 : 25,
+    worldX,
+    worldY,
+    representation:'icon',
+    selectionReason:'landmark-guaranteed',
+    landmarkEntity:true,
+    landmarkEntityId:String(props.id || feature.id),
+    parentId:props.parent_id || null,
+    anchorCoordinate:coordinate,
+  };
+}
+function landmarkFacilitiesCollide(a, b){
+  const dx = a.worldX - b.worldX, dy = a.worldY - b.worldY;
+  const important = isStationProps(a.props) || isStationProps(b.props) || a.size === 'L' || b.size === 'L';
+  const baseGap = important ? 86 : a.spriteKey === b.spriteKey ? 74 : 56;
+  const scale = a.spriteKey === b.spriteKey ? (ACTIVE_PATTERN.sameGapScale || 1) : (ACTIVE_PATTERN.gapScale || 1);
+  const visualScale = Math.max(.62, (a.visualScale + b.visualScale) / 2);
+  const minGap = Math.max(baseGap * scale * visualScale,
+    a.collisionRadius + b.collisionRadius + 6);
+  return dx * dx + dy * dy < minGap * minGap;
+}
+function applyStandaloneLandmarks(resolvedView){
+  if (!STANDALONE_LANDMARK_MODE || !landmarkFeatureCollection || !LANDMARK_ENTITY_API)
+    return { ...resolvedView, landmarks:{ enabled:false, state:landmarkLoadState, selected:[] } };
+
+  const selection = LANDMARK_ENTITY_API.selectForZoom(landmarkFeatureCollection, TILE.z);
+  const range = viewTileRange(W);
+  const anchorInContext = feature => {
+    const coordinate = LANDMARK_ENTITY_API.anchorOf(feature);
+    if (!coordinate) return false;
+    const [worldX, worldY] = landmarkWorldPoint(coordinate);
+    const tileX = Math.floor(worldX / W), tileY = Math.floor(worldY / H);
+    return tileX >= range.minX - 1 && tileX <= range.maxX + 1 &&
+      tileY >= range.minY - 1 && tileY <= range.maxY + 1;
+  };
+  const contextParentIds = new Set(selection.features.filter(anchorInContext).map(feature =>
+    feature.properties.role === 'complex'
+      ? LANDMARK_ENTITY_API.featureId(feature)
+      : feature.properties.parent_id).filter(Boolean));
+  const selectedFeatures = selection.features.filter(feature =>
+    feature.properties.role === 'complex'
+      ? contextParentIds.has(LANDMARK_ENTITY_API.featureId(feature))
+      : contextParentIds.has(feature.properties.parent_id) || anchorInContext(feature));
+  if (!selectedFeatures.length)
+    return { ...resolvedView, landmarks:{ enabled:true, state:landmarkLoadState, selected:[] } };
+
+  const selectedParentIds = new Set(selectedFeatures
+    .filter(feature => feature.properties.role === 'complex')
+    .map(LANDMARK_ENTITY_API.featureId));
+  const parentFeatures = selection.collection.features.filter(feature =>
+    selectedParentIds.has(LANDMARK_ENTITY_API.featureId(feature)));
+  const selectedNames = new Set(selectedFeatures.flatMap(LANDMARK_ENTITY_API.comparableNames));
+  const facilities = resolvedView.facilities.map(facility => ({ ...facility }));
+  const suppressedKeys = new Set();
+
+  // 親敷地内の通常テナントは概要ズームでは代表施設へ畳み込む。
+  // 駅だけは保護し、通常POIの代表選択でランドマークを消さない。
+  for (const facility of facilities){
+    if (isStationProps(facility.props)) continue;
+    const coordinate = coordinatesFromWorldPoint(facility.worldX, facility.worldY);
+    const insideOverviewComplex = parentFeatures.some(parent =>
+      TILE.z < Number(parent.properties.detail_zoom ?? 16) &&
+      LANDMARK_ENTITY_API.geometryContains(parent.geometry, coordinate));
+    const duplicateName = selectedNames.has(normalizedLandmarkName(featureName(facility.props)));
+    if (!insideOverviewComplex && !duplicateName) continue;
+    facility.representation = 'hidden';
+    facility.selectionReason = insideOverviewComplex ? 'landmark-member' : 'landmark-duplicate';
+    suppressedKeys.add(facility.key);
+  }
+
+  // 代表子施設を実建物位置へ先に固定し、親複合施設は敷地内候補から
+  // 駅・代表子施設と衝突しない地点を選ぶ。
+  const occupied = facilities.filter(facility =>
+    facility.representation === 'icon' && isStationProps(facility.props));
+  const landmarkFacilities = [];
+  const placementOrder = selectedFeatures.slice().sort((a, b) =>
+    Number(a.properties.role === 'complex') - Number(b.properties.role === 'complex') ||
+    LANDMARK_ENTITY_API.featureId(a).localeCompare(LANDMARK_ENTITY_API.featureId(b)));
+  for (const feature of placementOrder){
+    const props = feature.properties || {};
+    const configured = Array.isArray(props.icon_anchor_candidates) && props.icon_anchor_candidates.length
+      ? props.icon_anchor_candidates
+      : [LANDMARK_ENTITY_API.anchorOf(feature)];
+    const candidates = configured.filter(coordinate => Array.isArray(coordinate) && coordinate.length >= 2);
+    if (!candidates.length) continue;
+    let chosen = makeLandmarkFacility(feature, candidates[0]);
+    for (const coordinate of candidates){
+      const candidate = makeLandmarkFacility(feature, coordinate);
+      chosen = candidate;
+      if (!occupied.some(other => landmarkFacilitiesCollide(candidate, other))) break;
+    }
+    landmarkFacilities.push(chosen);
+    occupied.push(chosen);
+  }
+
+  // ランドマークと衝突する通常施設はhiddenへ退かす。駅は常に残す。
+  for (const facility of facilities){
+    if (facility.representation === 'hidden' || isStationProps(facility.props)) continue;
+    if (!landmarkFacilities.some(landmark => landmarkFacilitiesCollide(facility, landmark))) continue;
+    facility.representation = 'hidden';
+    facility.selectionReason = 'landmark-collision';
+    suppressedKeys.add(facility.key);
+  }
+
+  // 抑制対象を含む既存クラスターは解体し、敷地外の残りだけdotへ戻す。
+  const affectedClusterIds = new Set(facilities
+    .filter(facility => suppressedKeys.has(facility.key) && facility.clusterId)
+    .map(facility => facility.clusterId));
+  for (const facility of facilities){
+    if (!facility.clusterId || !affectedClusterIds.has(facility.clusterId) || suppressedKeys.has(facility.key)) continue;
+    facility.representation = 'dot';
+    facility.selectionReason = 'landmark-cluster-split';
+    delete facility.clusterId;
+  }
+  const clusters = resolvedView.clusters.filter(cluster => {
+    if (affectedClusterIds.has(cluster.clusterId)) return false;
+    const coordinate = coordinatesFromWorldPoint(cluster.worldX, cluster.worldY);
+    return !parentFeatures.some(parent => LANDMARK_ENTITY_API.geometryContains(parent.geometry, coordinate));
+  });
+
+  return {
+    ...resolvedView,
+    facilities:[...facilities, ...landmarkFacilities],
+    clusters,
+    landmarks:{
+      enabled:true,
+      state:landmarkLoadState,
+      algorithmVersion:selection.algorithmVersion,
+      selected:landmarkFacilities.map(facility => ({
+        id:facility.landmarkEntityId,
+        name:facility.name,
+        role:facility.facilityRole,
+        sprite:facility.spriteKey,
+        representation:facility.representation,
+        anchor:facility.anchorCoordinate,
+      })),
+      suppressed:suppressedKeys.size,
+    },
+  };
+}
+
 function drawCurrentLocation(){
   const pt = locationCanvasPoint();
   if (!pt) return;
@@ -3242,7 +3450,7 @@ function render(){
   };
 
   /* --- リゾルバーの確定施設データ（アイコンにも建物の用途分類にも使う） --- */
-  const resolvedView = collectResolvedFacilities();
+  const resolvedView = applyStandaloneLandmarks(collectResolvedFacilities());
   if (resolvedView.pendingTiles) ensureTilesAround().catch(console.error);
 
   /* --- 建物の意味づけ: 棟 × リゾルバー施設 → 見た目記述子 ---
@@ -4094,6 +4302,7 @@ function render(){
       resolvedTiles:resolvedView.resolvedTileCount,
       pendingTiles:resolvedView.pendingTiles,
     },
+    landmarks:resolvedView.landmarks,
     poi:{
       total:resolvedView.facilities.length,
       visible:facilitiesInView.length,
@@ -4368,6 +4577,26 @@ async function maybeGunzip(buf){
   }
   return buf;
 }
+async function loadStandaloneLandmarkData(){
+  if (!STANDALONE_LANDMARK_MODE){
+    document.documentElement.dataset.landmarkEntities = 'disabled';
+    return;
+  }
+  try {
+    const response = await fetch(LANDMARK_DATA_URL);
+    if (!response.ok) throw new Error(`landmark fetch ${response.status}`);
+    const collection = await response.json();
+    if (collection?.type !== 'FeatureCollection' || !Array.isArray(collection.features))
+      throw new Error('invalid landmark FeatureCollection');
+    landmarkFeatureCollection = collection;
+    landmarkLoadState = 'ready';
+    document.documentElement.dataset.landmarkEntities = String(collection.features.length);
+  } catch (error) {
+    landmarkLoadState = 'error';
+    document.documentElement.dataset.landmarkEntities = 'error';
+    console.warn('ランドマーク補助データを読み込めませんでした', error);
+  }
+}
 async function loadFromBuffer(buf){
   tileGeneration++;
   networkTilesEnabled = false;
@@ -4402,6 +4631,7 @@ async function boot(){
   buildTiles();
   applyInitialQueryViewport();
   try {
+    await loadStandaloneLandmarkData();
     await loadTile();
     setMsg(DEFAULT_MSG);
   } catch (e) {

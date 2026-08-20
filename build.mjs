@@ -9,6 +9,7 @@ const sources = [
   'compare.html',
   'assets.html',
   'assets',
+  'data',
   'variants',
 ];
 const mime = {
