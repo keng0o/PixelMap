@@ -53,6 +53,22 @@ test('交通レイヤーの寸法・色・描画方式はアセットカタロ�
   assert.match(html, /LAYER_ASSET_CATALOG\.drawStandardTransportCell/);
 });
 
+test('全プレビューは8px・16pxの共通グリッドを同じ縮尺で重ねる', async () => {
+  const [html,js,css]=await Promise.all([
+    readFile(new URL('../assets.html',import.meta.url),'utf8'),
+    readFile(new URL('../assets/catalog.js',import.meta.url),'utf8'),
+    readFile(new URL('../assets/catalog.css',import.meta.url),'utf8'),
+  ]);
+  assert.match(html,/共通グリッド：細線8px／太線16px/);
+  assert.match(js,/function makePreviewScaleGrid\(canvas\)/);
+  assert.equal((js.match(/preview\.append\(canvas,makePreviewScaleGrid\(canvas\)\)/g)||[]).length,2);
+  assert.match(js,/8\/canvas\.width\*100/);
+  assert.match(js,/16\/canvas\.height\*100/);
+  assert.match(css,/\.preview-scale-grid\{/);
+  assert.match(css,/var\(--grid-8-x\)/);
+  assert.match(css,/var\(--grid-16-y\)/);
+});
+
 test('マップの表示設定とレイヤーアセット一覧のID・名称が完全一致する', async () => {
   const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
   const controls = [...html.matchAll(

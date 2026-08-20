@@ -131,6 +131,21 @@
     return scroll;
   }
 
+  function makePreviewScaleGrid(canvas){
+    const grid=document.createElement('span');
+    grid.className='preview-scale-grid';
+    grid.setAttribute('aria-hidden','true');
+    grid.style.setProperty('--grid-8-x',`${8/canvas.width*100}%`);
+    grid.style.setProperty('--grid-8-y',`${8/canvas.height*100}%`);
+    grid.style.setProperty('--grid-16-x',`${16/canvas.width*100}%`);
+    grid.style.setProperty('--grid-16-y',`${16/canvas.height*100}%`);
+    const key=document.createElement('span');
+    key.className='preview-grid-key';
+    key.textContent='8 / 16 px GRID';
+    grid.appendChild(key);
+    return grid;
+  }
+
   function makeDetailHeading(titleText,metricText){
     const heading=document.createElement('div');
     heading.className='pixel-detail-heading';
@@ -229,7 +244,7 @@
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-label', `${asset.label}のマップ表示`);
     catalog.render(canvas, asset.id, asset.previewSize);
-    preview.appendChild(canvas);
+    preview.append(canvas,makePreviewScaleGrid(canvas));
     if(asset.inspired){
       const badge = document.createElement('span');
       badge.className = 'reference-badge';
@@ -280,7 +295,7 @@
     const canvas = document.createElement('canvas');
     canvas.setAttribute('aria-label', `${asset.label}レイヤーの表示見本`);
     layerCatalog.render(canvas, asset);
-    preview.appendChild(canvas);
+    preview.append(canvas,makePreviewScaleGrid(canvas));
 
     const copy = document.createElement('div');
     copy.className = 'layer-copy';
