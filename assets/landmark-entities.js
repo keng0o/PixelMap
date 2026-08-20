@@ -80,6 +80,37 @@
     return { type:'FeatureCollection', features };
   }
 
+  function mergeOverrides(collection, overrideDocument){
+    const patches = overrideDocument?.overrides || {};
+    const removed = new Set(Array.isArray(overrideDocument?.remove) ? overrideDocument.remove.map(String) : []);
+    const features = (collection?.features || [])
+      .filter(feature => !removed.has(featureId(feature)))
+      .map(feature => {
+        const patch = patches[featureId(feature)] || {};
+        const { geometry, properties, ...propertyPatch } = patch;
+        return {
+          ...feature,
+          ...(geometry ? { geometry } : {}),
+          properties:{ ...(feature.properties || {}), ...(properties || propertyPatch) },
+        };
+      });
+    for (const feature of overrideDocument?.add || []){
+      const id = featureId(feature);
+      const index = features.findIndex(existing => featureId(existing) === id);
+      if (index >= 0) features[index] = feature;
+      else features.push(feature);
+    }
+    return {
+      ...(collection || {}),
+      type:'FeatureCollection',
+      properties:{
+        ...(collection?.properties || {}),
+        overrides_schema:overrideDocument?.schema || null,
+      },
+      features,
+    };
+  }
+
   function compareSignatureChildren(a, b){
     const ap = a.properties || {}, bp = b.properties || {};
     const aIndependent = (ap.independent_building || geometryPolygons(a.geometry).length) ? 1 : 0;
@@ -132,6 +163,7 @@
     anchorOf,
     geometryContains,
     deriveHierarchy,
+    mergeOverrides,
     selectForZoom,
     comparableNames,
     compareSignatureChildren,

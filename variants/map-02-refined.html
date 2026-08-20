@@ -681,7 +681,8 @@ const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window
 // ランドマーク補助データは単体検証ページだけで利用する。
 // map-02をiframeで共有する1・2・4マップの表示は変更しない。
 const STANDALONE_LANDMARK_MODE = !EMBEDDED;
-const LANDMARK_DATA_URL = '../data/landmarks/kawasaki.geojson?v=20260820';
+const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260820';
+const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820';
 let landmarkFeatureCollection = null;
 let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
 const DEFAULT_TILE_ZOOM = 14;
@@ -3366,6 +3367,8 @@ function applyStandaloneLandmarks(resolvedView){
       enabled:true,
       state:landmarkLoadState,
       algorithmVersion:selection.algorithmVersion,
+      scope:landmarkFeatureCollection.properties?.scope || null,
+      overridesSchema:landmarkFeatureCollection.properties?.overrides_schema || null,
       selected:landmarkFacilities.map(facility => ({
         id:facility.landmarkEntityId,
         name:facility.name,
@@ -4583,14 +4586,21 @@ async function loadStandaloneLandmarkData(){
     return;
   }
   try {
-    const response = await fetch(LANDMARK_DATA_URL);
-    if (!response.ok) throw new Error(`landmark fetch ${response.status}`);
-    const collection = await response.json();
-    if (collection?.type !== 'FeatureCollection' || !Array.isArray(collection.features))
+    const [generatedResponse, overrideResponse] = await Promise.all([
+      fetch(LANDMARK_GENERATED_DATA_URL),
+      fetch(LANDMARK_OVERRIDE_DATA_URL),
+    ]);
+    if (!generatedResponse.ok) throw new Error(`landmark fetch ${generatedResponse.status}`);
+    if (!overrideResponse.ok) throw new Error(`landmark override fetch ${overrideResponse.status}`);
+    const [generated, overrides] = await Promise.all([
+      generatedResponse.json(),
+      overrideResponse.json(),
+    ]);
+    if (generated?.type !== 'FeatureCollection' || !Array.isArray(generated.features))
       throw new Error('invalid landmark FeatureCollection');
-    landmarkFeatureCollection = collection;
+    landmarkFeatureCollection = LANDMARK_ENTITY_API.mergeOverrides(generated, overrides);
     landmarkLoadState = 'ready';
-    document.documentElement.dataset.landmarkEntities = String(collection.features.length);
+    document.documentElement.dataset.landmarkEntities = String(landmarkFeatureCollection.features.length);
   } catch (error) {
     landmarkLoadState = 'error';
     document.documentElement.dataset.landmarkEntities = 'error';

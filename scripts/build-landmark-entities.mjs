@@ -6,29 +6,75 @@ const args = Object.fromEntries(process.argv.slice(2).map(argument => {
   const [key, ...value] = argument.replace(/^--/, '').split('=');
   return [key, value.join('=') || true];
 }));
-const bbox = String(args.bbox || '35.5265,139.6955,35.5296,139.6994')
+const areaName = typeof args.area === 'string' ? args.area.trim() : '';
+const bbox = areaName ? null : String(args.bbox || '35.5265,139.6955,35.5296,139.6994')
   .split(',').map(Number);
-if (bbox.length !== 4 || bbox.some(value => !Number.isFinite(value)))
+if (!areaName && (bbox.length !== 4 || bbox.some(value => !Number.isFinite(value))))
   throw new Error('--bbox=south,west,north,east の形式で指定してください');
-const output = resolve(String(args.output || 'data/landmarks/kawasaki.geojson'));
+const output = resolve(String(args.output || 'data/landmarks/region.generated.geojson'));
 const minParentArea = Number(args['min-parent-area'] || 10000);
 const endpoint = String(args.endpoint || 'https://overpass-api.de/api/interpreter');
-const bboxText = bbox.join(',');
+const scopePrefix = areaName
+  ? `area["name"="${areaName.replaceAll('"', '\\"')}"]["boundary"="administrative"]->.searchArea;`
+  : '';
+const scope = areaName ? '(area.searchArea)' : `(${bbox.join(',')})`;
 
-const query = `[out:json][timeout:60];(
-  nwr["name"]["landuse"~"^(retail|commercial)$"](${bboxText});
-  nwr["name"]["shop"~"^(mall|department_store|shopping_centre)$"](${bboxText});
-  nwr["name"]["amenity"~"^(theatre|cinema|arts_centre)$"](${bboxText});
-);out tags center geom;`;
+const query = `[out:json][timeout:180];${scopePrefix}(
+  nwr["name"]["landuse"="retail"]${scope};
+  nwr["name"]["shop"~"^(mall|department_store|shopping_centre)$"]${scope};
+  nwr["name"]["amenity"~"^(theatre|cinema|arts_centre)$"]${scope};
+);out body center geom;`;
 const url = new URL(endpoint);
 url.searchParams.set('data', query);
 const response = await fetch(url, { headers:{ 'user-agent':'PixelMap landmark builder/1' } });
 if (!response.ok) throw new Error(`Overpass API ${response.status}: ${await response.text()}`);
 const osm = await response.json();
 
+const samePoint = (a, b) => a && b && a[0] === b[0] && a[1] === b[1];
+function joinMemberRings(members, acceptedRoles){
+  const segments = members.filter(member => member.type === 'way' &&
+    acceptedRoles.has(member.role || '') && Array.isArray(member.geometry) && member.geometry.length >= 2)
+    .map(member => member.geometry.map(point => [point.lon, point.lat]));
+  const rings = [];
+  while (segments.length){
+    const ring = segments.shift().slice();
+    let joined = true;
+    while (!samePoint(ring[0], ring[ring.length - 1]) && joined){
+      joined = false;
+      for (let index = 0; index < segments.length; index++){
+        const segment = segments[index];
+        if (samePoint(ring[ring.length - 1], segment[0])) ring.push(...segment.slice(1));
+        else if (samePoint(ring[ring.length - 1], segment[segment.length - 1]))
+          ring.push(...segment.slice(0, -1).reverse());
+        else continue;
+        segments.splice(index, 1);
+        joined = true;
+        break;
+      }
+    }
+    if (ring.length >= 4 && samePoint(ring[0], ring[ring.length - 1])) rings.push(ring);
+  }
+  return rings;
+}
+function relationGeometry(element){
+  const members = Array.isArray(element.members) ? element.members : [];
+  const outers = joinMemberRings(members, new Set(['outer','outline','']));
+  const inners = joinMemberRings(members, new Set(['inner']));
+  if (!outers.length) return null;
+  const polygons = outers.map(outer => [outer]);
+  for (const inner of inners){
+    const point = inner[0];
+    const container = polygons.find(polygon => ringContains(polygon[0], point));
+    if (container) container.push(inner);
+  }
+  return polygons.length === 1
+    ? { type:'Polygon', coordinates:polygons[0] }
+    : { type:'MultiPolygon', coordinates:polygons };
+}
 const elementId = element => `${element.type}/${element.id}`;
 const elementGeometry = element => {
   if (element.type === 'node') return { type:'Point', coordinates:[element.lon, element.lat] };
+  if (element.type === 'relation') return relationGeometry(element);
   const coordinates = (element.geometry || []).map(point => [point.lon, point.lat]);
   if (coordinates.length < 4) return null;
   const first = coordinates[0], last = coordinates[coordinates.length - 1];
@@ -78,7 +124,9 @@ const segmentDistance = (point, a, b) => {
   return Math.hypot(a[0] + t * dx - point[0], a[1] + t * dy - point[1]);
 };
 function parentAnchor(parent, signatureChildren){
-  const ring = parent.geometry.coordinates[0];
+  const ring = polygons(parent.geometry)[0]?.[0] || [];
+  if (!ring.length) return anchorOf(parent.geometry);
+  if (!signatureChildren.length) return anchorOf(parent.geometry);
   const latitude = ring.reduce((sum, point) => sum + point[1], 0) / ring.length;
   const project = projection(latitude);
   const projectedRing = ring.map(project);
@@ -112,7 +160,7 @@ const records = osm.elements.map(element => ({
   tags:element.tags || {},
 })).filter(record => record.geometry);
 const isParent = record => record.geometry.type !== 'Point' && record.tags.name && (
-  ['retail','commercial'].includes(record.tags.landuse) ||
+  record.tags.landuse === 'retail' ||
   ['mall','department_store','shopping_centre'].includes(record.tags.shop)
 );
 const isVenue = record => record.tags.name && ['theatre','cinema','arts_centre'].includes(record.tags.amenity);
@@ -174,7 +222,9 @@ const outputData = {
   name:'PixelMap generated landmark entities',
   properties:{
     schema:'pixelmap-landmark-entities/1', source:'OpenStreetMap',
-    generated_at:new Date().toISOString(), bbox,
+    generated_at:new Date().toISOString(),
+    scope:areaName ? { type:'administrative_area', name:areaName } : { type:'bbox', bbox },
+    min_parent_area_m2:minParentArea,
   },
   features,
 };

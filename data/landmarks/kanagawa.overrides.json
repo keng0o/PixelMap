@@ -1,0 +1,39 @@
+{
+  "schema": "pixelmap-landmark-overrides/1",
+  "description": "OSM自動生成結果に重ねる、表示上必要な最小限の補正。施設本体はOSM IDで参照する。",
+  "overrides": {
+    "way/690489941": {
+      "aliases": [
+        "ラ チッタデッラ",
+        "ラ・チッタデッラ",
+        "LA CITTADELLA"
+      ],
+      "icon_anchor": [139.6981233408, 35.5286504965],
+      "icon_anchor_candidates": [
+        [139.6981233408, 35.5286504965],
+        [139.6983330, 35.5287800],
+        [139.6976338, 35.5285788]
+      ]
+    },
+    "way/158883031": {
+      "aliases": [
+        "CLUB CITTA’",
+        "CLUB CITTA",
+        "クラブチッタ"
+      ]
+    },
+    "way/689642930": {
+      "aliases": [
+        "ラゾーナ",
+        "LAZONA Kawasaki Plaza"
+      ],
+      "icon_anchor": [139.6959064, 35.5332567],
+      "icon_anchor_candidates": [
+        [139.6959064, 35.5332567],
+        [139.6962, 35.5334],
+        [139.6955, 35.533]
+      ],
+      "max_signature_children": 0
+    }
+  }
+}
