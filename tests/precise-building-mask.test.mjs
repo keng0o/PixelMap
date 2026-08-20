@@ -29,10 +29,28 @@ test('道路競合は棟全体の平行移動を先に試し、建物画素を�
 });
 
 test('影は道路から除外し、POIは移動した建物へ追従する', () => {
-  assert.match(html, /function standaloneSurfaceRoadMask\(options, transportationFeatures\)/);
+  assert.match(html, /const standaloneSurfaceRoadMask = \(options, transportationFeatures\)/);
   assert.match(html, /roadMask\[index\]\) continue/);
   assert.match(html, /const offset = preciseBuildingRaster\?\.offsets\?\.\[bi\]/);
   assert.match(html, /pt\[0\] \+= offset\.dx \* SCENE_PIXELS_PER_LOGICAL_PIXEL/);
+});
+
+test('建物型POIは実際の不透明画素を橋込みの可視道路マスクから退避する', () => {
+  assert.match(html, /function standardSpriteFootprintFor\(item\)/);
+  assert.match(html, /drawSprite\(spriteFor\(item\.props, item\.size, item\.variant\), anchorSceneX, anchorSceneY, item, paint\)/);
+  assert.match(html, /source\[\(sceneY \* canvas\.width \+ sceneX\) \* 4 \+ 3\] >= 32/);
+  assert.match(html, /const standaloneVisibleRoadMask = \(options, transportationFeatures\) =>[\s\S]*?true\)/);
+  assert.match(html, /function layoutStandaloneRoadAwarePoi\(facilities, visibleRoadMask\)/);
+  assert.match(html, /if \(visibleRoadMask\[index\]\) road\+\+/);
+  assert.match(html, /item\.pt\[0\] \+= placement\.dx \* SCENE_PIXELS_PER_LOGICAL_PIXEL/);
+  assert.match(html, /item\.roadAwareRepresentation = 'dot'/);
+  assert.match(html, /preservesFacilityAsDotWhenNoSpritePlacement:true/);
+});
+
+test('POI道路回避はstandalone標準ページだけで有効になる', () => {
+  assert.match(html, /if \(o\.poi && STANDALONE_PRECISE_BUILDINGS\)[\s\S]*?standaloneVisibleRoadMask/);
+  assert.match(html, /roadAwareRepresentation !== 'dot'/);
+  assert.match(html, /roadAwareLayout:\{[\s\S]*?enabled:Boolean\(preciseVisibleRoadMask\)/);
 });
 
 test('通常・POI建物を同じ高さで描き、未解決道路と橋をその後に描く', () => {

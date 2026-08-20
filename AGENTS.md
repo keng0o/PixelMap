@@ -16,3 +16,10 @@
 - Add change-log entries newest first and include the JST date, change summary, affected mode, production impact, and verification performed.
 - For ordinary changes, explicitly record `testのみ`. When the user says `全てに反映`, list every production page that received the change.
 - A test-page change is incomplete until its `log.html` entry and, when applicable, the current-differences table are updated.
+
+# Visual verification
+
+- After every visual map fix, capture a screenshot of the corrected state before considering the change complete.
+- After capturing the screenshot, delegate an independent visual review to a sub-agent and give it the screenshot plus the original user-reported problem.
+- If the sub-agent finds the problem unresolved or identifies a new visual regression, continue fixing, capture a new screenshot, and repeat the sub-agent review.
+- Do not deploy or report completion until the latest screenshot passes the sub-agent review.
