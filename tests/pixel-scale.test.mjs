@@ -45,6 +45,16 @@ test('単体ページも本番と同じモード・パターン・アセット�
   assert.doesNotMatch(html, /TEST_MODE|data-map-mode="test"|TEST_POP|TEST_TRANSPORT/);
 });
 
+test('単体ページだけがz12・z13・z14を選べ、各版で同じ中心地点を保つ', () => {
+  assert.match(html, /const SUPPORTED_STANDALONE_ZOOMS = new Set\(\[12, 13, 14\]\)/);
+  assert.match(html, /const TILE_ZOOM = !EMBEDDED && SUPPORTED_STANDALONE_ZOOMS\.has\(requestedTileZoom\)/);
+  assert.match(html, /const ZOOM_RATIO_FROM_Z14 = 2 \*\* \(DEFAULT_TILE_ZOOM - TILE_ZOOM\)/);
+  assert.match(html, /x:\(DEFAULT_Z14_TILE\.x \+ \.5\) \/ ZOOM_RATIO_FROM_Z14/);
+  assert.match(html, /const viewOffset = \{ \.\.\.DEFAULT_VIEW_OFFSET \}/);
+  assert.match(html, /dataset\.tileZoom = String\(TILE_ZOOM\)/);
+  assert.match(html, /tileZoom:TILE\.z/);
+});
+
 test('道路は元形状を1論理px単位で直接描画する', () => {
   assert.match(html, /const SMOOTH_ROAD_OPTIONS = new Set\(\['localRoads','regionalRoads','majorRoads','motorways'\]\)/);
   assert.match(html, /function drawSmoothRoadLayer\(option, bridge = false\)/);

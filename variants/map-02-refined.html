@@ -677,6 +677,13 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+const DEFAULT_TILE_ZOOM = 14;
+const SUPPORTED_STANDALONE_ZOOMS = new Set([12, 13, 14]);
+const requestedTileZoom = Number(PAGE_PARAMS.get('zoom'));
+// 縮尺違いは単体テストページだけで有効にし、既存の1・2・4マップはz14を維持する。
+const TILE_ZOOM = !EMBEDDED && SUPPORTED_STANDALONE_ZOOMS.has(requestedTileZoom)
+  ? requestedTileZoom
+  : DEFAULT_TILE_ZOOM;
 const CELL_ONLY_MODE = !EMBEDDED && PAGE_PARAMS.get('render') === 'cell2';
 const RENDER_MODE = CELL_ONLY_MODE ? 'cell2' : 'standard';
 const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
@@ -719,11 +726,14 @@ document.documentElement.dataset.mapMode = 'production';
 document.documentElement.dataset.assetTaste = 'reference';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.documentElement.dataset.renderMode = RENDER_MODE;
+document.documentElement.dataset.tileZoom = String(TILE_ZOOM);
 document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
 document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISPLAY_SCALE);
-document.title = CELL_ONLY_MODE ? 'PixelMap｜2×2ピクセルアート検証' : 'PixelMap｜本番マップ';
+document.title = CELL_ONLY_MODE
+  ? `PixelMap｜z${TILE_ZOOM}・2×2ピクセルアート検証`
+  : `PixelMap｜z${TILE_ZOOM}マップ`;
 
 function patternUrl(patternId){
   const params = new URLSearchParams(PAGE_PARAMS);
@@ -824,7 +834,22 @@ const CELL_DETAIL_SCALE = CELL_ONLY_MODE ? 4 : 1;
 const GRID = STANDARD_GRID * CELL_DETAIL_SCALE;
 const CPX = STANDARD_CPX / CELL_DETAIL_SCALE;
 const MAP_CELL_LOGICAL_SIZE = CPX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
-const TILE = { z:14, x:14549, y:6460 };
+// 現行z14版の中心を基準に、z12・z13でも同じ地点を画面中央に置く。
+const DEFAULT_Z14_TILE = { x:14549, y:6460 };
+const ZOOM_RATIO_FROM_Z14 = 2 ** (DEFAULT_TILE_ZOOM - TILE_ZOOM);
+const DEFAULT_TILE_POINT = {
+  x:(DEFAULT_Z14_TILE.x + .5) / ZOOM_RATIO_FROM_Z14,
+  y:(DEFAULT_Z14_TILE.y + .5) / ZOOM_RATIO_FROM_Z14,
+};
+const TILE = {
+  z:TILE_ZOOM,
+  x:Math.floor(DEFAULT_TILE_POINT.x),
+  y:Math.floor(DEFAULT_TILE_POINT.y),
+};
+const DEFAULT_VIEW_OFFSET = {
+  x:(DEFAULT_TILE_POINT.x - TILE.x) * W - W / 2,
+  y:(DEFAULT_TILE_POINT.y - TILE.y) * H - H / 2,
+};
 const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
 const FALLBACK_TILE_URL = 'https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf';
 
@@ -3095,7 +3120,7 @@ function outlinedTextPlaced(text, cx, cy, size, color, placedRects){
 let tileLayers = null;
 let hitAreas = [];
 let SCALE = 1;
-const viewOffset = { x:0, y:0 };
+const viewOffset = { ...DEFAULT_VIEW_OFFSET };
 let currentLocation = null;
 let renderCount = 0;
 let gridOriginX = -1, gridOriginY = -1;
@@ -4018,6 +4043,7 @@ function render(){
       marker:ACTIVE_PATTERN.marker,
       drawOrder:ACTIVE_PATTERN.drawOrder,
     },
+    tileZoom:TILE.z,
     pixel:{
       requestedScale:REQUESTED_DISPLAY_SCALE,
       effectiveScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_DISPLAY_SCALE),
@@ -4393,7 +4419,7 @@ async function pickPbf(input){
     await loadFromBuffer(await file.arrayBuffer());
   } catch (e) {
     console.error(e);
-    setMsg('このファイルは よめなかった……（gzip/生PBFの両対応です。z14タイルか確認してください）');
+    setMsg(`このファイルは よめなかった……（gzip/生PBFの両対応です。z${TILE.z}タイルか確認してください）`);
   }
 }
 
@@ -4858,6 +4884,7 @@ boot().finally(async () => {
     mode:'production',
     renderMode:RENDER_MODE,
     assetTaste:'reference',
+    tileZoom:TILE.z,
     pattern:ACTIVE_PATTERN,
     pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_DISPLAY_SCALE),
     pixelRequestedScale:REQUESTED_DISPLAY_SCALE,
