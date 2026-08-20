@@ -56,7 +56,9 @@ test('単体ページだけがz12・z13・z14を選べ、各版で同じ中心�
 });
 
 test('道路は元形状を1論理px単位で直接描画する', () => {
-  assert.match(html, /const SMOOTH_ROAD_OPTIONS = new Set\(\['localRoads','regionalRoads','majorRoads','motorways'\]\)/);
+  assert.match(html, /const CANONICAL_TRANSPORT_RULES = LAYER_ASSET_CATALOG\.transportRules/);
+  assert.match(html, /rule\.renderer === 'direct'/);
+  assert.match(html, /width:rule\.logicalWidth \* SCENE_PIXELS_PER_LOGICAL_PIXEL/);
   assert.match(html, /function drawSmoothRoadLayer\(option, bridge = false\)/);
   assert.match(html, /Math\.round\(x \/ 2\) \* 2/);
   assert.match(html, /if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option\)/);
@@ -66,16 +68,19 @@ test('道路は元形状を1論理px単位で直接描画する', () => {
 test('単体ページの生活道路と歩道・小径は各描画モードの最小幅にする', () => {
   assert.match(html, /const STANDALONE_MINIMUM_MINOR_ROUTES = !EMBEDDED/);
   assert.match(html, /const MINIMUM_ROUTE_SCENE_WIDTH = SCENE_PIXELS_PER_LOGICAL_PIXEL/);
-  assert.match(html, /width:STANDALONE_MINIMUM_MINOR_ROUTES \? MINIMUM_ROUTE_SCENE_WIDTH : 14/);
-  assert.match(html, /casing:STANDALONE_MINIMUM_MINOR_ROUTES \? 0 : 2/);
+  assert.match(html, /if\(EMBEDDED && option === 'localRoads'\)/);
+  assert.match(html, /canonical\.width=14/);
+  assert.match(html, /canonical\.casing=2/);
   assert.match(html, /\['localRoads','paths'\]\.includes\(routeOption\)/);
   assert.match(html, /minimumMinorRoute \? 1 : \(thick \? 2 : 1\) \* CELL_DETAIL_SCALE/);
-  assert.match(html, /if \(STANDALONE_MINIMUM_MINOR_ROUTES\)\{[\s\S]*?const lineWidth = MINIMUM_ROUTE_SCENE_WIDTH;[\s\S]*?ctx\.fillStyle = P\.trail;/);
+  assert.match(html, /if\(EMBEDDED\) return false;[\s\S]*?drawStandardTransportCell/);
   assert.match(html, /minorRoutes:\{[\s\S]*?standaloneMinimum:STANDALONE_MINIMUM_MINOR_ROUTES/);
   assert.match(html, /localRoadWidth:CELL_ONLY_MODE[\s\S]*?pathWidth:CELL_ONLY_MODE/);
 });
 
 test('鉄道は本番と同じタイル模様を使う', () => {
+  assert.match(html, /LAYER_ASSET_CATALOG\.drawStandardTransportCell/);
+  assert.match(html, /if\(EMBEDDED\) return false/);
   assert.match(html, /case ID\.RAIL:[\s\S]*?const TIE = [\s\S]*?if \(con\.L\) TIE/);
   assert.doesNotMatch(html, /repeatDecoration|drawRepeatedDecoration/);
 });

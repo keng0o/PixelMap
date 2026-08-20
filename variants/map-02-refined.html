@@ -561,6 +561,7 @@
 <script src="../assets/landmark-entities.js"></script>
 <script src="../assets/poi-sprites.js"></script>
 <script src="../assets/building-styles.js"></script>
+<script src="../assets/layer-assets.js"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -871,6 +872,11 @@ function presentScene(){
   );
 }
 
+// 単体ページの交通表現はassetsページの定義を唯一の正典として使う。
+// embedded表示は既存の1・2・4マップを変えないため、生活道路だけ旧寸法を維持する。
+const LAYER_ASSET_CATALOG = window.PixelMapLayerAssets;
+const CANONICAL_TRANSPORT_RULES = LAYER_ASSET_CATALOG.transportRules;
+
 /* =====================================================
    3. 標準描画用16シーンpx（8論理px）マップチップ（GB風パレット）
    ===================================================== */
@@ -882,8 +888,10 @@ const P = {
   forestLight:'#57954a', forestMoss:'#83a657',
   woodsFloor:'#80b564', woodsDeep:'#477a46', woodsMid:'#62a052', woodsLight:'#a0cf7a',
   parkSmall:'#92ce69', parkMedium:'#88c764', parkLarge:'#7fbb61', parkPath:'#d8bd78',
-  road:'#c6c6c0', roadDk:'#8e8e88', roadDot:'#b4b4ae',
-  trail:'#dcc890', trailDot:'#c4ac70',
+  road:CANONICAL_TRANSPORT_RULES.localRoads.fill,
+  roadDk:CANONICAL_TRANSPORT_RULES.localRoads.edge, roadDot:'#b4b4ae',
+  trail:CANONICAL_TRANSPORT_RULES.paths.fill,
+  trailDot:CANONICAL_TRANSPORT_RULES.paths.detail,
   dirt:'#d0b078', dirtDk:'#b09058',
   pave:'#c0c0c8', paveDk:'#989ca8',
   gravel:'#a8a098', gravelDk:'#888078', gravelLt:'#c0b8b0',
@@ -897,7 +905,8 @@ const P = {
   roofA:'#e05038', roofADk:'#b03828', roofALt:'#f87858', roofAEdge:'#781810',
   roofB:'#5078d8', roofBDk:'#3858b0', roofBLt:'#88a0f0', roofBEdge:'#203070',
   wall:'#f0e4c8', wallDk:'#c8b490', win:'#3868a0', door:'#805028',
-  rail:'#404048', tie:'#786048',
+  rail:CANONICAL_TRANSPORT_RULES.rail.fill,
+  tie:CANONICAL_TRANSPORT_RULES.rail.tie,
 };
 
 function T(draw){
@@ -1202,17 +1211,17 @@ const CELL_COLOR_BY_ID = new Map([
   [ID.TERRAIN_OTHER,'#b3aa78'],
 ]);
 const CELL_COLOR_BY_OPTION = Object.freeze({
-  paths:P.trail,
-  tracks:P.gravelLt,
-  ferries:P.foam,
-  piers:P.pave,
-  rail:P.rail,
-  subway:'#484870',
-  aerialways:P.tie,
-  transportationOther:P.paveDk,
-  roadTunnels:P.roadDk,
-  pathTunnels:P.dirtDk,
-  railTunnels:P.rail,
+  paths:CANONICAL_TRANSPORT_RULES.paths.fill,
+  tracks:CANONICAL_TRANSPORT_RULES.tracks.fill,
+  ferries:CANONICAL_TRANSPORT_RULES.ferries.fill,
+  piers:CANONICAL_TRANSPORT_RULES.piers.fill,
+  rail:CANONICAL_TRANSPORT_RULES.rail.fill,
+  subway:CANONICAL_TRANSPORT_RULES.subway.fill,
+  aerialways:CANONICAL_TRANSPORT_RULES.aerialways.fill,
+  transportationOther:CANONICAL_TRANSPORT_RULES.transportationOther.fill,
+  roadTunnels:CANONICAL_TRANSPORT_RULES.roadTunnels.fill,
+  pathTunnels:CANONICAL_TRANSPORT_RULES.pathTunnels.fill,
+  railTunnels:CANONICAL_TRANSPORT_RULES.railTunnels.fill,
 });
 const normalizeTransportValue = value => String(value || '').replace(/_construction$/, '');
 const PATH_TRANSPORT = new Set(['path','pedestrian','footway','cycleway','steps','bridleway','corridor','platform']);
@@ -1240,32 +1249,41 @@ function transportationOption(feature){
   if (values.some(value => ['minor','service','busway','bus_guideway'].includes(value))) return 'localRoads';
   return 'transportationOther';
 }
-const TRANSPORT_STYLE = {
-  paths:{ id:ID.PATH, thick:false, polygonId:ID.PAVE },
-  tracks:{ id:ID.PATH, thick:false, polygonId:ID.GRAVEL },
-  raceways:{ id:ID.ROAD_MAJOR, thick:true, polygonId:ID.ROAD_MAJOR },
-  ferries:{ id:ID.PATH, thick:false, polygonId:ID.PATH },
-  piers:{ id:ID.PATH, thick:false, polygonId:ID.PAVE },
-  rail:{ id:ID.RAIL, thick:false, polygonId:ID.GRAVEL },
-  subway:{ id:ID.RAIL, thick:false, polygonId:ID.GRAVEL },
-  aerialways:{ id:ID.RAIL, thick:false, polygonId:ID.GRAVEL },
-  localRoads:{ id:ID.ROAD, thick:false, polygonId:ID.ROAD },
-  regionalRoads:{ id:ID.ROAD_MAJOR, thick:false, polygonId:ID.ROAD_MAJOR },
-  majorRoads:{ id:ID.HIGHWAY, thick:true, polygonId:ID.HIGHWAY },
-  motorways:{ id:ID.HIGHWAY, thick:true, polygonId:ID.HIGHWAY },
-  transportationOther:{ id:ID.PATH, thick:false, polygonId:ID.PAVE },
-};
-const SMOOTH_ROAD_OPTIONS = new Set(['localRoads','regionalRoads','majorRoads','motorways']);
-const SMOOTH_ROAD_STYLE = {
-  localRoads:{
-    width:STANDALONE_MINIMUM_MINOR_ROUTES ? MINIMUM_ROUTE_SCENE_WIDTH : 14,
-    casing:STANDALONE_MINIMUM_MINOR_ROUTES ? 0 : 2,
-    fill:'#c6c6c0', edge:'#8e8e88', center:null,
-  },
-  regionalRoads:{ width:16, casing:2, fill:'#d0d0ca', edge:'#9e9e98', center:'#f8f0d8' },
-  majorRoads:{ width:20, casing:2, fill:'#d8c890', edge:'#a89058', center:'#e8b840' },
-  motorways:{ width:28, casing:3, fill:'#d8c890', edge:'#8f7848', center:'#f8d878' },
-};
+const TRANSPORT_GRID_IDS = Object.freeze({
+  path:ID.PATH,road:ID.ROAD,rail:ID.RAIL,roadMajor:ID.ROAD_MAJOR,highway:ID.HIGHWAY,
+  pave:ID.PAVE,gravel:ID.GRAVEL,
+});
+const TRANSPORT_STYLE = Object.freeze(Object.fromEntries(
+  Object.entries(CANONICAL_TRANSPORT_RULES)
+    .filter(([,rule]) => rule.gridKind && rule.polygonKind)
+    .map(([option,rule]) => [option,Object.freeze({
+      id:TRANSPORT_GRID_IDS[rule.gridKind],
+      thick:rule.thick,
+      polygonId:TRANSPORT_GRID_IDS[rule.polygonKind],
+    })]),
+));
+const SMOOTH_ROAD_OPTIONS = new Set(
+  Object.entries(CANONICAL_TRANSPORT_RULES)
+    .filter(([,rule]) => rule.renderer === 'direct')
+    .map(([option]) => option),
+);
+const SMOOTH_ROAD_STYLE = Object.freeze(Object.fromEntries(
+  [...SMOOTH_ROAD_OPTIONS].map(option => {
+    const rule=CANONICAL_TRANSPORT_RULES[option];
+    const canonical={
+      width:rule.logicalWidth * SCENE_PIXELS_PER_LOGICAL_PIXEL,
+      casing:rule.casing * SCENE_PIXELS_PER_LOGICAL_PIXEL,
+      fill:rule.fill,edge:rule.edge,center:rule.center,
+      centerWidth:(rule.centerWidth || 1) * SCENE_PIXELS_PER_LOGICAL_PIXEL,
+      dash:(rule.dash || []).map(value => value * SCENE_PIXELS_PER_LOGICAL_PIXEL),
+    };
+    if(EMBEDDED && option === 'localRoads'){
+      canonical.width=14;
+      canonical.casing=2;
+    }
+    return [option,Object.freeze(canonical)];
+  }),
+));
 /* 建物の分類・配色は building-styles.js が唯一の正典。
    ROOFPALはマップチップ生成と後方互換のためのエイリアス。 */
 const BUILDING_STYLES = window.PixelMapBuildingStyles;
@@ -2162,6 +2180,18 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
     for (const s of segments) ctx.fillRect(bx + s.x - (s.vertical ? 1 : 0), by + s.y - (s.vertical ? 0 : 1), 4, 4);
     ctx.fillRect(bx + 5, by + 5, 6, 6);
   };
+  const drawCanonicalTransportCell = (x,y,id) => {
+    if(EMBEDDED) return false;
+    const option=options.routeOption;
+    const rule=CANONICAL_TRANSPORT_RULES[option];
+    if(!rule || !['cell','rail-cell'].includes(rule.renderer)) return false;
+    const same=(nx,ny)=>at(nx,ny)===id;
+    return LAYER_ASSET_CATALOG.drawStandardTransportCell(
+      ctx,option,gridShiftX+x*CPX,gridShiftY+y*CPX,
+      {L:same(x-1,y),R:same(x+1,y),U:same(x,y-1),D:same(x,y+1)},
+      {scale:SCENE_PIXELS_PER_LOGICAL_PIXEL,dashOff:rule.dashed && cellHash(x,y)%3===0},
+    );
+  };
 
   for (let y = 0; y < RG; y++){
     for (let x = 0; x < RG; x++){
@@ -2214,12 +2244,14 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
           break;
         }
         case ID.PATH:
+          if (drawCanonicalTransportCell(x,y,id)) break;
           if (options.routeOption === 'paths') drawJaggedPath(x, y);
           else put('path', x, y);
           break;
         case ID.ROAD:
         case ID.ROAD_MAJOR:
         case ID.HIGHWAY: {
+          if (drawCanonicalTransportCell(x,y,id)) break;
           put(id === ID.HIGHWAY ? 'highway' : id === ID.ROAD_MAJOR ? 'roadMajor' : 'road', x, y);
           if (id !== ID.ROAD){
             const bx = gridShiftX + x * CPX, by = gridShiftY + y * CPX;
@@ -2239,6 +2271,7 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false){
           break;
         }
         case ID.RAIL: {
+          if (drawCanonicalTransportCell(x,y,id)) break;
           put('gravel', x, y);
           const con = {
             L: at(x-1, y) === ID.RAIL, R: at(x+1, y) === ID.RAIL,
@@ -3603,8 +3636,8 @@ function render(){
       if (style.center){
         traceLines();
         ctx.strokeStyle = style.center;
-        ctx.lineWidth = 2;
-        ctx.setLineDash(option === 'regionalRoads' ? [14, 12] : [20, 14]);
+        ctx.lineWidth = style.centerWidth;
+        ctx.setLineDash(style.dash);
         ctx.stroke();
         ctx.setLineDash([]);
       }
@@ -3613,7 +3646,8 @@ function render(){
   }
 
   function drawTunnelLayer(option){
-    ctx.globalAlpha = .3;
+    const tunnelRule=CANONICAL_TRANSPORT_RULES[option];
+    ctx.globalAlpha = tunnelRule.alpha;
     ctx.lineCap = 'round';
     for (const f of L('transportation')){
       const routeOption = transportationOption(f);
@@ -3625,7 +3659,9 @@ function render(){
       const showPathTunnel = option === 'pathTunnels' && isTunnel && ['paths','tracks'].includes(routeOption);
       const showRailTunnel = option === 'railTunnels' && isTunnel && ['rail','aerialways'].includes(routeOption);
       if (!showSubway && !showRoadTunnel && !showPathTunnel && !showRailTunnel) continue;
-      ctx.strokeStyle = '#282838'; ctx.lineWidth = 5; ctx.setLineDash([10, 10]);
+      ctx.strokeStyle = tunnelRule.fill;
+      ctx.lineWidth = tunnelRule.logicalWidth * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+      ctx.setLineDash(tunnelRule.dash.map(value => value * SCENE_PIXELS_PER_LOGICAL_PIXEL));
       if (f.type === 1){
         const [x, y] = tp(f.geom[0][0]);
         px(x - 4, y - 4, 8, 8, '#282838');

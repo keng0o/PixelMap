@@ -86,6 +86,105 @@
     },
   ]);
 
+  /*
+    交通レイヤーの唯一の正典。
+    - 寸法は768×768の完成画像上の論理pxで記述する。
+    - map-02-refined.html の単体表示と、このカタログの見本は同じ定義を参照する。
+    - gridKind / polygonKind はマップ内部の意味セルへ変換するための抽象名。
+  */
+  const transportRules = Object.freeze({
+    localRoads:Object.freeze({
+      renderer:'direct', gridKind:'road', polygonKind:'road', thick:false,
+      logicalWidth:1, casing:0, fill:'#c6c6c0', edge:'#8e8e88', center:null,
+    }),
+    regionalRoads:Object.freeze({
+      renderer:'direct', gridKind:'roadMajor', polygonKind:'roadMajor', thick:false,
+      logicalWidth:8, casing:1, fill:'#d0d0ca', edge:'#9e9e98', center:'#f8f0d8',
+      centerWidth:1, dash:[7,6],
+    }),
+    majorRoads:Object.freeze({
+      renderer:'direct', gridKind:'highway', polygonKind:'highway', thick:true,
+      logicalWidth:10, casing:1, fill:'#d8c890', edge:'#a89058', center:'#e8b840',
+      centerWidth:1, dash:[10,7],
+    }),
+    motorways:Object.freeze({
+      renderer:'direct', gridKind:'highway', polygonKind:'highway', thick:true,
+      logicalWidth:14, casing:1.5, fill:'#d8c890', edge:'#8f7848', center:'#f8d878',
+      centerWidth:1, dash:[10,7],
+    }),
+    paths:Object.freeze({
+      renderer:'cell', gridKind:'path', polygonKind:'pave', thick:false,
+      cellSize:8, logicalWidth:1, fill:'#dcc890', detail:'#c4ac70',
+    }),
+    tracks:Object.freeze({
+      renderer:'cell', gridKind:'path', polygonKind:'gravel', thick:false,
+      cellSize:8, logicalWidth:2, fill:'#b8a47c', detail:'#888078',
+    }),
+    raceways:Object.freeze({
+      renderer:'cell', gridKind:'roadMajor', polygonKind:'roadMajor', thick:true,
+      cellSize:8, logicalWidth:8, fill:'#c99868', edge:'#8e6848',
+    }),
+    ferries:Object.freeze({
+      renderer:'cell', gridKind:'path', polygonKind:'path', thick:false,
+      cellSize:8, logicalWidth:2, fill:'#c8e8f8', dashed:true,
+    }),
+    piers:Object.freeze({
+      renderer:'cell', gridKind:'path', polygonKind:'pave', thick:false,
+      cellSize:8, logicalWidth:2, fill:'#d0b078',
+    }),
+    rail:Object.freeze({
+      renderer:'rail-cell', gridKind:'rail', polygonKind:'gravel', thick:false,
+      cellSize:8, bedWidth:8, railWidth:1, railCount:2,
+      fill:'#404048', tie:'#786048', bed:'#a8a098', bedDark:'#888078', bedLight:'#c0b8b0',
+    }),
+    subway:Object.freeze({
+      renderer:'direct-dash', gridKind:'rail', polygonKind:'gravel', thick:false,
+      logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
+    }),
+    aerialways:Object.freeze({
+      renderer:'rail-cell', gridKind:'rail', polygonKind:'gravel', thick:false,
+      cellSize:8, bedWidth:8, railWidth:1, railCount:2,
+      fill:'#404048', tie:'#786048', bed:'#a8a098', bedDark:'#888078', bedLight:'#c0b8b0',
+    }),
+    transportationOther:Object.freeze({
+      renderer:'cell', gridKind:'path', polygonKind:'pave', thick:false,
+      cellSize:8, logicalWidth:2, fill:'#dcc890', detail:'#c4ac70',
+    }),
+    roadTunnels:Object.freeze({
+      renderer:'direct-dash', logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
+    }),
+    pathTunnels:Object.freeze({
+      renderer:'direct-dash', logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
+    }),
+    railTunnels:Object.freeze({
+      renderer:'direct-dash', logicalWidth:2.5, fill:'#282838', alpha:.3, dash:[5,5],
+    }),
+  });
+
+  function metricForTransport(id){
+    const rule=transportRules[id];
+    if(!rule) return Object.freeze({kind:'line',label:'1 px LINE',lineWidth:1,width:32,height:16});
+    if(rule.renderer==='rail-cell'){
+      return Object.freeze({
+        kind:'cell-route',
+        label:`${rule.cellSize}×${rule.cellSize} px CELL / ${rule.railWidth} px × ${rule.railCount} RAILS`,
+        width:rule.cellSize,height:rule.cellSize,cellSize:rule.cellSize,
+        railWidth:rule.railWidth,railCount:rule.railCount,
+      });
+    }
+    if(rule.renderer==='cell'){
+      return Object.freeze({
+        kind:'cell-route',
+        label:`${rule.cellSize}×${rule.cellSize} px CELL / ${rule.logicalWidth} px LINE`,
+        width:rule.cellSize,height:rule.cellSize,cellSize:rule.cellSize,lineWidth:rule.logicalWidth,
+      });
+    }
+    return Object.freeze({
+      kind:'line',label:`${rule.logicalWidth} px LINE / DIRECT TRACE`,lineWidth:rule.logicalWidth,
+      width:32,height:Math.max(16,Math.ceil(rule.logicalWidth)+8),
+    });
+  }
+
   const LINE_WIDTHS = Object.freeze({
     river:1.4, stream:.65, canal:1.4, drain:1.1, other:1,
     local:14, regional:16, major:20, motorway:28,
@@ -94,12 +193,13 @@
     roadTunnel:5, pathTunnel:5, railTunnel:5,
   });
 
-  function metricFor(kind,variant){
+  function metricFor(kind,variant,id){
     if(kind==='surface' || (kind==='water' && variant==='area')){
       return Object.freeze({kind:'tile',label:'16×16 px TILE',width:16,height:16});
     }
+    if(kind==='route') return metricForTransport(id);
     if(kind==='water' || kind==='route'){
-      const lineWidth=kind==='route' && variant==='other' ? 2 : LINE_WIDTHS[variant] ?? 1;
+      const lineWidth=LINE_WIDTHS[variant] ?? 1;
       return Object.freeze({
         kind:'line',label:`${lineWidth} px LINE`,lineWidth,
         width:32,height:Math.max(16,Math.ceil(lineWidth)+8),
@@ -119,8 +219,10 @@
   }
 
   const layers = Object.freeze(groups.flatMap(group => group.items.map(item => Object.freeze({
-    id:item[0], label:item[1], kind:item[2], color:item[3], variant:item[4],
-    group:group.id, groupLabel:group.label, metric:metricFor(item[2],item[4]),
+    id:item[0], label:item[1], kind:item[2],
+    color:item[2]==='route' && transportRules[item[0]] ? transportRules[item[0]].fill : item[3],
+    variant:item[4], group:group.id, groupLabel:group.label,
+    metric:metricFor(item[2],item[4],item[0]),
   }))));
 
   const P = Object.freeze({
@@ -131,6 +233,68 @@
   });
 
   function rect(ctx,x,y,w,h,color){ ctx.fillStyle=color;ctx.fillRect(x,y,w,h); }
+
+  function connectedOrDefault(connections){
+    const value={L:false,R:false,U:false,D:false,...connections};
+    if(!value.L && !value.R && !value.U && !value.D) value.L=value.R=true;
+    return value;
+  }
+
+  /* 標準表示の8論理px交通セル。assetsと単体マップが同じ関数を使う。 */
+  function drawStandardTransportCell(ctx,option,x=0,y=0,connections=null,settings={}){
+    const rule=transportRules[option];
+    if(!rule || !['cell','rail-cell'].includes(rule.renderer)) return false;
+    const scale=settings.scale || 1;
+    const con=connectedOrDefault(connections);
+    const r=(rx,ry,rw,rh,color)=>rect(ctx,x+rx*scale,y+ry*scale,rw*scale,rh*scale,color);
+    const size=rule.cellSize || 8;
+    if(settings.background){
+      r(0,0,size,size,settings.background);
+    }
+    if(rule.renderer==='rail-cell'){
+      r(0,0,size,size,rule.bed);
+      r(1,2,1,1,rule.bedDark);r(5,4,1,1,rule.bedDark);r(3,6,1,1,rule.bedDark);
+      r(6,1,1,1,rule.bedLight);r(0,5,1,1,rule.bedLight);
+      if(con.L) r(1,1,1,6,rule.tie);
+      if(con.R) r(6,1,1,6,rule.tie);
+      if(con.U) r(1,1,6,1,rule.tie);
+      if(con.D) r(1,6,6,1,rule.tie);
+      if(con.L){r(0,2,6,1,rule.fill);r(0,5,6,1,rule.fill);}
+      if(con.R){r(2,2,6,1,rule.fill);r(2,5,6,1,rule.fill);}
+      if(con.U){r(2,0,1,6,rule.fill);r(5,0,1,6,rule.fill);}
+      if(con.D){r(2,2,1,6,rule.fill);r(5,2,1,6,rule.fill);}
+      return true;
+    }
+    const width=Math.max(1,rule.logicalWidth || 1);
+    const center=Math.floor(size/2);
+    const half=Math.floor(width/2);
+    const start=center-half;
+    if(rule.dashed && settings.dashOff) return true;
+    if(con.L) r(0,start,center+Math.ceil(width/2),width,rule.fill);
+    if(con.R) r(center,start,size-center,width,rule.fill);
+    if(con.U) r(start,0,width,center+Math.ceil(width/2),rule.fill);
+    if(con.D) r(start,center,width,size-center,rule.fill);
+    r(start,start,width,width,rule.fill);
+    return true;
+  }
+
+  function previewRouteCells(ctx,asset){
+    const rule=transportRules[asset.id];
+    const size=rule.cellSize || 8;
+    const cells=[];
+    let cx=-1,cy=14;
+    while(cx*size<ctx.canvas.width+size){
+      for(let run=0;run<5 && cx*size<ctx.canvas.width+size;run++) cells.push([++cx,cy]);
+      cells.push([cx,--cy]);
+    }
+    const occupied=new Set(cells.map(([x,y])=>`${x},${y}`));
+    for(const [x,y] of cells){
+      drawStandardTransportCell(ctx,asset.id,x*size,y*size,{
+        L:occupied.has(`${x-1},${y}`),R:occupied.has(`${x+1},${y}`),
+        U:occupied.has(`${x},${y-1}`),D:occupied.has(`${x},${y+1}`),
+      },{dashOff:rule.dashed && (x+y)%3===0});
+    }
+  }
   function grass(ctx){
     rect(ctx,0,0,288,180,P.grass);
     for(let y=8;y<180;y+=24) for(let x=(y/24%2)*12+8;x<288;x+=32){
@@ -213,16 +377,18 @@
     }
   }
   function route(ctx,asset){
-    if(asset.variant==='ferry'){rect(ctx,0,30,288,120,P.water);steppedLine(ctx,P.foam,5,true);return;}
-    if(asset.variant==='pier'){rect(ctx,0,96,288,84,P.water);rect(ctx,118,18,52,132,P.outline);rect(ctx,124,18,40,126,asset.color);return;}
-    const tunnel=asset.variant.endsWith('Tunnel') || asset.variant==='subway';
-    const widths={local:18,regional:24,major:32,motorway:38,path:10,track:12,raceway:26,rail:9,subway:9,aerialway:6,other:10,roadTunnel:22,pathTunnel:10,railTunnel:9};
-    const width=widths[asset.variant]||10;
-    if(['local','regional','major','motorway','roadTunnel'].includes(asset.variant)) steppedLine(ctx,P.outline,width+6,tunnel);
-    steppedLine(ctx,asset.color,width,tunnel);
-    if(['rail','subway','railTunnel'].includes(asset.variant)) for(let x=18;x<280;x+=20){const y=112-Math.floor(x/36)*7+(Math.floor(x/60)%2)*12;rect(ctx,x,y-10,4,20,'#786048');}
-    if(asset.variant==='aerialway') for(let x=38;x<280;x+=62){const y=112-Math.floor(x/36)*7+(Math.floor(x/60)%2)*12;rect(ctx,x-3,y-20,6,38,P.outline);rect(ctx,x-10,y-20,20,5,'#786048');}
-    if(asset.variant==='motorway') steppedLine(ctx,'#f8f0d8',4,false);
+    const rule=transportRules[asset.id];
+    if(!rule) return;
+    if(asset.id==='ferries') rect(ctx,0,0,288,180,P.water);
+    if(rule.renderer==='cell' || rule.renderer==='rail-cell'){
+      previewRouteCells(ctx,asset);
+      return;
+    }
+    const dashed=rule.renderer==='direct-dash';
+    const casing=(rule.casing || 0)*2;
+    if(casing>0) steppedLine(ctx,rule.edge,rule.logicalWidth+casing,dashed);
+    steppedLine(ctx,rule.fill,rule.logicalWidth,dashed);
+    if(rule.center) steppedLine(ctx,rule.center,rule.centerWidth || 1,true);
   }
 
   function building(ctx,x,y,roof){
@@ -289,9 +455,12 @@
       const segmentWidth=dashed?6:ctx.canvas.width;
       rect(ctx,x,y,segmentWidth,lineWidth,asset.color);
     }
-    if(['rail','subway','railTunnel'].includes(asset.variant)){
-      for(let x=2;x<ctx.canvas.width;x+=5)rect(ctx,x,y-2,1,lineWidth+4,'#786048');
-    }
+  }
+
+  function renderCellRouteDetail(ctx,asset){
+    const rule=transportRules[asset.id];
+    const background=asset.id==='ferries' ? P.water : P.grass;
+    drawStandardTransportCell(ctx,asset.id,0,0,{L:true,R:true},{background});
   }
 
   function canvasHeight(ctx){ return ctx.canvas?.height || 16; }
@@ -302,6 +471,7 @@
     const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,canvas.width,canvas.height);
     if(metric.kind==='tile') renderTileDetail(ctx,asset);
     else if(metric.kind==='line') renderLineDetail(ctx,asset);
+    else if(metric.kind==='cell-route') renderCellRouteDetail(ctx,asset);
     else if(asset.variant==='buildings') building(ctx,24,24,P.roof);
     else if(asset.variant==='poi'){
       const poiCatalog=global.PixelMapPoiSprites;
@@ -322,5 +492,7 @@
     }
   }
 
-  global.PixelMapLayerAssets=Object.freeze({groups,layers,render,renderDetail});
+  global.PixelMapLayerAssets=Object.freeze({
+    groups,layers,transportRules,render,renderDetail,drawStandardTransportCell,
+  });
 })(window);
