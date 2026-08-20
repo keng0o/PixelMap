@@ -35,52 +35,21 @@
     font-family:'DotGothic16',monospace;
     line-height:1.7;
   }
-  a{ color:var(--accent); text-underline-offset:3px; }
-  a:hover{ color:#b8e878; }
-  a:focus-visible{ outline:3px solid var(--test); outline-offset:3px; }
   .page{
     width:min(1120px,calc(100% - 32px));
     margin:0 auto;
     padding:48px 0 72px;
   }
-  .hero,
   .panel{
     border:2px solid var(--ink);
     outline:2px solid var(--panel);
     box-shadow:0 0 0 4px var(--ink),8px 8px 0 #101018a8;
     background:var(--panel);
   }
-  .hero{ padding:28px 30px 26px; }
-  .eyebrow{
-    margin:0 0 8px;
-    color:var(--accent);
-    font-size:12px;
-    letter-spacing:2px;
-  }
-  h1,h2,h3{ margin:0; font-weight:normal; line-height:1.35; }
-  h1{ font-size:clamp(28px,5vw,52px); }
+  h2,h3{ margin:0; font-weight:normal; line-height:1.35; }
   h2{ font-size:22px; }
   h3{ font-size:17px; }
-  .lead{ max-width:780px; margin:14px 0 0; color:var(--muted); }
-  .status-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin-top:20px;
-  }
-  .badge{
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-    min-height:30px;
-    padding:3px 9px;
-    border:1px solid var(--line);
-    background:var(--panel-2);
-    color:var(--muted);
-    font-size:11px;
-  }
-  .badge::before{ content:''; width:8px; height:8px; background:var(--accent); }
-  main{ display:grid; min-width:0; gap:26px; margin-top:30px; }
+  main{ display:grid; min-width:0; gap:26px; }
   .panel{ min-width:0; padding:24px; }
   .section-heading{
     display:flex;
@@ -92,35 +61,6 @@
     border-bottom:1px solid var(--line);
   }
   .section-heading small{ color:var(--muted); font-size:10px; }
-  .page-list{
-    display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:10px;
-    margin:0;
-    padding:0;
-    list-style:none;
-  }
-  .page-list a{
-    display:block;
-    height:100%;
-    padding:14px;
-    border:1px solid var(--line);
-    background:var(--panel-2);
-    text-decoration:none;
-  }
-  .page-list a:hover{ border-color:var(--accent); }
-  .page-list strong{ display:block; color:var(--ink); font-size:14px; font-weight:normal; }
-  .page-list code{ display:block; margin-top:5px; color:var(--muted); font-size:10px; overflow-wrap:anywhere; }
-  .mode-label{ display:inline-block; margin-top:9px; font-size:9px; letter-spacing:1px; }
-  .mode-label.production{ color:var(--production); }
-  .mode-label.test{ color:var(--test); }
-  .shared-note{
-    margin:16px 0 0;
-    padding:12px 14px;
-    border-left:4px solid var(--accent);
-    background:#202028;
-    color:var(--muted);
-  }
   .table-wrap{ width:100%; min-width:0; overflow-x:auto; border:1px solid var(--line); }
   table{ width:100%; min-width:760px; border-collapse:collapse; background:#181820; }
   th,td{ padding:13px 14px; border-right:1px solid #484840; border-bottom:1px solid #484840; text-align:left; vertical-align:top; }
@@ -137,15 +77,6 @@
     color:#d8e7ff;
     font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
   }
-  .rules{
-    display:grid;
-    grid-template-columns:1.1fr .9fr;
-    gap:18px;
-  }
-  .rule-box{ padding:18px; border:1px solid var(--line); background:#181820; }
-  .rule-box h3{ color:var(--test); }
-  .rule-box ol,.rule-box ul{ margin:12px 0 0; padding-left:1.4em; color:var(--muted); }
-  .rule-box li + li{ margin-top:7px; }
   .entry{
     position:relative;
     padding:20px;
@@ -176,14 +107,11 @@
   .entry-grid dd{ margin:5px 0 0; font-size:11px; }
   footer{ margin-top:28px; color:#888070; font-size:10px; text-align:center; }
   @media (max-width:820px){
-    .page-list{ grid-template-columns:repeat(2,minmax(0,1fr)); }
-    .rules{ grid-template-columns:1fr; }
     .entry-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   }
   @media (max-width:520px){
     .page{ width:min(100% - 20px,1120px); padding:24px 0 48px; }
-    .hero,.panel{ padding:18px; box-shadow:5px 5px 0 #101018a8; }
-    .page-list{ grid-template-columns:1fr; }
+    .panel{ padding:18px; box-shadow:5px 5px 0 #101018a8; }
     .entry-grid{ grid-template-columns:1fr; }
     .section-heading{ align-items:flex-start; flex-direction:column; gap:4px; }
   }
@@ -192,32 +120,7 @@
 </head>
 <body>
 <div class="page">
-  <header class="hero">
-    <p class="eyebrow">PIXELMAP / CHANGE RECORD</p>
-    <h1>本番／test 差分ログ</h1>
-    <p class="lead">standalone testで検証中の内容と、本番1・2・4マップへ反映済みの内容を区別するための記録です。差分の現状と、今後の変更履歴をこのページに集約します。</p>
-    <div class="status-row" aria-label="記録の状態">
-      <span class="badge">基準日 2026-08-20 JST</span>
-      <span class="badge">履歴は新しい順</span>
-      <span class="badge">本番3ページは変更なし</span>
-    </div>
-  </header>
-
   <main>
-    <section class="panel" aria-labelledby="pages-title">
-      <div class="section-heading">
-        <h2 id="pages-title">対象ページ</h2>
-        <small>リンクは現在のページを同じタブで開きます</small>
-      </div>
-      <ul class="page-list">
-        <li><a href="index.html"><strong>本番・1マップ</strong><code>/PixelMap/index.html</code><span class="mode-label production">PRODUCTION / EMBEDDED</span></a></li>
-        <li><a href="compare.html"><strong>本番・2マップ</strong><code>/PixelMap/compare.html</code><span class="mode-label production">PRODUCTION / EMBEDDED</span></a></li>
-        <li><a href="four-maps.html"><strong>本番・4マップ</strong><code>/PixelMap/four-maps.html</code><span class="mode-label production">PRODUCTION / EMBEDDED</span></a></li>
-        <li><a href="variants/map-02-refined.html"><strong>standalone test</strong><code>/PixelMap/variants/map-02-refined.html</code><span class="mode-label test">TEST / STANDALONE</span></a></li>
-      </ul>
-      <p class="shared-note">4ページはすべて <code>variants/map-02-refined.html</code> の描画エンジンを共有し、pattern 07・referenceアセット・表示倍率1を使用します。本番は <code>embedded=1</code>、testはstandaloneとして動作します。</p>
-    </section>
-
     <section class="panel" aria-labelledby="difference-title">
       <div class="section-heading">
         <h2 id="difference-title">現行の差分</h2>
@@ -273,40 +176,23 @@
       </div>
     </section>
 
-    <section class="panel" aria-labelledby="rules-title">
-      <div class="section-heading">
-        <h2 id="rules-title">更新ルール</h2>
-        <small>ログ更新までがtest変更</small>
-      </div>
-      <div class="rules">
-        <div class="rule-box">
-          <h3>testを変更するとき</h3>
-          <ol>
-            <li><code>variants/map-02-refined.html</code> またはstandalone test専用挙動を変更する。</li>
-            <li>同じ変更内で、このページの変更履歴へ追記する。</li>
-            <li>現行差分が変わる場合は、上の比較表も同時に直す。</li>
-            <li>確認内容まで記載して、はじめて作業完了とする。</li>
-          </ol>
-        </div>
-        <div class="rule-box">
-          <h3>各履歴の必須項目</h3>
-          <ul>
-            <li>日付（JST）</li>
-            <li>変更内容</li>
-            <li>対象モード</li>
-            <li>本番への影響</li>
-            <li>確認内容</li>
-          </ul>
-          <p class="shared-note">通常は「testのみ」と明記します。依頼に <code>全てに反映</code> が含まれる場合は、反映した本番ページも列挙します。</p>
-        </div>
-      </div>
-    </section>
-
     <section class="panel" aria-labelledby="history-title">
       <div class="section-heading">
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>ログページの表示内容を簡素化</h3>
+          <time datetime="2026-08-20">2026-08-20 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>冒頭説明、対象ページ一覧、画面内の更新ルールを削除し、現行差分と変更履歴だけを表示。</dd></div>
+          <div><dt>対象モード</dt><dd>ログページのみ。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップとstandalone testは変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>全Nodeテスト、ビルド、PC・モバイル表示、公開URLを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>建物を1論理px意味マスクで道路から分離</h3>

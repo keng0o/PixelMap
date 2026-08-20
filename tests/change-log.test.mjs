@@ -6,14 +6,13 @@ const log = await readFile(new URL('../log.html', import.meta.url), 'utf8');
 const agents = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
 const build = await readFile(new URL('../build.mjs', import.meta.url), 'utf8');
 
-test('差分ログは本番3ページとstandalone testを案内する', () => {
-  assert.match(log, /href="index\.html"/);
-  assert.match(log, /href="compare\.html"/);
-  assert.match(log, /href="four-maps\.html"/);
-  assert.match(log, /href="variants\/map-02-refined\.html"/);
-  assert.match(log, /pattern 07/);
-  assert.match(log, /referenceアセット/);
-  assert.match(log, /表示倍率1/);
+test('差分ログは不要な説明・対象ページ一覧・画面内ルールを表示しない', () => {
+  assert.doesNotMatch(log, /PIXELMAP \/ CHANGE RECORD/);
+  assert.doesNotMatch(log, /<h1>本番／test 差分ログ<\/h1>/);
+  assert.doesNotMatch(log, /id="pages-title"/);
+  assert.doesNotMatch(log, /class="page-list"/);
+  assert.doesNotMatch(log, /id="rules-title"/);
+  assert.doesNotMatch(log, /class="rules"/);
 });
 
 test('差分ログは現行のtest専用機能と本番維持事項を記載する', () => {
@@ -24,6 +23,8 @@ test('差分ログは現行のtest専用機能と本番維持事項を記載す�
   assert.match(log, /z14固定/);
   assert.match(log, /2マップは位置同期/);
   assert.match(log, /4マップは4地点への共通レイヤー操作/);
+  assert.match(log, /建物と道路の競合/);
+  assert.match(log, /ログページの表示内容を簡素化/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {
