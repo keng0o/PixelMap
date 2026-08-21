@@ -71,9 +71,8 @@ test('地表模様と水際・林縁・公園境界を世界座標固定でセ�
 
 test('地下交通もセルモード用グリッドへ分類する', () => {
   assert.match(html, /if \(!isBridgeFeature && option === 'subway'\)[\s\S]*?layer = 'subway'/);
-  assert.match(html, /\['paths','tracks'\]\.includes\(option\)\) layer = 'pathTunnels'/);
-  assert.match(html, /\['rail','aerialways'\]\.includes\(option\)\) layer = 'railTunnels'/);
-  assert.match(html, /else layer = 'roadTunnels'/);
+  assert.match(html, /binding\.modifiers\.tunnel && binding\.stateAssetId !== option/);
+  assert.match(html, /layer = binding\.stateAssetId/);
 });
 
 test('交通線は4連結を保ち、cell2では細街路だけ最小1セル・他は従来幅へ展開する', () => {

@@ -14,7 +14,7 @@ test('map-03だけが密集建物・面積優先モードを有効にする', as
   assert.match(map03, /BUILDING_STYLES\.selectDenseBuildings/);
   assert.match(map03, /collisionPolicy:DENSE_COLLISION_POLICY/);
   assert.match(map03, /facility\.representation !== 'hidden'/);
-  assert.match(map03, /asset-family-registry\.js\?v=2/);
+  assert.match(map03, /asset-family-registry\.js\?v=3/);
   assert.match(map03, /facility-resolver\.js\?v=6/);
   assert.match(map03, /building-styles\.js\?v=2/);
   assert.doesNotMatch(map02, /DENSE_COLLISION_POLICY|denseBuildingMode|selectDenseBuildings/);

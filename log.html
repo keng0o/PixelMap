@@ -168,7 +168,7 @@
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI属性との対応は<code>pixelmap-asset-family-registry/2</code>のpack→family→variant→asset契約へ集約。参照テイスト10点も意味variantとして接続する。source pointを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
+              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI・corridorの属性対応は<code>pixelmap-asset-family-registry/3</code>のpack→family→variant→asset契約へ集約。参照テイスト10点も意味variantとして接続する。source geometryを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
               <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
             </tr>
             <tr>
@@ -191,6 +191,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>道路・歩行路・鉄道をcorridor familyへ統合</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>MVT交通属性をroad・path・rail・waterTransit・otherのfamilyと意味variantへ一度だけ解決し、construction・tunnel・underground・serviceを独立state modifierとして保持。map・layer catalog・診断を同じregistryへ接続。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>の描画基盤をfamily解決へ移行。bridge・level crossingの新しい見た目は次項目で追加。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>legacy</code> packを使い、既存と同じlogical corridor assetへ解決。線幅・色・経路・合成順は変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>旧分類の意味優先度、全family・variant、construction/tunnel/underground/service、tunnel state asset、unknown fallback、全catalog接続、独自class setの廃止を自動テストで確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>参照テイストPOIを意味familyへ接続</h3>

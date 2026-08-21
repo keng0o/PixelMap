@@ -557,13 +557,13 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
-<script src="../assets/asset-family-registry.js?v=2"></script>
+<script src="../assets/asset-family-registry.js?v=3"></script>
 <script src="../assets/facility-resolver.js?v=6"></script>
 <script src="../assets/landmark-entities.js"></script>
 <script src="../assets/poi-sprites.js?v=4"></script>
 <script src="../assets/building-styles.js"></script>
 <script src="../assets/corridor-renderer.js?v=1"></script>
-<script src="../assets/layer-assets.js?v=3"></script>
+<script src="../assets/layer-assets.js?v=4"></script>
 <script src="../assets/world-style.js?v=2"></script>
 <script>
 'use strict';
@@ -896,6 +896,7 @@ function presentScene(){
 // embedded表示は既存の1・2・4マップを変えないため、生活道路だけ旧寸法を維持する。
 const LAYER_ASSET_CATALOG = window.PixelMapLayerAssets;
 const CORRIDOR_RENDERER = window.PixelMapCorridorRenderer;
+const ASSET_FAMILY_REGISTRY = window.PixelMapAssetFamilyRegistry;
 const CANONICAL_TRANSPORT_RULES = LAYER_ASSET_CATALOG.transportRules;
 const CANONICAL_CORRIDOR_RULES = LAYER_ASSET_CATALOG.corridorRules;
 
@@ -1311,32 +1312,13 @@ const CELL_COLOR_BY_OPTION = Object.freeze({
   pathTunnels:CANONICAL_TRANSPORT_RULES.pathTunnels.fill,
   railTunnels:CANONICAL_TRANSPORT_RULES.railTunnels.fill,
 });
-const normalizeTransportValue = value => String(value || '').replace(/_construction$/, '');
-const PATH_TRANSPORT = new Set(['path','pedestrian','footway','cycleway','steps','bridleway','corridor','platform']);
-const RAIL_TRANSPORT = new Set(['rail','railway','narrow_gauge','preserved','funicular','light_rail','monorail','tram']);
-const AERIALWAY_TRANSPORT = new Set([
-  'aerialway','cable_car','gondola','chair_lift','mixed_lift','drag_lift','t-bar','j-bar',
-  'platter','rope_tow','zip_line','magic_carpet',
-]);
-function transportationOption(feature){
-  const rawClass = normalizeTransportValue(feature.props.class);
-  const rawSubclass = normalizeTransportValue(feature.props.subclass);
-  const values = rawClass === 'bridge' ? [rawSubclass] : [rawClass, rawSubclass];
-  if (values.some(value => value === 'subway')) return 'subway';
-  if (values.some(value => AERIALWAY_TRANSPORT.has(value))) return 'aerialways';
-  if (values.some(value => value === 'ferry')) return 'ferries';
-  if (values.some(value => value === 'raceway')) return 'raceways';
-  if (values.some(value => value === 'track')) return 'tracks';
-  if (values.some(value => PATH_TRANSPORT.has(value))) return 'paths';
-  if (values.some(value => RAIL_TRANSPORT.has(value))) return 'rail';
-  if (values.some(value => value === 'transit')) return 'subway';
-  if (values.some(value => value === 'pier')) return 'piers';
-  if (values.some(value => value === 'motorway')) return 'motorways';
-  if (values.some(value => ['trunk','primary'].includes(value))) return 'majorRoads';
-  if (values.some(value => ['secondary','tertiary'].includes(value))) return 'regionalRoads';
-  if (values.some(value => ['minor','service','busway','bus_guideway'].includes(value))) return 'localRoads';
-  return 'transportationOther';
+const corridorBindingCache = new WeakMap();
+function corridorBinding(feature){
+  if (!corridorBindingCache.has(feature))
+    corridorBindingCache.set(feature,ASSET_FAMILY_REGISTRY.resolveCorridor(feature.props,ACTIVE_ASSET_PACK));
+  return corridorBindingCache.get(feature);
 }
+const transportationOption = feature => corridorBinding(feature).assetId;
 const TRANSPORT_GRID_IDS = Object.freeze({
   path:ID.PATH,road:ID.ROAD,rail:ID.RAIL,roadMajor:ID.ROAD_MAJOR,highway:ID.HIGHWAY,
   pave:ID.PAVE,gravel:ID.GRAVEL,
@@ -1789,22 +1771,16 @@ function rasterizeGrid(layers, options){
   const transportationLines = new Map();
   const transportationSurfaces = new Map();
   for (const feature of L('transportation')){
-    const option = transportationOption(feature);
+    const binding = corridorBinding(feature);
+    const option = binding.assetId;
     const isBridgeFeature = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
-    const isTunnelFeature = feature.props.brunnel === 'tunnel';
-    const hasDedicatedTunnel = [
-      'subway','localRoads','regionalRoads','majorRoads','motorways','raceways',
-      'transportationOther','paths','tracks','rail','aerialways',
-    ].includes(option);
     let layer = isBridgeFeature ? `bridge:${option}` : option;
     if (!isBridgeFeature && option === 'subway'){
       if (!CELL_ONLY_MODE) continue;
       layer = 'subway';
-    } else if (isTunnelFeature && hasDedicatedTunnel){
+    } else if (binding.modifiers.tunnel && binding.stateAssetId !== option){
       if (!CELL_ONLY_MODE) continue;
-      if (['paths','tracks'].includes(option)) layer = 'pathTunnels';
-      else if (['rail','aerialways'].includes(option)) layer = 'railTunnels';
-      else layer = 'roadTunnels';
+      layer = binding.stateAssetId;
     }
     if (feature.type === 2){
       const key = `${layer}:${option}`;
@@ -2725,11 +2701,12 @@ function standaloneSurfaceRoadMask(options, transportationFeatures){
   mask.lineCap = 'round';
   mask.lineJoin = 'round';
   for (const feature of transportationFeatures){
-    const option = transportationOption(feature);
+    const binding = corridorBinding(feature);
+    const option = binding.assetId;
     const style = SMOOTH_ROAD_STYLE[option];
     if (!style || !options[option]) continue;
     const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
-    const isTunnel = feature.props.brunnel === 'tunnel';
+    const isTunnel = binding.modifiers.tunnel;
     if (isBridge || isTunnel) continue;
     const trace = close => {
       mask.beginPath();
@@ -3748,15 +3725,12 @@ function render(){
       });
     }
     return L('transportation').filter(feature => {
-      const routeOption = transportationOption(feature);
+      const binding = corridorBinding(feature);
+      const routeOption = binding.assetId;
       const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
-      const isTunnel = feature.props.brunnel === 'tunnel';
+      const isTunnel = binding.modifiers.tunnel;
       if (style.tunnelGroup){
-        if (!isTunnel || bridge) return false;
-        if (style.tunnelGroup === 'road')
-          return ['localRoads','regionalRoads','majorRoads','motorways','raceways','transportationOther'].includes(routeOption);
-        if (style.tunnelGroup === 'path') return ['paths','tracks'].includes(routeOption);
-        return ['rail','aerialways'].includes(routeOption);
+        return !bridge && binding.stateAssetId === option;
       }
       if (option === 'subway') return routeOption === 'subway' && !isBridge;
       if (routeOption !== option || isTunnel) return false;
@@ -3803,9 +3777,10 @@ function render(){
     const style = SMOOTH_ROAD_STYLE[option];
     if (!style) return;
     const features = L('transportation').filter(feature => {
-      if (transportationOption(feature) !== option) return false;
+      const binding = corridorBinding(feature);
+      if (binding.assetId !== option) return false;
       const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
-      const isTunnel = feature.props.brunnel === 'tunnel';
+      const isTunnel = binding.modifiers.tunnel;
       return bridge ? isBridge : !isBridge && !isTunnel;
     });
     if (!features.length) return;
@@ -3879,14 +3854,14 @@ function render(){
     ctx.globalAlpha = tunnelRule.alpha;
     ctx.lineCap = 'round';
     for (const f of L('transportation')){
-      const routeOption = transportationOption(f);
-      const isTunnel = f.props.brunnel === 'tunnel';
+      const binding = corridorBinding(f);
+      const routeOption = binding.assetId;
+      const isTunnel = binding.modifiers.tunnel;
       const isBridge = f.props.brunnel === 'bridge' || f.props.class === 'bridge';
       const showSubway = option === 'subway' && routeOption === 'subway' && !isBridge;
-      const showRoadTunnel = option === 'roadTunnels' && isTunnel &&
-        ['localRoads','regionalRoads','majorRoads','motorways','raceways','transportationOther'].includes(routeOption);
-      const showPathTunnel = option === 'pathTunnels' && isTunnel && ['paths','tracks'].includes(routeOption);
-      const showRailTunnel = option === 'railTunnels' && isTunnel && ['rail','aerialways'].includes(routeOption);
+      const showRoadTunnel = option === 'roadTunnels' && binding.stateAssetId === option;
+      const showPathTunnel = option === 'pathTunnels' && binding.stateAssetId === option;
+      const showRailTunnel = option === 'railTunnels' && binding.stateAssetId === option;
       if (!showSubway && !showRoadTunnel && !showPathTunnel && !showRailTunnel) continue;
       ctx.strokeStyle = tunnelRule.fill;
       ctx.lineWidth = tunnelRule.logicalWidth * SCENE_PIXELS_PER_LOGICAL_PIXEL;
@@ -4612,6 +4587,12 @@ function render(){
       reserve:gridCellCount('parks', ID.PARK_RESERVE),
     },
   };
+  const corridorFamilyBindings = L('transportation').map(feature => corridorBinding(feature));
+  const corridorModifierCounts = Object.fromEntries(
+    ['construction','tunnel','underground','service'].map(modifier => [
+      modifier,corridorFamilyBindings.filter(binding => binding.modifiers[modifier]).length,
+    ])
+  );
   toolbar.dataset.renderMs = (performance.now() - renderStartedAt).toFixed(1);
   toolbar.dataset.renderCount = renderCount;
   window.PixelMapDiagnostics = {
@@ -4643,6 +4624,16 @@ function render(){
         quietBuildings:preciseBuildingLodStats.quietBuildings,
         omittedMicroBuildings:preciseBuildingLodStats.omittedMicroBuildings,
       } : null,
+    },
+    corridorFamilies:{
+      registryVersion:ASSET_FAMILY_REGISTRY.version,
+      total:corridorFamilyBindings.length,
+      families:countBy(corridorFamilyBindings, binding => binding.familyId),
+      variants:countBy(corridorFamilyBindings, binding => binding.variantId),
+      assets:countBy(corridorFamilyBindings, binding => binding.assetId),
+      stateAssets:countBy(corridorFamilyBindings, binding => binding.stateAssetId),
+      modifiers:corridorModifierCounts,
+      fallbacks:corridorFamilyBindings.filter(binding => binding.fallback).length,
     },
     styleSpec:{
       enabled:STANDALONE_UNIFIED_STYLE,

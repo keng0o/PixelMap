@@ -2,6 +2,9 @@
   'use strict';
 
   const corridorRenderer=global.PixelMapCorridorRenderer;
+  const assetFamilyRegistry=global.PixelMapAssetFamilyRegistry;
+  if(!assetFamilyRegistry)
+    throw new Error('PixelMapAssetFamilyRegistry must load before layer-assets.js');
 
   const groups = Object.freeze([
     {
@@ -265,12 +268,21 @@
     return Object.freeze({kind:'variable',label:`可変 / ${fontSize} px TYPE`,width:96,height:32,fontSize});
   }
 
-  const layers = Object.freeze(groups.flatMap(group => group.items.map(item => Object.freeze({
-    id:item[0], label:item[1], kind:item[2],
-    color:item[2]==='route' && transportRules[item[0]] ? transportRules[item[0]].fill : item[3],
-    variant:item[4], group:group.id, groupLabel:group.label,
-    metric:metricFor(item[2],item[4],item[0]),
-  }))));
+  const layers = Object.freeze(groups.flatMap(group => group.items.map(item => {
+    const sourceTypes=item[2]==='route'
+      ? assetFamilyRegistry.corridorTypesForAsset(item[0]) : [];
+    const assetFamilyIds=item[2]==='route'
+      ? assetFamilyRegistry.corridorFamilyIdsForAsset(item[0]) : [];
+    return Object.freeze({
+      id:item[0], label:item[1], kind:item[2],
+      color:item[2]==='route' && transportRules[item[0]] ? transportRules[item[0]].fill : item[3],
+      variant:item[4], group:group.id, groupLabel:group.label,
+      sourceTypes:Object.freeze(sourceTypes),
+      assetFamilyIds:Object.freeze(assetFamilyIds),
+      stateModifier:item[2]==='route' && item[0].endsWith('Tunnels') ? 'tunnel' : null,
+      metric:metricFor(item[2],item[4],item[0]),
+    });
+  })));
 
   const P = Object.freeze({
     outline:'#302838', grass:'#7cbc54', grassDark:'#619c42', grassLight:'#98d470',
