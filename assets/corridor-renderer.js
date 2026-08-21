@@ -2,13 +2,13 @@
   'use strict';
 
   /*
-    PixelMap Corridor Renderer v2
+    PixelMap Corridor Renderer v3
     ----------------------------
     道路・鉄道・水路を同じ連続距離マスクへ変換する、表示先に依存しない正本。
     地物差はstyleのskin fieldだけで表し、source geometryは変更しない。
     map・assets catalog・将来のExpo/Flutter移植時の参照実装が共有する。
   */
-  const VERSION='pixelmap-corridor-renderer/2';
+  const VERSION='pixelmap-corridor-renderer/3';
   const positiveModulo=(value,period)=>((value%period)+period)%period;
 
   function setMaskPixel(mask,width,height,x,y){
@@ -131,7 +131,9 @@
     const fullCenter=new Uint8Array(width*height);
     const centerPhase=new Uint32Array(width*height);
     const phaseAssigned=new Uint8Array(width*height);
-    const assignCenter=(x,y,phase)=>{
+    const centerTangentX=new Float32Array(width*height);
+    const centerTangentY=new Float32Array(width*height);
+    const assignCenter=(x,y,phase,tangentX=1,tangentY=0)=>{
       x=Math.round(x);y=Math.round(y);
       if(x<0 || y<0 || x>=width || y>=height) return;
       const index=y*width+x;
@@ -139,6 +141,8 @@
       if(!phaseAssigned[index]){
         phaseAssigned[index]=1;
         centerPhase[index]=positiveModulo(Math.round(phase),65521);
+        centerTangentX[index]=tangentX;
+        centerTangentY[index]=tangentY;
       }
     };
     for(const feature of features){
@@ -159,9 +163,11 @@
         for(let index=1;index<line.length;index++){
           const [x0,y0]=pointFor(line[index-1]);
           const [x1,y1]=pointFor(line[index]);
+          const tangentLength=Math.hypot(x1-x0,y1-y0)||1;
+          const tangentX=(x1-x0)/tangentLength,tangentY=(y1-y0)/tangentLength;
           walkPixelLine(x0,y0,x1,y1,(x,y)=>{
             if(x===previousX && y===previousY) return;
-            assignCenter(x,y,phaseCursor++);previousX=x;previousY=y;
+            assignCenter(x,y,phaseCursor++,tangentX,tangentY);previousX=x;previousY=y;
           });
         }
       }
@@ -182,7 +188,10 @@
       const lineBody=rasterizeLines(context,width,height,features,style.width,pointFor);
       for(let index=0;index<body.length;index++) body[index] ||= lineBody[index];
     }
-    return {center:fullCenter,centerPhase,activeCenter,body,outer:expandMask(body,width,height,style.edgeWidth||0)};
+    return {
+      center:fullCenter,centerPhase,centerTangentX,centerTangentY,activeCenter,body,
+      outer:expandMask(body,width,height,style.edgeWidth||0),
+    };
   }
 
   function rgbaFor(color){
@@ -201,6 +210,7 @@
     const body=masks.body,center=masks.center,phase=masks.centerPhase;
     const nearestCenter=new Int32Array(body.length);nearestCenter.fill(-1);
     const nearestDistance=new Uint16Array(body.length);nearestDistance.fill(65535);
+    const nearestPerpendicular=new Float32Array(body.length);nearestPerpendicular.fill(Infinity);
     const searchRadius=Math.ceil(style.width/2)+1;
     for(let y=0;y<height;y++) for(let x=0;x<width;x++){
       const centerIndex=y*width+x;
@@ -212,7 +222,10 @@
         if(!body[candidate]) continue;
         const distance=dx*dx+dy*dy;
         if(distance<nearestDistance[candidate]){
+          const tangentX=masks.centerTangentX?.[centerIndex]||1;
+          const tangentY=masks.centerTangentY?.[centerIndex]||0;
           nearestDistance[candidate]=distance;nearestCenter[candidate]=centerIndex;
+          nearestPerpendicular[candidate]=Math.abs(dx*tangentY-dy*tangentX);
         }
       }
     }
@@ -222,16 +235,31 @@
       if(centerIndex>=0 && phase[centerIndex]%tiePeriod===0) paintPixel(image,index,style.tie);
     }
     const railOffset=style.railOffset||Math.max(1,Math.floor(style.width/3));
-    const targetDistance=railOffset*railOffset;
-    const tolerance=railOffset===1?0:railOffset-1;
+    const railTolerance=Math.max(.5,(style.railThickness||1)/2);
     for(let index=0;index<body.length;index++){
-      if(nearestCenter[index]>=0 && Math.abs(nearestDistance[index]-targetDistance)<=tolerance)
+      if(nearestCenter[index]>=0 && Math.abs(nearestPerpendicular[index]-railOffset)<=railTolerance)
         paintPixel(image,index,style.rail);
     }
   }
 
+  function paintRailBedTexture(image,masks,style,width,height,textureAt){
+    const texture=style.bedTexture;
+    if(!texture) return;
+    const period=Math.max(1,Math.round(texture.period)||1);
+    const keyFor=point=>`${positiveModulo(Math.round(point[0]),period)},${positiveModulo(Math.round(point[1]),period)}`;
+    const darkPixels=new Set((texture.darkPixels||[]).map(keyFor));
+    const lightPixels=new Set((texture.lightPixels||[]).map(keyFor));
+    for(let index=0;index<masks.body.length;index++){
+      if(!masks.body[index]) continue;
+      const x=index%width,y=Math.floor(index/width);
+      const key=keyFor(textureAt(x,y));
+      if(darkPixels.has(key)) paintPixel(image,index,texture.dark);
+      else if(lightPixels.has(key)) paintPixel(image,index,texture.light);
+    }
+  }
+
   function render(target,{width=target.canvas.width,height=target.canvas.height,features,style,
-    pointFor=point=>point,phaseAt=(x,y)=>x+y*3,maskContext=null,preparedMasks=null}){
+    pointFor=point=>point,phaseAt=(x,y)=>x+y*3,textureAt=(x,y)=>[x,y],maskContext=null,preparedMasks=null}){
     const masks=preparedMasks || buildMasks({width,height,features,style,pointFor,phaseAt,maskContext});
     const image=target.createImageData(width,height);
     const alpha=style.alpha ?? 1;
@@ -246,7 +274,10 @@
         paintPixel(image,index,style.center,alpha);
       }
     }
-    if(style.pattern==='rail') paintRail(image,masks,style,width,height);
+    if(style.pattern==='rail'){
+      paintRailBedTexture(image,masks,style,width,height,textureAt);
+      paintRail(image,masks,style,width,height);
+    }
     target.putImageData(image,0,0);
     return masks;
   }

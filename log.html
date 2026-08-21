@@ -148,17 +148,17 @@
             </tr>
             <tr>
               <th scope="row">描画方式</th>
-              <td>標準描画は<code>geometry-skin-symbol/1</code>と<code>retro-jrpg-z14</code> WorldStyleを使用。アセットパックは<code>retro-jrpg-reference-v1</code>へ固定し、地理形状を変えず、色・線・合成順・POI密度を一括管理。<code>?render=cell2</code> の2×2論理px検証も利用可能。</td>
+              <td>既定は<code>geometry-skin-symbol/1</code>へ本番の有効レイヤー・pattern 07・skin・POI密度を独立copyした<code>production-comparison-z14</code>。testだけcontinuous corridorとAssetFamilyRegistryへ接続。意図的な参照テイストは<code>?profile=reference</code>へ分離。</td>
               <td>標準描画のみ。<code>cell2</code>指定は適用しない。</td>
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>神奈川県の生成GeoJSONと手動overrideを読み込み、複合施設・代表施設を補完。</td>
+              <td>本番比較profileでは無効にし、本番と同じPOI入力・選抜を維持。<code>?profile=reference</code>だけ神奈川県の生成GeoJSONと手動overrideを使用。</td>
               <td>ランドマーク補助処理を無効化し、従来の施設表示を維持。</td>
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
-              <td>全て同じ<code>pixelmap-corridor-renderer/2</code>連続距離マスク生成器と整数幅を使用。縦・横・斜めの外形規則を共通化し、道路種別・レール・水路の差はWorldStyleの内部スキンで表現。橋は共通modifier、地上の道路×鉄道交差はmaskから踏切記号を導出する。</td>
+              <td>全て同じ<code>pixelmap-corridor-renderer/3</code>連続距離マスク生成器を使用。本番copy RailSkinは8px路盤、砂利の明暗pattern、枕木周期、接線基準の複線レールを保持し、線形だけMVT連続形状を使用。reference profileの橋・踏切modifierは別設定。</td>
               <td>各レイヤー固有の従来描画と線幅を維持。</td>
             </tr>
             <tr>
@@ -168,18 +168,18 @@
             </tr>
             <tr>
               <th scope="row">建物とcorridorの重なり</th>
-              <td>MVT建物形状を1論理px意味マスクで一度だけ確定し、衝突後の移動・変形・場所別修正は行わない。通常小規模棟はringKey固定のsemantic LODで低コントラストarea、代表棟・大型棟・選抜POIはRPG屋根へ分ける。全域でarea→ground corridor→building→structure→bridge→object→marker→dot／clusterの固定順に合成する。</td>
+              <td>本番比較profileはコピーしたBuildingSkinと本番8px建物チップ描画を使用し、旧RPG風の密度を再現。<code>?profile=reference</code>では1論理px意味footprintとsemantic LODを使用。どちらも場所別例外や建物座標の移動は行わない。</td>
               <td>従来の8×8論理px建物セル、通常建物／橋／POI建物の描画順を維持。</td>
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI・corridor・surfaceの属性対応は<code>pixelmap-asset-family-registry/6</code>のpack→family→variant→asset契約へ集約。genericは明示allowlistで許可済み／未知を分離する。source geometryを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
+              <td>本番POI対応を独立copyした<code>retro-jrpg-production-copy-v1</code>を<code>pixelmap-asset-family-registry/7</code>へ接続。pattern 07、表示1268件、icon 239／dot 340／cluster 82の選抜条件とdecision fingerprintを本番と一致させる。genericは明示allowlistで監査。</td>
               <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
             </tr>
             <tr>
               <th scope="row">今回のPOC評価範囲</th>
               <td>z14のスクリーンショット比較で、地理精度と旧RPG風の世界観を評価。ピクセルパーフェクト一致とExpo／Flutter移植は今回の対象外。</td>
-              <td>既存の本番表示を維持。過去に生成したmobile manifestも今回の変更対象外。</td>
+              <td>既存の本番表示を維持。Expo／Flutter実装は今回の対象外。生成manifestはWebと同じrenderer contract v3へmetadataだけ同期。</td>
             </tr>
             <tr>
               <th scope="row">外側UIと同期</th>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>本番copy profileで描画差をレイヤー別に収束</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>本番の有効47レイヤー、pattern 07、BuildingSkin／RoadSkin／RailSkin／PoiPack、POI密度を独立snapshotへコピー。captureも本番と同じ最新TileJSONを読み、testだけcontinuous corridor／AssetFamilyRegistryへ接続。建物は本番8pxチップへ戻し、RailSkinへ世界座標固定の砂利texture・接線基準レール・枕木を追加。生成manifestはrenderer contract v3へmetadata同期。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone z14の既定profileを<code>production-comparison-z14</code>へ変更。従来の意図的な参照テイストは<code>?profile=reference</code>で保持。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guard内の<code>legacy</code>描画、レイヤー、pattern 07、POI選抜を変更なし。production pageファイル自体も未変更。</dd></div>
+          <div><dt>確認内容</dt><dd>本番／testのsource feature counts、47レイヤー、POI decision fingerprintと239／340／82件、fallback 0をruntime比較。rail・buildings・roads・surface・water・POIを分離撮影し、建物差0、surface／POI差0、道路・水路は許容小差、鉄道はcontinuous形状以外のskinを復元。自動テスト、ビルド、独立視覚レビューを実施。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>generic fallbackを明示allowlistで監査</h3>

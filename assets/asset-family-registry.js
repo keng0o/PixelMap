@@ -2,14 +2,15 @@
   'use strict';
 
   /*
-    PixelMap Asset Family Registry v6
+    PixelMap Asset Family Registry v7
     ---------------------------------
     MVTのclass/subclassを直接sprite idへ結び付けず、
     asset pack → semantic family → variant → asset の順で解決する正本。
     source geometry・座標・表示密度には関与しない。
   */
-  const VERSION = 'pixelmap-asset-family-registry/6';
+  const VERSION = 'pixelmap-asset-family-registry/7';
   const LEGACY_PACK = 'legacy';
+  const PRODUCTION_COPY_PACK = 'retro-jrpg-production-copy-v1';
   const REFERENCE_PACK = 'retro-jrpg-reference-v1';
 
   const families = Object.freeze({
@@ -53,7 +54,7 @@
       'electronics','employment_agency','entrance','equestrian','estate_agent','florist','food_court',
       'furniture','gallery','gate','gateball','gift','golf_course','government','grave_yard','greengrocer',
       'guest_house','guide','guidepost','hairdresser','hardware','horse_racing','hostel','information',
-      'jewelry','kiosk','laundry','lift_gate','logistics','map','massage','mobile_phone','motorcycle',
+      'jewelry','kiosk','laundry','lift_gate','logistics','map','massage','mobile_phone','motorcycle','office',
       'motorcycle_parking','multi','musical_instrument','optician','outdoor','parcel_locker','pet','photo',
       'political_party','post_box','post_office','pub','public_building','recycling','religion','research',
       'route_marker','running','second_hand','security','shelter','shinto','shoes','soccer','sports',
@@ -228,6 +229,14 @@
       corridorPriority:sharedCorridorBindings.priority,
       surfaceBindings:sharedSurfaceBindings,
     }),
+    [PRODUCTION_COPY_PACK]:Object.freeze({
+      id:PRODUCTION_COPY_PACK,label:'test用・本番POI packコピー',extends:LEGACY_PACK,
+      // legacyBindingsを参照せず、同じspecから独立したbinding objectを生成する。
+      bindings:buildBindings(bindingSpecs),
+      corridorBindings:sharedCorridorBindings.bindings,
+      corridorPriority:sharedCorridorBindings.priority,
+      surfaceBindings:sharedSurfaceBindings,
+    }),
     [REFERENCE_PACK]:Object.freeze({
       id:REFERENCE_PACK,label:'レトロJRPG参照テイスト',extends:LEGACY_PACK,
       bindings:buildBindings(referenceBindingSpecs,referenceAssetOverrides),
@@ -382,6 +391,7 @@
   global.PixelMapAssetFamilyRegistry = Object.freeze({
     version:VERSION,
     defaultPack:LEGACY_PACK,
+    productionCopyPack:PRODUCTION_COPY_PACK,
     referencePack:REFERENCE_PACK,
     families,
     corridorFamilies,

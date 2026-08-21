@@ -7,6 +7,9 @@ const worldStyle = await readFile(new URL('../assets/world-style.js', import.met
 const oneMap = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const twoMap = await readFile(new URL('../compare.html', import.meta.url), 'utf8');
 const fourMap = await readFile(new URL('../variants/height-stack-four-map.html', import.meta.url), 'utf8');
+globalThis.window=globalThis;
+await import('../assets/world-style.js');
+const comparisonStyle=globalThis.PixelMapWorldStyles.productionComparisonZ14;
 
 test('表示倍率は1に固定し、旧pixel指定では変えない', () => {
   assert.match(html, /const REQUESTED_DISPLAY_SCALE = 1/);
@@ -40,10 +43,12 @@ test('全アセットを論理ピクセルグリッドへそろえる', () => {
   assert.match(html, /assetLogicalPixel:1/);
 });
 
-test('standalone z14 POCはWorldStyleのRPGパターン、本番iframeは従来パターンを使う', () => {
-  assert.match(html, /const WORLD_STYLE = window\.PixelMapWorldStyles\.retroJrpgZ14/);
+test('standalone z14 POCは本番copy profileを既定にし、本番iframeは従来条件を維持する', () => {
+  assert.match(html, /const WORLD_STYLE_PROFILE = PAGE_PARAMS\.get\('profile'\) === 'reference'/);
+  assert.match(html, /const WORLD_STYLE = window\.PixelMapWorldStyles\[WORLD_STYLE_PROFILE\]/);
   assert.match(html, /const requestedPatternId = String\(PAGE_PARAMS\.get\('pattern'\) \|\| \(EMBEDDED \? '07' : WORLD_STYLE\.patternId\)\)\.padStart\(2, '0'\)/);
-  assert.match(worldStyle, /patternId:'01'/);
+  assert.equal(comparisonStyle.patternId,'07');
+  assert.match(worldStyle, /const productionComparisonZ14/);
   assert.match(html, /const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE/);
   assert.match(html, /dataset\.worldStyle = WORLD_STYLE_MODE \? WORLD_STYLE\.id : 'none'/);
   assert.match(html, /dataset\.mapMode = 'production'/);
@@ -86,11 +91,26 @@ test('単体ページの生活道路と歩道・小径は各描画モードの�
   assert.match(html, /localRoadWidth:CELL_ONLY_MODE[\s\S]*?pathWidth:CELL_ONLY_MODE/);
 });
 
-test('鉄道は本番と同じタイル模様を使う', () => {
-  assert.match(html, /LAYER_ASSET_CATALOG\.drawStandardTransportCell/);
+test('test用RailSkinは本番セル値のcopyをcontinuous rendererへ渡す', () => {
+  assert.deepEqual(comparisonStyle.corridor.rail,{
+    width:8,edgeWidth:0,fill:'#a8a098',pattern:'rail',
+    rail:'#404048',tie:'#786048',railOffset:2,railThickness:2,tiePeriod:4,sourceCellWidth:8,
+    bedTexture:{
+      period:8,dark:'#888078',light:'#c0b8b0',
+      darkPixels:[[1,2],[5,4],[3,6]],lightPixels:[[6,1],[0,5]],
+    },
+  });
+  assert.match(html, /rail:WORLD_CORRIDOR_RULES\.rail/);
+  assert.match(html, /drawUnifiedCorridorLayer\(option\)/);
+  assert.match(html, /textureAt:worldLogicalPoint/);
   assert.match(html, /if\(EMBEDDED\) return false/);
-  assert.match(html, /case ID\.RAIL:[\s\S]*?const TIE = [\s\S]*?if \(con\.L\) TIE/);
-  assert.doesNotMatch(html, /repeatDecoration|drawRepeatedDecoration/);
+});
+
+test('production比較profileのBuildingSkinは本番8px建物チップをtest側だけで再現する',()=>{
+  assert.equal(comparisonStyle.building.renderer,'production-cell-copy');
+  assert.equal(comparisonStyle.building.cellSize,8);
+  assert.match(html,/const STANDALONE_PRECISE_BUILDINGS = !EMBEDDED && !CELL_ONLY_MODE &&[\s\S]*WORLD_STYLE\.building\?\.renderer !== 'production-cell-copy'/);
+  assert.match(html,/buildingAppearanceForActiveProfile/);
 });
 
 test('1マップ・2マップ・4マップは共通の論理ピクセル描画エンジンを使う', () => {

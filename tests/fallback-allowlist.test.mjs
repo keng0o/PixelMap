@@ -26,6 +26,7 @@ test('generic fallback allowlistは3 primitive別の固定列挙でwildcardを�
 test('レビュー済みgenericはallowlisted、将来の未知typeはunexpectedとして区別する',()=>{
   const cases=[
     [registry.resolvePoi({class:'clinic'}),'clinic'],
+    [registry.resolvePoi({class:'office'},registry.productionCopyPack),'office'],
     [registry.resolveCorridor({class:'bridge'}),'bridge'],
     [registry.resolveSurface({class:'heath'},'landcover'),'landcover:heath'],
   ];

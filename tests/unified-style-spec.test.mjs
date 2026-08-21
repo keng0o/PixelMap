@@ -27,7 +27,7 @@ test('描画プリミティブはarea・corridor・symbolの3種類に固定す�
 });
 
 test('道路・鉄道・水路は同じ1論理px corridorマスク生成器を使う', () => {
-  assert.match(html, /<script src="\.\.\/assets\/corridor-renderer\.js\?v=2"><\/script>/);
+  assert.match(html, /<script src="\.\.\/assets\/corridor-renderer\.js\?v=3"><\/script>/);
   assert.match(corridorRenderer, /function walkPixelLine\(/);
   assert.match(corridorRenderer, /function rasterizeLines\(/);
   assert.match(html, /function buildUnifiedCorridorMasks\(features, style\)/);
@@ -47,17 +47,26 @@ test('道路・鉄道・水路は同じ1論理px corridorマスク生成器を�
   assert.doesNotMatch(html, /function rasterizeUnifiedLineFeatures/);
 });
 
+test('RailSkinの路盤textureは描画時もworld座標へ固定する', () => {
+  assert.match(html, /CORRIDOR_RENDERER\.render\(unifiedCorridorContext,\{[\s\S]*?textureAt:worldLogicalPoint,[\s\S]*?preparedMasks,/);
+});
+
 test('鉄道らしさは外形ではなくcorridor内部スキンで描く', () => {
   assert.match(corridorRenderer, /function paintRail\(image,masks,style,width,height\)/);
   assert.match(corridorRenderer, /const nearestCenter=new Int32Array/);
+  assert.match(corridorRenderer, /const centerTangentX=new Float32Array/);
+  assert.match(corridorRenderer, /nearestPerpendicular\[candidate\]=Math\.abs/);
   assert.match(corridorRenderer, /phase\[centerIndex\]%tiePeriod===0/);
-  assert.match(corridorRenderer, /Math\.abs\(nearestDistance\[index\]-targetDistance\)<=tolerance/);
+  assert.match(corridorRenderer, /Math\.abs\(nearestPerpendicular\[index\]-railOffset\)<=railTolerance/);
   assert.match(corridorRenderer, /paintPixel\(image,index,style\.tie\)/);
   assert.match(corridorRenderer, /paintPixel\(image,index,style\.rail\)/);
-  assert.match(corridorRenderer, /if\(style\.pattern==='rail'\) paintRail/);
+  assert.match(corridorRenderer, /function paintRailBedTexture\(image,masks,style,width,height,textureAt\)/);
+  assert.match(corridorRenderer, /paintRailBedTexture\(image,masks,style,width,height,textureAt\)/);
+  assert.match(corridorRenderer, /paintRail\(image,masks,style,width,height\)/);
+  assert.match(html, /textureAt:worldLogicalPoint/);
 });
 
-test('POIは既存RPGアセットのS・M・Lと実測boundsを使う', () => {
+test('POIはprofileに応じてproduction互換radiusと実測boundsを切り替える', () => {
   assert.match(spec, /renderer:'poi-asset'/);
   assert.match(spec, /geometrySource:'resolver-source-world-point'/);
   assert.match(spec, /anchorSource:'poi-asset-metadata'/);
@@ -66,9 +75,9 @@ test('POIは既存RPGアセットのS・M・Lと実測boundsを使う', () => {
   assert.match(html, /drawSprite\(spriteFor\(p\.props, p\.displayAssetSize \|\| p\.assetSize \|\| p\.size, p\.variant, p\.spriteKey\), p\.pt\[0\], p\.pt\[1\], p\)/);
   assert.match(html, /drawPatternMarker\(p, cx, cy, visualScale\)/);
   assert.match(html, /drawAuxiliaryAssets\(p, cx, cy\)/);
-  assert.match(html, /assetCatalog:STANDALONE_UNIFIED_STYLE \? POI_SPRITE_CATALOG : null/);
-  assert.match(html, /sourceAnchored:STANDALONE_UNIFIED_STYLE/);
-  assert.match(html, /symbolCollisionBounds:STANDALONE_UNIFIED_STYLE \? 'poi-asset-measured-bounds'/);
+  assert.match(html, /WORLD_STYLE\.symbol\.collisionBounds === 'poi-asset-measured-bounds'/);
+  assert.match(html, /sourceAnchored:WORLD_STYLE_MODE[\s\S]*WORLD_STYLE\.symbol\.sourceAnchored !== false/);
+  assert.match(html, /symbolCollisionBounds:WORLD_STYLE_MODE[\s\S]*WORLD_STYLE\.symbol\.collisionBounds/);
   assert.match(html, /RESOLVER\.assetCollisionGeometry\(/);
   assert.match(html, /anchorMode:'source-point'/);
   assert.match(html, /sourceCoordinateMismatches:resolvedView\.facilities\.filter/);
@@ -77,14 +86,14 @@ test('POIは既存RPGアセットのS・M・Lと実測boundsを使う', () => {
   assert.doesNotMatch(html, /function drawUnifiedPoiSymbol\(item\)/);
 });
 
-test('POIの地理判定と画面密度予算をresolverへ集約し、source座標は変えない', () => {
+test('POIの地理判定とprofile別密度・anchor条件をresolverへ集約する', () => {
   assert.match(spec, /selectionAuthority:'facility-resolver-world-style'/);
   assert.match(html, /RESOLVER\.selectViewportIcons\(facilitiesInView, WORLD_STYLE\.density\)/);
   assert.match(html, /WORLD_STYLE\.symbol\.minimumAssetSizeByRole\[item\.semanticRole\]/);
   assert.match(html, /displayAssetSize:worldStyleDisplayAssetSize\(item\)/);
   assert.match(html, /const drawnIcons = viewportIconSelection\.selected\.map/);
   assert.match(html, /\.\.\.viewportIconSelection\.rejected/);
-  assert.match(html, /symbolSelectionOverride:WORLD_STYLE_MODE \? 'resolver-world-style-density-budget' : false/);
+  assert.match(html, /WORLD_STYLE\.profileKind === 'production-copy'[\s\S]*'production-copy-unbounded'[\s\S]*'resolver-world-style-density-budget'/);
   assert.doesNotMatch(html, /function selectUnifiedPoiSymbols\(items\)/);
   assert.doesNotMatch(html, /unifiedSymbolKeys/);
 });
@@ -105,7 +114,8 @@ test('POI Asset Contractのroleが固定semantic z-orderを決め、座標移動
   const overlayEnd = html.indexOf('function drawCellPoi(){', overlayStart);
   const overlays = html.slice(overlayStart, overlayEnd);
   assert.match(overlays, /drawPoiIcons\(\['object'\]\);[\s\S]*drawPoiIcons\(\['marker'\]\);/);
-  assert.doesNotMatch(overlays, /drawDots|drawClusters/);
+  assert.match(overlays, /WORLD_STYLE\.density\.drawDotsByDefault[\s\S]*drawDots\(\)/);
+  assert.match(overlays, /WORLD_STYLE\.density\.drawClustersByDefault[\s\S]*drawClusters\(\)/);
   assert.match(html, /dots:\(\) => \{[\s\S]*drawDots\(hiddenPois\);[\s\S]*drawClusters\(\);/);
   assert.match(html, /drawUnifiedCorridorLayer\(option\);[\s\S]*Z2:ground-corridor:[\s\S]*drawStandalonePreciseBuildings\([\s\S]*drawPoiStructures\(\)/);
   assert.match(html, /poi:STANDALONE_UNIFIED_STYLE \? drawPoiOverlays : drawPoi/);

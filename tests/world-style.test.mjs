@@ -6,10 +6,12 @@ globalThis.window = globalThis;
 await import('../assets/world-style.js');
 
 const STYLE = globalThis.PixelMapWorldStyles.retroJrpgZ14;
+const BASELINE = globalThis.PixelMapWorldStyles.productionComparisonZ14;
+const SNAPSHOT = globalThis.PixelMapWorldStyles.productionZ14Snapshot;
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
 
 test('WorldStyleはz14 POCの見た目だけを一つの契約へ集約する', () => {
-  assert.equal(STYLE.version, 'pixelmap-world-style/4');
+  assert.equal(STYLE.version, 'pixelmap-world-style/5');
   assert.equal(STYLE.id, 'retro-jrpg-z14');
   assert.equal(STYLE.assetPack, 'retro-jrpg-reference-v1');
   assert.equal(STYLE.tileZoom, 14);
@@ -38,7 +40,7 @@ test('道路・鉄道・水路は整数幅の共通corridor skinで世界観を�
   assert.equal(STYLE.corridor.rail.tiePeriod, 6);
   assert.deepEqual(STYLE.corridorModifiers.bridge,{minimumEdgeWidth:1,edge:'#302838'});
   assert.deepEqual(STYLE.corridorModifiers.levelCrossing,{
-    outline:'#302838',light:'#f0d788',dark:'#76543d',minimumSpacing:7,
+    enabled:true,outline:'#302838',light:'#f0d788',dark:'#76543d',minimumSpacing:7,
   });
   assert.deepEqual(STYLE.compositor,
     ['area','ground-corridor','building','structure','bridge','object','marker','dot-cluster']);
@@ -77,7 +79,8 @@ test('POI密度は施設ごとの例外ではなくrole・categoryの共通予�
 });
 
 test('map-02はWorldStyleをstandalone game profileだけへ適用する', () => {
-  assert.match(html, /<script src="\.\.\/assets\/world-style\.js\?v=4"><\/script>/);
+  assert.match(html, /<script src="\.\.\/assets\/world-style\.js\?v=5"><\/script>/);
+  assert.match(html, /const WORLD_STYLE_PROFILE = PAGE_PARAMS\.get\('profile'\) === 'reference'[\s\S]*'retroJrpgZ14' : 'productionComparisonZ14'/);
   assert.match(html, /const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE/);
   assert.match(html, /else if \(WORLD_STYLE_MODE\)\{[\s\S]*new Set\(WORLD_STYLE\.defaultLayers\)/);
   assert.match(html, /dataset\.worldStyle = WORLD_STYLE_MODE \? WORLD_STYLE\.id : 'none'/);
@@ -88,4 +91,49 @@ test('map-02はWorldStyleをstandalone game profileだけへ適用する', () =>
     'dataset・diagnostics・captureは同じtest-only assetPack guardを使う',
   );
   assert.match(html, /WORLD_STYLE_MODE \? WORLD_STYLE\.palette\.roadLocal : CANONICAL_TRANSPORT_RULES\.localRoads\.fill/);
+});
+
+test('production比較profileは本番値を独立copyし、reference profileと分離する',()=>{
+  assert.equal(BASELINE.id,'production-comparison-z14');
+  assert.equal(BASELINE.profileKind,'production-copy');
+  assert.equal(BASELINE.snapshotVersion,SNAPSHOT.version);
+  assert.equal(BASELINE.patternId,'07');
+  assert.equal(BASELINE.assetPack,'retro-jrpg-production-copy-v1');
+  assert.deepEqual(BASELINE.defaultLayers,SNAPSHOT.defaultLayers);
+  assert.notEqual(BASELINE.defaultLayers,SNAPSHOT.defaultLayers);
+  assert.deepEqual(BASELINE.corridor,SNAPSHOT.corridor);
+  assert.notEqual(BASELINE.corridor,SNAPSHOT.corridor);
+  assert.deepEqual(BASELINE.surfaceFamilies,SNAPSHOT.surfaceFamilies);
+  assert.notEqual(BASELINE.surfaceFamilies,SNAPSHOT.surfaceFamilies);
+  assert.deepEqual(BASELINE.building.skin,SNAPSHOT.buildingSkin);
+  assert.notEqual(BASELINE.building.skin,SNAPSHOT.buildingSkin);
+  assert.equal(BASELINE.building.renderer,'production-cell-copy');
+  assert.equal(BASELINE.building.cellSize,8);
+  assert.equal(BASELINE.density.maxIcons,Infinity);
+  assert.deepEqual(BASELINE.density.roleCaps,{});
+  assert.deepEqual(BASELINE.symbol.minimumAssetSizeByRole,{structure:'S',object:'S',marker:'S'});
+  assert.equal(BASELINE.symbol.sourceAnchored,false);
+  assert.equal(BASELINE.landmarksEnabled,false);
+  assert.equal(STYLE.assetPack,'retro-jrpg-reference-v1');
+  assert.equal(STYLE.patternId,'01');
+});
+
+test('production比較profileの道路・鉄道・surface色はproduction snapshotと一致する',()=>{
+  assert.deepEqual(BASELINE.corridor.regionalRoads,{
+    width:8,edgeWidth:1,fill:'#d0d0ca',edge:'#9e9e98',center:'#f8f0d8',centerPeriod:13,centerOn:7,
+  });
+  assert.deepEqual(BASELINE.corridor.rail,{
+    width:8,edgeWidth:0,fill:'#a8a098',pattern:'rail',rail:'#404048',tie:'#786048',railOffset:2,railThickness:2,tiePeriod:4,sourceCellWidth:8,
+    bedTexture:{
+      period:8,dark:'#888078',light:'#c0b8b0',
+      darkPixels:[[1,2],[5,4],[3,6]],lightPixels:[[6,1],[0,5]],
+    },
+  });
+  assert.equal(BASELINE.surfaceFamilies.waterSurface.fill,'#4890e0');
+  assert.equal(BASELINE.palette.grass,'#7cbc54');
+  assert.equal(BASELINE.corridorModifiers.levelCrossing.enabled,false);
+});
+
+test('production比較captureは本番と同じ最新TileJSONを読み、入力地物差を混ぜない',()=>{
+  assert.match(html,/if \(!CAPTURE_MODE \|\| WORLD_STYLE\.profileKind === 'production-copy'\)/);
 });

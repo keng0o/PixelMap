@@ -12,7 +12,7 @@ test('mobile manifestはWebと同じ3契約・compositor・全アセットを公
   assert.deepEqual(manifest.contracts,{
     poi:'pixelmap-poi-asset/1',
     corridor:'pixelmap-corridor-asset/1',
-    corridorRenderer:'pixelmap-corridor-renderer/2',
+    corridorRenderer:'pixelmap-corridor-renderer/3',
   });
   assert.deepEqual(manifest.compositor,
     ['area','structure','corridor','bridge','object','marker','dot-cluster']);
