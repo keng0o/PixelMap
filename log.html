@@ -148,7 +148,7 @@
             </tr>
             <tr>
               <th scope="row">描画方式</th>
-              <td>標準描画は<code>geometry-skin-symbol/1</code>と<code>retro-jrpg-z14</code> WorldStyleを使用。地理形状を変えず、色・線・合成順・POI密度を一括管理。<code>?render=cell2</code> の2×2論理px検証も利用可能。</td>
+              <td>標準描画は<code>geometry-skin-symbol/1</code>と<code>retro-jrpg-z14</code> WorldStyleを使用。アセットパックは<code>retro-jrpg-reference-v1</code>へ固定し、地理形状を変えず、色・線・合成順・POI密度を一括管理。<code>?render=cell2</code> の2×2論理px検証も利用可能。</td>
               <td>標準描画のみ。<code>cell2</code>指定は適用しない。</td>
             </tr>
             <tr>
@@ -191,6 +191,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>z14 POCのアセットパック正本を固定</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd><code>pixelmap-world-style/2</code>へ<code>assetPack: retro-jrpg-reference-v1</code>を追加し、画面dataset・診断情報・capture情報が同じ正本を参照するようにした。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone game profileでアセットパックを固定。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップの<code>embedded=1</code>は<code>legacy</code>のまま。既存描画への変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>WorldStyle契約テストと、dataset・診断情報・capture情報の3経路が同じstandalone限定guardを使うことを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>WorldStyleでz14 POCのレトロJRPG表現を固定</h3>

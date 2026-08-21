@@ -9,8 +9,9 @@ const STYLE = globalThis.PixelMapWorldStyles.retroJrpgZ14;
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
 
 test('WorldStyleはz14 POCの見た目だけを一つの契約へ集約する', () => {
-  assert.equal(STYLE.version, 'pixelmap-world-style/1');
+  assert.equal(STYLE.version, 'pixelmap-world-style/2');
   assert.equal(STYLE.id, 'retro-jrpg-z14');
+  assert.equal(STYLE.assetPack, 'retro-jrpg-reference-v1');
   assert.equal(STYLE.tileZoom, 14);
   assert.equal(STYLE.sourceGeometryImmutable, true);
   assert.equal(STYLE.patternId, '01');
@@ -59,9 +60,15 @@ test('POI密度は施設ごとの例外ではなくrole・categoryの共通予�
 });
 
 test('map-02はWorldStyleをstandalone game profileだけへ適用する', () => {
-  assert.match(html, /<script src="\.\.\/assets\/world-style\.js\?v=1"><\/script>/);
+  assert.match(html, /<script src="\.\.\/assets\/world-style\.js\?v=2"><\/script>/);
   assert.match(html, /const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE/);
   assert.match(html, /else if \(WORLD_STYLE_MODE\)\{[\s\S]*new Set\(WORLD_STYLE\.defaultLayers\)/);
   assert.match(html, /dataset\.worldStyle = WORLD_STYLE_MODE \? WORLD_STYLE\.id : 'none'/);
+  assert.match(html, /dataset\.assetPack = WORLD_STYLE_MODE \? WORLD_STYLE\.assetPack : 'legacy'/);
+  assert.equal(
+    (html.match(/WORLD_STYLE_MODE \? WORLD_STYLE\.assetPack : 'legacy'/g) || []).length,
+    3,
+    'dataset・diagnostics・captureは同じtest-only assetPack guardを使う',
+  );
   assert.match(html, /WORLD_STYLE_MODE \? WORLD_STYLE\.palette\.roadLocal : CANONICAL_TRANSPORT_RULES\.localRoads\.fill/);
 });

@@ -563,7 +563,7 @@
 <script src="../assets/building-styles.js"></script>
 <script src="../assets/corridor-renderer.js?v=1"></script>
 <script src="../assets/layer-assets.js?v=3"></script>
-<script src="../assets/world-style.js?v=1"></script>
+<script src="../assets/world-style.js?v=2"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -740,6 +740,7 @@ document.documentElement.style.setProperty('--pattern-accent', ACTIVE_PATTERN.pa
 document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.palette.generic || '#78828a');
 document.documentElement.dataset.mapMode = 'production';
 document.documentElement.dataset.assetTaste = 'reference';
+document.documentElement.dataset.assetPack = WORLD_STYLE_MODE ? WORLD_STYLE.assetPack : 'legacy';
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.documentElement.dataset.renderMode = RENDER_MODE;
 document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
@@ -4657,6 +4658,7 @@ function render(){
       enabled:WORLD_STYLE_MODE,
       version:WORLD_STYLE.version,
       id:WORLD_STYLE.id,
+      assetPack:WORLD_STYLE_MODE ? WORLD_STYLE.assetPack : 'legacy',
       tileZoom:WORLD_STYLE.tileZoom,
       defaultProfile:WORLD_STYLE_MODE ? 'game' : STUDY_MODE ? 'study' : 'embedded',
       density:{
@@ -5565,6 +5567,7 @@ boot().finally(async () => {
     mode:'production',
     renderMode:RENDER_MODE,
     assetTaste:'reference',
+    assetPack:WORLD_STYLE_MODE ? WORLD_STYLE.assetPack : 'legacy',
     tileZoom:TILE.z,
     pattern:ACTIVE_PATTERN,
     pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_DISPLAY_SCALE),

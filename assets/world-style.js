@@ -2,18 +2,19 @@
   'use strict';
 
   /*
-    PixelMap World Style v1
+    PixelMap World Style v2
     -----------------------
     z14 POCの「地理データをどう見せるか」を一箇所へ集約する。
     MVTのsource geometryは変更せず、既定レイヤー、色、corridor skin、
     POI密度、合成順だけを世界観として固定する。
   */
-  const VERSION = 'pixelmap-world-style/1';
+  const VERSION = 'pixelmap-world-style/2';
 
   const retroJrpgZ14 = Object.freeze({
     version:VERSION,
     id:'retro-jrpg-z14',
     label:'レトロJRPG z14 POC',
+    assetPack:'retro-jrpg-reference-v1',
     tileZoom:14,
     sourceGeometryImmutable:true,
     patternId:'01',
