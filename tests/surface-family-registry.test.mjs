@@ -41,6 +41,7 @@ test('water surfaceとwaterway corridorは別primitiveで、未知surfaceは根�
   assert.deepEqual(corridor,{
     version:registry.version,packId:'legacy',sourceLayer:'waterway',
     familyId:'genericSurface',variantId:'generic',assetId:null,matchedType:null,fallback:true,
+    fallbackKey:'waterway:river',fallbackAllowed:false,fallbackReason:'unexpected-generic',
   });
   assert.equal(layerAssets.corridorRules.rivers.source,'waterway');
 });

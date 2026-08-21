@@ -2,13 +2,13 @@
   'use strict';
 
   /*
-    PixelMap Asset Family Registry v5
+    PixelMap Asset Family Registry v6
     ---------------------------------
     MVTのclass/subclassを直接sprite idへ結び付けず、
     asset pack → semantic family → variant → asset の順で解決する正本。
     source geometry・座標・表示密度には関与しない。
   */
-  const VERSION = 'pixelmap-asset-family-registry/5';
+  const VERSION = 'pixelmap-asset-family-registry/6';
   const LEGACY_PACK = 'legacy';
   const REFERENCE_PACK = 'retro-jrpg-reference-v1';
 
@@ -40,6 +40,50 @@
     sportsSurface:Object.freeze({id:'sportsSurface',label:'競技・運動面',category:'sports'}),
     genericSurface:Object.freeze({id:'genericSurface',label:'その他の面',category:'generic'}),
   });
+  // 現在のz14 sourceで確認し、専用familyをまだ持たないと判断したtypeだけを列挙する。
+  // wildcardは禁止。新typeはgeneric表示を維持しつつunexpectedとして診断へ出す。
+  const genericFallbackAllowlists = Object.freeze({
+    poi:Object.freeze([
+      'alcohol','american_football','aquarium','artwork','athletics','baseball','basin','basketball',
+      'beauty','bed','beverages','bicycle','bicycle_parking','bicycle_rental','biergarten','board',
+      'bollard','books','brownfield','buddhist','bus_station','bus_stop','butcher','car','car_parts',
+      'car_repair','cemetery','chemist','christian','clinic','clothes','coffee','community_centre',
+      'company','computer','confectionery','construction_company','cosmetics','courier','courthouse',
+      'cycle_barrier','cycling','deli','dock','doityourself','dormitory','drinking_water','dry_cleaning',
+      'electronics','employment_agency','entrance','equestrian','estate_agent','florist','food_court',
+      'furniture','gallery','gate','gateball','gift','golf_course','government','grave_yard','greengrocer',
+      'guest_house','guide','guidepost','hairdresser','hardware','horse_racing','hostel','information',
+      'jewelry','kiosk','laundry','lift_gate','logistics','map','massage','mobile_phone','motorcycle',
+      'motorcycle_parking','multi','musical_instrument','optician','outdoor','parcel_locker','pet','photo',
+      'political_party','post_box','post_office','pub','public_building','recycling','religion','research',
+      'route_marker','running','second_hand','security','shelter','shinto','shoes','soccer','sports',
+      'sports_centre','squash','station','stationery','subway_entrance','supermarket','swimming_pool',
+      'tailor','taxi','telephone','tennis','tobacco','toilets','toll_booth','toys',
+      'train_station_entrance','union','video','viewpoint','waste_basket','watches','wine',
+    ]),
+    corridor:Object.freeze(['bridge','level_crossing','railway_crossing']),
+    surface:Object.freeze([
+      'landcover:farmland','landcover:fell','landcover:flowerbed','landcover:forest',
+      'landcover:grass','landcover:grassland','landcover:heath','landcover:meadow',
+      'landcover:sand','landcover:scrub','landcover:wetland','landcover:wood',
+      'landuse:bus_station','landuse:cemetery','landuse:college','landuse:commercial',
+      'landuse:garages','landuse:hospital','landuse:industrial','landuse:kindergarten',
+      'landuse:library','landuse:military','landuse:neighbourhood','landuse:quarter',
+      'landuse:railway','landuse:residential','landuse:retail','landuse:school',
+      'landuse:suburb','landuse:university','landuse:zoo',
+    ]),
+  });
+  const genericFallbackAllowlistSets=Object.freeze(Object.fromEntries(
+    Object.entries(genericFallbackAllowlists).map(([kind,types])=>[kind,new Set(types)])));
+  function fallbackAudit(kind,key,fallback){
+    if(!fallback) return Object.freeze({fallbackKey:null,fallbackAllowed:false,fallbackReason:null});
+    const fallbackKey=String(key || 'missing');
+    const fallbackAllowed=Boolean(genericFallbackAllowlistSets[kind]?.has(fallbackKey));
+    return Object.freeze({
+      fallbackKey,fallbackAllowed,
+      fallbackReason:fallbackAllowed ? 'allowlisted-generic' : 'unexpected-generic',
+    });
+  }
 
   const bindingSpecs = Object.freeze([
     ['transitFacility','station','station',['railway']],
@@ -218,6 +262,7 @@
       if (binding){ matchedType=String(type); break; }
     }
     const selected = binding || genericBinding;
+    const fallback=!binding;
     return Object.freeze({
       version:VERSION,
       packId:pack.id,
@@ -225,7 +270,8 @@
       variantId:selected.variantId,
       assetId:selected.assetId,
       matchedType,
-      fallback:!binding,
+      fallback,
+      ...fallbackAudit('poi',candidates[0],fallback),
     });
   }
   const normalizeCorridorType = value => String(value || '').replace(/_construction$/, '');
@@ -241,6 +287,7 @@
       binding=pack.corridorBindings[type];matchedType=type;break;
     }
     const selected=binding || genericCorridorBinding;
+    const fallback=!binding;
     const bridge=props.brunnel === 'bridge' || rawClass === 'bridge';
     const tunnel=props.brunnel === 'tunnel';
     const construction=rawTypes.some(type=>/_construction$/.test(type));
@@ -256,7 +303,8 @@
     const modifiers=Object.freeze({bridge,construction,levelCrossing,tunnel,underground,service});
     return Object.freeze({
       version:VERSION,packId:pack.id,familyId:selected.familyId,variantId:selected.variantId,
-      assetId:selected.assetId,stateAssetId,matchedType,modifiers,fallback:!binding,
+      assetId:selected.assetId,stateAssetId,matchedType,modifiers,fallback,
+      ...fallbackAudit('corridor',rawSubclass || rawClass,fallback),
     });
   }
   function resolveSurface(props = {}, sourceLayer = '', packId = LEGACY_PACK){
@@ -269,10 +317,12 @@
       if(binding){matchedType=type;break;}
     }
     const selected=binding || genericSurfaceBinding;
+    const fallback=!binding;
     return Object.freeze({
       version:VERSION,packId:pack.id,sourceLayer:source,
       familyId:selected.familyId,variantId:selected.variantId,assetId:selected.assetId,
-      matchedType,fallback:!binding,
+      matchedType,fallback,
+      ...fallbackAudit('surface',`${source}:${candidates[0] || 'missing'}`,fallback),
     });
   }
   function typesForAsset(assetId, packId = null){
@@ -336,6 +386,8 @@
     families,
     corridorFamilies,
     surfaceFamilies,
+    genericFallbackAllowlists,
+    fallbackAudit,
     packs,
     packFor,
     bindingForType,

@@ -21,8 +21,9 @@ test('差分ログは現行のtest専用機能と本番維持事項を記載す�
   assert.match(log, /geometry-skin-symbol\/1/);
   assert.match(log, /retro-jrpg-z14/);
   assert.match(log, /pixelmap-corridor-renderer\/2/);
-  assert.match(log, /pixelmap-asset-family-registry\/5/);
+  assert.match(log, /pixelmap-asset-family-registry\/6/);
   assert.match(log, /水面・公園・スポーツ面をsurface familyへ分離/);
+  assert.match(log, /generic fallbackを明示allowlistで監査/);
   assert.match(log, /z14固定/);
   assert.match(log, /2マップは位置同期/);
   assert.match(log, /4マップは4地点への共通レイヤー操作/);

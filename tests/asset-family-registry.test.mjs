@@ -24,7 +24,7 @@ const legacyExpected={
 };
 
 test('AssetFamilyRegistryがpack→family→variant→assetを唯一の正本として公開する',()=>{
-  assert.equal(registry.version,'pixelmap-asset-family-registry/5');
+  assert.equal(registry.version,'pixelmap-asset-family-registry/6');
   assert.equal(registry.defaultPack,'legacy');
   assert.equal(registry.referencePack,'retro-jrpg-reference-v1');
   assert.ok(Object.isFrozen(registry.families));
@@ -58,11 +58,13 @@ test('subclass優先・class fallback・generic fallbackが解決メタデータ
   assert.deepEqual(registry.resolvePoi({class:'shop',subclass:'bakery'}),{
     version:registry.version,packId:'legacy',familyId:'food',variantId:'grocery',
     assetId:'grocery',matchedType:'bakery',fallback:false,
+    fallbackKey:null,fallbackAllowed:false,fallbackReason:null,
   });
   assert.equal(registry.resolvePoi({class:'shop',subclass:'unknown'}).matchedType,'shop');
   assert.deepEqual(registry.resolvePoi({class:'unknown'}),{
     version:registry.version,packId:'legacy',familyId:'generic',variantId:'generic',
     assetId:'generic',matchedType:null,fallback:true,
+    fallbackKey:'unknown',fallbackAllowed:false,fallbackReason:'unexpected-generic',
   });
 });
 
@@ -157,8 +159,8 @@ test('standaloneはACTIVE_ASSET_PACKをresolverへ渡し、map-03はlegacyを明
     readFile(new URL('../variants/map-02-refined.html',import.meta.url),'utf8'),
     readFile(new URL('../variants/map-03-refined.html',import.meta.url),'utf8'),
   ]);
-  assert.match(map02,/asset-family-registry\.js\?v=5/);
-  assert.match(map02,/facility-resolver\.js\?v=6/);
+  assert.match(map02,/asset-family-registry\.js\?v=6/);
+  assert.match(map02,/facility-resolver\.js\?v=7/);
   assert.match(map02,/const ACTIVE_ASSET_PACK = document\.documentElement\.dataset\.assetPack/);
   assert.match(map02,/RESOLVER\.resolveTile\(\{[\s\S]*?assetPack:ACTIVE_ASSET_PACK,[\s\S]*?\}\)/);
   assert.match(map03,/RESOLVER\.resolveTile\(\{[\s\S]*?assetPack:'legacy',[\s\S]*?\}\)/);
@@ -171,5 +173,5 @@ test('map診断はregistry versionとpack・family・variant・sprite・fallback
   assert.match(map02,/assetFamilies:countBy\(facilitiesInView, item => item\.assetFamily/);
   assert.match(map02,/assetVariants:countBy\(facilitiesInView, item => item\.assetVariant/);
   assert.match(map02,/spriteAssets:countBy\(facilitiesInView, item => item\.spriteKey/);
-  assert.match(map02,/assetFallbacks:facilitiesInView\.filter\(item => item\.assetFallback\)\.length/);
+  assert.match(map02,/assetFallbacks:poiFallbackFacilities\.length/);
 });

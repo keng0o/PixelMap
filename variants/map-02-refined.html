@@ -557,8 +557,8 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
-<script src="../assets/asset-family-registry.js?v=5"></script>
-<script src="../assets/facility-resolver.js?v=6"></script>
+<script src="../assets/asset-family-registry.js?v=6"></script>
+<script src="../assets/facility-resolver.js?v=7"></script>
 <script src="../assets/landmark-entities.js"></script>
 <script src="../assets/poi-sprites.js?v=4"></script>
 <script src="../assets/building-styles.js"></script>
@@ -3442,7 +3442,8 @@ function makeLandmarkFacility(feature, coordinate){
   };
   const assetBinding = RESOLVER.resolveAsset(entityProps,ACTIVE_ASSET_PACK);
   const resolvedSpriteKey = assetBinding.assetId;
-  const spriteKey = resolvedSpriteKey === 'generic' && POI_ASSETS_BY_ID.has(renderClass)
+  const explicitLandmarkAsset = resolvedSpriteKey === 'generic' && POI_ASSETS_BY_ID.has(renderClass);
+  const spriteKey = explicitLandmarkAsset
     ? renderClass : resolvedSpriteKey;
   const collisionGeometry = RESOLVER.assetCollisionGeometry(
     POI_SPRITE_CATALOG,spriteKey,size,ACTIVE_PATTERN,category,assetCount);
@@ -3459,7 +3460,10 @@ function makeLandmarkFacility(feature, coordinate){
     assetFamily:assetBinding.familyId,
     assetVariant:assetBinding.variantId,
     assetMatchedType:assetBinding.matchedType,
-    assetFallback:assetBinding.fallback,
+    assetFallback:assetBinding.fallback && !explicitLandmarkAsset,
+    assetFallbackKey:explicitLandmarkAsset ? null : assetBinding.fallbackKey,
+    assetFallbackAllowed:explicitLandmarkAsset ? false : assetBinding.fallbackAllowed,
+    assetFallbackReason:explicitLandmarkAsset ? 'explicit-landmark-asset' : assetBinding.fallbackReason,
     spriteKey,
     variant:0,
     importance:1,
@@ -4692,6 +4696,9 @@ function render(){
       modifier,corridorFamilyBindings.filter(binding => binding.modifiers[modifier]).length,
     ])
   );
+  const surfaceFallbackBindings=surfaceFamilyBindings.filter(binding => binding.fallback);
+  const corridorFallbackBindings=corridorFamilyBindings.filter(binding => binding.fallback);
+  const poiFallbackFacilities=facilitiesInView.filter(item => item.assetFallback);
   toolbar.dataset.renderMs = (performance.now() - renderStartedAt).toFixed(1);
   toolbar.dataset.renderCount = renderCount;
   window.PixelMapDiagnostics = {
@@ -4708,7 +4715,11 @@ function render(){
       families:countBy(surfaceFamilyBindings,binding => binding.familyId),
       variants:countBy(surfaceFamilyBindings,binding => binding.variantId),
       assets:countBy(surfaceFamilyBindings.filter(binding => binding.assetId),binding => binding.assetId),
-      fallbacks:surfaceFamilyBindings.filter(binding => binding.fallback).length,
+      fallbacks:surfaceFallbackBindings.length,
+      allowlistedFallbacks:surfaceFallbackBindings.filter(binding => binding.fallbackAllowed).length,
+      unexpectedFallbacks:surfaceFallbackBindings.filter(binding => !binding.fallbackAllowed).length,
+      unexpectedFallbackTypes:countBy(
+        surfaceFallbackBindings.filter(binding => !binding.fallbackAllowed),binding => binding.fallbackKey),
     },
     activeOptions:Object.entries(o).filter(([, enabled]) => enabled).map(([name]) => name),
     layerOrder:[...layerOrder],
@@ -4741,7 +4752,11 @@ function render(){
       stateAssets:countBy(corridorFamilyBindings, binding => binding.stateAssetId),
       modifiers:corridorModifierCounts,
       derivedLevelCrossings:unifiedLevelCrossingPoints.length,
-      fallbacks:corridorFamilyBindings.filter(binding => binding.fallback).length,
+      fallbacks:corridorFallbackBindings.length,
+      allowlistedFallbacks:corridorFallbackBindings.filter(binding => binding.fallbackAllowed).length,
+      unexpectedFallbacks:corridorFallbackBindings.filter(binding => !binding.fallbackAllowed).length,
+      unexpectedFallbackTypes:countBy(
+        corridorFallbackBindings.filter(binding => !binding.fallbackAllowed),binding => binding.fallbackKey),
     },
     styleSpec:{
       enabled:STANDALONE_UNIFIED_STYLE,
@@ -4857,7 +4872,11 @@ function render(){
       assetFamilies:countBy(facilitiesInView, item => item.assetFamily || 'unclassified'),
       assetVariants:countBy(facilitiesInView, item => item.assetVariant || 'unclassified'),
       spriteAssets:countBy(facilitiesInView, item => item.spriteKey || 'generic'),
-      assetFallbacks:facilitiesInView.filter(item => item.assetFallback).length,
+      assetFallbacks:poiFallbackFacilities.length,
+      assetAllowlistedFallbacks:poiFallbackFacilities.filter(item => item.assetFallbackAllowed).length,
+      assetUnexpectedFallbacks:poiFallbackFacilities.filter(item => !item.assetFallbackAllowed).length,
+      assetUnexpectedFallbackTypes:countBy(
+        poiFallbackFacilities.filter(item => !item.assetFallbackAllowed),item => item.assetFallbackKey),
       selectionReasons:countBy(facilitiesInView, item => String(item.selectionReason || '').split(':')[0]),
       sizes:countBy(drawnIcons, item => item.size),
       assetSizes:countBy(drawnIcons, item => item.displayAssetSize || item.assetSize || item.size),
@@ -4879,6 +4898,14 @@ function render(){
     },
     renderMs:Number(toolbar.dataset.renderMs),
   };
+  const unexpectedFallbackTotal =
+    window.PixelMapDiagnostics.poi.assetUnexpectedFallbacks+
+    window.PixelMapDiagnostics.corridorFamilies.unexpectedFallbacks+
+    window.PixelMapDiagnostics.surfaceFamilies.unexpectedFallbacks;
+  if(STANDALONE_UNIFIED_STYLE){
+    document.documentElement.dataset.fallbackAudit=unexpectedFallbackTotal ? 'fail' : 'pass';
+    toolbar.dataset.fallbackAudit=document.documentElement.dataset.fallbackAudit;
+  }
   toolbar.dataset.diagnostics = JSON.stringify(window.PixelMapDiagnostics);
   presentScene();
 }

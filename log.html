@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI・corridor・surfaceの属性対応は<code>pixelmap-asset-family-registry/5</code>のpack→family→variant→asset契約へ集約。参照テイスト10点も意味variantとして接続する。source geometryを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
+              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI・corridor・surfaceの属性対応は<code>pixelmap-asset-family-registry/6</code>のpack→family→variant→asset契約へ集約。genericは明示allowlistで許可済み／未知を分離する。source geometryを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
               <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
             </tr>
             <tr>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>generic fallbackを明示allowlistで監査</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>POI・corridor・surfaceのgeneric fallbackを、レビュー済みtypeの固定allowlistと将来の未知typeへ分離。fallbackKey・許可理由をresolver結果へ保持し、unexpected件数とtypeを診断へ公開。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>で診断結果を画面datasetへ公開。共有registry／resolverへ監査metadataを追加。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップのasset選択・座標・色・描画順は変更なし。未知typeも従来どおりgeneric表示し、診断だけをfailにする。</dd></div>
+          <div><dt>確認内容</dt><dd>wildcard禁止、既知allowlist、未知type検出、3 primitiveの許可済み／unexpected集計、production guard、全テスト、z14画像比較を確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>水面・公園・スポーツ面をsurface familyへ分離</h3>

@@ -16,7 +16,7 @@
      （旧実装の4連結フラッドフィルと同じ意味論）。
      ===================================================== */
 
-  const ALGORITHM_VERSION = 'facility-resolver/6';
+  const ALGORITHM_VERSION = 'facility-resolver/7';
   const ASSET_FAMILIES = global.PixelMapAssetFamilyRegistry;
   if (!ASSET_FAMILIES)
     throw new Error('PixelMapAssetFamilyRegistry must load before facility-resolver.js');
@@ -420,6 +420,9 @@
         assetVariant:assetBinding.variantId,
         assetMatchedType:assetBinding.matchedType,
         assetFallback:assetBinding.fallback,
+        assetFallbackKey:assetBinding.fallbackKey,
+        assetFallbackAllowed:assetBinding.fallbackAllowed,
+        assetFallbackReason:assetBinding.fallbackReason,
         spriteKey,
         variant:Math.abs((Number.isFinite(idNum) ? idNum : 0) + nameSeed) % 3,
         importance:rep.importance,
