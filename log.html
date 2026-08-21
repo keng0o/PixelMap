@@ -158,7 +158,7 @@
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
-              <td>全て同じ<code>pixelmap-corridor-renderer/1</code>連続距離マスク生成器と整数幅を使用。縦・横・斜めの外形規則を共通化し、道路種別・レール・水路の差はWorldStyleの内部スキンで表現。</td>
+              <td>全て同じ<code>pixelmap-corridor-renderer/2</code>連続距離マスク生成器と整数幅を使用。縦・横・斜めの外形規則を共通化し、道路種別・レール・水路の差はWorldStyleの内部スキンで表現。橋は共通modifier、地上の道路×鉄道交差はmaskから踏切記号を導出する。</td>
               <td>各レイヤー固有の従来描画と線幅を維持。</td>
             </tr>
             <tr>
@@ -168,7 +168,7 @@
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI・corridorの属性対応は<code>pixelmap-asset-family-registry/3</code>のpack→family→variant→asset契約へ集約。参照テイスト10点も意味variantとして接続する。source geometryを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
+              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI・corridorの属性対応は<code>pixelmap-asset-family-registry/4</code>のpack→family→variant→asset契約へ集約。参照テイスト10点も意味variantとして接続する。source geometryを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
               <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
             </tr>
             <tr>
@@ -191,6 +191,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>bridge・level crossingをcorridor modifier化</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>bridge判定を全経路でregistryのstate modifierへ統一し、WorldStyleの共通縁取りを適用。地上road familyと地上rail familyのmask交差componentから踏切点を導出し、小さなチェッカー記号を同じZ階層へ合成。高架・トンネルは対象外。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>で踏切記号を追加。bridgeのmodifier化は共有分類基盤へ反映。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップはlegacy描画を維持し、踏切overlayは無効。橋の既存上層描画・縁取り・source geometryは変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>bridge/source crossing modifier、mask交差component統合、minimum spacing、地上mask限定、map内の重複bridge判定廃止、WorldStyle契約、診断件数を自動テストとz14画像比較で確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>道路・歩行路・鉄道をcorridor familyへ統合</h3>

@@ -557,14 +557,14 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
-<script src="../assets/asset-family-registry.js?v=3"></script>
+<script src="../assets/asset-family-registry.js?v=4"></script>
 <script src="../assets/facility-resolver.js?v=6"></script>
 <script src="../assets/landmark-entities.js"></script>
 <script src="../assets/poi-sprites.js?v=4"></script>
 <script src="../assets/building-styles.js"></script>
-<script src="../assets/corridor-renderer.js?v=1"></script>
+<script src="../assets/corridor-renderer.js?v=2"></script>
 <script src="../assets/layer-assets.js?v=4"></script>
-<script src="../assets/world-style.js?v=2"></script>
+<script src="../assets/world-style.js?v=3"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -1773,7 +1773,7 @@ function rasterizeGrid(layers, options){
   for (const feature of L('transportation')){
     const binding = corridorBinding(feature);
     const option = binding.assetId;
-    const isBridgeFeature = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
+    const isBridgeFeature = binding.modifiers.bridge;
     let layer = isBridgeFeature ? `bridge:${option}` : option;
     if (!isBridgeFeature && option === 'subway'){
       if (!CELL_ONLY_MODE) continue;
@@ -2534,11 +2534,20 @@ function buildUnifiedCorridorMasks(features, style){
   });
 }
 
+function corridorModifierStyle(style,modifier){
+  const contract=WORLD_STYLE.corridorModifiers?.[modifier];
+  if(!contract) return style;
+  if(modifier==='bridge') return {
+    ...style,
+    edgeWidth:Math.max(contract.minimumEdgeWidth || 0,style.edgeWidth || 0),
+    edge:contract.edge || style.edge,
+  };
+  return style;
+}
+
 function renderUnifiedCorridor(features, style, bridge = false, preparedMasks = null){
   if (!features.length) return null;
-  const bridgeStyle = bridge
-    ? { ...style, edgeWidth:Math.max(1, style.edgeWidth || 0), edge:P.outline }
-    : style;
+  const bridgeStyle = bridge ? corridorModifierStyle(style,'bridge') : style;
   const masks=CORRIDOR_RENDERER.render(unifiedCorridorContext,{
     width:PRESENTATION_SIZE,
     height:PRESENTATION_SIZE,
@@ -2705,7 +2714,7 @@ function standaloneSurfaceRoadMask(options, transportationFeatures){
     const option = binding.assetId;
     const style = SMOOTH_ROAD_STYLE[option];
     if (!style || !options[option]) continue;
-    const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
+    const isBridge = binding.modifiers.bridge;
     const isTunnel = binding.modifiers.tunnel;
     if (isBridge || isTunnel) continue;
     const trace = close => {
@@ -3714,6 +3723,7 @@ function render(){
   else drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
   const unifiedCorridorCache = new Map();
+  let unifiedLevelCrossingPoints = [];
   const unifiedWaterwayClasses = new Set(['river','stream','canal','ditch','drain']);
   function unifiedCorridorFeatures(option, bridge = false){
     const style = STANDALONE_STYLE_SPEC.corridor[option];
@@ -3727,7 +3737,7 @@ function render(){
     return L('transportation').filter(feature => {
       const binding = corridorBinding(feature);
       const routeOption = binding.assetId;
-      const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
+      const isBridge = binding.modifiers.bridge;
       const isTunnel = binding.modifiers.tunnel;
       if (style.tunnelGroup){
         return !bridge && binding.stateAssetId === option;
@@ -3742,9 +3752,7 @@ function render(){
     if (unifiedCorridorCache.has(key)) return unifiedCorridorCache.get(key);
     const style = STANDALONE_STYLE_SPEC.corridor[option];
     const features = unifiedCorridorFeatures(option, bridge);
-    const maskStyle = bridge
-      ? { ...style, edgeWidth:Math.max(1, style.edgeWidth || 0), edge:P.outline }
-      : style;
+    const maskStyle = bridge ? corridorModifierStyle(style,'bridge') : style;
     const entry = {
       style,
       features,
@@ -3769,6 +3777,40 @@ function render(){
     }
     return combined;
   }
+  function combinedGroundCorridorMask(options){
+    const combined=new Uint8Array(PRESENTATION_SIZE*PRESENTATION_SIZE);
+    for(const option of options){
+      if(!o[option]) continue;
+      const masks=unifiedCorridorEntry(option,false).masks;
+      if(!masks) continue;
+      for(let index=0;index<combined.length;index++)
+        if(masks.body[index]) combined[index]=1;
+    }
+    return combined;
+  }
+  function drawUnifiedLevelCrossings(){
+    const modifier=WORLD_STYLE.corridorModifiers?.levelCrossing;
+    if(!modifier || !o.rail) return [];
+    const roadOptions=Object.keys(STANDALONE_STYLE_SPEC.corridor).filter(option =>
+      ASSET_FAMILY_REGISTRY.corridorFamilyIdsForAsset(option,ACTIVE_ASSET_PACK).includes('road') &&
+      !STANDALONE_STYLE_SPEC.corridor[option].tunnelGroup);
+    const roadMask=combinedGroundCorridorMask(roadOptions);
+    const railMask=combinedGroundCorridorMask(['rail']);
+    const points=CORRIDOR_RENDERER.findMaskIntersections(
+      roadMask,railMask,PRESENTATION_SIZE,PRESENTATION_SIZE,
+      {minimumSpacing:modifier.minimumSpacing});
+    ctx.save();
+    for(const point of points){
+      const x=point.x*SCENE_PIXELS_PER_LOGICAL_PIXEL;
+      const y=point.y*SCENE_PIXELS_PER_LOGICAL_PIXEL;
+      ctx.fillStyle=modifier.outline;ctx.fillRect(x-4,y-4,8,8);
+      ctx.fillStyle=modifier.light;ctx.fillRect(x-2,y-2,4,4);
+      ctx.fillStyle=modifier.dark;
+      ctx.fillRect(x-2,y-2,2,2);ctx.fillRect(x,y,2,2);
+    }
+    ctx.restore();
+    return points;
+  }
 
   /* 本番道路は16pxセルへ落とさず、MVTの元形状を2シーンpx
      （出力画像上1論理px）のグリッドへ直接描く。外形・舗装・中央線を
@@ -3779,7 +3821,7 @@ function render(){
     const features = L('transportation').filter(feature => {
       const binding = corridorBinding(feature);
       if (binding.assetId !== option) return false;
-      const isBridge = feature.props.brunnel === 'bridge' || feature.props.class === 'bridge';
+      const isBridge = binding.modifiers.bridge;
       const isTunnel = binding.modifiers.tunnel;
       return bridge ? isBridge : !isBridge && !isTunnel;
     });
@@ -3857,7 +3899,7 @@ function render(){
       const binding = corridorBinding(f);
       const routeOption = binding.assetId;
       const isTunnel = binding.modifiers.tunnel;
-      const isBridge = f.props.brunnel === 'bridge' || f.props.class === 'bridge';
+      const isBridge = binding.modifiers.bridge;
       const showSubway = option === 'subway' && routeOption === 'subway' && !isBridge;
       const showRoadTunnel = option === 'roadTunnels' && binding.stateAssetId === option;
       const showPathTunnel = option === 'pathTunnels' && binding.stateAssetId === option;
@@ -4440,6 +4482,9 @@ function render(){
       drawUnifiedCorridorLayer(option);
       renderOrder.push(`Z2:ground-corridor:${option}`);
     }
+    unifiedLevelCrossingPoints=drawUnifiedLevelCrossings();
+    if(unifiedLevelCrossingPoints.length)
+      renderOrder.push('Z2:modifier:level-crossing');
   }
 
   if (o.buildings && STANDALONE_PRECISE_BUILDINGS){
@@ -4589,7 +4634,7 @@ function render(){
   };
   const corridorFamilyBindings = L('transportation').map(feature => corridorBinding(feature));
   const corridorModifierCounts = Object.fromEntries(
-    ['construction','tunnel','underground','service'].map(modifier => [
+    ['bridge','construction','levelCrossing','tunnel','underground','service'].map(modifier => [
       modifier,corridorFamilyBindings.filter(binding => binding.modifiers[modifier]).length,
     ])
   );
@@ -4633,6 +4678,7 @@ function render(){
       assets:countBy(corridorFamilyBindings, binding => binding.assetId),
       stateAssets:countBy(corridorFamilyBindings, binding => binding.stateAssetId),
       modifiers:corridorModifierCounts,
+      derivedLevelCrossings:unifiedLevelCrossingPoints.length,
       fallbacks:corridorFamilyBindings.filter(binding => binding.fallback).length,
     },
     styleSpec:{

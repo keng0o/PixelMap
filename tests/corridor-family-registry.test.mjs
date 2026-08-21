@@ -48,7 +48,7 @@ test('複数属性の意味優先度は旧分類と同じで、bridge classはsu
 test('construction・tunnel・underground・serviceをgeometry非依存のstate modifierとして保持する',()=>{
   assert.deepEqual(
     registry.resolveCorridor({class:'primary_construction',brunnel:'tunnel',layer:-1}).modifiers,
-    {construction:true,tunnel:true,underground:true,service:false},
+    {bridge:false,construction:true,levelCrossing:false,tunnel:true,underground:true,service:false},
   );
   assert.equal(
     registry.resolveCorridor({class:'primary_construction',brunnel:'tunnel'}).stateAssetId,
@@ -59,6 +59,16 @@ test('construction・tunnel・underground・serviceをgeometry非依存のstate 
   assert.equal(registry.resolveCorridor({class:'subway',brunnel:'tunnel'}).stateAssetId,'subway');
   assert.equal(registry.resolveCorridor({class:'service'}).modifiers.service,true);
   assert.equal(registry.resolveCorridor({class:'subway'}).modifiers.underground,true);
+});
+
+test('bridgeとsource level crossingも同じstate modifier契約で解決する',()=>{
+  const bridge=registry.resolveCorridor({class:'bridge',subclass:'primary',brunnel:'bridge'});
+  assert.equal(bridge.assetId,'majorRoads');
+  assert.equal(bridge.modifiers.bridge,true);
+  assert.equal(bridge.modifiers.levelCrossing,false);
+  const crossing=registry.resolveCorridor({class:'level_crossing'});
+  assert.equal(crossing.modifiers.levelCrossing,true);
+  assert.equal(crossing.modifiers.bridge,false);
 });
 
 test('fallbackと全family assetはLayer Asset Catalogのcorridor contractへ接続する',()=>{
@@ -82,6 +92,10 @@ test('mapは独自class setを持たずregistryのfamily/stateを使い、診断
   assert.match(map,/binding\.assetId/);
   assert.match(map,/binding\.stateAssetId/);
   assert.match(map,/binding\.modifiers\.tunnel/);
+  assert.match(map,/binding\.modifiers\.bridge/);
+  assert.doesNotMatch(map,/feature\.props\.brunnel === 'bridge'|feature\.props\.class === 'bridge'/);
+  assert.match(map,/CORRIDOR_RENDERER\.findMaskIntersections/);
+  assert.match(map,/drawUnifiedLevelCrossings/);
   assert.match(map,/corridorFamilies:\{[\s\S]*registryVersion:ASSET_FAMILY_REGISTRY\.version/);
   for(const field of ['families','variants','assets','stateAssets','modifiers','fallbacks'])
     assert.match(map,new RegExp(`${field}:`),field);

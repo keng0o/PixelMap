@@ -2,13 +2,13 @@
   'use strict';
 
   /*
-    PixelMap World Style v2
+    PixelMap World Style v3
     -----------------------
     z14 POCの「地理データをどう見せるか」を一箇所へ集約する。
     MVTのsource geometryは変更せず、既定レイヤー、色、corridor skin、
     POI密度、合成順だけを世界観として固定する。
   */
-  const VERSION = 'pixelmap-world-style/2';
+  const VERSION = 'pixelmap-world-style/3';
 
   const retroJrpgZ14 = Object.freeze({
     version:VERSION,
@@ -92,6 +92,10 @@
       rail:Object.freeze({width:6,edgeWidth:1,fill:'#a89472',edge:'#6f5d4e',pattern:'rail',rail:'#302838',tie:'#76543d',railOffset:2,tiePeriod:6}),
       subway:Object.freeze({width:2,edgeWidth:0,fill:'#302838',alpha:.28,dashPeriod:10,dashOn:5}),
       aerialways:Object.freeze({width:2,edgeWidth:0,fill:'#76543d',pattern:'rail',rail:'#302838',tie:'#76543d',railOffset:1,tiePeriod:8}),
+    }),
+    corridorModifiers:Object.freeze({
+      bridge:Object.freeze({minimumEdgeWidth:1,edge:'#302838'}),
+      levelCrossing:Object.freeze({outline:'#302838',light:'#f0d788',dark:'#76543d',minimumSpacing:7}),
     }),
   });
 

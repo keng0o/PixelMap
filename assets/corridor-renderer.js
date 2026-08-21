@@ -2,13 +2,13 @@
   'use strict';
 
   /*
-    PixelMap Corridor Renderer v1
+    PixelMap Corridor Renderer v2
     ----------------------------
     道路・鉄道・水路を同じ連続距離マスクへ変換する、表示先に依存しない正本。
     地物差はstyleのskin fieldだけで表し、source geometryは変更しない。
     map・assets catalog・将来のExpo/Flutter移植時の参照実装が共有する。
   */
-  const VERSION='pixelmap-corridor-renderer/1';
+  const VERSION='pixelmap-corridor-renderer/2';
   const positiveModulo=(value,period)=>((value%period)+period)%period;
 
   function setMaskPixel(mask,width,height,x,y){
@@ -251,5 +251,37 @@
     return masks;
   }
 
-  global.PixelMapCorridorRenderer=Object.freeze({version:VERSION,buildMasks,render});
+  function findMaskIntersections(first,second,width,height,{minimumSpacing=6}={}){
+    if(first.length!==second.length || first.length!==width*height)
+      throw new Error('intersection masks must match width × height');
+    const overlap=new Uint8Array(first.length);
+    for(let index=0;index<overlap.length;index++) overlap[index]=first[index]&&second[index]?1:0;
+    const visited=new Uint8Array(overlap.length);
+    const components=[];
+    for(let start=0;start<overlap.length;start++){
+      if(!overlap[start] || visited[start]) continue;
+      const stack=[start];visited[start]=1;
+      let sumX=0,sumY=0,count=0;
+      while(stack.length){
+        const index=stack.pop(),x=index%width,y=Math.floor(index/width);
+        sumX+=x;sumY+=y;count++;
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          const nx=x+dx,ny=y+dy;
+          if(nx<0||ny<0||nx>=width||ny>=height) continue;
+          const next=ny*width+nx;
+          if(overlap[next]&&!visited[next]){visited[next]=1;stack.push(next);}
+        }
+      }
+      components.push({x:Math.round(sumX/count),y:Math.round(sumY/count),pixels:count});
+    }
+    const spacing=Math.max(0,Number(minimumSpacing)||0);
+    const selected=[];
+    for(const point of components.sort((a,b)=>b.pixels-a.pixels||a.y-b.y||a.x-b.x)){
+      if(selected.some(other=>(point.x-other.x)**2+(point.y-other.y)**2<spacing**2)) continue;
+      selected.push(Object.freeze(point));
+    }
+    return Object.freeze(selected.sort((a,b)=>a.y-b.y||a.x-b.x));
+  }
+
+  global.PixelMapCorridorRenderer=Object.freeze({version:VERSION,buildMasks,render,findMaskIntersections});
 })(typeof window!=='undefined'?window:globalThis);

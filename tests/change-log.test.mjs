@@ -20,7 +20,7 @@ test('差分ログは現行のtest専用機能と本番維持事項を記載す�
   assert.match(log, /神奈川県の生成GeoJSON/);
   assert.match(log, /geometry-skin-symbol\/1/);
   assert.match(log, /retro-jrpg-z14/);
-  assert.match(log, /pixelmap-corridor-renderer\/1/);
+  assert.match(log, /pixelmap-corridor-renderer\/2/);
   assert.match(log, /z14固定/);
   assert.match(log, /2マップは位置同期/);
   assert.match(log, /4マップは4地点への共通レイヤー操作/);

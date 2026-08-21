@@ -27,7 +27,7 @@ test('描画プリミティブはarea・corridor・symbolの3種類に固定す�
 });
 
 test('道路・鉄道・水路は同じ1論理px corridorマスク生成器を使う', () => {
-  assert.match(html, /<script src="\.\.\/assets\/corridor-renderer\.js\?v=1"><\/script>/);
+  assert.match(html, /<script src="\.\.\/assets\/corridor-renderer\.js\?v=2"><\/script>/);
   assert.match(corridorRenderer, /function walkPixelLine\(/);
   assert.match(corridorRenderer, /function rasterizeLines\(/);
   assert.match(html, /function buildUnifiedCorridorMasks\(features, style\)/);

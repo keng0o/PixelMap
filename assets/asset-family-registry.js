@@ -2,13 +2,13 @@
   'use strict';
 
   /*
-    PixelMap Asset Family Registry v3
+    PixelMap Asset Family Registry v4
     ---------------------------------
     MVTのclass/subclassを直接sprite idへ結び付けず、
     asset pack → semantic family → variant → asset の順で解決する正本。
     source geometry・座標・表示密度には関与しない。
   */
-  const VERSION = 'pixelmap-asset-family-registry/3';
+  const VERSION = 'pixelmap-asset-family-registry/4';
   const LEGACY_PACK = 'legacy';
   const REFERENCE_PACK = 'retro-jrpg-reference-v1';
 
@@ -202,17 +202,19 @@
       binding=pack.corridorBindings[type];matchedType=type;break;
     }
     const selected=binding || genericCorridorBinding;
+    const bridge=props.brunnel === 'bridge' || rawClass === 'bridge';
     const tunnel=props.brunnel === 'tunnel';
     const construction=rawTypes.some(type=>/_construction$/.test(type));
     const underground=tunnel || selected.assetId === 'subway' || Number(props.layer) < 0;
     const service=matchedType === 'service' || Boolean(props.service);
+    const levelCrossing=rawTypes.some(type=>['level_crossing','railway_crossing'].includes(normalizeCorridorType(type)));
     let stateAssetId=selected.assetId;
     if(tunnel && selected.assetId !== 'subway'){
       if(selected.familyId === 'road' || selected.familyId === 'other') stateAssetId='roadTunnels';
       else if(selected.familyId === 'path') stateAssetId='pathTunnels';
       else if(selected.familyId === 'rail') stateAssetId='railTunnels';
     }
-    const modifiers=Object.freeze({construction,tunnel,underground,service});
+    const modifiers=Object.freeze({bridge,construction,levelCrossing,tunnel,underground,service});
     return Object.freeze({
       version:VERSION,packId:pack.id,familyId:selected.familyId,variantId:selected.variantId,
       assetId:selected.assetId,stateAssetId,matchedType,modifiers,fallback:!binding,
