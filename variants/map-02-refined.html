@@ -560,7 +560,7 @@
 <script src="../assets/asset-family-registry.js?v=7"></script>
 <script src="../assets/facility-resolver.js?v=7"></script>
 <script src="../assets/landmark-entities.js"></script>
-<script src="../assets/poi-sprites.js?v=4"></script>
+<script src="../assets/poi-sprites.js?v=5"></script>
 <script src="../assets/building-styles.js"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=5"></script>
@@ -725,6 +725,7 @@ const CAPTURE_MODE = PAGE_PARAMS.get('capture') === '1';
 const STUDY_MODE = EMBEDDED
   ? PAGE_PARAMS.get('layers') !== 'manual'
   : PAGE_PARAMS.get('layers') === 'study';
+const CELL3_STUDY_LANDMARK_MODE = !EMBEDDED && CELL_RENDER_LOGICAL_SIZE === 3 && STUDY_MODE;
 const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE;
 const INITIAL_LAT_PARAM = PAGE_PARAMS.get('lat');
 const INITIAL_LON_PARAM = PAGE_PARAMS.get('lon');
@@ -759,6 +760,8 @@ document.documentElement.dataset.tileZoom = String(TILE_ZOOM);
 document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
+document.documentElement.dataset.cell3StudyLandmarks = CELL3_STUDY_LANDMARK_MODE
+  ? 'tokyo_tower,tokyo_metropolitan_government' : 'disabled';
 document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISPLAY_SCALE);
 document.title = CELL_ONLY_MODE
   ? `PixelMap｜z${TILE_ZOOM}・${CELL_RENDER_LOGICAL_SIZE}×${CELL_RENDER_LOGICAL_SIZE}ピクセルアート検証`
@@ -3532,6 +3535,86 @@ function makeLandmarkFacility(feature, coordinate){
     anchorCoordinate:coordinate,
   };
 }
+const CELL3_STUDY_LANDMARKS = Object.freeze([
+  Object.freeze({
+    id:'tokyo-tower-study',name:'東京タワー',spriteKey:'tokyo_tower',
+    anchorScene:Object.freeze([480,900]),heightM:333,rank:0,
+  }),
+  Object.freeze({
+    id:'tokyo-metropolitan-government-study',name:'東京都庁',
+    spriteKey:'tokyo_metropolitan_government',
+    anchorScene:Object.freeze([1056,852]),heightM:243,rank:1,
+  }),
+]);
+function makeCell3StudyLandmarkFacility(spec){
+  const asset = POI_ASSETS_BY_ID.get(spec.spriteKey);
+  if (!asset) return null;
+  const size = 'M';
+  const worldX = DEFAULT_Z14_TILE.x * W + spec.anchorScene[0];
+  const worldY = DEFAULT_Z14_TILE.y * H + spec.anchorScene[1];
+  const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale.landmark || 1);
+  const collisionGeometry = RESOLVER.assetCollisionGeometry(
+    POI_SPRITE_CATALOG,spec.spriteKey,size,ACTIVE_PATTERN,'landmark',1);
+  const props = {
+    name:spec.name,'name:ja':spec.name,class:'attraction',subclass:'attraction',
+    landmark_class:'cell3-study-fixture',
+  };
+  return {
+    key:`study-landmark:${spec.id}`,
+    name:spec.name,
+    props,
+    sourcePoiIds:[spec.id],
+    buildingId:null,
+    facilityRole:'study_landmark',
+    category:'landmark',
+    assetPack:'catalog-only',
+    assetFamily:'tokyo-landmark',
+    assetVariant:spec.spriteKey,
+    assetMatchedType:'cell3-study-fixture',
+    assetFallback:false,
+    assetFallbackKey:null,
+    assetFallbackAllowed:false,
+    assetFallbackReason:'explicit-cell3-study-asset',
+    spriteKey:spec.spriteKey,
+    semanticRole:asset.semanticRole,
+    variant:0,
+    importance:1,
+    rank:spec.rank,
+    metrics:{area:96,height:spec.heightM,kind:'poi'},
+    size,
+    assetCount:1,
+    visualScale,
+    ...collisionGeometry,
+    selectionPriority:-100 + spec.rank,
+    sourceWorldX:worldX,
+    sourceWorldY:worldY,
+    worldX,
+    worldY,
+    anchorMode:'cell3-study-fixed',
+    representation:'icon',
+    selectionReason:'cell3-study-guaranteed',
+    studyLandmark:true,
+    anchorScene:spec.anchorScene,
+  };
+}
+function applyCell3StudyLandmarks(resolvedView){
+  if (!CELL3_STUDY_LANDMARK_MODE)
+    return { ...resolvedView,studyLandmarks:{enabled:false,selected:[]} };
+  const selected = CELL3_STUDY_LANDMARKS
+    .map(makeCell3StudyLandmarkFacility)
+    .filter(Boolean);
+  return {
+    ...resolvedView,
+    facilities:[...resolvedView.facilities,...selected],
+    studyLandmarks:{
+      enabled:true,
+      mode:'cell3-study-fixed',
+      selected:selected.map(item => ({
+        id:item.key,name:item.name,sprite:item.spriteKey,anchorScene:item.anchorScene,
+      })),
+    },
+  };
+}
 function landmarkFacilitiesCollide(a, b){
   return RESOLVER.facilitiesCollide(a,b,ACTIVE_PATTERN);
 }
@@ -3726,7 +3809,9 @@ function render(){
   };
 
   /* --- リゾルバーの確定施設データ（アイコンにも建物の用途分類にも使う） --- */
-  const resolvedView = applyStandaloneLandmarks(collectResolvedFacilities());
+  const resolvedView = applyCell3StudyLandmarks(
+    applyStandaloneLandmarks(collectResolvedFacilities())
+  );
   if (resolvedView.pendingTiles) ensureTilesAround().catch(console.error);
 
   /* --- 建物の意味づけ: 棟 × リゾルバー施設 → 見た目記述子 ---
@@ -4038,6 +4123,7 @@ function render(){
   }, {});
   document.getElementById('stats').innerHTML =
     (CELL_ONLY_MODE ? `<span>描画: ${MAP_CELL_LOGICAL_SIZE}×${MAP_CELL_LOGICAL_SIZE}論理px原子セルのピクセルアート</span>` : '')+
+    (CELL3_STUDY_LANDMARK_MODE ? '<span>配置: 東京タワー・東京都庁</span>' : '')+
     `<span>普通建物: ${buildingKindCounts.normal || 0}</span>`+
     `<span>病院: ${buildingKindCounts.hospital || 0}</span>`+
     `<span>コンビニ: ${buildingKindCounts.convenience || 0}</span>`+
@@ -4214,7 +4300,7 @@ function render(){
     const template = cellSpriteTemplateFor(item);
     item.visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[item.category] || 1);
     item.visualRadius = 24 * item.visualScale + Math.max(0, item.assetCount - 1) * 8;
-    drawCellPatternMarker(item, gx, gy, `${layer}:marker`);
+    if (!item.studyLandmark) drawCellPatternMarker(item, gx, gy, `${layer}:marker`);
     for (let ty = 0; ty < template.height; ty++){
       for (let tx = 0; tx < template.width; tx++){
         const color = template.colors[ty * template.width + tx];
@@ -4296,6 +4382,18 @@ function render(){
   }
 
   const labelPoint = p => CELL_ONLY_MODE && p.cellPt ? p.cellPt : p.pt;
+
+  function drawCell3StudyLandmarkNames(){
+    const placedRects = [];
+    const labelTargets = drawnIcons
+      .filter(item => item.studyLandmark)
+      .sort((a,b) => a.rank - b.rank);
+    for (const item of labelTargets){
+      const [x,y] = labelPoint(item);
+      const offset = item.spriteKey === 'tokyo_tower' ? 138 : 126;
+      labelWindow(featureName(item.props),x,y - offset,placedRects);
+    }
+  }
 
   function drawStationNames(){
     const placedRects = [];
@@ -4650,6 +4748,10 @@ function render(){
     }
     // 地図地物と記号を意味セルバッファへ合成し終えてから、名称を鮮明に重ねる。
     flushSolidCellBuffer(cellRenderingStats);
+    if (CELL3_STUDY_LANDMARK_MODE && o.poi){
+      drawCell3StudyLandmarkNames();
+      renderOrder.push('Z4:cell3-study-landmark-names');
+    }
     for (const option of layerOrder){
       if (!o[option] || !cellLabelDrawers[option]) continue;
       cellLabelDrawers[option]();
@@ -4911,6 +5013,7 @@ function render(){
       pendingTiles:resolvedView.pendingTiles,
     },
     landmarks:resolvedView.landmarks,
+    studyLandmarks:resolvedView.studyLandmarks,
     poi:{
       total:resolvedView.facilities.length,
       visible:facilitiesInView.length,
