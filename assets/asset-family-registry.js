@@ -2,13 +2,13 @@
   'use strict';
 
   /*
-    PixelMap Asset Family Registry v1
+    PixelMap Asset Family Registry v2
     ---------------------------------
     MVTのclass/subclassを直接sprite idへ結び付けず、
     asset pack → semantic family → variant → asset の順で解決する正本。
     source geometry・座標・表示密度には関与しない。
   */
-  const VERSION = 'pixelmap-asset-family-registry/1';
+  const VERSION = 'pixelmap-asset-family-registry/2';
   const LEGACY_PACK = 'legacy';
   const REFERENCE_PACK = 'retro-jrpg-reference-v1';
 
@@ -71,6 +71,21 @@
     ['mobilityService','parking','parking',['parking','fuel']],
     ['mobilityService','chargeHub','charge_hub',['charging_station']],
   ]);
+  const referenceBindingSpecs = Object.freeze([
+    ...bindingSpecs,
+    ['commerce','office','office',['office']],
+  ]);
+  const referenceAssetOverrides = Object.freeze({
+    'transitFacility.station':'grand_station',
+    'food.fastFood':'burger_stand',
+    'education.college':'college',
+    'education.university':'university',
+    'education.library':'owl_library',
+    'civic.post':'wing_post',
+    'civic.townHall':'civic_hall',
+    'culture.museum':'art_museum',
+    'parkLeisure.zoo':'menagerie',
+  });
 
   function buildBindings(specs, assetOverrides = {}){
     const bindings = {};
@@ -92,7 +107,7 @@
     }),
     [REFERENCE_PACK]:Object.freeze({
       id:REFERENCE_PACK,label:'レトロJRPG参照テイスト',extends:LEGACY_PACK,
-      bindings:buildBindings(bindingSpecs),
+      bindings:buildBindings(referenceBindingSpecs,referenceAssetOverrides),
     }),
   });
   const genericBinding = Object.freeze({

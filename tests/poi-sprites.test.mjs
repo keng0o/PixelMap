@@ -25,6 +25,22 @@ test('参照イメージを取り入れた6アセットが実際のPOI属性へ�
   assert.equal(families.bindingForType('charging_station').assetId, 'charge_hub');
 });
 
+test('reference packは未接続だった参照テイスト10点を意味familyへ接続する', () => {
+  const expected={
+    office:'office',town_hall:'civic_hall',fast_food:'burger_stand',railway:'grand_station',
+    library:'owl_library',university:'university',college:'college',post:'wing_post',
+    museum:'art_museum',zoo:'menagerie',
+  };
+  for(const [type,assetId] of Object.entries(expected)){
+    const binding=families.bindingForType(type,families.referencePack);
+    assert.equal(binding.assetId,assetId,type);
+    assert.ok(binding.familyId && binding.variantId,type);
+  }
+  const wiredAcrossPacks=new Set(Object.keys(families.packs)
+    .flatMap(packId=>families.assetsForPack(packId)));
+  for(const id of [...inspiredIds,...candidateIds]) assert.ok(wiredAcrossPacks.has(id),id);
+});
+
 test('assets.html用カタログは52点・新テイスト26点でマッピング欠落がない', () => {
   assert.equal(catalog.assets.length, 52);
   assert.deepEqual(
@@ -108,11 +124,18 @@ test('各POIはmobile renderer向けに同じ描画矩形命令を公開する',
   }
 });
 
-test('新テイスト候補20点はアセットのみで、legacy packのPOI属性へは未接続', () => {
+test('参照候補10点はlegacy非接続、pop候補10点は全pack非接続', () => {
   const wired = new Set(families.assetsForPack('legacy'));
-  for(const id of [...candidateIds, ...popIds]){
+  const wiredAcrossPacks=new Set(Object.keys(families.packs)
+    .flatMap(packId=>families.assetsForPack(packId)));
+  for(const id of candidateIds){
     assert.ok(catalog.assets.some(asset => asset.id === id && asset.inspired), id);
     assert.ok(!wired.has(id), `${id} はlegacy packに接続しない`);
+    assert.ok(wiredAcrossPacks.has(id), `${id} はreference packに接続する`);
+  }
+  for(const id of popIds){
+    assert.ok(catalog.assets.some(asset => asset.id === id && asset.inspired), id);
+    assert.ok(!wiredAcrossPacks.has(id), `${id} はどのpackにも接続しない`);
   }
 });
 

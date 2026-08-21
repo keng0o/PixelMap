@@ -168,7 +168,7 @@
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI属性との対応は<code>pixelmap-asset-family-registry/1</code>のpack→family→variant→asset契約へ集約。source pointを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
+              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI属性との対応は<code>pixelmap-asset-family-registry/2</code>のpack→family→variant→asset契約へ集約。参照テイスト10点も意味variantとして接続する。source pointを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
               <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
             </tr>
             <tr>
@@ -191,6 +191,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>参照テイストPOIを意味familyへ接続</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd><code>retro-jrpg-reference-v1</code>で未接続だったoffice・公共庁舎・軽食店・主要駅・図書館・大学・短大・郵便・美術館・動物園の10点を既存semantic familyのvariantへ接続。resolver診断へpack・family・variant・sprite・fallback件数を追加。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone game profileのreference packだけで新variantを選択。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップとmap-03は<code>legacy</code>を維持。旧63種のasset id・カテゴリ・描画は変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>参照10点のfamily接続、全reference assetのpack横断接続、pop10点の非接続、family由来category、全asset idの存在を自動テストで確認。z14画像比較と独立レビューを実施。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>POI対応表をAssetFamilyRegistryへ置換</h3>

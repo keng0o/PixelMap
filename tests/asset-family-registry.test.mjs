@@ -24,7 +24,7 @@ const legacyExpected={
 };
 
 test('AssetFamilyRegistryがpack→family→variant→assetを唯一の正本として公開する',()=>{
-  assert.equal(registry.version,'pixelmap-asset-family-registry/1');
+  assert.equal(registry.version,'pixelmap-asset-family-registry/2');
   assert.equal(registry.defaultPack,'legacy');
   assert.equal(registry.referencePack,'retro-jrpg-reference-v1');
   assert.ok(Object.isFrozen(registry.families));
@@ -39,8 +39,13 @@ test('AssetFamilyRegistryがpack→family→variant→assetを唯一の正本と
   assert.equal(Object.keys(registry.packFor('legacy').bindings).length,Object.keys(legacyExpected).length);
 });
 
-test('項目2ではreference packもlegacyと同じ見た目を保ち、未知packはlegacyへ安全に戻る',()=>{
-  for(const [type,assetId] of Object.entries(legacyExpected))
+test('reference packは参照テイスト10点を意味variantへ接続し、未知packはlegacyへ安全に戻る',()=>{
+  const referenceExpected={
+    office:'office',town_hall:'civic_hall',fast_food:'burger_stand',railway:'grand_station',
+    library:'owl_library',university:'university',college:'college',post:'wing_post',
+    museum:'art_museum',zoo:'menagerie',
+  };
+  for(const [type,assetId] of Object.entries(referenceExpected))
     assert.equal(registry.bindingForType(type,registry.referencePack).assetId,assetId,type);
   assert.equal(registry.packFor('unknown').id,'legacy');
   assert.deepEqual(
@@ -63,7 +68,7 @@ test('subclass優先・class fallback・generic fallbackが解決メタデータ
 
 test('resolverはfamily情報を保持し、全packのasset idは正本カタログに存在する',()=>{
   assert.equal(resolver.assetFamilyRegistryVersion,registry.version);
-  assert.equal(resolver.spriteKeyFor({class:'railway'},registry.referencePack),'station');
+  assert.equal(resolver.spriteKeyFor({class:'railway'},registry.referencePack),'grand_station');
   const assetIds=new Set(catalog.assets.map(asset=>asset.id));
   for(const packId of Object.keys(registry.packs))
     for(const id of registry.assetsForPack(packId)) assert.ok(assetIds.has(id),`${packId}:${id}`);
@@ -79,6 +84,8 @@ test('resolveTile結果は既知subclass・class fallback・generic fallbackのf
     poiFeature(1,{class:'shop',subclass:'bakery',name:'subclass'},400,400),
     poiFeature(2,{class:'shop',subclass:'unknown-shop',name:'class'},2000,2000),
     poiFeature(3,{class:'unknown',subclass:'unknown-poi',name:'generic'},3600,3600),
+    poiFeature(4,{class:'office',name:'family-category'},400,3600),
+    poiFeature(5,{class:'clinic',name:'fallback-category'},3600,400),
   ]}};
   const result=resolver.resolveTile({
     tileX:10,tileY:10,pattern,assetPack:registry.referencePack,
@@ -109,6 +116,32 @@ test('resolveTile結果は既知subclass・class fallback・generic fallbackのf
     assetFamily:'generic',assetVariant:'generic',assetMatchedType:null,
     assetFallback:true,spriteKey:'generic',
   });
+  assert.deepEqual({
+    assetFamily:byName['family-category'].assetFamily,
+    category:byName['family-category'].category,
+    spriteKey:byName['family-category'].spriteKey,
+    assetFallback:byName['family-category'].assetFallback,
+  },{
+    assetFamily:'commerce',category:'commerce',spriteKey:'office',assetFallback:false,
+  });
+  assert.deepEqual({
+    assetFamily:byName['fallback-category'].assetFamily,
+    category:byName['fallback-category'].category,
+    spriteKey:byName['fallback-category'].spriteKey,
+    assetFallback:byName['fallback-category'].assetFallback,
+  },{
+    assetFamily:'generic',category:'health',spriteKey:'generic',assetFallback:true,
+  });
+  const legacyResult=resolver.resolveTile({
+    tileX:10,tileY:10,pattern,assetPack:'legacy',
+    getTile:(x,y)=>x===10&&y===10?{layers:center,baseX:10,baseY:10}:{empty:true},
+  });
+  const legacyByName=Object.fromEntries(legacyResult.facilities.map(facility=>[facility.name,facility]));
+  assert.deepEqual({
+    assetFamily:legacyByName.subclass.assetFamily,
+    category:legacyByName.subclass.category,
+    spriteKey:legacyByName.subclass.spriteKey,
+  },{assetFamily:'food',category:'food',spriteKey:'grocery'});
 });
 
 test('現行の共有実装はflatなCLASS2SPRITEを持たない',async()=>{
@@ -124,7 +157,19 @@ test('standaloneはACTIVE_ASSET_PACKをresolverへ渡し、map-03はlegacyを明
     readFile(new URL('../variants/map-02-refined.html',import.meta.url),'utf8'),
     readFile(new URL('../variants/map-03-refined.html',import.meta.url),'utf8'),
   ]);
+  assert.match(map02,/asset-family-registry\.js\?v=2/);
+  assert.match(map02,/facility-resolver\.js\?v=6/);
   assert.match(map02,/const ACTIVE_ASSET_PACK = document\.documentElement\.dataset\.assetPack/);
   assert.match(map02,/RESOLVER\.resolveTile\(\{[\s\S]*?assetPack:ACTIVE_ASSET_PACK,[\s\S]*?\}\)/);
   assert.match(map03,/RESOLVER\.resolveTile\(\{[\s\S]*?assetPack:'legacy',[\s\S]*?\}\)/);
+});
+
+test('map診断はregistry versionとpack・family・variant・sprite・fallback集計を公開する',async()=>{
+  const map02=await readFile(new URL('../variants/map-02-refined.html',import.meta.url),'utf8');
+  assert.match(map02,/assetFamilyRegistryVersion:RESOLVER\.assetFamilyRegistryVersion/);
+  assert.match(map02,/assetPacks:countBy\(facilitiesInView, item => item\.assetPack/);
+  assert.match(map02,/assetFamilies:countBy\(facilitiesInView, item => item\.assetFamily/);
+  assert.match(map02,/assetVariants:countBy\(facilitiesInView, item => item\.assetVariant/);
+  assert.match(map02,/spriteAssets:countBy\(facilitiesInView, item => item\.spriteKey/);
+  assert.match(map02,/assetFallbacks:facilitiesInView\.filter\(item => item\.assetFallback\)\.length/);
 });

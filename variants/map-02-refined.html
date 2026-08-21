@@ -557,8 +557,8 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
-<script src="../assets/asset-family-registry.js?v=1"></script>
-<script src="../assets/facility-resolver.js?v=5"></script>
+<script src="../assets/asset-family-registry.js?v=2"></script>
+<script src="../assets/facility-resolver.js?v=6"></script>
 <script src="../assets/landmark-entities.js"></script>
 <script src="../assets/poi-sprites.js?v=4"></script>
 <script src="../assets/building-styles.js"></script>
@@ -3400,12 +3400,6 @@ function makeLandmarkFacility(feature, coordinate){
   const size = props.icon_size || (props.role === 'complex' ? 'L' : 'M');
   const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[category] || 1);
   const assetCount = 1;
-  const resolvedSpriteKey = RESOLVER.spriteKeyFor({class:renderClass},ACTIVE_ASSET_PACK);
-  const spriteKey = resolvedSpriteKey === 'generic' && POI_ASSETS_BY_ID.has(renderClass)
-    ? renderClass : resolvedSpriteKey;
-  const collisionGeometry = RESOLVER.assetCollisionGeometry(
-    POI_SPRITE_CATALOG,spriteKey,size,ACTIVE_PATTERN,category,assetCount);
-  const [worldX, worldY] = landmarkWorldPoint(coordinate);
   const entityProps = {
     name:props.name,
     'name:ja':props['name:ja'] || props.name,
@@ -3416,6 +3410,13 @@ function makeLandmarkFacility(feature, coordinate){
     osm_type:props.osm_type,
     osm_id:props.osm_id,
   };
+  const assetBinding = RESOLVER.resolveAsset(entityProps,ACTIVE_ASSET_PACK);
+  const resolvedSpriteKey = assetBinding.assetId;
+  const spriteKey = resolvedSpriteKey === 'generic' && POI_ASSETS_BY_ID.has(renderClass)
+    ? renderClass : resolvedSpriteKey;
+  const collisionGeometry = RESOLVER.assetCollisionGeometry(
+    POI_SPRITE_CATALOG,spriteKey,size,ACTIVE_PATTERN,category,assetCount);
+  const [worldX, worldY] = landmarkWorldPoint(coordinate);
   return {
     key:`landmark:${props.id || feature.id}`,
     name:featureName(entityProps),
@@ -3424,6 +3425,11 @@ function makeLandmarkFacility(feature, coordinate){
     buildingId:null,
     facilityRole:props.role === 'complex' ? 'landmark_complex' : 'signature_venue',
     category,
+    assetPack:assetBinding.packId,
+    assetFamily:assetBinding.familyId,
+    assetVariant:assetBinding.variantId,
+    assetMatchedType:assetBinding.matchedType,
+    assetFallback:assetBinding.fallback,
     spriteKey,
     variant:0,
     importance:1,
@@ -4747,6 +4753,12 @@ function render(){
       clusters:clusterMarks.length,
       clusteredMembers:facilitiesInView.filter(item => item.representation === 'cluster-member').length,
       mixedBuildings:facilitiesInView.filter(item => item.facilityRole === 'mixed_building').length,
+      assetFamilyRegistryVersion:RESOLVER.assetFamilyRegistryVersion,
+      assetPacks:countBy(facilitiesInView, item => item.assetPack || 'legacy-direct'),
+      assetFamilies:countBy(facilitiesInView, item => item.assetFamily || 'unclassified'),
+      assetVariants:countBy(facilitiesInView, item => item.assetVariant || 'unclassified'),
+      spriteAssets:countBy(facilitiesInView, item => item.spriteKey || 'generic'),
+      assetFallbacks:facilitiesInView.filter(item => item.assetFallback).length,
       selectionReasons:countBy(facilitiesInView, item => String(item.selectionReason || '').split(':')[0]),
       sizes:countBy(drawnIcons, item => item.size),
       assetSizes:countBy(drawnIcons, item => item.displayAssetSize || item.assetSize || item.size),

@@ -16,7 +16,7 @@
      （旧実装の4連結フラッドフィルと同じ意味論）。
      ===================================================== */
 
-  const ALGORITHM_VERSION = 'facility-resolver/5';
+  const ALGORITHM_VERSION = 'facility-resolver/6';
   const ASSET_FAMILIES = global.PixelMapAssetFamilyRegistry;
   if (!ASSET_FAMILIES)
     throw new Error('PixelMapAssetFamilyRegistry must load before facility-resolver.js');
@@ -396,10 +396,11 @@
         height:group.building ? Number(group.building.props.render_height || 0) : 0,
         kind,
       };
-      const category = poiCategory(props);
+      const assetBinding=resolveAsset(props,assetPack);
+      const familyCategory=ASSET_FAMILIES.families[assetBinding.familyId]?.category;
+      const category = assetBinding.fallback ? poiCategory(props) : familyCategory || poiCategory(props);
       const size = patternSize(pattern, metrics, category);
       const assetCount = patternAssetCount(pattern, metrics, category);
-      const assetBinding=resolveAsset(props,assetPack);
       const spriteKey=assetBinding.assetId;
       const collisionGeometry=assetCollisionGeometry(
         assetCatalog,spriteKey,size,pattern,category,assetCount);
