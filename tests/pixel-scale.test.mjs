@@ -85,7 +85,7 @@ test('単体ページの生活道路と歩道・小径は各描画モードの�
   assert.match(html, /canonical\.width=14/);
   assert.match(html, /canonical\.casing=2/);
   assert.match(html, /\['localRoads','paths'\]\.includes\(routeOption\)/);
-  assert.match(html, /minimumMinorRoute \? 1 : \(thick \? 2 : 1\) \* CELL_DETAIL_SCALE/);
+  assert.match(html, /minimumMinorRoute \? 1 : detailCellSpan\(thick \? 2 : 1\)/);
   assert.match(html, /if\(EMBEDDED\) return false;[\s\S]*?drawStandardTransportCell/);
   assert.match(html, /minorRoutes:\{[\s\S]*?standaloneMinimum:STANDALONE_MINIMUM_MINOR_ROUTES/);
   assert.match(html, /localRoadWidth:CELL_ONLY_MODE[\s\S]*?pathWidth:CELL_ONLY_MODE/);

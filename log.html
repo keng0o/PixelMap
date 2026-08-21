@@ -149,7 +149,7 @@
             <tr>
               <th scope="row">描画方式</th>
               <td>既定は<code>geometry-skin-symbol/1</code>へ本番の有効レイヤー・pattern 07・skin・POI密度を独立copyした<code>production-comparison-z14</code>。testだけcontinuous corridorとAssetFamilyRegistryへ接続。意図的な参照テイストは<code>?profile=reference</code>へ分離。</td>
-              <td>標準描画のみ。<code>cell2</code>指定は適用しない。</td>
+              <td>標準描画のみ。<code>cell2</code>・<code>cell3</code>指定は適用しない。</td>
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>3×3論理pxの単色セル描画を追加</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd><code>?render=cell3</code>を追加し、MVT地物を256×256グリッドへ直接ラスタライズして、各原子セルを3×3論理px（6×6シーンpx）の不透明な単色ブロックとして合成。16pxマップチップは48px周期まで反復サンプリングし、6pxセルと割り切れない模様も世界座標へ固定。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。単独ページの<code>?render=cell3</code>だけへ適用。既存の<code>?render=cell2</code>とstandalone標準は維持。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guardにより<code>render</code>指定を無視するため変更なし。production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>cell3の256セル／6シーンpx診断、単色セルバッファ、世界座標固定の模様、地形・交通・建物・POI・ラベル合成を自動テストと実画面で確認。スクリーンショットを撮影し、独立視覚レビューを実施。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>本番copy profileで描画差をレイヤー別に収束</h3>

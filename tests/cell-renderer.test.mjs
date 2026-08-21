@@ -4,21 +4,24 @@ import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
 
-test('cell2は単独ページのrender指定でだけ有効になりcell8は廃止される', () => {
-  assert.match(html, /const CELL_ONLY_MODE = !EMBEDDED && PAGE_PARAMS\.get\('render'\) === 'cell2'/);
-  assert.match(html, /const RENDER_MODE = CELL_ONLY_MODE \? 'cell2' : 'standard'/);
+test('cell2とcell3は単独ページのrender指定でだけ有効になりcell8は廃止される', () => {
+  assert.match(html, /const REQUESTED_RENDER_MODE = PAGE_PARAMS\.get\('render'\)/);
+  assert.match(html, /\['cell2','cell3'\]\.includes\(REQUESTED_RENDER_MODE\)/);
+  assert.match(html, /const CELL_ONLY_MODE = CELL_RENDER_LOGICAL_SIZE !== null/);
+  assert.match(html, /const RENDER_MODE = CELL_ONLY_MODE \? REQUESTED_RENDER_MODE : 'standard'/);
   assert.doesNotMatch(html, /PAGE_PARAMS\.get\('render'\) === 'cell8'/);
   assert.match(html, /dataset\.renderMode = RENDER_MODE/);
   assert.match(html, /renderMode:RENDER_MODE/);
 });
 
-test('cell2だけ384グリッド・4シーンpxセルを使う', () => {
+test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {
   assert.match(html, /const STANDARD_GRID = 96, STANDARD_CPX = 16/);
-  assert.match(html, /const CELL_DETAIL_SCALE = CELL_ONLY_MODE \? 4 : 1/);
-  assert.match(html, /const GRID = STANDARD_GRID \* CELL_DETAIL_SCALE/);
-  assert.match(html, /const CPX = STANDARD_CPX \/ CELL_DETAIL_SCALE/);
+  assert.match(html, /CELL_RENDER_LOGICAL_SIZE \* SCENE_PIXELS_PER_LOGICAL_PIXEL/);
+  assert.match(html, /const GRID = SCENE_SIZE \/ CPX/);
+  assert.match(html, /const CELL_DETAIL_SCALE = GRID \/ STANDARD_GRID/);
+  assert.match(html, /const detailCellSpan = standardCells => Math\.max\(1, Math\.round\(standardCells \* CELL_DETAIL_SCALE\)\)/);
   assert.match(html, /const MAP_CELL_LOGICAL_SIZE = CPX \/ SCENE_PIXELS_PER_LOGICAL_PIXEL/);
-  assert.match(html, /gridCellsPerSide:GRID/);
+  assert.match(html, /gridCellsPerSide:CELL_ONLY_MODE \? GRID : null/);
 });
 
 test('意味セルバッファを不透明色で合成し最近傍でセル全面へ展開する', () => {
@@ -34,9 +37,11 @@ test('意味セルバッファを不透明色で合成し最近傍でセル全�
   assert.match(html, /semanticCellBuffer:CELL_ONLY_MODE/);
 });
 
-test('標準16シーンpxマップチップを4×4原子セルテンプレートへ変換する', () => {
+test('標準16シーンpxマップチップをcell2/cell3の世界座標固定テンプレートへ変換する', () => {
   assert.match(html, /c\.width = c\.height = STANDARD_CPX/);
-  assert.match(html, /const CELL_TEMPLATE_SIZE = STANDARD_CPX \/ CPX/);
+  assert.match(html, /function leastCommonMultiple|const leastCommonMultiple/);
+  assert.match(html, /leastCommonMultiple\(canvas\.width, CPX\) \/ CPX/);
+  assert.match(html, /positiveModulo\(cx \* CPX \+ cellX, canvas\.width\)/);
   assert.match(html, /function cellTemplateForCanvas\(canvas, cacheKey, priorityColors = \[\]\)/);
   assert.match(html, /count >= CPX \* CPX \* \.25/);
   assert.match(html, /function cellMapChipColor\(name, gx, gy\)/);
@@ -75,11 +80,11 @@ test('地下交通もセルモード用グリッドへ分類する', () => {
   assert.match(html, /layer = binding\.stateAssetId/);
 });
 
-test('交通線は4連結を保ち、cell2では細街路だけ最小1セル・他は従来幅へ展開する', () => {
+test('交通線は4連結を保ち、原子セルモードでは細街路だけ最小1セル・他は従来幅へ展開する', () => {
   assert.match(html, /function traverse\(x0, y0, x1, y1, visit\)/);
   assert.match(html, /const transportCenters = new Map\(\)/);
   assert.match(html, /setCell\(center, cx, cy, 1\)/);
-  assert.match(html, /minimumMinorRoute \? 1 : \(thick \? 2 : 1\) \* CELL_DETAIL_SCALE/);
+  assert.match(html, /minimumMinorRoute \? 1 : detailCellSpan\(thick \? 2 : 1\)/);
   assert.match(html, /c\.lineWidth = lineWidth \* CELL_DETAIL_SCALE/);
 });
 
@@ -103,7 +108,7 @@ test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで�
   assert.match(html, /kind === 'poi' && desc\?\.glyph/);
 });
 
-test('POIは既存スプライトを2×2セルテンプレートへ変換しクリック領域を維持する', () => {
+test('POIは既存スプライトを原子セルテンプレートへ変換しクリック領域を維持する', () => {
   assert.match(html, /let spritePaintContext = ctx/);
   assert.match(html, /function cellSpriteTemplateFor\(item\)/);
   assert.match(html, /spriteFor\(item\.props, assetSize, item\.variant, item\.spriteKey\)\.draw\(0, 0\)/);
@@ -142,6 +147,6 @@ test('セル描画の件数を診断情報へ公開する', () => {
     'buildingDetailCells','spriteCells','layerCells',
   ])
     assert.match(html, new RegExp(`${field}:`), field);
-  assert.match(html, /cellLogicalPixels:MAP_CELL_LOGICAL_SIZE/);
-  assert.match(html, /cellScenePixels:CPX/);
+  assert.match(html, /cellLogicalPixels:CELL_ONLY_MODE \? MAP_CELL_LOGICAL_SIZE : null/);
+  assert.match(html, /cellScenePixels:CELL_ONLY_MODE \? CPX : null/);
 });

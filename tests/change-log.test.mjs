@@ -17,6 +17,8 @@ test('差分ログは不要な説明・対象ページ一覧・画面内ルー�
 
 test('差分ログは現行のtest専用機能と本番維持事項を記載する', () => {
   assert.match(log, /\?render=cell2/);
+  assert.match(log, /\?render=cell3/);
+  assert.match(log, /3×3論理pxの単色セル/);
   assert.match(log, /神奈川県の生成GeoJSON/);
   assert.match(log, /geometry-skin-symbol\/1/);
   assert.match(log, /production-comparison-z14/);

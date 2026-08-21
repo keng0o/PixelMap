@@ -695,10 +695,14 @@ let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
 // 今回のPOCは地理精度と世界観を同一縮尺で評価するためz14へ固定する。
 const DEFAULT_TILE_ZOOM = 14;
 const TILE_ZOOM = DEFAULT_TILE_ZOOM;
-const CELL_ONLY_MODE = !EMBEDDED && PAGE_PARAMS.get('render') === 'cell2';
-const RENDER_MODE = CELL_ONLY_MODE ? 'cell2' : 'standard';
+const REQUESTED_RENDER_MODE = PAGE_PARAMS.get('render');
+const CELL_RENDER_LOGICAL_SIZE = !EMBEDDED && ['cell2','cell3'].includes(REQUESTED_RENDER_MODE)
+  ? Number(REQUESTED_RENDER_MODE.slice(4))
+  : null;
+const CELL_ONLY_MODE = CELL_RENDER_LOGICAL_SIZE !== null;
+const RENDER_MODE = CELL_ONLY_MODE ? REQUESTED_RENDER_MODE : 'standard';
 // standalone標準表示では、地物を移動させず「不変の地理形状＋共通スキン＋
-// 固定サイズのシンボル」で描く。cell2とembedded本番は従来描画を維持する。
+// 固定サイズのシンボル」で描く。cell2／cell3とembedded本番は従来描画を維持する。
 const STANDALONE_UNIFIED_STYLE = !EMBEDDED && !CELL_ONLY_MODE;
 const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
@@ -757,7 +761,7 @@ document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
 document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISPLAY_SCALE);
 document.title = CELL_ONLY_MODE
-  ? `PixelMap｜z${TILE_ZOOM}・2×2ピクセルアート検証`
+  ? `PixelMap｜z${TILE_ZOOM}・${CELL_RENDER_LOGICAL_SIZE}×${CELL_RENDER_LOGICAL_SIZE}ピクセルアート検証`
   : `PixelMap｜z${TILE_ZOOM}マップ`;
 
 function patternUrl(patternId){
@@ -803,7 +807,7 @@ const cv = document.getElementById('map');
   - 論理ピクセル: 768×768の出力画像を構成する最小単位
   - シーンピクセル: 1536×1536の作業用キャンバスの座標単位
   - マップセル: 地物種別を保持する正方形グリッドの1セル
-  1論理px = 2×2シーンpx。標準描画は8×8論理px、cell2は2×2論理px。
+  1論理px = 2×2シーンpx。標準描画は8×8論理px、cell2／cell3は指定した論理pxの原子セル。
 */
 const SCENE_SIZE = 1536;
 const PRESENTATION_SIZE = SCENE_SIZE / 2;
@@ -858,12 +862,15 @@ function quantizeContextFillRects(target){
 }
 quantizeContextFillRects(ctx);
 const STANDARD_GRID = 96, STANDARD_CPX = 16;
-const CELL_DETAIL_SCALE = CELL_ONLY_MODE ? 4 : 1;
-const GRID = STANDARD_GRID * CELL_DETAIL_SCALE;
-const CPX = STANDARD_CPX / CELL_DETAIL_SCALE;
+const CPX = CELL_ONLY_MODE
+  ? CELL_RENDER_LOGICAL_SIZE * SCENE_PIXELS_PER_LOGICAL_PIXEL
+  : STANDARD_CPX;
+const GRID = SCENE_SIZE / CPX;
+const CELL_DETAIL_SCALE = GRID / STANDARD_GRID;
+const detailCellSpan = standardCells => Math.max(1, Math.round(standardCells * CELL_DETAIL_SCALE));
 const MAP_CELL_LOGICAL_SIZE = CPX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
 // 単体標準ページでは、建物の意味輪郭だけを出力と同じ1論理pxで確定する。
-// cell2は2論理px原子セル、embeddedは既存ページの外観を維持する。
+// cell2／cell3は指定サイズの原子セル、embeddedは既存ページの外観を維持する。
 const STANDALONE_PRECISE_BUILDINGS = !EMBEDDED && !CELL_ONLY_MODE &&
   WORLD_STYLE.building?.renderer !== 'production-cell-copy';
 // z14 POCの基準地点をタイル内オフセットごと固定する。
@@ -1790,7 +1797,7 @@ function rasterizeGrid(layers, options){
             if (CELL_ONLY_MODE){
               setCell(center, cx, cy, 1);
               setCellBrush(grid, cx, cy, id,
-                minimumMinorRoute ? 1 : (thick ? 2 : 1) * CELL_DETAIL_SCALE);
+                minimumMinorRoute ? 1 : detailCellSpan(thick ? 2 : 1));
             } else {
               setCell(grid, cx, cy, id);
               if (thick){ setCell(grid, cx + 1, cy, id); setCell(grid, cx, cy + 1, id); }
@@ -1926,9 +1933,10 @@ function paintSolidMapCell(gx, gy, color, layer, stats){
 }
 
 function paintLegacyCellBlock(gx, gy, color, layer, stats){
-  const start = -Math.floor(CELL_DETAIL_SCALE / 2);
-  for (let dy = 0; dy < CELL_DETAIL_SCALE; dy++)
-    for (let dx = 0; dx < CELL_DETAIL_SCALE; dx++)
+  const span = detailCellSpan(1);
+  const start = -Math.floor(span / 2);
+  for (let dy = 0; dy < span; dy++)
+    for (let dx = 0; dx < span; dx++)
       paintSolidMapCell(gx + start + dx, gy + start + dy, color, layer, stats);
 }
 
@@ -1957,24 +1965,33 @@ function solidMapCellCenter(gx, gy){
 }
 
 const CELL_MAP_CHIP_CACHE = new Map();
-const CELL_TEMPLATE_SIZE = STANDARD_CPX / CPX;
 const positiveModulo = (value, divisor) => ((value % divisor) + divisor) % divisor;
 const rgbKey = rgba => `${rgba[0]},${rgba[1]},${rgba[2]}`;
 const rgbaHex = rgba => '#' + rgba.slice(0, 3).map(value => value.toString(16).padStart(2, '0')).join('');
+const greatestCommonDivisor = (a, b) => {
+  let x = Math.abs(Math.trunc(a)), y = Math.abs(Math.trunc(b));
+  while (y) [x, y] = [y, x % y];
+  return x || 1;
+};
+const leastCommonMultiple = (a, b) => Math.abs(a * b) / greatestCommonDivisor(a, b);
 
 function cellTemplateForCanvas(canvas, cacheKey, priorityColors = []){
   if (CELL_MAP_CHIP_CACHE.has(cacheKey)) return CELL_MAP_CHIP_CACHE.get(cacheKey);
   const source = canvas.getContext('2d', { willReadFrequently:true })
     .getImageData(0, 0, canvas.width, canvas.height).data;
-  const cellsAcross = Math.ceil(canvas.width / CPX);
-  const cellsDown = Math.ceil(canvas.height / CPX);
+  // 16pxチップと6pxのcell3は割り切れない。両者の最小公倍数まで
+  // 元チップを反復サンプリングし、世界座標に固定された完全セル列を作る。
+  const cellsAcross = leastCommonMultiple(canvas.width, CPX) / CPX;
+  const cellsDown = leastCommonMultiple(canvas.height, CPX) / CPX;
   const priority = new Set(priorityColors.map(color => rgbKey(solidCellRgba(color))));
   const colors = new Array(cellsAcross * cellsDown).fill(null);
   for (let cy = 0; cy < cellsDown; cy++){
     for (let cx = 0; cx < cellsAcross; cx++){
       const counts = new Map();
-      for (let py = cy * CPX; py < Math.min(canvas.height, (cy + 1) * CPX); py++){
-        for (let px = cx * CPX; px < Math.min(canvas.width, (cx + 1) * CPX); px++){
+      for (let cellY = 0; cellY < CPX; cellY++){
+        for (let cellX = 0; cellX < CPX; cellX++){
+          const px = positiveModulo(cx * CPX + cellX, canvas.width);
+          const py = positiveModulo(cy * CPX + cellY, canvas.height);
           const index = (py * canvas.width + px) * 4;
           if (source[index + 3] < 64) continue;
           const key = `${source[index]},${source[index + 1]},${source[index + 2]}`;
@@ -3758,8 +3775,9 @@ function render(){
         let [ax, ay] = worldToGridCell(facility.worldX, facility.worldY);
         if (unitAt(ax, ay) !== bi){
           let found = false;
-          for (let dy = -CELL_DETAIL_SCALE; dy <= CELL_DETAIL_SCALE && !found; dy++)
-            for (let dx = -CELL_DETAIL_SCALE; dx <= CELL_DETAIL_SCALE && !found; dx++)
+          const searchRadius = Math.max(1, Math.ceil(CELL_DETAIL_SCALE));
+          for (let dy = -searchRadius; dy <= searchRadius && !found; dy++)
+            for (let dx = -searchRadius; dx <= searchRadius && !found; dx++)
               if (unitAt(ax + dx, ay + dy) === bi){ ax += dx; ay += dy; found = true; }
           if (!found) ax = -1;
         }
@@ -4868,9 +4886,9 @@ function render(){
       enabled:CELL_ONLY_MODE,
       mode:RENDER_MODE,
       styleProfile:CELL_ONLY_MODE ? 'standard-pixel-art' : 'standard',
-      cellLogicalPixels:MAP_CELL_LOGICAL_SIZE,
-      cellScenePixels:CPX,
-      gridCellsPerSide:GRID,
+      cellLogicalPixels:CELL_ONLY_MODE ? MAP_CELL_LOGICAL_SIZE : null,
+      cellScenePixels:CELL_ONLY_MODE ? CPX : null,
+      gridCellsPerSide:CELL_ONLY_MODE ? GRID : null,
       singleColorCells:CELL_ONLY_MODE,
       semanticCellBuffer:CELL_ONLY_MODE,
       cellizedFeatures:CELL_ONLY_MODE ? cellRenderingStats.cellizedFeatures : 0,
