@@ -118,16 +118,13 @@ test('POIは既存スプライトを原子セルテンプレートへ変換し�
   assert.match(html, /w:radius\*2, h:radius\*2\.1/);
 });
 
-test('cell3 studyだけに東京タワーと東京都庁を3×3セルアセットで固定配置する', () => {
-  assert.match(html, /const CELL3_STUDY_LANDMARK_MODE = !EMBEDDED && CELL_RENDER_LOGICAL_SIZE === 3 && STUDY_MODE/);
-  assert.match(html, /dataset\.cell3StudyLandmarks = CELL3_STUDY_LANDMARK_MODE/);
-  assert.match(html, /spriteKey:'tokyo_tower'/);
-  assert.match(html, /spriteKey:'tokyo_metropolitan_government'/);
-  assert.match(html, /function applyCell3StudyLandmarks\(resolvedView\)/);
-  assert.match(html, /applyCell3StudyLandmarks\([\s\S]*applyStandaloneLandmarks\(collectResolvedFacilities\(\)\)/);
-  assert.match(html, /if \(!item\.studyLandmark\) drawCellPatternMarker/);
-  assert.match(html, /drawCell3StudyLandmarkNames\(\)/);
-  assert.match(html, /studyLandmarks:resolvedView\.studyLandmarks/);
+test('東京ランドマークはcell3 studyを含むマップへ固定配置しない', () => {
+  assert.doesNotMatch(html, /CELL3_STUDY_LANDMARK_MODE/);
+  assert.doesNotMatch(html, /spriteKey:'tokyo_tower'/);
+  assert.doesNotMatch(html, /spriteKey:'tokyo_metropolitan_government'/);
+  assert.doesNotMatch(html, /study-landmark:/);
+  assert.match(html, /const resolvedView = applyStandaloneLandmarks\(collectResolvedFacilities\(\)\)/);
+  assert.match(html, /drawCellPatternMarker\(item, gx, gy/);
 });
 
 test('点とクラスターも輪郭・カテゴリ色・ピップを原子セルで描く', () => {
