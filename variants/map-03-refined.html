@@ -557,8 +557,9 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
-<script src="../assets/facility-resolver.js?v=2"></script>
-<script src="../assets/poi-sprites.js"></script>
+<script src="../assets/asset-family-registry.js?v=1"></script>
+<script src="../assets/facility-resolver.js?v=5"></script>
+<script src="../assets/poi-sprites.js?v=4"></script>
 <script src="../assets/building-styles.js?v=2"></script>
 <script>
 'use strict';
@@ -2520,7 +2521,7 @@ const SPRITES = {
 // 施設の分類・重要度・サイズ判定はリゾルバーモジュールが唯一の正典。
 // このページは確定済みの施設データを描くだけで、選抜の再計算は行わない。
 const RESOLVER = window.PixelMapFacilityResolver;
-const { CLASS2SPRITE, isStationProps, tierValue } = RESOLVER;
+const { isStationProps, tierValue } = RESOLVER;
 const DENSE_COLLISION_POLICY = Object.freeze({
   priority:'protected-area',
   protectedKinds:['station','hospital'],
@@ -2530,7 +2531,7 @@ function categoryTone(category){
   return ACTIVE_PATTERN.palette[category] || ACTIVE_PATTERN.palette.generic || '#78828a';
 }
 function spriteFor(props, size = 'M', variant = 0){
-  const key = CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
+  const key = RESOLVER.spriteKeyFor(props,'legacy');
   const e = SPRITES[key];
   const baseDraw = e[size] || e.M || e.S || e.L || e.draw;
   let draw = baseDraw;
@@ -3874,6 +3875,7 @@ function resolveTileFacilities(x, y){
   const result = RESOLVER.resolveTile({
     tileX:x, tileY:y, pattern:ACTIVE_PATTERN, getTile:resolverGetTile,
     collisionPolicy:DENSE_COLLISION_POLICY,
+    assetPack:'legacy',
   });
   if (result) resolvedTiles.set(key, { generation:tileGeneration, result });
   return result;

@@ -16,7 +16,10 @@
      （旧実装の4連結フラッドフィルと同じ意味論）。
      ===================================================== */
 
-  const ALGORITHM_VERSION = 'facility-resolver/4';
+  const ALGORITHM_VERSION = 'facility-resolver/5';
+  const ASSET_FAMILIES = global.PixelMapAssetFamilyRegistry;
+  if (!ASSET_FAMILIES)
+    throw new Error('PixelMapAssetFamilyRegistry must load before facility-resolver.js');
   const TILE_PX = 1536;            // z14表示スケール: 1タイル = 96セル × 16px
   const CELL_PX = 16;
   const CELL_AREA = CELL_PX * CELL_PX;
@@ -26,22 +29,11 @@
   const COLLISION_BUCKET_PX = 160; // 衝突・重複判定の最大干渉距離を覆う空間ハッシュ幅
   const RING_BUCKET_PX = 128;      // 建物リングの空間ハッシュ幅
 
-  /* ---- 施設分類（map-02から移設した唯一の正典） ---- */
-  const CLASS2SPRITE = {
-    railway:'station', bus:'bus', tram:'station', ferry:'station', aerialway:'station', harbor:'station',
-    shop:'shop', mall:'mall', department_store:'mall', shopping_centre:'mall', clothing_store:'shop', alcohol_shop:'shop', convenience:'grocery', bakery:'grocery', grocery:'grocery',
-    restaurant:'restaurant', fast_food:'fast_food', cafe:'cafe', bar:'bar', beer:'bar', ice_cream:'cafe',
-    lodging:'hotel', hotel:'hotel',
-    hospital:'hospital', doctors:'hospital', dentist:'hospital', veterinary:'hospital', pharmacy:'pharmacy',
-    school:'school', college:'school', university:'school', kindergarten:'school', library:'library',
-    bank:'bank', atm:'bank', money:'bank',
-    post:'post', police:'police', fire_station:'fire_station', town_hall:'townhall', townhall:'townhall',
-    place_of_worship:'place_of_worship',
-    attraction:'attraction', monument:'monument', castle:'castle', art_gallery:'gallery', museum:'museum',
-    theatre:'theatre', cinema:'cinema', music:'cinema', entertainment:'cinema',
-    park:'park', garden:'park', playground:'park', dog_park:'park', pitch:'park', stadium:'park', golf:'park', swimming:'park', zoo:'zoo',
-    parking:'parking', fuel:'parking', charging_station:'charge_hub',
-  };
+  /* 施設→assetの対応はAssetFamilyRegistryだけを正本にする。 */
+  const resolveAsset = (props, assetPack = ASSET_FAMILIES.defaultPack) =>
+    ASSET_FAMILIES.resolvePoi(props, assetPack);
+  const spriteKeyFor = (props, assetPack = ASSET_FAMILIES.defaultPack) =>
+    resolveAsset(props, assetPack).assetId;
   const CATEGORY_KEYS = {
     health:new Set(['hospital','doctors','dentist','veterinary','pharmacy','clinic']),
     civic:new Set(['school','college','university','kindergarten','library','bank','atm','money','post','police','fire_station','town_hall','townhall']),
@@ -369,7 +361,7 @@
            揃わないうちは null を返し、呼び出し側が取得後に再試行する。 */
   function resolveTile({
     tileX,tileY,pattern,getTile,collisionPolicy=null,
-    assetCatalog=null,sourceAnchored=false,
+    assetCatalog=null,sourceAnchored=false,assetPack=ASSET_FAMILIES.defaultPack,
   }){
     const context = collectContext(tileX, tileY, getTile);
     if (!context) return null;
@@ -407,7 +399,8 @@
       const category = poiCategory(props);
       const size = patternSize(pattern, metrics, category);
       const assetCount = patternAssetCount(pattern, metrics, category);
-      const spriteKey=CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
+      const assetBinding=resolveAsset(props,assetPack);
+      const spriteKey=assetBinding.assetId;
       const collisionGeometry=assetCollisionGeometry(
         assetCatalog,spriteKey,size,pattern,category,assetCount);
       const idNum = Number(String(rep.poi.key).split('|')[0] || 0);
@@ -421,6 +414,11 @@
         buildingId:group.building ? group.building.key : null,
         facilityRole:!group.building ? 'standalone' : mixed ? 'mixed_building' : 'building',
         category,
+        assetPack:assetBinding.packId,
+        assetFamily:assetBinding.familyId,
+        assetVariant:assetBinding.variantId,
+        assetMatchedType:assetBinding.matchedType,
+        assetFallback:assetBinding.fallback,
         spriteKey,
         variant:Math.abs((Number.isFinite(idNum) ? idNum : 0) + nameSeed) % 3,
         importance:rep.importance,
@@ -625,7 +623,9 @@
     selectViewportIcons,
     assetCollisionGeometry,
     facilitiesCollide,
-    CLASS2SPRITE,
+    assetFamilyRegistryVersion:ASSET_FAMILIES.version,
+    resolveAsset,
+    spriteKeyFor,
     isStationProps,
     isHospitalProps,
     poiImportance,

@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 globalThis.window = globalThis;
+await import('../assets/asset-family-registry.js');
 await import('../assets/facility-resolver.js');
 await import('../assets/poi-sprites.js');
 
 const resolver = globalThis.PixelMapFacilityResolver;
+const families = globalThis.PixelMapAssetFamilyRegistry;
 const catalog = globalThis.PixelMapPoiSprites;
 const inspiredIds = ['monument','castle','gallery','theatre','zoo','charge_hub'];
 const candidateIds = ['office','civic_hall','burger_stand','grand_station','owl_library',
@@ -15,12 +17,12 @@ const popIds = ['pop_office','pop_townhall','pop_fastfood','pop_station','pop_li
   'pop_university','pop_college','pop_post','pop_art_museum','pop_zoo'];
 
 test('参照イメージを取り入れた6アセットが実際のPOI属性へ割り当てられる', () => {
-  assert.equal(resolver.CLASS2SPRITE.monument, 'monument');
-  assert.equal(resolver.CLASS2SPRITE.castle, 'castle');
-  assert.equal(resolver.CLASS2SPRITE.art_gallery, 'gallery');
-  assert.equal(resolver.CLASS2SPRITE.theatre, 'theatre');
-  assert.equal(resolver.CLASS2SPRITE.zoo, 'zoo');
-  assert.equal(resolver.CLASS2SPRITE.charging_station, 'charge_hub');
+  assert.equal(families.bindingForType('monument').assetId, 'monument');
+  assert.equal(families.bindingForType('castle').assetId, 'castle');
+  assert.equal(families.bindingForType('art_gallery').assetId, 'gallery');
+  assert.equal(families.bindingForType('theatre').assetId, 'theatre');
+  assert.equal(families.bindingForType('zoo').assetId, 'zoo');
+  assert.equal(families.bindingForType('charging_station').assetId, 'charge_hub');
 });
 
 test('assets.html用カタログは52点・新テイスト26点でマッピング欠落がない', () => {
@@ -34,7 +36,7 @@ test('assets.html用カタログは52点・新テイスト26点でマッピン�
     popIds,
   );
   const assetIds = new Set(catalog.assets.map(asset => asset.id));
-  for(const spriteId of Object.values(resolver.CLASS2SPRITE)) assert.ok(assetIds.has(spriteId), spriteId);
+  for(const spriteId of families.assetsForPack()) assert.ok(assetIds.has(spriteId), spriteId);
   for(const asset of catalog.assets) assert.equal(typeof asset.categoryLabel, 'string');
   assert.equal(typeof catalog.draw, 'function');
   assert.equal(typeof catalog.measure, 'function');
@@ -106,11 +108,11 @@ test('各POIはmobile renderer向けに同じ描画矩形命令を公開する',
   }
 });
 
-test('新テイスト候補20点はアセットのみで、マップのPOI属性へは未接続', () => {
-  const wired = new Set(Object.values(resolver.CLASS2SPRITE));
+test('新テイスト候補20点はアセットのみで、legacy packのPOI属性へは未接続', () => {
+  const wired = new Set(families.assetsForPack('legacy'));
   for(const id of [...candidateIds, ...popIds]){
     assert.ok(catalog.assets.some(asset => asset.id === id && asset.inspired), id);
-    assert.ok(!wired.has(id), `${id} はCLASS2SPRITEに接続しない`);
+    assert.ok(!wired.has(id), `${id} はlegacy packに接続しない`);
   }
 });
 

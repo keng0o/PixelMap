@@ -557,9 +557,10 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
-<script src="../assets/facility-resolver.js?v=4"></script>
+<script src="../assets/asset-family-registry.js?v=1"></script>
+<script src="../assets/facility-resolver.js?v=5"></script>
 <script src="../assets/landmark-entities.js"></script>
-<script src="../assets/poi-sprites.js?v=3"></script>
+<script src="../assets/poi-sprites.js?v=4"></script>
 <script src="../assets/building-styles.js"></script>
 <script src="../assets/corridor-renderer.js?v=1"></script>
 <script src="../assets/layer-assets.js?v=3"></script>
@@ -741,6 +742,7 @@ document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.pal
 document.documentElement.dataset.mapMode = 'production';
 document.documentElement.dataset.assetTaste = 'reference';
 document.documentElement.dataset.assetPack = WORLD_STYLE_MODE ? WORLD_STYLE.assetPack : 'legacy';
+const ACTIVE_ASSET_PACK = document.documentElement.dataset.assetPack;
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.documentElement.dataset.renderMode = RENDER_MODE;
 document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
@@ -3005,7 +3007,7 @@ const hi = (hex, f = 1.28) => {                 // 明るく
 // 施設の分類・重要度・サイズ判定はリゾルバーモジュールが唯一の正典。
 // このページは確定済みの施設データを描くだけで、選抜の再計算は行わない。
 const RESOLVER = window.PixelMapFacilityResolver;
-const { CLASS2SPRITE, isStationProps, tierValue } = RESOLVER;
+const { isStationProps, tierValue } = RESOLVER;
 const POI_SPRITE_CATALOG = window.PixelMapPoiSprites;
 const POI_ASSETS_BY_ID = new Map(POI_SPRITE_CATALOG.assets.map(asset => [asset.id,asset]));
 function categoryTone(category){
@@ -3014,7 +3016,7 @@ function categoryTone(category){
   return ACTIVE_PATTERN.palette[category] || ACTIVE_PATTERN.palette.generic || '#78828a';
 }
 function spriteFor(props, size = 'M', variant = 0, spriteKey = null){
-  const key = spriteKey || CLASS2SPRITE[props.subclass] || CLASS2SPRITE[props.class] || 'generic';
+  const key = spriteKey || RESOLVER.spriteKeyFor(props,ACTIVE_ASSET_PACK);
   const asset = POI_ASSETS_BY_ID.get(key) || POI_ASSETS_BY_ID.get('generic');
   const assetContract = POI_SPRITE_CATALOG.contract(asset.id,size);
   const baseDraw = (x,y) => POI_SPRITE_CATALOG.draw(
@@ -3049,7 +3051,7 @@ function spriteFor(props, size = 'M', variant = 0, spriteKey = null){
 }
 const CELL_SPRITE_TEMPLATE_CACHE = new Map();
 function cellSpriteTemplateFor(item){
-  const spriteKey = CLASS2SPRITE[item.props.subclass] || CLASS2SPRITE[item.props.class] || 'generic';
+  const spriteKey = item.spriteKey || RESOLVER.spriteKeyFor(item.props,ACTIVE_ASSET_PACK);
   const stationVariant = isStationProps(item.props) ? featureName(item.props) : '';
   const assetSize=item.displayAssetSize || item.assetSize || item.size;
   const cacheKey = `cell-sprite:${spriteKey}:${assetSize}:${item.variant}:${stationVariant}`;
@@ -3398,8 +3400,9 @@ function makeLandmarkFacility(feature, coordinate){
   const size = props.icon_size || (props.role === 'complex' ? 'L' : 'M');
   const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[category] || 1);
   const assetCount = 1;
-  const spriteKey = CLASS2SPRITE[renderClass] ||
-    (POI_ASSETS_BY_ID.has(renderClass) ? renderClass : 'generic');
+  const resolvedSpriteKey = RESOLVER.spriteKeyFor({class:renderClass},ACTIVE_ASSET_PACK);
+  const spriteKey = resolvedSpriteKey === 'generic' && POI_ASSETS_BY_ID.has(renderClass)
+    ? renderClass : resolvedSpriteKey;
   const collisionGeometry = RESOLVER.assetCollisionGeometry(
     POI_SPRITE_CATALOG,spriteKey,size,ACTIVE_PATTERN,category,assetCount);
   const [worldX, worldY] = landmarkWorldPoint(coordinate);
@@ -4142,7 +4145,7 @@ function render(){
   });
   const semanticRoleForPoi = p => {
     if (p.semanticRole) return p.semanticRole;
-    const id = CLASS2SPRITE[p.props.subclass] || CLASS2SPRITE[p.props.class] || 'generic';
+    const id = p.spriteKey || RESOLVER.spriteKeyFor(p.props,ACTIVE_ASSET_PACK);
     return POI_ASSETS_BY_ID.get(id)?.semanticRole || 'marker';
   };
   function drawPoiIcons(roles){
@@ -4917,6 +4920,7 @@ function resolveTileFacilities(x, y){
     tileX:x,tileY:y,pattern:ACTIVE_PATTERN,getTile:resolverGetTile,
     assetCatalog:STANDALONE_UNIFIED_STYLE ? POI_SPRITE_CATALOG : null,
     sourceAnchored:STANDALONE_UNIFIED_STYLE,
+    assetPack:ACTIVE_ASSET_PACK,
   });
   if (result) resolvedTiles.set(key, { generation:tileGeneration, result });
   return result;

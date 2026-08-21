@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 globalThis.window=globalThis;
+await import('../assets/asset-family-registry.js');
 await import('../assets/facility-resolver.js');
 await import('../assets/poi-sprites.js');
 
@@ -94,6 +95,12 @@ test('決定性: 同じ入力・異なる基準タイルでも結果は完全一
   assert.deepEqual(second, first);
   assert.deepEqual(rebased, first);
   assert.equal(first.algorithmVersion, RESOLVER.ALGORITHM_VERSION);
+  const station=first.facilities.find(facility=>facility.props.class==='railway');
+  assert.equal(station.assetPack,'legacy');
+  assert.equal(station.assetFamily,'transitFacility');
+  assert.equal(station.assetVariant,'station');
+  assert.equal(station.assetMatchedType,'railway');
+  assert.equal(station.assetFallback,false);
 });
 
 test('衝突解決: 重要度の低い近接施設は dot になり理由が残る', () => {

@@ -181,9 +181,12 @@
     pop_university:'civic',pop_college:'civic',pop_post:'civic',pop_art_museum:'landmark',pop_zoo:'nature',
   };
   const categoryLabels = Object.fromEntries(categories.map(category => [category.id,category.label]));
-  const classToSprite = global.PixelMapFacilityResolver?.CLASS2SPRITE || {};
+  const assetFamilies = global.PixelMapAssetFamilyRegistry;
+  if (!assetFamilies)
+    throw new Error('PixelMapAssetFamilyRegistry must load before poi-sprites.js');
   const typesBySprite = {};
-  for(const [type,sprite] of Object.entries(classToSprite)) (typesBySprite[sprite] ||= []).push(type);
+  for(const sprite of Object.keys(SPRITES))
+    typesBySprite[sprite] = [...assetFamilies.typesForAsset(sprite)];
 
   /* テイスト系列: reference=参照イメージ由来の暖色ファンタジー / pop=白地×原色のプロセスイラスト調 */
   const tastes = Object.freeze([

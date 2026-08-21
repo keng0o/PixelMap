@@ -168,7 +168,7 @@
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理。source pointを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
+              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI属性との対応は<code>pixelmap-asset-family-registry/1</code>のpack→family→variant→asset契約へ集約。source pointを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
               <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
             </tr>
             <tr>
@@ -191,6 +191,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>POI対応表をAssetFamilyRegistryへ置換</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>flatな<code>CLASS2SPRITE</code>を廃止し、<code>pixelmap-asset-family-registry/1</code>のpack→semantic family→variant→asset解決へ移行。resolverの確定結果にpack・family・variant・fallback根拠を保持する。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>で<code>retro-jrpg-reference-v1</code>を選択。共有resolverとカタログはpack対応に更新。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは旧対応を完全転記した<code>legacy</code> packを明示し、既存のasset idと描画を維持。</dd></div>
+          <div><dt>確認内容</dt><dd>旧63種の対応一致、subclass優先・class fallback・generic fallback、全asset idのカタログ存在、共有実装からflat表が消えたことを自動テストで確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>z14 POCのアセットパック正本を固定</h3>

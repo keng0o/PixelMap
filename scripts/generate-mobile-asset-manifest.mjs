@@ -1,6 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 
 globalThis.window=globalThis;
+await import('../assets/asset-family-registry.js');
 await import('../assets/facility-resolver.js');
 await import('../assets/poi-sprites.js');
 await import('../assets/corridor-renderer.js');
