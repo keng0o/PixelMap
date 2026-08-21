@@ -8,24 +8,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/catalog.css?v=65">
+<link rel="stylesheet" href="assets/catalog.css?v=66">
 </head>
 <body>
   <header class="hero">
     <a class="back-link" href="index.html" aria-label="マップへ戻る">← MAP</a>
     <p class="eyebrow">PIXELMAP / ALL MAP ASSETS</p>
     <h1>マップアセット一覧</h1>
-    <p class="lede">草地・水域・土地利用・交通・建物・地名を含む全62レイヤーと、POIアセット52点の正典です。交通レイヤーはマップと同じ連続距離マスク描画、POIは同じAsset Contractを使い、プレビューを押すと1マス＝1pxの拡大図が開きます。</p>
+    <p class="lede">草地・水域・土地利用・交通・建物・地名を含む全62レイヤーと、POIアセット62点の正典です。東京ランドマーク10点は3×3論理pxの単色セルだけで構成。プレビューを押すと1論理px単位の拡大図が開きます。</p>
     <nav class="jump-links" aria-label="アセット種別">
       <a href="#mapLayers">地図レイヤー</a>
       <a href="#poiAssets">POIアセット</a>
       <a href="assets/mobile-asset-manifest.json">Mobile JSON</a>
     </nav>
     <div class="hero-stats" aria-label="アセット統計">
-      <div><strong id="totalCount">52</strong><span>POI ASSETS</span></div>
+      <div><strong id="totalCount">62</strong><span>POI ASSETS</span></div>
       <div><strong id="layerCount">62</strong><span>MAP LAYERS</span></div>
       <div><strong id="categoryCount">10</strong><span>CATEGORIES</span></div>
-      <div><strong id="referenceCount">26</strong><span>NEW TASTE MIX</span></div>
+      <div><strong id="referenceCount">36</strong><span>SPECIAL SERIES</span></div>
     </div>
   </header>
 
@@ -41,7 +41,7 @@
 
     <section id="poiAssets" class="catalog-section poi-section" aria-labelledby="poiAssetsTitle">
       <header class="section-heading">
-        <p>POI ASSETS / 52</p>
+        <p>POI ASSETS / 62</p>
         <h2 id="poiAssetsTitle">POIアセット</h2>
         <span>S / M / Lごとの実寸・クリックで8倍拡大</span>
       </header>
@@ -57,8 +57,8 @@
     </section>
 
     <div class="result-line" aria-live="polite">
-      <span><b id="resultCount">52</b> 個を表示</span>
-      <span>使用中32点＋新テイスト候補20点</span>
+      <span><b id="resultCount">62</b> 個を表示</span>
+      <span>既存52点＋東京ランドマーク10点</span>
     </div>
 
     <section id="assetGrid" class="asset-grid" aria-label="POIアセット一覧"></section>
@@ -66,15 +66,15 @@
   </main>
 
   <footer>
-    <span>62 MAP LAYERS + 52 POI ASSETS</span>
+    <span>62 MAP LAYERS + 62 POI ASSETS</span>
     <span>ALL CURRENT DISPLAY OPTIONS</span>
   </footer>
 
   <script src="assets/asset-family-registry.js?v=7"></script>
   <script src="assets/facility-resolver.js?v=7"></script>
-  <script src="assets/poi-sprites.js?v=4"></script>
+  <script src="assets/poi-sprites.js?v=5"></script>
   <script src="assets/corridor-renderer.js?v=3"></script>
   <script src="assets/layer-assets.js?v=68"></script>
-  <script src="assets/catalog.js?v=65"></script>
+  <script src="assets/catalog.js?v=66"></script>
 </body>
 </html>

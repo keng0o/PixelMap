@@ -85,6 +85,32 @@
   function popWin(x, y, w = 4, h = 4){ px(x,y,w,h,POP.ink); px(x+1,y+1,w-2,h-2,POP.blue); }
   function popDoor(x, y, color = POP.yellow){ px(x,y,4,6,POP.ink); px(x+1,y+1,2,5,color); }
 
+  /* --- 東京ランドマーク: 1セルを3×3論理pxの単色矩形だけで構成 --- */
+  const TOKYO_CELL_SIZE = 3;
+  const TOKYO_CELL_PALETTE = Object.freeze({
+    R:'#dc3f3f', C:'#f7ead2', D:'#2e3345', B:'#5ab7d6', G:'#55a063',
+    Y:'#efbd3e', W:'#ffffff', S:'#b8c6cd', P:'#7b5bb5', O:'#d17b42',
+  });
+  function tokyoCellGrid(pattern){
+    const width = Math.max(...pattern.map(row => row.length));
+    return (cx,cy) => {
+      const left = cx - Math.floor(width / 2) * TOKYO_CELL_SIZE;
+      const top = cy - pattern.length * TOKYO_CELL_SIZE;
+      for(let row=0;row<pattern.length;row++){
+        for(let column=0;column<pattern[row].length;column++){
+          const color = TOKYO_CELL_PALETTE[pattern[row][column]];
+          if(color) px(
+            left + column * TOKYO_CELL_SIZE,
+            top + row * TOKYO_CELL_SIZE,
+            TOKYO_CELL_SIZE,
+            TOKYO_CELL_SIZE,
+            color,
+          );
+        }
+      }
+    };
+  }
+
   const SPRITES = {
     station:{ label:'鉄道駅',
       S:(x,y)=>{ yard(x,y,14);block(x-7,y-10,14,10,P.wall);roofBar(x-9,y-14,18,4,P.roofA);px(x-7,y-10,14,1,sh(P.wall,.7));sign(x-4,y-9,8);win(x-5,y-6,3,3);win(x-1,y-6,3,4);win(x+3,y-6,3,3); },
@@ -159,6 +185,69 @@
     pop_post:{label:'ふうとう郵便局',draw:(x,y)=>{popPad(x,y,14);popBox(x-8,y-11,16,11);popBox(x-9,y-14,18,4,POP.red);px(x-5,y-21,10,6,POP.ink);px(x-4,y-20,8,4,POP.white);px(x-3,y-19,2,1,POP.ink);px(x+1,y-19,2,1,POP.ink);px(x-1,y-18,2,1,POP.ink);px(x+2,y-17,2,1,POP.yellow);popWin(x-5,y-8);popDoor(x,y-6,POP.blue);px(x+10,y-8,4,8,POP.ink);px(x+11,y-7,2,6,POP.red);px(x+11,y-5,2,1,POP.ink);}},
     pop_art_museum:{label:'バナー美術館',draw:(x,y)=>{popPad(x,y,17);popBox(x-13,y-13,26,13);popBox(x-14,y-16,28,4,POP.blue);px(x-10,y-15,2,2,POP.white);px(x-4,y-15,2,2,POP.white);px(x+2,y-15,2,2,POP.white);px(x+8,y-15,2,2,POP.white);px(x-9,y-12,7,9,POP.ink);px(x-8,y-11,5,7,POP.red);px(x-6,y-9,1,3,POP.yellow);px(x-7,y-8,3,1,POP.yellow);popWin(x+6,y-10);popDoor(x+1,y-6,POP.green);px(x-13,y-11,1,11,POP.ink);px(x+12,y-11,1,11,POP.ink);}},
     pop_zoo:{label:'どうぶつゲート',draw:(x,y)=>{popPad(x,y,18);popBox(x-13,y-14,5,14);popBox(x+8,y-14,5,14);px(x-13,y-19,26,5,POP.ink);px(x-12,y-18,24,3,POP.yellow);px(x-2,y-17,3,2,POP.ink);px(x-4,y-18,1,1,POP.ink);px(x,y-18,1,1,POP.ink);px(x+2,y-18,1,1,POP.ink);px(x-8,y-7,16,1,POP.ink);px(x-8,y-3,16,1,POP.ink);for(let i=0;i<5;i++)px(x-7+i*4,y-7,1,4,POP.ink);px(x-18,y-8,5,5,POP.ink);px(x-17,y-7,3,3,POP.green);px(x+13,y-8,5,5,POP.ink);px(x+14,y-7,3,3,POP.green);px(x+5,y-22,3,2,POP.blue);px(x+7,y-23,1,1,POP.blue);}},
+    /* --- 東京ランドマーク（アセットページ専用候補） --- */
+    tokyo_tower:{label:'東京タワー',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '.......RR.......','.......RR.......','......RRRR......','......RCCR......',
+      '.....RRRRRR.....','.....R....R.....','....RR....RR....','....R......R....',
+      '...RRCCCCCCRR...','...R........R...','..RR........RR..','..R..........R..',
+      '.RR...R..R...RR.','.R...RR..RR...R.','RR...R....R...RR','R...RR....RR...R',
+      'R..RR......RR..R','RRRRRCCCCCCRRRRR','...RR......RR...','..RRRRRRRRRRRR..',
+    ])},
+    tokyo_skytree:{label:'東京スカイツリー',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '.......DD.......','.......DD.......','.......BB.......','......BBBB......',
+      '.......BB.......','......BDDB......','......BBBB......','.....BB..BB.....',
+      '.....B....B.....','....BB....BB....','....B..BB..B....','...BB..BB..BB...',
+      '...B...BB...B...','..BBBBBBBBBBBB..','...B...BB...B...','..BB...BB...BB..',
+      '..B....BB....B..','.BB....BB....BB.','.B.....BB.....B.','BBBBBBBBBBBBBBBB',
+    ])},
+    kaminarimon:{label:'雷門',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '..DDDDDDDDDDDD..','.DDDDDDDDDDDDDD.','DDDDDDDDDDDDDDDD','..RRDDDDDDDDRR..',
+      '..R..........R..','..R...YYYY...R..','..R..YRRRRY..R..','..R..YRRRRY..R..',
+      '..R..YRRRRY..R..','..R...YRRRY..R..','..R....YYY...R..','..R..........R..',
+      '..RRRRRRRRRRRR..','.DDDDDDDDDDDDDD.','DDDDDDDDDDDDDDDD',
+    ])},
+    tokyo_station:{label:'東京駅 丸の内駅舎',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '....RRRRRRRR....','...RRRRRRRRRR...','..RRRRRRRRRRRR..','..RCRRRRRRRRCR..',
+      '..CCCCCCCCCCCC..','..CDCCDCCDCCDC..','..CCCCCCCCCCCC..','..CDCCDCCDCCDC..',
+      'RRRRRRRRRRRRRRRR','RCCCCCCCCCCCCCCR','RCDDCDDCDDCDDCDR','RCCCCCCCCCCCCCCR',
+      'RCCCDDDCCDDDCCCR','RRRRRRRRRRRRRRRR',
+    ])},
+    national_diet:{label:'国会議事堂',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '......CCCC......','.....CCCCCC.....','....CCCCCCCC....','...CCCCCCCCCC...',
+      '..CCCCCCCCCCCC..','..CDCCDCCDCCDC..','..CCCCCCCCCCCC..','DDDDDDDDDDDDDDDD',
+      '...CCCCCCCCCC...','...CDCCDCCDCC...','...CCCCCCCCCC...','.CCCCCCCCCCCCCC.',
+      '.CDCCDCCDCCDCCD.','.CCCCCCCCCCCCCC.','CCCCCCCCCCCCCCCC','DDDDDDDDDDDDDDDD',
+    ])},
+    tokyo_metropolitan_government:{label:'東京都庁',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '..DDD......DDD..','..DCD......DCD..','..DCD......DCD..','..DDD......DDD..',
+      '..DCD......DCD..','..DCD......DCD..','..DDD......DDD..','..DCD..DD..DCD..',
+      '..DCD..DD..DCD..','..DDD..DD..DDD..','..DCD..CC..DCD..','..DCD..CC..DCD..',
+      '..DDDCCCCCCDDD..','..DCCCCCCCCCCD..','..DCDCCDCCDCCD..','..DCCCCCCCCCCD..',
+      '.DDDDDDDDDDDDDD.','DDDDDDDDDDDDDDDD',
+    ])},
+    shibuya_scramble:{label:'渋谷スクランブル交差点',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '...DDD....DDD...','..DDDW....WDDD..','.DD.WD....DW.DD.','DDD.WD....DW.DDD',
+      'DDDDDD....DDDDDD','DDDDDD....DDDDDD','.WW...DDDD...WW.','......DDDD......',
+      '......DYYD......','......DYYD......','......DDDD......','.WW...DDDD...WW.',
+      'DDDDDD....DDDDDD','DDD.WD....DW.DDD','..DDDW....WDDD..','...DDD....DDD...',
+    ])},
+    rainbow_bridge:{label:'レインボーブリッジ',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '...B........B...','..BBB......BBB..','..BB.B....B.BB..','..B...B..B...B..',
+      '.B.....BB.....B.','B......BB......B','B......BB......B','B......BB......B',
+      'BBBBBBBBBBBBBBBB','DDDDDDDDDDDDDDDD','..D.D.D..D.D.D..','DDDDDDDDDDDDDDDD',
+    ])},
+    kabukiza:{label:'歌舞伎座',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '....RRRRRRRR....','...RRRRRRRRRR...','..RRRRRRRRRRRR..','.RRR..RRRR..RRR.',
+      '..CCCCCCCCCCCC..','..CRCCCCCCCCRC..','..CCCCRRCCCCCC..','.RRRRRRRRRRRRRR.',
+      'RCCCCCCCCCCCCCCR','RCCCRRCCCCRRCCCR','RCCCCCCCCCCCCCCR','RCCCDDCCCCDDCCCR',
+      'RCCCCCCCCCCCCCCR','RRRRRRRRRRRRRRRR',
+    ])},
+    tokyo_dome:{label:'東京ドーム',cellSize:TOKYO_CELL_SIZE,draw:tokyoCellGrid([
+      '.......BB.......','.....BBBBBB.....','....BBBBBBBB....','...BBCCCCCCBB...',
+      '..BBCCCCCCCCBB..','.BBCCCCCCCCCCBB.','BBCCCCCCCCCCCCBB','BCCCCCCCCCCCCCCB',
+      'BCCCCCCCCCCCCCCB','BCCBBBBBBBBBBCCB','BCCBCCCCCCCCBCCB','BCCBCCCCCCCCBCCB',
+      'DDDDDDDDDDDDDDDD',
+    ])},
     generic:{label:'施設',draw:(x,y)=>signPost(x,y,P.dirt)},
   };
 
@@ -179,6 +268,9 @@
     university:'civic',college:'civic',wing_post:'civic',art_museum:'landmark',menagerie:'nature',
     pop_office:'commerce',pop_townhall:'civic',pop_fastfood:'food',pop_station:'transit',pop_library:'civic',
     pop_university:'civic',pop_college:'civic',pop_post:'civic',pop_art_museum:'landmark',pop_zoo:'nature',
+    tokyo_tower:'landmark',tokyo_skytree:'landmark',kaminarimon:'landmark',tokyo_station:'landmark',
+    national_diet:'landmark',tokyo_metropolitan_government:'landmark',shibuya_scramble:'landmark',
+    rainbow_bridge:'landmark',kabukiza:'landmark',tokyo_dome:'landmark',
   };
   const categoryLabels = Object.fromEntries(categories.map(category => [category.id,category.label]));
   const assetFamilies = global.PixelMapAssetFamilyRegistry;
@@ -192,6 +284,7 @@
   const tastes = Object.freeze([
     {id:'reference',label:'参照テイスト'},
     {id:'pop',label:'しろポップ'},
+    {id:'tokyo',label:'東京ランドマーク'},
   ]);
   const tasteBySprite = {
     monument:'reference',castle:'reference',gallery:'reference',theatre:'reference',zoo:'reference',charge_hub:'reference',
@@ -199,8 +292,15 @@
     university:'reference',college:'reference',wing_post:'reference',art_museum:'reference',menagerie:'reference',
     pop_office:'pop',pop_townhall:'pop',pop_fastfood:'pop',pop_station:'pop',pop_library:'pop',
     pop_university:'pop',pop_college:'pop',pop_post:'pop',pop_art_museum:'pop',pop_zoo:'pop',
+    tokyo_tower:'tokyo',tokyo_skytree:'tokyo',kaminarimon:'tokyo',tokyo_station:'tokyo',
+    national_diet:'tokyo',tokyo_metropolitan_government:'tokyo',shibuya_scramble:'tokyo',
+    rainbow_bridge:'tokyo',kabukiza:'tokyo',tokyo_dome:'tokyo',
   };
   const tasteLabels = Object.fromEntries(tastes.map(taste => [taste.id,taste.label]));
+  const catalogOnlySprites = new Set([
+    'tokyo_tower','tokyo_skytree','kaminarimon','tokyo_station','national_diet',
+    'tokyo_metropolitan_government','shibuya_scramble','rainbow_bridge','kabukiza','tokyo_dome',
+  ]);
   /*
     POI Asset Contract v1
     ---------------------
@@ -224,6 +324,9 @@
     pop_office:'structure',pop_townhall:'structure',pop_fastfood:'structure',pop_station:'structure',
     pop_library:'structure',pop_university:'structure',pop_college:'structure',pop_post:'marker',
     pop_art_museum:'structure',pop_zoo:'structure',generic:'marker',
+    tokyo_tower:'object',tokyo_skytree:'object',kaminarimon:'structure',tokyo_station:'structure',
+    national_diet:'structure',tokyo_metropolitan_government:'structure',shibuya_scramble:'object',
+    rainbow_bridge:'object',kabukiza:'structure',tokyo_dome:'structure',
   });
   const assets = Object.freeze(Object.entries(SPRITES).map(([id,entry]) => {
     const category = categoryBySprite[id];
@@ -240,10 +343,17 @@
       taste,
       tasteLabel:taste ? tasteLabels[taste] : null,
       inspired:Boolean(taste),
+      catalogOnly:catalogOnlySprites.has(id),
       contractVersion:ASSET_CONTRACT_VERSION,
       semanticRole:roleBySprite[id],
-      renderer:'pixel-procedural',
+      renderer:entry.cellSize ? 'solid-cell-grid' : 'pixel-procedural',
       assetPixelScale:2,
+      cellGrid:entry.cellSize ? Object.freeze({
+        width:entry.cellSize,
+        height:entry.cellSize,
+        unit:'logical-pixel',
+        fill:'solid-color',
+      }) : null,
       anchor:GROUND_CENTER_ANCHOR,
       boundsSource:'measured-draw-output',
     });
@@ -270,7 +380,13 @@
     target.imageSmoothingEnabled=false;
     paintBackdrop(target);
     target.save();target.translate(144,207);target.scale(3,3);
-    target.fillStyle='rgba(24,40,16,.3)';target.fillRect(-7,-1,14,3);
+    if(entry.cellSize){
+      target.fillStyle='rgba(24,40,16,.24)';
+      for(let shadowX=-9;shadowX<=6;shadowX+=TOKYO_CELL_SIZE)
+        target.fillRect(shadowX,0,TOKYO_CELL_SIZE,TOKYO_CELL_SIZE);
+    }else{
+      target.fillStyle='rgba(24,40,16,.3)';target.fillRect(-7,-1,14,3);
+    }
     ctx=target;
     draw(0,0);
     ctx=null;

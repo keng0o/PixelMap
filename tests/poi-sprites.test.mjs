@@ -15,6 +15,8 @@ const candidateIds = ['office','civic_hall','burger_stand','grand_station','owl_
   'university','college','wing_post','art_museum','menagerie'];
 const popIds = ['pop_office','pop_townhall','pop_fastfood','pop_station','pop_library',
   'pop_university','pop_college','pop_post','pop_art_museum','pop_zoo'];
+const tokyoIds = ['tokyo_tower','tokyo_skytree','kaminarimon','tokyo_station','national_diet',
+  'tokyo_metropolitan_government','shibuya_scramble','rainbow_bridge','kabukiza','tokyo_dome'];
 
 test('参照イメージを取り入れた6アセットが実際のPOI属性へ割り当てられる', () => {
   assert.equal(families.bindingForType('monument').assetId, 'monument');
@@ -41,15 +43,19 @@ test('reference packは未接続だった参照テイスト10点を意味family�
   for(const id of [...inspiredIds,...candidateIds]) assert.ok(wiredAcrossPacks.has(id),id);
 });
 
-test('assets.html用カタログは52点・新テイスト26点でマッピング欠落がない', () => {
-  assert.equal(catalog.assets.length, 52);
+test('assets.html用カタログは既存52点＋東京ランドマーク10点でマッピング欠落がない', () => {
+  assert.equal(catalog.assets.length, 62);
   assert.deepEqual(
     catalog.assets.filter(asset => asset.inspired).map(asset => asset.id),
-    [...inspiredIds, ...candidateIds, ...popIds],
+    [...inspiredIds, ...candidateIds, ...popIds, ...tokyoIds],
   );
   assert.deepEqual(
     catalog.assets.filter(asset => asset.taste === 'pop').map(asset => asset.id),
     popIds,
+  );
+  assert.deepEqual(
+    catalog.assets.filter(asset => asset.taste === 'tokyo').map(asset => asset.id),
+    tokyoIds,
   );
   const assetIds = new Set(catalog.assets.map(asset => asset.id));
   for(const spriteId of families.assetsForPack()) assert.ok(assetIds.has(spriteId), spriteId);
@@ -85,7 +91,7 @@ test('全POIのS/M/L実寸が透明描画の外接矩形と一致する', () => 
   }
 });
 
-test('全52件が同じPOI Asset Contractを持ち、role・ground anchor・実測boundsに欠落がない', () => {
+test('全62件が同じPOI Asset Contractを持ち、role・ground anchor・実測boundsに欠落がない', () => {
   assert.equal(catalog.contractVersion, 'pixelmap-poi-asset/1');
   const allowedRoles = new Set(['structure','object','marker']);
   const roleCounts = {structure:0,object:0,marker:0};
@@ -93,7 +99,7 @@ test('全52件が同じPOI Asset Contractを持ち、role・ground anchor・実�
     assert.equal(asset.contractVersion, catalog.contractVersion, asset.id);
     assert.ok(allowedRoles.has(asset.semanticRole), `${asset.id} semanticRole`);
     roleCounts[asset.semanticRole]++;
-    assert.equal(asset.renderer, 'pixel-procedural', `${asset.id} renderer`);
+    assert.ok(['pixel-procedural','solid-cell-grid'].includes(asset.renderer), `${asset.id} renderer`);
     assert.equal(asset.assetPixelScale, 2, `${asset.id} scale`);
     assert.deepEqual(asset.anchor, {kind:'ground-center',x:0,y:0}, `${asset.id} anchor`);
     assert.equal(asset.boundsSource, 'measured-draw-output', `${asset.id} boundsSource`);
@@ -109,6 +115,27 @@ test('全52件が同じPOI Asset Contractを持ち、role・ground anchor・実�
   assert.ok(roleCounts.structure > 0);
   assert.ok(roleCounts.object > 0);
   assert.ok(roleCounts.marker > 0);
+});
+
+test('東京ランドマーク10点は3×3論理pxの単色セルだけで構成し、マップには未接続', () => {
+  const wiredAcrossPacks = new Set(Object.keys(families.packs)
+    .flatMap(packId => families.assetsForPack(packId)));
+  for(const id of tokyoIds){
+    const asset = catalog.assets.find(candidate => candidate.id === id);
+    assert.ok(asset, id);
+    assert.equal(asset.catalogOnly, true, `${id} catalogOnly`);
+    assert.equal(asset.renderer, 'solid-cell-grid', `${id} renderer`);
+    assert.deepEqual(asset.cellGrid, {
+      width:3,height:3,unit:'logical-pixel',fill:'solid-color',
+    }, `${id} cellGrid`);
+    assert.ok(!wiredAcrossPacks.has(id), `${id} はどのasset packにも接続しない`);
+    const commands = catalog.commands(id,'M');
+    assert.ok(commands.length > 0, id);
+    assert.ok(commands.every(command =>
+      command.width === 3 && command.height === 3 &&
+      command.x % 3 === 0 && command.y % 3 === 0
+    ), `${id} は3×3論理pxの整列セルだけを使う`);
+  }
 });
 
 test('各POIはmobile renderer向けに同じ描画矩形命令を公開する', () => {

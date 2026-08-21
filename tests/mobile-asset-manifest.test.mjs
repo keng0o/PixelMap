@@ -16,9 +16,22 @@ test('mobile manifestはWebと同じ3契約・compositor・全アセットを公
   });
   assert.deepEqual(manifest.compositor,
     ['area','structure','corridor','bridge','object','marker','dot-cluster']);
-  assert.equal(manifest.poiAssets.length,52);
+  assert.equal(manifest.poiAssets.length,62);
   assert.equal(Object.keys(manifest.corridors).length,21);
-  assert.equal(new Set(manifest.poiAssets.map(asset=>asset.id)).size,52);
+  assert.equal(new Set(manifest.poiAssets.map(asset=>asset.id)).size,62);
+});
+
+test('東京ランドマーク10点はMobile JSONでも3×3論理px単色セル契約を保つ', () => {
+  const tokyoIds = new Set(['tokyo_tower','tokyo_skytree','kaminarimon','tokyo_station','national_diet',
+    'tokyo_metropolitan_government','shibuya_scramble','rainbow_bridge','kabukiza','tokyo_dome']);
+  const tokyoAssets = manifest.poiAssets.filter(asset => tokyoIds.has(asset.id));
+  assert.equal(tokyoAssets.length,10);
+  for(const asset of tokyoAssets){
+    assert.equal(asset.renderer,'solid-cell-grid',asset.id);
+    assert.deepEqual(asset.cellGrid,{width:3,height:3,unit:'logical-pixel',fill:'solid-color'},asset.id);
+    assert.ok(asset.sizes.M.rectangles.every(rect =>
+      rect.width===3 && rect.height===3 && rect.x%3===0 && rect.y%3===0),asset.id);
+  }
 });
 
 test('POI矩形命令はground-center相対・RGBAでbounds内に収まる', () => {

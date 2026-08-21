@@ -33,6 +33,7 @@ const poiAssets=poi.assets.map(asset=>({
   category:asset.category,
   semanticRole:asset.semanticRole,
   renderer:asset.renderer,
+  ...(asset.cellGrid ? {cellGrid:asset.cellGrid} : {}),
   availableSizes:asset.sizes,
   previewSize:asset.previewSize,
   sizes:Object.fromEntries(asset.sizes.map(size=>{

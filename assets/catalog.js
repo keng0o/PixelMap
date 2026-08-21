@@ -78,6 +78,17 @@
       chip.title = `${size}: ${measurement.width}×${measurement.height} px`;
       list.appendChild(chip);
     }
+    if(asset.cellGrid){
+      const chip = document.createElement('span');
+      chip.className = 'size-chip cell-size-chip';
+      const name = document.createElement('b');
+      name.textContent = 'CELL';
+      const dimensions = document.createElement('small');
+      dimensions.textContent = `${asset.cellGrid.width}×${asset.cellGrid.height}`;
+      chip.append(name,dimensions);
+      chip.title = `1セル: ${asset.cellGrid.width}×${asset.cellGrid.height} 論理px / 単色`;
+      list.appendChild(chip);
+    }
     return list;
   }
 
@@ -146,7 +157,7 @@
     return grid;
   }
 
-  function makeDetailHeading(titleText,metricText){
+  function makeDetailHeading(titleText,metricText,legendText='1マス = 1 px / 8× ZOOM'){
     const heading=document.createElement('div');
     heading.className='pixel-detail-heading';
     const title=document.createElement('strong');
@@ -154,7 +165,7 @@
     const metric=document.createElement('code');
     metric.textContent=metricText;
     const legend=document.createElement('span');
-    legend.textContent='1マス = 1 px / 8× ZOOM';
+    legend.textContent=legendText;
     heading.append(title,metric,legend);
     return {heading,metric};
   }
@@ -177,7 +188,10 @@
     const panel=document.createElement('section');
     panel.className='pixel-detail';
     panel.setAttribute('aria-label',`${asset.label}のピクセル拡大表示`);
-    const {heading,metric}=makeDetailHeading(asset.label,'');
+    const detailLegend = asset.cellGrid
+      ? `1セル = ${asset.cellGrid.width}×${asset.cellGrid.height} 論理px / 単色 / 8× ZOOM`
+      : '1マス = 1 px / 8× ZOOM';
+    const {heading,metric}=makeDetailHeading(asset.label,'',detailLegend);
     const controls=document.createElement('div');
     controls.className='detail-size-controls';
     controls.setAttribute('role','group');
@@ -234,6 +248,7 @@
     const article = document.createElement('article');
     article.className = `asset-card${asset.inspired ? ' is-inspired' : ''}`;
     article.dataset.assetId = asset.id;
+    if(asset.taste) article.dataset.taste = asset.taste;
     article.dataset.number = String(index + 1).padStart(2, '0');
 
     const preview = document.createElement('button');
@@ -272,6 +287,7 @@
     mappingLabel.textContent = 'POI';
     const mappingValue = document.createElement('code');
     mappingValue.textContent = asset.poiTypes.length ? asset.poiTypes.join(' / ')
+      : asset.catalogOnly ? '未接続（アセットページ専用）'
       : asset.id === 'generic' ? '未対応属性のフォールバック' : '未接続（新テイスト候補）';
     mapping.append(mappingLabel, mappingValue);
 
