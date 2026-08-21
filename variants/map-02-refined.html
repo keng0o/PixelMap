@@ -557,14 +557,14 @@
 </div>
 
 <script src="../assets/icon-patterns.js"></script>
-<script src="../assets/asset-family-registry.js?v=4"></script>
+<script src="../assets/asset-family-registry.js?v=5"></script>
 <script src="../assets/facility-resolver.js?v=6"></script>
 <script src="../assets/landmark-entities.js"></script>
 <script src="../assets/poi-sprites.js?v=4"></script>
 <script src="../assets/building-styles.js"></script>
 <script src="../assets/corridor-renderer.js?v=2"></script>
-<script src="../assets/layer-assets.js?v=4"></script>
-<script src="../assets/world-style.js?v=3"></script>
+<script src="../assets/layer-assets.js?v=5"></script>
+<script src="../assets/world-style.js?v=4"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -913,7 +913,9 @@ const P = {
   forestFloor:'#355d38', forestDeep:'#1f4628', forestMid:'#2f7038',
   forestLight:'#57954a', forestMoss:'#83a657',
   woodsFloor:'#80b564', woodsDeep:'#477a46', woodsMid:'#62a052', woodsLight:'#a0cf7a',
-  parkSmall:'#92ce69', parkMedium:'#88c764', parkLarge:'#7fbb61', parkPath:'#d8bd78',
+  parkSmall:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.parkSurface.small : '#92ce69',
+  parkMedium:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.parkSurface.medium : '#88c764',
+  parkLarge:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.parkSurface.large : '#7fbb61', parkPath:'#d8bd78',
   road:WORLD_STYLE_MODE ? WORLD_STYLE.palette.roadLocal : CANONICAL_TRANSPORT_RULES.localRoads.fill,
   roadDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.roadEdge : CANONICAL_TRANSPORT_RULES.localRoads.edge,
   roadDot:WORLD_STYLE_MODE ? '#b9a878' : '#b4b4ae',
@@ -929,11 +931,12 @@ const P = {
   rock:'#8d8790', rockDk:'#625f69', rockLt:'#b7b1b8',
   wetland:'#669c68', wetlandDk:'#39775c', wetlandWater:'#5fa7b2',
   ice:'#dcecf0', iceDk:'#a8cad8', iceLt:'#f7ffff',
-  field:'#68b058', fieldAlt:'#5ca050',
-  water:WORLD_STYLE_MODE ? WORLD_STYLE.palette.water : '#4890e0',
-  waterLt:WORLD_STYLE_MODE ? '#8bc1e5' : '#88c0f0',
-  waterDk:WORLD_STYLE_MODE ? '#326aa5' : '#3068b8',
-  foam:WORLD_STYLE_MODE ? WORLD_STYLE.palette.waterEdge : '#c8e8f8',
+  field:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.sportsSurface.fill : '#68b058',
+  fieldAlt:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.sportsSurface.alternate : '#5ca050',
+  water:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.fill : '#4890e0',
+  waterLt:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.light : '#88c0f0',
+  waterDk:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.dark : '#3068b8',
+  foam:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.edge : '#c8e8f8',
   roofA:'#e05038', roofADk:'#b03828', roofALt:'#f87858', roofAEdge:'#781810',
   roofB:'#5078d8', roofBDk:'#3858b0', roofBLt:'#88a0f0', roofBEdge:'#203070',
   wall:'#f0e4c8', wallDk:'#c8b490', win:'#3868a0', door:'#805028',
@@ -1318,6 +1321,14 @@ function corridorBinding(feature){
     corridorBindingCache.set(feature,ASSET_FAMILY_REGISTRY.resolveCorridor(feature.props,ACTIVE_ASSET_PACK));
   return corridorBindingCache.get(feature);
 }
+const surfaceBindingCache = new WeakMap();
+function surfaceBinding(feature,sourceLayer){
+  let bySource=surfaceBindingCache.get(feature);
+  if(!bySource){bySource=new Map();surfaceBindingCache.set(feature,bySource);}
+  if(!bySource.has(sourceLayer))
+    bySource.set(sourceLayer,ASSET_FAMILY_REGISTRY.resolveSurface(feature.props,sourceLayer,ACTIVE_ASSET_PACK));
+  return bySource.get(sourceLayer);
+}
 const transportationOption = feature => corridorBinding(feature).assetId;
 const TRANSPORT_GRID_IDS = Object.freeze({
   path:ID.PATH,road:ID.ROAD,rail:ID.RAIL,roadMajor:ID.ROAD_MAJOR,highway:ID.HIGHWAY,
@@ -1450,10 +1461,9 @@ function rasterizeGrid(layers, options){
     return Math.abs(twiceArea) * .5 * semanticS * semanticS;
   }
 
-  const PARK_SURFACE_CLASSES = new Set(['park','garden','recreation_ground']);
-  const PARK_RESERVE_CLASSES = new Set(['national_park','geopark','nature_reserve','protected_area']);
-  const featureKind = feature => feature.props.subclass || feature.props.class || '';
-  const isParkSurface = feature => PARK_SURFACE_CLASSES.has(featureKind(feature));
+  const legacyParkKind=feature => feature.props.subclass || feature.props.class || '';
+  const isLegacyParkSurface=feature => ['park','garden','recreation_ground'].includes(legacyParkKind(feature));
+  const isLegacyParkReserve=feature => ['national_park','geopark','nature_reserve','protected_area'].includes(legacyParkKind(feature));
 
   const LANDCOVER = {
     wood:{ id:ID.WOODS, option:'woods' },
@@ -1511,22 +1521,41 @@ function rasterizeGrid(layers, options){
     styles[feature.props.subclass] || styles[feature.props.class] || fallback;
   stampGroups(
     L('landcover'),
-    feature => isParkSurface(feature) ? null : featureStyle(feature, LANDCOVER, { id:ID.TERRAIN_OTHER, option:'landcoverOther' }),
+    feature => STANDALONE_UNIFIED_STYLE
+      ? surfaceBinding(feature,'landcover').fallback
+        ? featureStyle(feature, LANDCOVER, { id:ID.TERRAIN_OTHER, option:'landcoverOther' }) : null
+      : isLegacyParkSurface(feature) ? null
+        : featureStyle(feature, LANDCOVER, { id:ID.TERRAIN_OTHER, option:'landcoverOther' }),
     feature => paintGeometry(feature, 1.2, 1)
   );
   stampGroups(
     L('landuse'),
-    feature => isParkSurface(feature) ? null : featureStyle(feature, LANDUSE, { id:ID.DIRT, option:'landuseOther' }),
+    feature => STANDALONE_UNIFIED_STYLE
+      ? surfaceBinding(feature,'landuse').fallback
+        ? featureStyle(feature, LANDUSE, { id:ID.DIRT, option:'landuseOther' }) : null
+      : isLegacyParkSurface(feature) ? null
+        : featureStyle(feature, LANDUSE, { id:ID.DIRT, option:'landuseOther' }),
     feature => paintGeometry(feature, 1.2, 1)
   );
   // landcover/landuse の公園・庭園を統合し、面積8セル未満を小、64セル未満を中、それ以上を大にする。
   // 国立公園・保護区は地表ではなく指定区域なので別IDにし、既存の森や林を塗り潰さない。
-  const parkFeatures = [
-    ...L('landcover').filter(isParkSurface),
-    ...L('landuse').filter(isParkSurface),
-  ];
+  const semanticSurfaceFeatures = STANDALONE_UNIFIED_STYLE ? [
+    ...L('landcover').map(feature => ({feature,sourceLayer:'landcover',binding:surfaceBinding(feature,'landcover')})),
+    ...L('landuse').map(feature => ({feature,sourceLayer:'landuse',binding:surfaceBinding(feature,'landuse')})),
+    ...L('park').map(feature => ({feature,sourceLayer:'park',binding:surfaceBinding(feature,'park')})),
+  ].filter(item => !item.binding.fallback) : [];
+  const semanticSurfaceByFeature=new Map(semanticSurfaceFeatures.map(item => [item.feature,item]));
+  const parkFeatures = STANDALONE_UNIFIED_STYLE
+    ? semanticSurfaceFeatures
+      .filter(item => item.binding.familyId === 'parkSurface' && item.binding.assetId === 'parks' && item.binding.variantId !== 'protected')
+      .map(item => item.feature)
+    : [...L('landcover').filter(isLegacyParkSurface),...L('landuse').filter(isLegacyParkSurface)];
   const parkGroups = new Map([
-    [ID.PARK_RESERVE,L('park').filter(feature => feature.type === 3 && PARK_RESERVE_CLASSES.has(featureKind(feature)))],
+    [ID.PARK_RESERVE,STANDALONE_UNIFIED_STYLE
+      ? semanticSurfaceFeatures
+        .filter(item => item.binding.familyId === 'parkSurface' && item.binding.variantId === 'protected' && item.feature.type === 3)
+        .map(item => item.feature)
+      : L('park').filter(feature => feature.type === 3 && isLegacyParkReserve(feature))],
     [ID.PARK_LARGE,[]],[ID.PARK_MEDIUM,[]],[ID.PARK,[]],
   ]);
   for (const feature of parkFeatures){
@@ -1540,6 +1569,16 @@ function rasterizeGrid(layers, options){
       for (const feature of features) paintGeometry(feature, 1.2, 1);
     });
   }
+  stampGroups(
+    semanticSurfaceFeatures
+      .filter(item => item.binding.assetId !== 'parks')
+      .map(item => item.feature),
+    feature => {
+      const item=semanticSurfaceByFeature.get(feature);
+      return item ? {id:ID.FIELD,option:item.binding.assetId} : null;
+    },
+    feature => paintGeometry(feature,1.2,1)
+  );
   stampGroups(
     L('aeroway'),
     feature => {
@@ -1555,10 +1594,15 @@ function rasterizeGrid(layers, options){
     }
   );
   // 水
-  countFeatures('waterAreas', L('water').length);
-  stamp('waterAreas', ID.WATER, () => {
-    for (const feature of L('water')) paintGeometry(feature, 1.4, 1);
-  });
+  stampGroups(
+    L('water'),
+    feature => {
+      if(!STANDALONE_UNIFIED_STYLE) return {id:ID.WATER,option:'waterAreas'};
+      const binding=surfaceBinding(feature,'water');
+      return binding.fallback ? null : {id:ID.WATER,option:binding.assetId};
+    },
+    feature => paintGeometry(feature,1.4,1)
+  );
   const waterways = L('waterway');
   const WATERWAY = {
     river:{ id:ID.WATER, option:'rivers', width:1.4 },
@@ -4625,13 +4669,23 @@ function render(){
   const surfaceCellCounts = {
     forest:gridCellCount('forest', ID.FOREST),
     woods:gridCellCount('woods', ID.WOODS),
-    parks:{
+    waterSurface:gridCellCount('waterAreas',ID.WATER),
+    parkSurface:{
       small:gridCellCount('parks', ID.PARK),
       medium:gridCellCount('parks', ID.PARK_MEDIUM),
       large:gridCellCount('parks', ID.PARK_LARGE),
       reserve:gridCellCount('parks', ID.PARK_RESERVE),
+      playground:gridCellCount('landusePlayground',ID.FIELD),
     },
+    sportsSurface:
+      gridCellCount('landuseStadium',ID.FIELD)+gridCellCount('landusePitchTrack',ID.FIELD),
   };
+  const surfaceFamilyBindings = [
+    ...L('water').map(feature => surfaceBinding(feature,'water')),
+    ...L('landcover').map(feature => surfaceBinding(feature,'landcover')),
+    ...L('landuse').map(feature => surfaceBinding(feature,'landuse')),
+    ...L('park').map(feature => surfaceBinding(feature,'park')),
+  ];
   const corridorFamilyBindings = L('transportation').map(feature => corridorBinding(feature));
   const corridorModifierCounts = Object.fromEntries(
     ['bridge','construction','levelCrossing','tunnel','underground','service'].map(modifier => [
@@ -4648,6 +4702,14 @@ function render(){
     featureCounts,
     classesBySource,
     surfaceCellCounts,
+    surfaceFamilies:{
+      registryVersion:ASSET_FAMILY_REGISTRY.version,
+      total:surfaceFamilyBindings.length,
+      families:countBy(surfaceFamilyBindings,binding => binding.familyId),
+      variants:countBy(surfaceFamilyBindings,binding => binding.variantId),
+      assets:countBy(surfaceFamilyBindings.filter(binding => binding.assetId),binding => binding.assetId),
+      fallbacks:surfaceFamilyBindings.filter(binding => binding.fallback).length,
+    },
     activeOptions:Object.entries(o).filter(([, enabled]) => enabled).map(([name]) => name),
     layerOrder:[...layerOrder],
     renderOrder:[...renderOrder],

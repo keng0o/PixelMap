@@ -2,13 +2,13 @@
   'use strict';
 
   /*
-    PixelMap Asset Family Registry v4
+    PixelMap Asset Family Registry v5
     ---------------------------------
     MVTのclass/subclassを直接sprite idへ結び付けず、
     asset pack → semantic family → variant → asset の順で解決する正本。
     source geometry・座標・表示密度には関与しない。
   */
-  const VERSION = 'pixelmap-asset-family-registry/4';
+  const VERSION = 'pixelmap-asset-family-registry/5';
   const LEGACY_PACK = 'legacy';
   const REFERENCE_PACK = 'retro-jrpg-reference-v1';
 
@@ -33,6 +33,12 @@
     rail:Object.freeze({id:'rail',label:'軌道交通',category:'transport'}),
     waterTransit:Object.freeze({id:'waterTransit',label:'水上交通',category:'transport'}),
     other:Object.freeze({id:'other',label:'その他交通',category:'transport'}),
+  });
+  const surfaceFamilies = Object.freeze({
+    waterSurface:Object.freeze({id:'waterSurface',label:'水面',category:'water'}),
+    parkSurface:Object.freeze({id:'parkSurface',label:'公園・保護地',category:'nature'}),
+    sportsSurface:Object.freeze({id:'sportsSurface',label:'競技・運動面',category:'sports'}),
+    genericSurface:Object.freeze({id:'genericSurface',label:'その他の面',category:'generic'}),
   });
 
   const bindingSpecs = Object.freeze([
@@ -114,6 +120,21 @@
     ['road','regional','regionalRoads',['secondary','tertiary']],
     ['road','local','localRoads',['minor','service','busway','bus_guideway']],
   ]);
+  const surfaceBindingSpecs = Object.freeze([
+    ['water','waterSurface','natural','waterAreas',[
+      'ocean','sea','river','lake','pond','reservoir','basin','lagoon','canal',
+    ]],
+    ['water','waterSurface','engineered','waterAreas',['dock','wastewater','salt_pond']],
+    ['water','waterSurface','pool','waterAreas',['swimming_pool']],
+    ['landcover','parkSurface','park','parks',['park','garden','recreation_ground']],
+    ['landuse','parkSurface','park','parks',['park','garden','recreation_ground']],
+    ['landuse','parkSurface','playground','landusePlayground',['playground']],
+    ['park','parkSurface','park','parks',['park','garden','recreation_ground']],
+    ['park','parkSurface','protected','parks',['national_park','geopark','nature_reserve','protected_area']],
+    ['landcover','sportsSurface','golf','landusePitchTrack',['golf_course']],
+    ['landuse','sportsSurface','stadium','landuseStadium',['stadium']],
+    ['landuse','sportsSurface','pitchTrack','landusePitchTrack',['pitch','track','sports_centre']],
+  ]);
 
   function buildBindings(specs, assetOverrides = {}){
     const bindings = {};
@@ -140,20 +161,35 @@
     }
     return Object.freeze({bindings:Object.freeze(bindings),priority:Object.freeze(priority)});
   }
+  function buildSurfaceBindings(specs){
+    const bindings={};
+    for(const [sourceLayer,familyId,variantId,assetId,types] of specs){
+      if(!surfaceFamilies[familyId]) throw new Error(`Unknown surface family: ${familyId}`);
+      for(const type of types){
+        const key=`${sourceLayer}:${type}`;
+        if(bindings[key]) throw new Error(`Duplicate surface family type: ${key}`);
+        bindings[key]=Object.freeze({sourceLayer,type,familyId,variantId,assetId});
+      }
+    }
+    return Object.freeze(bindings);
+  }
 
   const legacyBindings = buildBindings(bindingSpecs);
   const sharedCorridorBindings = buildCorridorBindings(corridorBindingSpecs);
+  const sharedSurfaceBindings = buildSurfaceBindings(surfaceBindingSpecs);
   const packs = Object.freeze({
     [LEGACY_PACK]:Object.freeze({
       id:LEGACY_PACK,label:'従来互換',extends:null,bindings:legacyBindings,
       corridorBindings:sharedCorridorBindings.bindings,
       corridorPriority:sharedCorridorBindings.priority,
+      surfaceBindings:sharedSurfaceBindings,
     }),
     [REFERENCE_PACK]:Object.freeze({
       id:REFERENCE_PACK,label:'レトロJRPG参照テイスト',extends:LEGACY_PACK,
       bindings:buildBindings(referenceBindingSpecs,referenceAssetOverrides),
       corridorBindings:sharedCorridorBindings.bindings,
       corridorPriority:sharedCorridorBindings.priority,
+      surfaceBindings:sharedSurfaceBindings,
     }),
   });
   const genericBinding = Object.freeze({
@@ -161,6 +197,9 @@
   });
   const genericCorridorBinding = Object.freeze({
     type:'other',familyId:'other',variantId:'other',assetId:'transportationOther',
+  });
+  const genericSurfaceBinding = Object.freeze({
+    sourceLayer:'unknown',type:'generic',familyId:'genericSurface',variantId:'generic',assetId:null,
   });
 
   function packFor(packId){
@@ -220,6 +259,22 @@
       assetId:selected.assetId,stateAssetId,matchedType,modifiers,fallback:!binding,
     });
   }
+  function resolveSurface(props = {}, sourceLayer = '', packId = LEGACY_PACK){
+    const pack=packFor(packId);
+    const source=String(sourceLayer || '');
+    const candidates=[props.subclass,props.class].filter(Boolean).map(String);
+    let binding=null,matchedType=null;
+    for(const type of candidates){
+      binding=pack.surfaceBindings[`${source}:${type}`] || null;
+      if(binding){matchedType=type;break;}
+    }
+    const selected=binding || genericSurfaceBinding;
+    return Object.freeze({
+      version:VERSION,packId:pack.id,sourceLayer:source,
+      familyId:selected.familyId,variantId:selected.variantId,assetId:selected.assetId,
+      matchedType,fallback:!binding,
+    });
+  }
   function typesForAsset(assetId, packId = null){
     const selectedPacks = packId ? [packFor(packId)] : Object.values(packs);
     const types = new Set();
@@ -255,6 +310,24 @@
       if(binding.assetId === assetId) familiesForAsset.add(binding.familyId);
     return Object.freeze([...familiesForAsset].sort());
   }
+  function surfaceTypesForAsset(assetId, packId = null){
+    const selectedPacks=packId ? [packFor(packId)] : Object.values(packs);
+    const types=new Set();
+    for(const pack of selectedPacks)
+      for(const binding of Object.values(pack.surfaceBindings))
+        if(binding.assetId === assetId) types.add(`${binding.sourceLayer}:${binding.type}`);
+    return Object.freeze([...types].sort());
+  }
+  function surfaceAssetsForPack(packId = LEGACY_PACK){
+    return Object.freeze([...new Set(Object.values(packFor(packId).surfaceBindings)
+      .map(binding=>binding.assetId).filter(Boolean))].sort());
+  }
+  function surfaceFamilyIdsForAsset(assetId, packId = LEGACY_PACK){
+    const ids=new Set();
+    for(const binding of Object.values(packFor(packId).surfaceBindings))
+      if(binding.assetId === assetId) ids.add(binding.familyId);
+    return Object.freeze([...ids].sort());
+  }
 
   global.PixelMapAssetFamilyRegistry = Object.freeze({
     version:VERSION,
@@ -262,15 +335,20 @@
     referencePack:REFERENCE_PACK,
     families,
     corridorFamilies,
+    surfaceFamilies,
     packs,
     packFor,
     bindingForType,
     resolvePoi,
     resolveCorridor,
+    resolveSurface,
     typesForAsset,
     assetsForPack,
     corridorTypesForAsset,
     corridorAssetsForPack,
     corridorFamilyIdsForAsset,
+    surfaceTypesForAsset,
+    surfaceAssetsForPack,
+    surfaceFamilyIdsForAsset,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

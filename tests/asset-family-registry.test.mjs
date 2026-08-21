@@ -24,7 +24,7 @@ const legacyExpected={
 };
 
 test('AssetFamilyRegistryがpack→family→variant→assetを唯一の正本として公開する',()=>{
-  assert.equal(registry.version,'pixelmap-asset-family-registry/4');
+  assert.equal(registry.version,'pixelmap-asset-family-registry/5');
   assert.equal(registry.defaultPack,'legacy');
   assert.equal(registry.referencePack,'retro-jrpg-reference-v1');
   assert.ok(Object.isFrozen(registry.families));
@@ -157,7 +157,7 @@ test('standaloneはACTIVE_ASSET_PACKをresolverへ渡し、map-03はlegacyを明
     readFile(new URL('../variants/map-02-refined.html',import.meta.url),'utf8'),
     readFile(new URL('../variants/map-03-refined.html',import.meta.url),'utf8'),
   ]);
-  assert.match(map02,/asset-family-registry\.js\?v=4/);
+  assert.match(map02,/asset-family-registry\.js\?v=5/);
   assert.match(map02,/facility-resolver\.js\?v=6/);
   assert.match(map02,/const ACTIVE_ASSET_PACK = document\.documentElement\.dataset\.assetPack/);
   assert.match(map02,/RESOLVER\.resolveTile\(\{[\s\S]*?assetPack:ACTIVE_ASSET_PACK,[\s\S]*?\}\)/);

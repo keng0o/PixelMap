@@ -162,13 +162,18 @@
               <td>各レイヤー固有の従来描画と線幅を維持。</td>
             </tr>
             <tr>
+              <th scope="row">水面・公園・競技面</th>
+              <td>source名＋typeを<code>surface family</code>で解決し、水面area、公園・保護地、スタジアム・pitch／trackを別skinへ接続。waterway corridorは水面familyへ混在させない。</td>
+              <td>従来の水面・公園・土地利用分類と描画を維持。</td>
+            </tr>
+            <tr>
               <th scope="row">建物とcorridorの重なり</th>
               <td>MVT建物形状を1論理px意味マスクで一度だけ確定し、衝突後の移動・変形・場所別修正は行わない。通常小規模棟はringKey固定のsemantic LODで低コントラストarea、代表棟・大型棟・選抜POIはRPG屋根へ分ける。全域でarea→ground corridor→building→structure→bridge→object→marker→dot／clusterの固定順に合成する。</td>
               <td>従来の8×8論理px建物セル、通常建物／橋／POI建物の描画順を維持。</td>
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI・corridorの属性対応は<code>pixelmap-asset-family-registry/4</code>のpack→family→variant→asset契約へ集約。参照テイスト10点も意味variantとして接続する。source geometryを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
+              <td>既存のRPG風S／M／L施設スプライトを<code>pixelmap-poi-asset/1</code>で管理し、POI・corridor・surfaceの属性対応は<code>pixelmap-asset-family-registry/5</code>のpack→family→variant→asset契約へ集約。参照テイスト10点も意味variantとして接続する。source geometryを動かさず、<code>facility-resolver</code>が地理判定とWorldStyle共通のrole・category密度予算を決める。前景施設は最低Mサイズ、dot／clusterは既定で非表示。</td>
               <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
             </tr>
             <tr>
@@ -191,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>水面・公園・スポーツ面をsurface familyへ分離</h3>
+          <time datetime="2026-08-21">2026-08-21 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>water／landcover／landuse／parkのsource名＋typeを共通registryで解決し、waterSurface・parkSurface・sportsSurfaceを別familyへ分離。水路線はcorridorのまま維持し、WorldStyleへ各area skinを正本化。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>でsurface family分類を描画へ使用。z14のみ。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップはstandalone guard外の従来surface分類・色・形・合成順を維持。共有registryとcatalog metadataのみ更新。</dd></div>
+          <div><dt>確認内容</dt><dd>水面areaとwaterway corridorの分離、公園／保護地とstadium／pitch／trackのfamily分離、全asset接続、診断集計、cache version、全テスト、z14画像比較を確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>bridge・level crossingをcorridor modifier化</h3>

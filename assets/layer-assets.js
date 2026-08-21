@@ -269,10 +269,14 @@
   }
 
   const layers = Object.freeze(groups.flatMap(group => group.items.map(item => {
-    const sourceTypes=item[2]==='route'
-      ? assetFamilyRegistry.corridorTypesForAsset(item[0]) : [];
-    const assetFamilyIds=item[2]==='route'
-      ? assetFamilyRegistry.corridorFamilyIdsForAsset(item[0]) : [];
+    const isCorridor=item[2]==='route';
+    const isSurface=item[2]==='surface' || (item[2]==='water' && item[4]==='area');
+    const sourceTypes=isCorridor
+      ? assetFamilyRegistry.corridorTypesForAsset(item[0])
+      : isSurface ? assetFamilyRegistry.surfaceTypesForAsset(item[0]) : [];
+    const assetFamilyIds=isCorridor
+      ? assetFamilyRegistry.corridorFamilyIdsForAsset(item[0])
+      : isSurface ? assetFamilyRegistry.surfaceFamilyIdsForAsset(item[0]) : [];
     return Object.freeze({
       id:item[0], label:item[1], kind:item[2],
       color:item[2]==='route' && transportRules[item[0]] ? transportRules[item[0]].fill : item[3],

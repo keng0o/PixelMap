@@ -2,13 +2,13 @@
   'use strict';
 
   /*
-    PixelMap World Style v3
+    PixelMap World Style v4
     -----------------------
     z14 POCの「地理データをどう見せるか」を一箇所へ集約する。
     MVTのsource geometryは変更せず、既定レイヤー、色、corridor skin、
     POI密度、合成順だけを世界観として固定する。
   */
-  const VERSION = 'pixelmap-world-style/3';
+  const VERSION = 'pixelmap-world-style/4';
 
   const retroJrpgZ14 = Object.freeze({
     version:VERSION,
@@ -96,6 +96,11 @@
     corridorModifiers:Object.freeze({
       bridge:Object.freeze({minimumEdgeWidth:1,edge:'#302838'}),
       levelCrossing:Object.freeze({outline:'#302838',light:'#f0d788',dark:'#76543d',minimumSpacing:7}),
+    }),
+    surfaceFamilies:Object.freeze({
+      waterSurface:Object.freeze({primitive:'area',assets:Object.freeze(['waterAreas']),skin:'water-ripple',fill:'#4d91d7',light:'#8bc1e5',dark:'#326aa5',edge:'#c6e4ed'}),
+      parkSurface:Object.freeze({primitive:'area',assets:Object.freeze(['parks','landusePlayground']),skin:'park-garden',small:'#92ce69',medium:'#88c764',large:'#7fbb61',edge:'#4e833f'}),
+      sportsSurface:Object.freeze({primitive:'area',assets:Object.freeze(['landuseStadium','landusePitchTrack']),skin:'field-stripes',fill:'#68b058',alternate:'#5ca050',edge:'#506c3f'}),
     }),
   });
 
