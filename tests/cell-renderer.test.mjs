@@ -144,10 +144,18 @@ test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分�
   assert.match(html, /function drawCellPixelArtTransportGrid\(grid, option, stats, centerGrid = null, bridge = false\)/);
   assert.match(html, /const color = minimumMinorRoute[\s\S]*?: boundary \? edge : fill/);
   assert.match(html, /paintSolidMapCell\(x, y, color, option, stats\)/);
-  assert.match(html, /paintSolidMapCell\(x, y, roadStyle\.center/);
+  assert.match(html, /paintSolidMapCell\(centerX, centerY, roadStyle\.center/);
   assert.match(html, /for \(const offset of \[-1,1\]\)/);
   assert.match(html, /paintSolidMapCell\(tx, ty, P\.tie/);
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
+});
+
+test('standalone testの地区幹線道路は両側境界の中点へ平行な中央線を置く', () => {
+  assert.match(html, /function boundaryAlignedRoadCenter\(grid, centerGrid, x, y\)/);
+  assert.match(html, /const crossSections = \[\[1,0\],\[0,1\],\[1,1\],\[1,-1\]\]/);
+  assert.match(html, /const midpoint = \(section\.after - section\.before\) \/ 2/);
+  assert.match(html, /!EMBEDDED && option === 'regionalRoads'/);
+  assert.match(html, /for \(const \[centerX, centerY\] of aligned\.cells\)/);
 });
 
 test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで描く', () => {

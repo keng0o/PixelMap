@@ -158,8 +158,8 @@
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
-              <td>交通中心線をcell2/cell3の原子セルへ直接分類し、道路の縁・面・中央線、鉄道路盤・レール・枕木を単色セルの多層として合成。</td>
-              <td>testと同じ原子セル描画。pattern 07とembeddedのレイヤー設定を維持。</td>
+              <td>交通中心線をcell2/cell3の原子セルへ直接分類し、道路の縁・面・中央線、鉄道路盤・レール・枕木を単色セルの多層として合成。地区幹線道路の中央線は道路マスクの両側境界から中点を求め、境界と平行に配置。</td>
+              <td>既存の原子セル描画とsource中心線配置を維持。pattern 07とembeddedのレイヤー設定も変更なし。</td>
             </tr>
             <tr>
               <th scope="row">水面・公園・競技面</th>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>地区幹線道路の中央線を道路境界の中点へ整列</h3>
+          <time datetime="2026-08-23">2026-08-23 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>地区幹線道路の局所的な進行方向を中心セル列から求め、道路マスクを直交方向へ横断。両側境界の中点を挟む原子セルへ中央破線を置き、斜め・曲線区間でも道路境界と平行になるよう修正。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの地区幹線道路で有効。cell2/cell3の両方を対象。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>!EMBEDDED</code> guardの対象外で、従来のsource中心線配置を維持。production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>水平・垂直・正負両方向の斜め道路で境界中点と平行な配置、交差部の連続性、cell2/cell3、自動テスト、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>施設アイコンを収集ランドマークの建物表示へ限定</h3>
