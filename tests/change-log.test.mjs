@@ -62,6 +62,11 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /業務・商業ランドマーク/);
   assert.match(log, /building=commercial/);
   assert.match(log, /landuse=commercial/);
+  assert.match(log, /ランドマーク下限を3,000㎡へ変更し公園・神社仏閣を追加/);
+  assert.match(log, /leisure=park/);
+  assert.match(log, /landuse=religious/);
+  assert.match(log, /amenity=place_of_worship/);
+  assert.match(log, /敷地全体を建物化せず施設記号/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

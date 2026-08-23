@@ -12,7 +12,7 @@ const bbox = areaName ? null : String(args.bbox || '35.5265,139.6955,35.5296,139
 if (!areaName && (bbox.length !== 4 || bbox.some(value => !Number.isFinite(value))))
   throw new Error('--bbox=south,west,north,east の形式で指定してください');
 const output = resolve(String(args.output || 'data/landmarks/region.generated.geojson'));
-const minParentArea = Number(args['min-parent-area'] || 5000);
+const minParentArea = Number(args['min-parent-area'] || 3000);
 const endpoint = String(args.endpoint || 'https://overpass-api.de/api/interpreter');
 const scopePrefix = areaName
   ? `area["name"="${areaName.replaceAll('"', '\\"')}"]["boundary"="administrative"]->.searchArea;`
@@ -25,6 +25,10 @@ const query = `[out:json][timeout:180];${scopePrefix}(
   nwr["name"]["building"="retail"]${scope};
   nwr["name"]["building"="commercial"]${scope};
   nwr["name"]["landuse"="commercial"]${scope};
+  nwr["name"]["leisure"="park"]${scope};
+  nwr["name"]["landuse"="religious"]["religion"~"^(buddhist|shinto)$"]${scope};
+  nwr["name"]["amenity"="place_of_worship"]["religion"~"^(buddhist|shinto)$"]${scope};
+  nwr["name"]["building"~"^(temple|shrine)$"]${scope};
   nwr["name"]["amenity"~"^(theatre|cinema|arts_centre)$"]${scope};
 );out body center geom;`;
 const url = new URL(endpoint);
@@ -170,13 +174,23 @@ const isRetailParent = record => record.geometry.type !== 'Point' && record.tags
 const isCommercialParent = record => record.geometry.type !== 'Point' && record.tags.name && (
   record.tags.building === 'commercial' || record.tags.landuse === 'commercial'
 );
-const isParent = record => isRetailParent(record) || isCommercialParent(record);
+const isParkParent = record => record.geometry.type !== 'Point' && record.tags.name &&
+  record.tags.leisure === 'park';
+const isReligiousParent = record => record.geometry.type !== 'Point' && record.tags.name && (
+  (record.tags.landuse === 'religious' && ['buddhist','shinto'].includes(record.tags.religion)) ||
+  (record.tags.amenity === 'place_of_worship' && ['buddhist','shinto'].includes(record.tags.religion)) ||
+  ['temple','shrine'].includes(record.tags.building)
+);
+const isParent = record => isRetailParent(record) || isCommercialParent(record) ||
+  isParkParent(record) || isReligiousParent(record);
 const isVenue = record => record.tags.name && ['theatre','cinema','arts_centre'].includes(record.tags.amenity);
 const parents = records.filter(isParent).map(record => ({
   ...record,
   id:elementId(record.element),
   area:areaM2(record.geometry),
-  collectionGroup:isRetailParent(record) ? 'retail' : 'commercial',
+  collectionGroup:isRetailParent(record) ? 'retail'
+    : isCommercialParent(record) ? 'commercial'
+      : isParkParent(record) ? 'park' : 'religious',
 })).filter(parent => parent.area >= minParentArea);
 const children = records.filter(isVenue).map(record => ({
   ...record,
@@ -196,6 +210,10 @@ for (const parent of parents){
   const members = children.filter(child => child.parent?.id === parent.id).sort(childOrder);
   const entertainment = members.some(child => ['theatre','cinema'].includes(child.tags.amenity));
   const anchor = parentAnchor(parent, members.slice(0, 1));
+  const symbolicLandmark = ['park','religious'].includes(parent.collectionGroup);
+  const renderClass = parent.collectionGroup === 'park' ? 'park'
+    : parent.collectionGroup === 'religious' ? 'place_of_worship' : 'mall';
+  const category = parent.collectionGroup === 'park' ? 'nature' : 'landmark';
   features.push({
     type:'Feature', id:parent.id, geometry:parent.geometry,
     properties:{
@@ -204,10 +222,14 @@ for (const parent of parents){
       'name:en':parent.tags['name:en'] || parent.tags['name:it'],
       role:'complex', collection_group:parent.collectionGroup,
       class:entertainment ? 'entertainment_complex'
-        : parent.collectionGroup === 'commercial' ? 'commercial_complex' : 'retail_complex',
-      render_class:'mall', category:'landmark', area_m2:Math.round(parent.area),
+        : parent.collectionGroup === 'commercial' ? 'commercial_complex'
+          : parent.collectionGroup === 'park' ? 'park_complex'
+            : parent.collectionGroup === 'religious' ? 'religious_complex' : 'retail_complex',
+      render_class:renderClass, category, display_mode:symbolicLandmark ? 'symbol' : 'building',
+      area_m2:Math.round(parent.area),
       minzoom:13, detail_zoom:16, max_signature_children:1, icon_size:'L', icon_anchor:anchor,
       building:parent.tags.building, landuse:parent.tags.landuse, shop:parent.tags.shop,
+      leisure:parent.tags.leisure, amenity:parent.tags.amenity, religion:parent.tags.religion,
     },
   });
   for (const child of members){
@@ -240,6 +262,9 @@ const outputData = {
       retail:['landuse=retail','shop=mall','shop=department_store','shop=shopping_centre',
         'shop=supermarket','shop=wholesale','building=retail'],
       commercial:['building=commercial','landuse=commercial'],
+      park:['leisure=park'],
+      religious:['landuse=religious + religion=buddhist|shinto',
+        'amenity=place_of_worship + religion=buddhist|shinto','building=temple|shrine'],
     },
   },
   features,

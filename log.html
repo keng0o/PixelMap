@@ -153,7 +153,7 @@
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>神奈川県の生成GeoJSONは5,000㎡以上を対象に、従来条件へ<code>building=retail</code>・<code>shop=supermarket</code>・<code>shop=wholesale</code>を追加。<code>building=commercial</code>・<code>landuse=commercial</code>は「業務・商業ランドマーク」チェックで別枠表示。「施設アイコン」にはMVTの施設敷地と敷地内建物を汎用関連付け。</td>
+              <td>神奈川県の生成GeoJSONは3,000㎡以上を対象に、小売・commercialに加えて<code>leisure=park</code>の公園と、仏教・神道の<code>landuse=religious</code>・<code>amenity=place_of_worship</code>・<code>building=temple|shrine</code>を収集。公園・神社仏閣は敷地全体を建物化せず施設記号で表示し、commercialは「業務・商業ランドマーク」チェックで別枠表示。</td>
               <td>ランドマーク補助処理を無効化し、従来の施設表示を維持。</td>
             </tr>
             <tr>
@@ -206,6 +206,18 @@
           <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの<code>cell2</code>／<code>cell3</code>交通線描画に適用。</dd></div>
           <div><dt>本番への影響</dt><dd>本番1・2・4マップのページと共有実装は変更せず、production表示への影響なし。</dd></div>
           <div><dt>確認内容</dt><dd>川崎駅南西で架空線を発生させていた実座標の回帰テスト、4連結と終点セル、パン前後の同一地理範囲、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>ランドマーク下限を3,000㎡へ変更し公園・神社仏閣を追加</h3>
+          <time datetime="2026-08-24">2026-08-24 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>全ランドマークの収集下限を5,000㎡から3,000㎡へ変更。名前付きの<code>leisure=park</code>を公園として、仏教・神道の<code>landuse=religious</code>・<code>amenity=place_of_worship</code>と<code>building=temple|shrine</code>を神社仏閣として追加。公園・神社仏閣は敷地全体を建物化せず施設記号で表示する。生成結果は親施設2,042件（小売353件・commercial 110件・公園1,266件・神社仏閣313件）＋館内施設31件。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの「施設アイコン」で3,000㎡以上の小売・公園・神社仏閣を表示し、commercialは既存の独立チェックがONの場合だけ表示。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guardにより生成GeoJSONと施設記号処理を使用せず、従来の施設表示・共有レイヤー一覧を維持。production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>3,000㎡下限、4,000㎡台の新規候補、公園・神社仏閣のタグとグループ、z13選抜、敷地形状を建物として描かない施設記号、本番iframeでの無効化、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
         </dl>
       </article>
       <article class="entry">
