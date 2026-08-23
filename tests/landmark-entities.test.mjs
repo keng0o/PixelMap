@@ -87,13 +87,16 @@ test('ランドマーク処理は単体ページだけで有効になり共有if
   assert.match(mapHtml, /landmarks:resolvedView\.landmarks/);
 });
 
-test('施設アイコンは収集ランドマークだけを建物デザインで描く', () => {
+test('施設アイコンは収集ランドマークだけを既存建物と同じ見た目で描く', () => {
   assert.match(mapHtml, /const poiSourceFacilities = STANDALONE_LANDMARK_MODE[\s\S]*item\.landmarkEntity/);
   assert.match(mapHtml, /const activeFeatures = selection\.collection\.features\.filter\(activeLandmarkAtZoom\)/);
   assert.match(mapHtml, /if \(feature\.properties\.parent_id\)[\s\S]*contextParentIds\.has\(feature\.properties\.parent_id\)/);
   assert.match(mapHtml, /function rasterizeStandaloneLandmarkBuildings\(features, worldToGridPoint, gridSize\)/);
+  assert.match(mapHtml, /function matchStandaloneLandmarksToSourceBuildings\([\s\S]*sourceBuildingGrid, sourceBldGrid/);
+  assert.match(mapHtml, /buildingKinds:sourceBuildingKinds[\s\S]*buildingDescs:sourceBuildingDescs[\s\S]*bldStyle:sourceBldStyle/);
   assert.match(mapHtml, /function drawStandaloneLandmarkBuildings\(\)/);
-  assert.match(mapHtml, /drawCellPixelArtBuildingGrid\([\s\S]*landmark\.grid, landmark\.bldGrid/);
+  assert.match(mapHtml, /for \(const layer of landmark\.layers\)[\s\S]*drawCellPixelArtBuildingGrid\([\s\S]*layer\.grid, layer\.bldGrid/);
+  assert.match(mapHtml, /renderer:STANDALONE_LANDMARK_MODE \? 'matched-map-building'/);
   assert.match(mapHtml, /renderer:'building-footprint'/);
   assert.match(mapHtml, /'precollected-landmark-building'/);
   assert.match(mapHtml, /if \(STANDALONE_UNIFIED_STYLE && o\.poi && !STANDALONE_LANDMARK_MODE\)/);

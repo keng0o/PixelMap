@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>「施設アイコン」では通常POIスプライトを表示せず、事前収集した複合施設とその館内施設を「たてもの」と同じ屋根・壁・影のデザインで描画。施設名と操作領域を維持。</td>
+              <td>「施設アイコン」では通常POIスプライトを表示せず、事前収集した複合施設と館内施設に対応するMVT建物の形状・屋根色・壁色・影を「たてもの」から再利用。施設名と操作領域を維持。</td>
               <td>同じ施設スプライトの原子セル版を使用し、ランドマーク補助処理は無効。pattern 07の選抜条件を維持。</td>
             </tr>
             <tr>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>収集ランドマークを通常建物と同じ見た目へ統一</h3>
+          <time datetime="2026-08-23">2026-08-23 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>「施設アイコン」のランドマーク独自塗りを廃止。収集形状・代表点から対応するMVT建物を選び、「たてもの」チェック時と同じ建物ID・形状・屋根色・壁色・影を再利用。対応建物がない場合だけ収集形状へフォールバック。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの「施設アイコン」で有効。表示対象は事前収集済みランドマークと館内施設のまま維持。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guardにより従来の施設スプライトと建物表示を維持。production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>施設アイコン単独表示と「たてもの」表示で対応建物の形状・配色・屋根・壁・影が一致すること、館内施設名、通常POI非表示、cell2/cell3、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>収集済みの館内施設を施設アイコンへ追加</h3>

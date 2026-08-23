@@ -3733,6 +3733,8 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
   const buildingKinds = Array(features.length + 1).fill('normal');
   const buildingDescs = Array(features.length + 1).fill(null);
   const buildingAnchors = Array(features.length + 1).fill(null);
+  const featureRoles = Array(features.length + 1).fill(null);
+  const featureGridAnchors = Array(features.length + 1).fill(null);
   const bldStyle = new Uint8Array(features.length + 1);
   let visibleFeatures = 0;
 
@@ -3748,6 +3750,12 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
     const bi = featureIndex + 1;
     const anchor = LANDMARK_ENTITY_API.anchorOf(feature);
     const latitude = Number(anchor?.[1] || 0);
+    featureRoles[bi] = props.role || 'standalone';
+    if (anchor){
+      const [worldX, worldY] = landmarkWorldPoint(anchor);
+      const [gx, gy] = worldToGridPoint(worldX, worldY);
+      featureGridAnchors[bi] = [Math.floor(gx), Math.floor(gy)];
+    }
     const lodSeed = BUILDING_STYLES.seedFromKey(`landmark:${LANDMARK_ENTITY_API.featureId(feature)}`);
     buildingDescs[bi] = {
       ...buildingAppearanceForActiveProfile({
@@ -3801,7 +3809,107 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
     }
     if (painted) visibleFeatures++;
   }
-  return { grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, bldStyle, visibleFeatures };
+  return {
+    grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, bldStyle,
+    featureRoles, featureGridAnchors, visibleFeatures,
+  };
+}
+
+// 収集ランドマークは表示対象の選抜にだけ使い、見た目は「たてもの」レイヤーの
+// 実建物ID・形状・配色をそのまま再利用する。対応建物がない場合だけ収集形状へ戻す。
+function matchStandaloneLandmarksToSourceBuildings(
+  landmark, sourceBuildingGrid, sourceBldGrid,
+  sourceBuildingKinds, sourceBuildingDescs, sourceBuildingAnchors, sourceBldStyle
+){
+  if (!sourceBuildingGrid) return {
+    ...landmark,
+    layers:[landmark],
+    matchedFeatures:0,
+    unmatchedFeatures:landmark.visibleFeatures,
+    sourceBuildingIds:0,
+  };
+
+  const cellsByFeature = Array.from({ length:landmark.featureRoles.length }, () => []);
+  for (let index = 0; index < landmark.grid.length; index++){
+    const featureId = landmark.bldGrid[index];
+    if (featureId) cellsByFeature[featureId].push(index);
+  }
+  const sourceBuildingIds = new Set();
+  const matchedFeatureIds = new Set();
+  const size = GRID + 2;
+  const nearestSourceBuilding = anchor => {
+    if (!anchor) return 0;
+    const [cx, cy] = anchor;
+    const limit = Math.max(2, detailCellSpan(5));
+    for (let radius = 0; radius <= limit; radius++){
+      const candidates = [];
+      for (let dy = -radius; dy <= radius; dy++){
+        for (let dx = -radius; dx <= radius; dx++){
+          if (radius && Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+          const x = cx + dx, y = cy + dy;
+          if (x < 0 || y < 0 || x >= size || y >= size) continue;
+          const index = y * size + x;
+          if (sourceBuildingGrid[index] === ID.BLD && sourceBldGrid[index])
+            candidates.push({ id:sourceBldGrid[index], distance:dx * dx + dy * dy });
+        }
+      }
+      if (candidates.length){
+        candidates.sort((a, b) => a.distance - b.distance || a.id - b.id);
+        return candidates[0].id;
+      }
+    }
+    return 0;
+  };
+
+  for (let featureId = 1; featureId < cellsByFeature.length; featureId++){
+    if (!cellsByFeature[featureId].length) continue;
+    const overlaps = new Map();
+    for (const index of cellsByFeature[featureId]){
+      if (sourceBuildingGrid[index] !== ID.BLD || !sourceBldGrid[index]) continue;
+      const buildingId = sourceBldGrid[index];
+      overlaps.set(buildingId, (overlaps.get(buildingId) || 0) + 1);
+    }
+    if (overlaps.size){
+      const ranked = [...overlaps].sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+      const selected = landmark.featureRoles[featureId] === 'complex' ? ranked : ranked.slice(0, 1);
+      for (const [buildingId] of selected) sourceBuildingIds.add(buildingId);
+      matchedFeatureIds.add(featureId);
+      continue;
+    }
+    const nearest = nearestSourceBuilding(landmark.featureGridAnchors[featureId]);
+    if (nearest){
+      sourceBuildingIds.add(nearest);
+      matchedFeatureIds.add(featureId);
+    }
+  }
+
+  const sourceGrid = new Uint8Array(sourceBuildingGrid.length);
+  const fallbackGrid = new Uint8Array(landmark.grid.length);
+  for (let index = 0; index < sourceBuildingGrid.length; index++){
+    if (sourceBuildingGrid[index] === ID.BLD && sourceBuildingIds.has(sourceBldGrid[index]))
+      sourceGrid[index] = ID.BLD;
+    const featureId = landmark.bldGrid[index];
+    if (landmark.grid[index] === ID.BLD && featureId && !matchedFeatureIds.has(featureId))
+      fallbackGrid[index] = ID.BLD;
+  }
+  const layers = [];
+  if (sourceBuildingIds.size) layers.push({
+    grid:sourceGrid,
+    bldGrid:sourceBldGrid,
+    buildingKinds:sourceBuildingKinds,
+    buildingDescs:sourceBuildingDescs,
+    buildingAnchors:sourceBuildingAnchors,
+    bldStyle:sourceBldStyle,
+    source:'map-buildings',
+  });
+  if (fallbackGrid.some(Boolean)) layers.push({ ...landmark, grid:fallbackGrid, source:'collected-fallback' });
+  return {
+    ...landmark,
+    layers,
+    matchedFeatures:matchedFeatureIds.size,
+    unmatchedFeatures:landmark.visibleFeatures - matchedFeatureIds.size,
+    sourceBuildingIds:sourceBuildingIds.size,
+  };
 }
 
 function drawCurrentLocation(){
@@ -4241,8 +4349,14 @@ function render(){
   const clusterMarks = resolvedView.clusters
     .map(c => ({ ...c, pt:worldToScreen(c.worldX, c.worldY) }))
     .filter(c => c.pt[0] >= -40 && c.pt[1] >= -40 && c.pt[0] <= W + 40 && c.pt[1] <= H + 40);
-  const landmarkBuildingRaster = STANDALONE_LANDMARK_MODE && o.poi
+  const collectedLandmarkRaster = STANDALONE_LANDMARK_MODE && o.poi
     ? rasterizeStandaloneLandmarkBuildings(resolvedView.landmarkFeatures, worldToGridPoint, RG)
+    : null;
+  const landmarkBuildingRaster = collectedLandmarkRaster
+    ? matchStandaloneLandmarksToSourceBuildings(
+        collectedLandmarkRaster, grids.get('buildings'), bldGrid,
+        buildingKinds, buildingDescs, buildingAnchors, bldStyle
+      )
     : null;
   let drawnDotCount = 0;
   function drawDotMarker(p){
@@ -4458,25 +4572,29 @@ function render(){
   function drawStandaloneLandmarkBuildings(){
     if (!landmarkBuildingRaster) return;
     const landmark = landmarkBuildingRaster;
+    for (const layer of landmark.layers){
+      if (CELL_ONLY_MODE){
+        drawCellPixelArtBuildingGrid(
+          layer.grid, layer.bldGrid, layer.buildingKinds,
+          layer.buildingDescs, layer.buildingAnchors,
+          'landmarkBuildings', cellRenderingStats
+        );
+      } else {
+        drawGrid(
+          layer.grid, layer.bldGrid, layer.bldStyle,
+          {
+            grass:false,
+            buildingKinds:layer.buildingKinds,
+            buildingDescs:layer.buildingDescs,
+            buildingAnchors:layer.buildingAnchors,
+          },
+          true
+        );
+      }
+    }
     if (CELL_ONLY_MODE){
-      drawCellPixelArtBuildingGrid(
-        landmark.grid, landmark.bldGrid, landmark.buildingKinds,
-        landmark.buildingDescs, landmark.buildingAnchors,
-        'landmarkBuildings', cellRenderingStats
-      );
       cellRenderingStats.facilitySymbols += landmark.visibleFeatures;
       cellRenderingStats.cellizedFeatures += landmark.visibleFeatures;
-    } else {
-      drawGrid(
-        landmark.grid, landmark.bldGrid, landmark.bldStyle,
-        {
-          grass:false,
-          buildingKinds:landmark.buildingKinds,
-          buildingDescs:landmark.buildingDescs,
-          buildingAnchors:landmark.buildingAnchors,
-        },
-        true
-      );
     }
     for (const item of drawnIcons){
       const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
@@ -5113,9 +5231,12 @@ function render(){
     landmarks:resolvedView.landmarks,
     poi:{
       source:STANDALONE_LANDMARK_MODE ? 'precollected-landmarks' : 'mvt-facilities',
-      renderer:STANDALONE_LANDMARK_MODE ? 'building-footprint' : 'poi-sprite',
+      renderer:STANDALONE_LANDMARK_MODE ? 'matched-map-building' : 'poi-sprite',
       eligible:poiSourceFacilities.length,
       renderedLandmarkBuildings:landmarkBuildingRaster?.visibleFeatures || 0,
+      matchedLandmarkFeatures:landmarkBuildingRaster?.matchedFeatures || 0,
+      unmatchedLandmarkFeatures:landmarkBuildingRaster?.unmatchedFeatures || 0,
+      matchedSourceBuildings:landmarkBuildingRaster?.sourceBuildingIds || 0,
       total:resolvedView.facilities.length,
       visible:facilitiesInView.length,
       offscreen:resolvedView.facilities.length - facilitiesInView.length,
