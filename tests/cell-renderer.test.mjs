@@ -144,7 +144,7 @@ test('交通線のセル走査はセル角の終点を越えて架空の線を�
   const source = html.match(/  function traverse\(x0, y0, x1, y1, visit\)\{[\s\S]*?\n  \}\n  function lineStamp/)?.[0]
     .replace(/\n  function lineStamp[\s\S]*$/u, '');
   assert.ok(source, 'traverse実装を取得できる');
-  const traverse = Function('RG', `'use strict';\n${source}\nreturn traverse;`)(258);
+  const traverse = Function('RG', 'EMBEDDED', `'use strict';\n${source}\nreturn traverse;`)(258, false);
   const cells = [];
   // 川崎駅南西の線路で架空線を発生させていた、セル角が終点になる実座標。
   traverse(2.875, 218.125, 5, 215, (x, y) => cells.push([x, y]));
@@ -152,6 +152,8 @@ test('交通線のセル走査はセル角の終点を越えて架空の線を�
   assert.ok(cells.every(([x, y]) => x >= 2 && x <= 5 && y >= 215 && y <= 218));
   assert.ok(cells.slice(1).every(([x, y], index) =>
     Math.abs(x - cells[index][0]) + Math.abs(y - cells[index][1]) === 1));
+  assert.match(source, /!EMBEDDED && cx === ex/);
+  assert.match(source, /!EMBEDDED && cy === ey/);
 });
 
 test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分ける', () => {

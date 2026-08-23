@@ -204,7 +204,7 @@
         <dl class="entry-grid">
           <div><dt>変更内容</dt><dd>交通線の4連結セル走査で、線分がセル角に終わると片方の軸が終点を通り越し、走査上限まで架空の直線を延長する不具合を修正。片軸が終点セルへ到達した後は他方の軸だけを進め、MVTの線分終点を越えないようにした。</dd></div>
           <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの<code>cell2</code>／<code>cell3</code>交通線描画に適用。</dd></div>
-          <div><dt>本番への影響</dt><dd>本番1・2・4マップのページと共有実装は変更せず、production表示への影響なし。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップのページは変更せず、共有走査の終点固定も<code>!EMBEDDED</code>条件でstandalone testだけに限定。production表示への影響なし。</dd></div>
           <div><dt>確認内容</dt><dd>川崎駅南西で架空線を発生させていた実座標の回帰テスト、4連結と終点セル、パン前後の同一地理範囲、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
         </dl>
       </article>

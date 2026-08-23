@@ -1967,8 +1967,8 @@ function rasterizeGrid(layers, options){
       // 片方の軸が終点セルへ着いた後は、その軸をそれ以上進めない。
       // セル角で tMX === tMY になる線分を片軸だけ進めると終点を通り越し、
       // guardまで架空の長い直線を延ばしてしまうため、終点セルを不変条件にする。
-      if (cx === ex){ cy += stepY; tMY += tDY; }
-      else if (cy === ey){ cx += stepX; tMX += tDX; }
+      if (!EMBEDDED && cx === ex){ cy += stepY; tMY += tDY; }
+      else if (!EMBEDDED && cy === ey){ cx += stepX; tMX += tDX; }
       else if (tMX < tMY){ cx += stepX; tMX += tDX; }
       else               { cy += stepY; tMY += tDY; }
       visit(cx, cy);
