@@ -3702,6 +3702,11 @@ function applyStandaloneLandmarks(resolvedView){
     };
 
   const selection = LANDMARK_ENTITY_API.selectForZoom(landmarkFeatureCollection, TILE.z);
+  const activeLandmarkAtZoom = feature => {
+    const props = feature.properties || {};
+    return TILE.z >= Number(props.minzoom ?? 0) && TILE.z <= Number(props.maxzoom ?? 24);
+  };
+  const activeFeatures = selection.collection.features.filter(activeLandmarkAtZoom);
   const range = viewTileRange(W);
   const anchorInContext = feature => {
     const coordinate = LANDMARK_ENTITY_API.anchorOf(feature);
@@ -3711,14 +3716,18 @@ function applyStandaloneLandmarks(resolvedView){
     return tileX >= range.minX - 1 && tileX <= range.maxX + 1 &&
       tileY >= range.minY - 1 && tileY <= range.maxY + 1;
   };
-  const contextParentIds = new Set(selection.features.filter(anchorInContext).map(feature =>
-    feature.properties.role === 'complex'
-      ? LANDMARK_ENTITY_API.featureId(feature)
-      : feature.properties.parent_id).filter(Boolean));
-  const selectedFeatures = selection.features.filter(feature =>
-    feature.properties.role === 'complex'
-      ? contextParentIds.has(LANDMARK_ENTITY_API.featureId(feature))
-      : contextParentIds.has(feature.properties.parent_id) || anchorInContext(feature));
+  const contextParentIds = new Set(activeFeatures
+    .filter(feature => feature.properties.role === 'complex' && anchorInContext(feature))
+    .map(feature => LANDMARK_ENTITY_API.featureId(feature)));
+  // 施設アイコンでは代表建物だけに絞らず、表示対象の複合施設にひもづく
+  // 事前収集済みの館内施設もすべて表示する。
+  const selectedFeatures = activeFeatures.filter(feature => {
+    if (feature.properties.role === 'complex')
+      return contextParentIds.has(LANDMARK_ENTITY_API.featureId(feature));
+    if (feature.properties.parent_id)
+      return contextParentIds.has(feature.properties.parent_id);
+    return anchorInContext(feature);
+  });
   if (!selectedFeatures.length)
     return {
       ...resolvedView,

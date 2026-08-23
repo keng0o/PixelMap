@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>「施設アイコン」では通常POIスプライトを表示せず、事前収集したランドマークのsource形状だけを「たてもの」と同じ屋根・壁・影のデザインで描画。施設名と操作領域を維持。</td>
+              <td>「施設アイコン」では通常POIスプライトを表示せず、事前収集した複合施設とその館内施設を「たてもの」と同じ屋根・壁・影のデザインで描画。施設名と操作領域を維持。</td>
               <td>同じ施設スプライトの原子セル版を使用し、ランドマーク補助処理は無効。pattern 07の選抜条件を維持。</td>
             </tr>
             <tr>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>収集済みの館内施設を施設アイコンへ追加</h3>
+          <time datetime="2026-08-23">2026-08-23 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>「施設アイコン」で複合施設の代表建物だけに絞る処理を外し、表示範囲内の親施設にひもづく事前収集済みの館内施設をすべて表示。「たてもの」と同じ屋根・壁・影のデザインを継続。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの「施設アイコン」で有効。ズーム条件と事前収集データ限定の入力条件は維持。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guardにより従来の施設表示と選抜条件を維持。production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>親施設と収集済み館内施設の同時表示、通常POIの非表示、建物用屋根・壁・影rendererの共用、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>地区幹線道路の中央線を道路境界の中点へ整列</h3>

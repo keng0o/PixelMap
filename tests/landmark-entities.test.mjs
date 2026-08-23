@@ -89,6 +89,8 @@ test('ランドマーク処理は単体ページだけで有効になり共有if
 
 test('施設アイコンは収集ランドマークだけを建物デザインで描く', () => {
   assert.match(mapHtml, /const poiSourceFacilities = STANDALONE_LANDMARK_MODE[\s\S]*item\.landmarkEntity/);
+  assert.match(mapHtml, /const activeFeatures = selection\.collection\.features\.filter\(activeLandmarkAtZoom\)/);
+  assert.match(mapHtml, /if \(feature\.properties\.parent_id\)[\s\S]*contextParentIds\.has\(feature\.properties\.parent_id\)/);
   assert.match(mapHtml, /function rasterizeStandaloneLandmarkBuildings\(features, worldToGridPoint, gridSize\)/);
   assert.match(mapHtml, /function drawStandaloneLandmarkBuildings\(\)/);
   assert.match(mapHtml, /drawCellPixelArtBuildingGrid\([\s\S]*landmark\.grid, landmark\.bldGrid/);
