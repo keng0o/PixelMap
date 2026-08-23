@@ -271,9 +271,12 @@ function applyFourMapRenderMode(mode){
   document.documentElement.dataset.renderMode = nextMode;
   let changed = false;
   for (const frame of frames){
-    if (renderModeFromUrl(frame.src) === nextMode) continue;
+    const currentMode = frame.dataset.renderMode || renderModeFromUrl(frame.src);
+    frame.dataset.renderMode = currentMode;
+    if (currentMode === nextMode) continue;
     const url = new URL(frame.src, location.href);
     url.searchParams.set('render', nextMode);
+    frame.dataset.renderMode = nextMode;
     if (frame.contentWindow) frame.contentWindow.location.replace(url.href);
     else frame.src = url.href;
     changed = true;

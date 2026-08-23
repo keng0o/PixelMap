@@ -33,6 +33,8 @@ test('2マップは左右別、4マップは共通チェックでcell2とcell3�
   assert.doesNotMatch(twoMapHtml, /cell3Mode|pixelmap:set-render/);
   assert.match(fourMapHtml, /id="cell3Mode" type="checkbox">3×3セル（cell3）/);
   assert.match(fourMapHtml, /function applyFourMapRenderMode\(mode\)/);
+  assert.match(fourMapHtml, /const currentMode = frame\.dataset\.renderMode \|\| renderModeFromUrl\(frame\.src\)/);
+  assert.match(fourMapHtml, /frame\.dataset\.renderMode = nextMode/);
   assert.match(fourMapHtml, /url\.searchParams\.set\('render', nextMode\)/);
   assert.match(fourMapHtml, /frame\.contentWindow\.location\.replace\(url\.href\)/);
   assert.match(fourMapHtml, /window\.parent === window \? 'pushState' : 'replaceState'/);
@@ -46,7 +48,7 @@ test('2マップは左右別、4マップは共通チェックでcell2とcell3�
   assert.match(oneMapHtml, /v=20260823-1/);
   assert.equal((twoMapHtml.match(/v=20260823-1/g) || []).length, 2);
   assert.equal((fourMapHtml.match(/v=20260823-1/g) || []).length, 4);
-  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260823-1/);
+  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260823-2/);
 });
 
 test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {
