@@ -183,7 +183,7 @@
             </tr>
             <tr>
               <th scope="row">外側UIと同期</th>
-              <td>単独チェックでcell2/cell3を切替。URLの他条件とhashを保持して再読み込み。設定パネルは閉じることができ、閉じた間は地図を全画面表示。</td>
+              <td>単独チェックでcell2/cell3を切替。URLの他条件とhashを保持して再読み込み。設定パネルは右上固定の「－」で閉じ、閉じた間は地図を全画面表示。右上の「＋」で再表示。</td>
               <td>1マップは単独切替、2マップは位置同期を保ったまま左右別切替、4マップは親URLと4つのiframeを共通チェックで同期。</td>
             </tr>
           </tbody>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>設定ボタンを＋／－だけの右上固定へ変更</h3>
+          <time datetime="2026-08-23">2026-08-23 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>設定の開閉ボタンから説明文を外し、表示を「＋」「－」だけに変更。設定の開閉状態にかかわらず同じ右上位置へ固定し、アクセシブル名とツールチップには説明を保持。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの設定開閉ボタンだけを変更。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップの表示・設定UI・同期処理は変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>設定表示中の「－」と全画面表示中の「＋」が同じ右上座標にあること、表示文字、開閉往復、キーボードフォーカス、embeddedでの非表示、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>standalone設定を閉じて地図を全画面化</h3>

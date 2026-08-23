@@ -44,9 +44,11 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /4マップ（<code>four-maps\.html<\/code>/);
   assert.match(log, /standard、cell8、未知値を<code>cell2<\/code>へ正規化/);
   assert.match(log, /standalone設定を閉じて地図を全画面化/);
-  assert.match(log, /設定パネルは閉じることができ、閉じた間は地図を全画面表示/);
+  assert.match(log, /設定パネルは右上固定の「－」で閉じ、閉じた間は地図を全画面表示。右上の「＋」で再表示/);
   assert.match(log, /<strong>testのみ<\/strong>。standalone testで有効/);
   assert.match(log, /本番1・2・4マップの表示・設定UI・同期処理は変更なし/);
+  assert.match(log, /設定ボタンを＋／－だけの右上固定へ変更/);
+  assert.match(log, /設定の開閉状態にかかわらず同じ右上位置へ固定/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

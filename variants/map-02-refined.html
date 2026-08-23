@@ -185,30 +185,30 @@
   .location-btn:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
   .location-btn:disabled{ cursor:wait; opacity:.65; }
   .settings-toggle{
-    flex:0 0 auto;
-    min-height:34px;
-    padding:5px 10px;
+    position:fixed;
+    top:max(14px, env(safe-area-inset-top, 0px));
+    right:max(14px, env(safe-area-inset-right, 0px));
+    z-index:50;
+    display:grid;
+    place-items:center;
+    width:44px;
+    height:44px;
+    padding:0;
     border:2px solid #f8f0d8;
     background:#181820;
     color:#f8f0d8;
     font:inherit;
-    letter-spacing:1px;
+    font-size:24px;
+    line-height:1;
     cursor:pointer;
-    white-space:nowrap;
+    box-shadow:4px 4px 0 #101018aa;
   }
   .settings-toggle:hover{ background:#282838; }
   .settings-toggle:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
   #settingsOpenBtn{
     display:none;
-    position:fixed;
-    top:16px;
-    right:16px;
-    z-index:50;
-    min-height:42px;
-    padding:8px 12px;
     background:#88c860;
     color:#101018;
-    box-shadow:4px 4px 0 #101018aa;
   }
   #stats{ width:min(92vw,700px); font-size:11px; color:#a8a088; display:flex; flex-wrap:wrap; gap:4px 14px; }
   #attrib{ font-size:10px; color:#a8a088; padding:6px 12px; }
@@ -349,11 +349,6 @@
     }
     #toolbar .category-master{ min-height:32px; padding:5px 8px; }
     #toolbar .location-btn{
-      min-height:38px;
-      padding:8px 12px;
-      scroll-snap-align:start;
-    }
-    #toolbar .settings-toggle{
       min-height:38px;
       padding:8px 12px;
       scroll-snap-align:start;
@@ -526,7 +521,7 @@
     <button id="locateBtn" class="location-btn" type="button" disabled>◎ 現在地へ</button>
     <label class="category-master"><input type="checkbox" id="tglAllLayers">全レイヤー</label>
     <label class="category-master"><input type="checkbox" id="tglCell3">3×3セル（cell3）</label>
-    <button id="settingsCloseBtn" class="settings-toggle" type="button" aria-controls="toolbar" aria-expanded="true" hidden>－ 設定を閉じる</button>
+    <button id="settingsCloseBtn" class="settings-toggle" type="button" aria-label="設定を閉じる" title="設定を閉じる" aria-controls="toolbar" aria-expanded="true" hidden>－</button>
   </div>
 
   <section class="layer-category" role="group" aria-labelledby="natureCategoryTitle">
@@ -637,7 +632,7 @@
   </section>
 </div>
 
-<button id="settingsOpenBtn" class="settings-toggle" type="button" aria-controls="toolbar" aria-expanded="false" aria-hidden="true">＋ 設定を開く</button>
+<button id="settingsOpenBtn" class="settings-toggle" type="button" aria-label="設定を開く" title="設定を開く" aria-controls="toolbar" aria-expanded="false" aria-hidden="true">＋</button>
 
 <div id="msg" class="rpg-window" role="status" aria-live="polite">マップデータを よみこんでいる……<span class="cursor">▼</span></div>
 

@@ -29,8 +29,9 @@ test('共有マップのチェックはURLを保ったままcell2とcell3を切�
 });
 
 test('standalone testだけ設定を閉じて地図を全画面表示できる', () => {
-  assert.match(html, /id="settingsCloseBtn"[\s\S]*?aria-controls="toolbar"[\s\S]*?hidden>－ 設定を閉じる/);
-  assert.match(html, /id="settingsOpenBtn"[\s\S]*?aria-controls="toolbar"[\s\S]*?>＋ 設定を開く/);
+  assert.match(html, /id="settingsCloseBtn"[\s\S]*?aria-label="設定を閉じる"[\s\S]*?hidden>－<\/button>/);
+  assert.match(html, /id="settingsOpenBtn"[\s\S]*?aria-label="設定を開く"[\s\S]*?>＋<\/button>/);
+  assert.match(html, /\.settings-toggle\{[\s\S]*?position:fixed;[\s\S]*?top:max\(14px,[\s\S]*?right:max\(14px,[\s\S]*?width:44px;[\s\S]*?height:44px/);
   assert.match(html, /function setStandaloneSettingsCollapsed\(collapsed\)/);
   assert.match(html, /if \(EMBEDDED \|\| CAPTURE_MODE\) return/);
   assert.match(html, /if \(!EMBEDDED && !CAPTURE_MODE\)/);
