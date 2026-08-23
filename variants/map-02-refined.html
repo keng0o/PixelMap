@@ -2233,46 +2233,6 @@ function paintDarkenedMapCell(gx, gy, factor, layer, stats){
   paintSolidMapCell(gx, gy, color, layer, stats);
 }
 
-// standalone testの地区幹線道路は、元のsource中心セルをそのまま使わず、
-// 道路マスクを局所的に横断して両側境界の中点へ中央線をそろえる。
-// 偶数セル幅では中点を挟む2セルを対称に使い、境界と平行な帯を維持する。
-function boundaryAlignedRoadCenter(grid, centerGrid, x, y){
-  const RG = GRID + 2;
-  const has = (cx, cy) => cx >= 0 && cy >= 0 && cx < RG && cy < RG && grid[cy * RG + cx] !== ID.GRASS;
-  const centered = (cx, cy) => centerGrid && cx >= 0 && cy >= 0 && cx < RG && cy < RG && centerGrid[cy * RG + cx];
-  const nearby = [];
-  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++){
-    if ((dx || dy) && centered(x + dx, y + dy)) nearby.push([dx, dy]);
-  }
-  let tangent = nearby[0] || [1, 0], farthest = -1;
-  for (let first = 0; first < nearby.length; first++){
-    for (let second = first + 1; second < nearby.length; second++){
-      const tx = nearby[second][0] - nearby[first][0];
-      const ty = nearby[second][1] - nearby[first][1];
-      const distance = tx * tx + ty * ty;
-      if (distance > farthest){ tangent = [tx, ty]; farthest = distance; }
-    }
-  }
-  const [tx, ty] = tangent;
-  const normal = [-ty, tx];
-  const normalLength = Math.hypot(normal[0], normal[1]) || 1;
-  const scanLimit = Math.max(8, detailCellSpan(4));
-  const crossSections = [[1,0],[0,1],[1,1],[1,-1]].map(([nx, ny]) => {
-    let before = 0, after = 0;
-    while (before < scanLimit && has(x - nx * (before + 1), y - ny * (before + 1))) before++;
-    while (after < scanLimit && has(x + nx * (after + 1), y + ny * (after + 1))) after++;
-    const alignment = Math.abs(nx * normal[0] + ny * normal[1]) / (Math.hypot(nx, ny) * normalLength);
-    return { nx, ny, before, after, span:before + after + 1, score:before + after + 1 + (1 - alignment) * .9 };
-  }).sort((a, b) => a.score - b.score);
-  const section = crossSections[0];
-  const midpoint = (section.after - section.before) / 2;
-  const offsets = [...new Set([Math.floor(midpoint), Math.ceil(midpoint)])];
-  const cells = offsets
-    .map(offset => [x + section.nx * offset, y + section.ny * offset])
-    .filter(([cx, cy]) => has(cx, cy));
-  return { cells:cells.length ? cells : [[x, y]], tangent };
-}
-
 function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, bridge = false){
   const RG = GRID + 2;
   const has = (x, y) => x >= 0 && y >= 0 && x < RG && y < RG && grid[y * RG + x] !== ID.GRASS;
@@ -2335,21 +2295,17 @@ function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, b
     return;
   }
 
-  if (roadStyle?.center){
+  // 斜め区間で原子セル幅の中央位置を安定して表現できないため、
+  // standalone testの地区幹線道路だけは中央線を描かない。
+  const hideRegionalRoadCenter = !EMBEDDED && option === 'regionalRoads';
+  if (roadStyle?.center && !hideRegionalRoadCenter){
     for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
       if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
       const [wx, wy] = worldFineCell(x, y);
       const period = option === 'regionalRoads' ? 7 : 9;
-      const aligned = !EMBEDDED && option === 'regionalRoads'
-        ? boundaryAlignedRoadCenter(grid, centerGrid, x, y)
-        : { cells:[[x, y]], tangent:[1, 1] };
-      const [tx, ty] = aligned.tangent;
-      const phase = tx === 0 ? wy : ty === 0 ? wx : tx * ty > 0 ? wx + wy : wx - wy;
-      if (positiveModulo(phase, period) >= Math.ceil(period * .55)) continue;
-      for (const [centerX, centerY] of aligned.cells){
-        paintSolidMapCell(centerX, centerY, roadStyle.center, option, stats);
-        stats.roadCenterCells++;
-      }
+      if (positiveModulo(wx + wy, period) >= Math.ceil(period * .55)) continue;
+      paintSolidMapCell(x, y, roadStyle.center, option, stats);
+      stats.roadCenterCells++;
     }
   } else if (centerGrid && ['paths','tracks','piers','transportationOther'].includes(option)){
     const detail = option === 'tracks' ? P.gravelDk : option === 'paths' ? P.trail : P.pave;
