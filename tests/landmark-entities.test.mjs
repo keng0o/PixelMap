@@ -113,19 +113,29 @@ test('ランドマーク処理は単体ページだけで有効になり共有if
   assert.match(mapHtml, /dataset\.commercialLandmarks = commercialLandmarkToggle\.checked \? 'on' : 'off'/);
 });
 
-test('施設アイコンは収集ランドマーク・駅・学校を既存建物と同じ見た目で描く', () => {
-  assert.match(mapHtml, /const isStandaloneBuildingFacility = item => item\.landmarkEntity \|\|[\s\S]*isStationProps\(item\.props\) \|\| isSchoolFacilityProps\(item\.props\)/);
+test('施設アイコンはランドマークと汎用施設敷地の全棟を既存建物と同じ見た目で描く', () => {
+  assert.match(mapHtml, /const NON_FACILITY_SITE_CLASSES = new Set/);
+  assert.match(mapHtml, /function facilityMatchesSite\(facility, site\)[\s\S]*facility\.assetFamily === family/);
+  assert.match(mapHtml, /function facilitySiteContainsGridPoint\(site, point\)/);
+  assert.match(mapHtml, /const splitPolygonUnits = feature =>/);
+  assert.match(mapHtml, /if \(STANDALONE_LANDMARK_MODE\)\{[\s\S]*const facilitySiteGroups = new Map\(\)/);
+  assert.match(mapHtml, /count >= Math\.max\(1, Math\.ceil\(bldArea\[buildingId\] \* \.5\)\)/);
+  assert.match(mapHtml, /matchedStandaloneFacilities\.has\(item\)/);
   assert.match(mapHtml, /const poiSourceFacilities = STANDALONE_LANDMARK_MODE[\s\S]*facilitiesInView\.filter\(isStandaloneBuildingFacility\)/);
-  assert.match(mapHtml, /const facilityBuildingTargets = STANDALONE_LANDMARK_MODE[\s\S]*poiSourceFacilities\.filter\(item => !item\.landmarkEntity\)/);
+  assert.match(mapHtml, /const facilityBuildingTargets = STANDALONE_LANDMARK_MODE[\s\S]*facilitiesInView\.filter\(item => !item\.landmarkEntity\)/);
   assert.match(mapHtml, /const activeFeatures = selection\.collection\.features\.filter\(activeLandmarkAtZoom\)/);
   assert.match(mapHtml, /if \(feature\.properties\.parent_id\)[\s\S]*contextParentIds\.has\(feature\.properties\.parent_id\)/);
   assert.match(mapHtml, /function rasterizeStandaloneLandmarkBuildings\(features, worldToGridPoint, gridSize\)/);
   assert.match(mapHtml, /function matchStandaloneLandmarksToSourceBuildings\([\s\S]*sourceBuildingGrid, sourceBldGrid/);
   assert.match(mapHtml, /buildingKinds:sourceBuildingKinds[\s\S]*buildingDescs:sourceBuildingDescs[\s\S]*bldStyle:sourceBldStyle/);
-  assert.match(mapHtml, /facilityBuildingTargets, unitByRingKey,[\s\S]*facility => worldToGridCell\(facility\.worldX, facility\.worldY\)/);
+  assert.match(mapHtml, /facilityBuildingTargets, unitByRingKey,[\s\S]*facility => worldToGridPoint\(facility\.worldX, facility\.worldY\),[\s\S]*facilitySites/);
+  assert.match(mapHtml, /owners\.sort\(\(a, b\) => compareFacilitySiteOwners\(a, b, site\)\)/);
+  assert.match(mapHtml, /siteBuildingIds\.has\(facilitySourceBuildingIds\.get\(facility\)\)/);
+  assert.match(mapHtml, /for \(const buildingId of site\.buildingIds\)/);
   assert.match(mapHtml, /function drawStandaloneLandmarkBuildings\(\)/);
   assert.match(mapHtml, /for \(const layer of landmark\.layers\)[\s\S]*drawCellPixelArtBuildingGrid\([\s\S]*layer\.grid, layer\.bldGrid/);
-  assert.match(mapHtml, /source:STANDALONE_LANDMARK_MODE \? 'landmarks-stations-schools'/);
+  assert.match(mapHtml, /source:STANDALONE_LANDMARK_MODE \? 'landmarks-facility-sites'/);
+  assert.match(mapHtml, /matchedFacilitySiteClasses:landmarkBuildingRaster\?\.matchedFacilitySiteClasses/);
   assert.match(mapHtml, /renderer:STANDALONE_LANDMARK_MODE \? 'matched-map-building'/);
   assert.match(mapHtml, /renderer:'building-footprint'/);
   assert.match(mapHtml, /'precollected-landmark-building'/);

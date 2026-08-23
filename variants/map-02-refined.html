@@ -1816,24 +1816,21 @@ function rasterizeGrid(layers, options){
     }
     return inside;
   };
-  const buildingExtent = layers.building?.extent || 4096;
-  // 世界px変換はリゾルバーと同一式・同一の座標オブジェクトを使うため、
-  // ringKey は facility.buildingId と文字列一致し、直接joinできる。
-  const worldScale = (GRID * CPX) / buildingExtent;
-  const bldUnits = [];                        // { props, rings, ringKey, geomAreaCells }
-  const unitByRingKey = new Map();
-  for (const f of L('building')){
-    if (f.type !== 3 || !f.geom.length) continue;
-    const rings = f.geom.filter(r => r.length >= 3).map(r => ({ pts:r, signed:ringSigned(r), holes:null }));
-    if (!rings.length) continue;
-    // 最大リングの符号を「外形」とみなし、逆符号のリングは内包する外形へ穴として割り当てる
+  // MVT polygonを外形単位へ分割する。建物と施設敷地で同じリング解釈を使い、
+  // タイル境界や穴を含む形状でも空間結合の意味をずらさない。
+  const splitPolygonUnits = feature => {
+    const rings = feature.geom
+      .filter(r => r.length >= 3)
+      .map(r => ({ pts:r, signed:ringSigned(r), holes:null }));
+    if (!rings.length) return [];
     let outerSign = 1, maxAbs = -1;
-    for (const r of rings){
-      const a = Math.abs(r.signed);
-      if (a > maxAbs){ maxAbs = a; outerSign = Math.sign(r.signed) || 1; }
+    for (const ring of rings){
+      const area = Math.abs(ring.signed);
+      if (area > maxAbs){ maxAbs = area; outerSign = Math.sign(ring.signed) || 1; }
     }
     const outers = [], holes = [];
-    for (const r of rings) ((Math.sign(r.signed) || outerSign) === outerSign ? outers : holes).push(r);
+    for (const ring of rings)
+      ((Math.sign(ring.signed) || outerSign) === outerSign ? outers : holes).push(ring);
     for (const hole of holes){
       const [hx, hy] = hole.pts[0];
       let best = null;
@@ -1843,9 +1840,23 @@ function rasterizeGrid(layers, options){
       }
       if (best) (best.holes || (best.holes = [])).push(hole.pts);
     }
-    for (const outer of outers){
+    return outers.map(outer => ({
+      rings:[outer.pts, ...(outer.holes || [])],
+      signed:outer.signed,
+    }));
+  };
+  const buildingExtent = layers.building?.extent || 4096;
+  // 世界px変換はリゾルバーと同一式・同一の座標オブジェクトを使うため、
+  // ringKey は facility.buildingId と文字列一致し、直接joinできる。
+  const worldScale = (GRID * CPX) / buildingExtent;
+  const bldUnits = [];                        // { props, rings, ringKey, geomAreaCells }
+  const unitByRingKey = new Map();
+  for (const f of L('building')){
+    if (f.type !== 3 || !f.geom.length) continue;
+    for (const unit of splitPolygonUnits(f)){
+      const outer = unit.rings[0];
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      for (const [ox, oy] of outer.pts){
+      for (const [ox, oy] of outer){
         const wx = ox * worldScale + TILE.x * GRID * CPX;
         const wy = oy * worldScale + TILE.y * GRID * CPX;
         if (wx < minX) minX = wx; if (wx > maxX) maxX = wx;
@@ -1853,10 +1864,10 @@ function rasterizeGrid(layers, options){
       }
       bldUnits.push({
         props:f.props,
-        rings:[outer.pts, ...(outer.holes || [])],
+        rings:unit.rings,
         ringKey:`r:${Math.round(minX)},${Math.round(minY)},${Math.round(maxX)},${Math.round(maxY)}`,
         // 意味分類は標準96セル基準のままにし、cell2の細分化で変化させない。
-        geomAreaCells:Math.abs(outer.signed) * (STANDARD_GRID / buildingExtent) ** 2,
+        geomAreaCells:Math.abs(unit.signed) * (STANDARD_GRID / buildingExtent) ** 2,
       });
     }
   }
@@ -1884,6 +1895,50 @@ function rasterizeGrid(layers, options){
     }
     bldArea[i + 1] = cnt;
   });
+  // landuse feature idを敷地の安定IDとして、タイル境界で分割された同一敷地も
+  // 1グループへ戻す。建物セルの50%以上が敷地内にある棟だけを所属棟とする。
+  const facilitySites = [];
+  if (STANDALONE_LANDMARK_MODE){
+    const facilitySiteGroups = new Map();
+    let anonymousSiteId = 0;
+    for (const feature of L('landuse')){
+      if (feature.type !== 3 || !feature.geom.length) continue;
+      const siteClass = feature.props.subclass || feature.props.class || '';
+      if (!siteClass) continue;
+      const sourceKey = feature.id
+        ? `${siteClass}:${feature.id}`
+        : `${siteClass}:anonymous:${anonymousSiteId++}`;
+      if (!facilitySiteGroups.has(sourceKey)) facilitySiteGroups.set(sourceKey, {
+        id:sourceKey,
+        siteClass,
+        props:feature.props,
+        components:[],
+      });
+      const site = facilitySiteGroups.get(sourceKey);
+      for (const unit of splitPolygonUnits(feature)){
+        const gridRings = unit.rings.map(ring => ring.map(([x, y]) => [gx(x), gy(y)]));
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const ring of gridRings) for (const [x, y] of ring){
+          minX = Math.min(minX, x); minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+        }
+        site.components.push({ sourceRings:unit.rings, gridRings, bounds:[minX,minY,maxX,maxY] });
+      }
+    }
+    for (const site of facilitySiteGroups.values()){
+      const overlaps = new Map();
+      for (const component of site.components){
+        fillPolyCells(component.sourceRings, (cx, cy) => {
+          const buildingId = bldGrid[cy * RG + cx];
+          if (buildingId) overlaps.set(buildingId, (overlaps.get(buildingId) || 0) + 1);
+        });
+      }
+      site.buildingIds = [...overlaps]
+        .filter(([buildingId, count]) => count >= Math.max(1, Math.ceil(bldArea[buildingId] * .5)))
+        .map(([buildingId]) => buildingId);
+      if (site.buildingIds.length) facilitySites.push(site);
+    }
+  }
   countFeatures('buildings', bldUnits.length);
   /* --- 道・線路: セル走査で必ず4連結にする（斜めは階段状） --- */
   const setCell = (grid, cx, cy, id) => {
@@ -2002,7 +2057,10 @@ function rasterizeGrid(layers, options){
     },
     feature => paintGeometry(feature, 1.5, 1.25)
   );
-  return { grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea, featureCountsByOption, size:RG };
+  return {
+    grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea,
+    facilitySites, featureCountsByOption, size:RG,
+  };
 }
 let rasterizationCache = { layers:null, originX:null, originY:null, result:null };
 function getRasterizedGrid(layers, options){
@@ -3214,6 +3272,65 @@ const { isStationProps, tierValue } = RESOLVER;
 const SCHOOL_FACILITY_CLASSES = new Set(['school','college','university','kindergarten']);
 const isSchoolFacilityProps = props =>
   SCHOOL_FACILITY_CLASSES.has(props?.subclass) || SCHOOL_FACILITY_CLASSES.has(props?.class);
+// 住宅地・市街地のような「地域用途」は施設敷地として扱わない。
+// それ以外は、POI asset familyまたは同一classで所有施設を判定するため、
+// 学校・病院などの個別分岐を増やさず新しい施設種別へ拡張できる。
+const NON_FACILITY_SITE_CLASSES = new Set([
+  'wood','forest','residential','suburb','quarter','neighbourhood',
+  'commercial','industrial','quarry','dam',
+]);
+const FACILITY_SITE_FAMILY_HINTS = new Map([
+  ['retail','commerce'],
+  ['garages','mobilityService'],
+]);
+const FACILITY_SITE_FAMILY_CACHE = new WeakMap();
+const facilityPropTypes = props => new Set([props?.subclass, props?.class].filter(Boolean));
+function facilitySiteFamily(site){
+  if (FACILITY_SITE_FAMILY_CACHE.has(site)) return FACILITY_SITE_FAMILY_CACHE.get(site);
+  const binding = ASSET_FAMILY_REGISTRY.resolvePoi(site.props, ACTIVE_ASSET_PACK);
+  const family = binding.fallback
+    ? FACILITY_SITE_FAMILY_HINTS.get(site.siteClass) || null
+    : binding.familyId;
+  FACILITY_SITE_FAMILY_CACHE.set(site, family);
+  return family;
+}
+function facilityMatchesSite(facility, site){
+  const types = facilityPropTypes(facility.props);
+  if (types.has(site.siteClass)) return true;
+  const family = facilitySiteFamily(site);
+  return Boolean(family && facility.assetFamily === family);
+}
+function facilitySiteContainsGridPoint(site, point){
+  if (!point) return false;
+  const [x, y] = point;
+  for (const component of site.components){
+    const [minX,minY,maxX,maxY] = component.bounds;
+    if (x < minX || y < minY || x > maxX || y > maxY) continue;
+    let inside = false;
+    for (const ring of component.gridRings){
+      let ringInside = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++){
+        const [xi, yi] = ring[i], [xj, yj] = ring[j];
+        if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+          ringInside = !ringInside;
+      }
+      if (ringInside) inside = !inside;
+    }
+    if (inside) return true;
+  }
+  return false;
+}
+function facilitySiteOwnerScore(facility, site){
+  const exactClass = facilityPropTypes(facility.props).has(site.siteClass) ? 0 : 1;
+  const role = facility.semanticRole === 'structure' ? 0 : 1;
+  const named = featureName(facility.props) ? 0 : 1;
+  return [exactClass, role, named, Number(facility.selectionPriority ?? 99), Number(facility.rank ?? 99)];
+}
+function compareFacilitySiteOwners(a, b, site){
+  const as = facilitySiteOwnerScore(a, site), bs = facilitySiteOwnerScore(b, site);
+  for (let index = 0; index < as.length; index++) if (as[index] !== bs[index]) return as[index] - bs[index];
+  return String(a.key || featureName(a.props) || '').localeCompare(String(b.key || featureName(b.props) || ''));
+}
 const POI_SPRITE_CATALOG = window.PixelMapPoiSprites;
 const POI_ASSETS_BY_ID = new Map(POI_SPRITE_CATALOG.assets.map(asset => [asset.id,asset]));
 function categoryTone(category){
@@ -3841,22 +3958,32 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
   };
 }
 
-// 収集ランドマーク・駅・学校は表示対象の選抜にだけ使い、見た目は
+// 収集ランドマークと施設敷地は表示対象の選抜にだけ使い、見た目は
 // 「たてもの」レイヤーの実建物ID・形状・配色をそのまま再利用する。
 // ランドマークに対応建物がない場合だけ収集形状へ戻す。
 function matchStandaloneLandmarksToSourceBuildings(
   landmark, sourceBuildingGrid, sourceBldGrid,
   sourceBuildingKinds, sourceBuildingDescs, sourceBuildingAnchors, sourceBldStyle,
-  facilityTargets = [], sourceUnitByRingKey = null, facilityToGridPoint = null
+  facilityTargets = [], sourceUnitByRingKey = null, facilityToGridPoint = null,
+  facilitySites = []
 ){
+  const directFacilityTargets = facilityTargets.filter(facility =>
+    isStationProps(facility.props) || isSchoolFacilityProps(facility.props));
   if (!sourceBuildingGrid) return {
     ...landmark,
     layers:[landmark],
     matchedFeatures:0,
     unmatchedFeatures:landmark.visibleFeatures,
     matchedFacilityTargets:0,
-    unmatchedFacilityTargets:facilityTargets.length,
+    unmatchedFacilityTargets:directFacilityTargets.length,
     matchedFacilityTypes:{ station:0, school:0 },
+    matchedFacilities:new Set(),
+    facilitySiteCandidates:0,
+    matchedFacilitySites:0,
+    unmatchedFacilitySites:0,
+    matchedFacilitySiteClasses:{},
+    matchedFacilitySiteOwners:[],
+    matchedFacilitySiteBuildings:0,
     sourceBuildingIds:0,
   };
 
@@ -3870,7 +3997,8 @@ function matchStandaloneLandmarksToSourceBuildings(
   const size = GRID + 2;
   const nearestSourceBuilding = anchor => {
     if (!anchor) return 0;
-    const [cx, cy] = anchor;
+    const [rawX, rawY] = anchor;
+    const cx = Math.floor(rawX), cy = Math.floor(rawY);
     const limit = Math.max(2, detailCellSpan(5));
     for (let radius = 0; radius <= limit; radius++){
       const candidates = [];
@@ -3914,9 +4042,10 @@ function matchStandaloneLandmarksToSourceBuildings(
     }
   }
 
+  const matchedFacilities = new Set();
   const matchedFacilityTypes = { station:0, school:0 };
-  let matchedFacilityTargets = 0;
-  for (const facility of facilityTargets){
+  let matchedDirectFacilityTargets = 0;
+  for (const facility of directFacilityTargets){
     let buildingId = facility.buildingId && sourceUnitByRingKey
       ? sourceUnitByRingKey.get(facility.buildingId) || 0
       : 0;
@@ -3924,9 +4053,52 @@ function matchStandaloneLandmarksToSourceBuildings(
       buildingId = nearestSourceBuilding(facilityToGridPoint(facility));
     if (!buildingId) continue;
     sourceBuildingIds.add(buildingId);
-    matchedFacilityTargets++;
+    matchedFacilities.add(facility);
+    matchedDirectFacilityTargets++;
     const type = isStationProps(facility.props) ? 'station' : 'school';
     matchedFacilityTypes[type]++;
+  }
+
+  // 施設classを列挙して分岐せず、敷地classのasset familyとPOI familyを照合する。
+  // 同一敷地の代表施設を1件選び、50%以上が敷地内に入る全棟を同じ表示集合へ加える。
+  const facilityGridPoints = new Map(facilityTargets.map(facility => [
+    facility,
+    facilityToGridPoint ? facilityToGridPoint(facility) : null,
+  ]));
+  const facilitySourceBuildingIds = new Map(facilityTargets.map(facility => [
+    facility,
+    facility.buildingId && sourceUnitByRingKey
+      ? sourceUnitByRingKey.get(facility.buildingId) || 0
+      : 0,
+  ]));
+  const candidateSites = facilitySites.filter(site =>
+    site.buildingIds.length && !NON_FACILITY_SITE_CLASSES.has(site.siteClass));
+  const matchedFacilitySiteClasses = {};
+  const matchedFacilitySiteOwners = [];
+  const matchedFacilitySiteBuildingIds = new Set();
+  let matchedFacilitySites = 0;
+  for (const site of candidateSites){
+    const siteBuildingIds = new Set(site.buildingIds);
+    const owners = facilityTargets.filter(facility =>
+      facilityMatchesSite(facility, site) &&
+      (facilitySiteContainsGridPoint(site, facilityGridPoints.get(facility)) ||
+       siteBuildingIds.has(facilitySourceBuildingIds.get(facility))));
+    if (!owners.length) continue;
+    owners.sort((a, b) => compareFacilitySiteOwners(a, b, site));
+    const owner = owners[0];
+    matchedFacilities.add(owner);
+    matchedFacilitySites++;
+    matchedFacilitySiteClasses[site.siteClass] = (matchedFacilitySiteClasses[site.siteClass] || 0) + 1;
+    matchedFacilitySiteOwners.push({
+      siteClass:site.siteClass,
+      name:featureName(owner.props),
+      assetFamily:owner.assetFamily || 'generic',
+      buildings:site.buildingIds.length,
+    });
+    for (const buildingId of site.buildingIds){
+      sourceBuildingIds.add(buildingId);
+      matchedFacilitySiteBuildingIds.add(buildingId);
+    }
   }
 
   const sourceGrid = new Uint8Array(sourceBuildingGrid.length);
@@ -3954,9 +4126,16 @@ function matchStandaloneLandmarksToSourceBuildings(
     layers,
     matchedFeatures:matchedFeatureIds.size,
     unmatchedFeatures:landmark.visibleFeatures - matchedFeatureIds.size,
-    matchedFacilityTargets,
-    unmatchedFacilityTargets:facilityTargets.length - matchedFacilityTargets,
+    matchedFacilityTargets:matchedFacilities.size,
+    unmatchedFacilityTargets:directFacilityTargets.length - matchedDirectFacilityTargets,
     matchedFacilityTypes,
+    matchedFacilities,
+    facilitySiteCandidates:candidateSites.length,
+    matchedFacilitySites,
+    unmatchedFacilitySites:candidateSites.length - matchedFacilitySites,
+    matchedFacilitySiteClasses,
+    matchedFacilitySiteOwners,
+    matchedFacilitySiteBuildings:matchedFacilitySiteBuildingIds.size,
     sourceBuildingIds:sourceBuildingIds.size,
   };
 }
@@ -4004,7 +4183,10 @@ function render(){
 
   /* --- 地形のマップグリッド + 建物情報 --- */
   const rasterized = getRasterizedGrid(tileLayers, o);
-  const { grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea, featureCountsByOption } = rasterized;
+  const {
+    grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea,
+    facilitySites, featureCountsByOption,
+  } = rasterized;
   const RG = GRID + 2;
   const worldToGridCell = (wx, wy) => [
     Math.floor(wx / CPX) - TILE.x * GRID - gridOriginX,
@@ -4366,16 +4548,30 @@ function render(){
       return { ...f, pt, visualRadius:f.collisionRadius };
     })
     .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
-  // standalone testの「施設アイコン」は事前収集ランドマークに加え、駅と学校を
-  // 実建物として表示する。embeddedでは従来どおり通常POIの選抜を維持する。
+  // standalone testの「施設アイコン」は、収集ランドマークと敷地所有施設を
+  // 実建物として表示する。敷地がない駅・学校は従来の1棟fallbackを維持する。
+  const facilityBuildingTargets = STANDALONE_LANDMARK_MODE
+    ? facilitiesInView.filter(item => !item.landmarkEntity)
+    : [];
+  const collectedLandmarkRaster = STANDALONE_LANDMARK_MODE && o.poi
+    ? rasterizeStandaloneLandmarkBuildings(resolvedView.landmarkFeatures, worldToGridPoint, RG)
+    : null;
+  const landmarkBuildingRaster = collectedLandmarkRaster
+    ? matchStandaloneLandmarksToSourceBuildings(
+      collectedLandmarkRaster, grids.get('buildings'), bldGrid,
+      buildingKinds, buildingDescs, buildingAnchors, bldStyle,
+      facilityBuildingTargets, unitByRingKey,
+      facility => worldToGridPoint(facility.worldX, facility.worldY),
+      facilitySites
+    )
+    : null;
+  const matchedStandaloneFacilities = landmarkBuildingRaster?.matchedFacilities || new Set();
   const isStandaloneBuildingFacility = item => item.landmarkEntity ||
-    isStationProps(item.props) || isSchoolFacilityProps(item.props);
+    isStationProps(item.props) || isSchoolFacilityProps(item.props) ||
+    matchedStandaloneFacilities.has(item);
   const poiSourceFacilities = STANDALONE_LANDMARK_MODE
     ? facilitiesInView.filter(isStandaloneBuildingFacility)
     : facilitiesInView;
-  const facilityBuildingTargets = STANDALONE_LANDMARK_MODE
-    ? poiSourceFacilities.filter(item => !item.landmarkEntity)
-    : [];
   const viewportIconSelection = WORLD_STYLE_MODE
     ? RESOLVER.selectViewportIcons(poiSourceFacilities, WORLD_STYLE.density)
     : {
@@ -4403,17 +4599,6 @@ function render(){
   const clusterMarks = resolvedView.clusters
     .map(c => ({ ...c, pt:worldToScreen(c.worldX, c.worldY) }))
     .filter(c => c.pt[0] >= -40 && c.pt[1] >= -40 && c.pt[0] <= W + 40 && c.pt[1] <= H + 40);
-  const collectedLandmarkRaster = STANDALONE_LANDMARK_MODE && o.poi
-    ? rasterizeStandaloneLandmarkBuildings(resolvedView.landmarkFeatures, worldToGridPoint, RG)
-    : null;
-  const landmarkBuildingRaster = collectedLandmarkRaster
-      ? matchStandaloneLandmarksToSourceBuildings(
-        collectedLandmarkRaster, grids.get('buildings'), bldGrid,
-        buildingKinds, buildingDescs, buildingAnchors, bldStyle,
-        facilityBuildingTargets, unitByRingKey,
-        facility => worldToGridCell(facility.worldX, facility.worldY)
-      )
-    : null;
   let drawnDotCount = 0;
   function drawDotMarker(p){
     const [x0, y0] = p.pt;
@@ -5288,20 +5473,31 @@ function render(){
     },
     landmarks:resolvedView.landmarks,
     poi:{
-      source:STANDALONE_LANDMARK_MODE ? 'landmarks-stations-schools' : 'mvt-facilities',
+      source:STANDALONE_LANDMARK_MODE ? 'landmarks-facility-sites' : 'mvt-facilities',
       renderer:STANDALONE_LANDMARK_MODE ? 'matched-map-building' : 'poi-sprite',
       eligible:poiSourceFacilities.length,
       eligibleFacilityTypes:STANDALONE_LANDMARK_MODE ? {
         landmark:poiSourceFacilities.filter(item => item.landmarkEntity).length,
         station:poiSourceFacilities.filter(item => !item.landmarkEntity && isStationProps(item.props)).length,
         school:poiSourceFacilities.filter(item => !item.landmarkEntity && isSchoolFacilityProps(item.props)).length,
+        siteOwner:poiSourceFacilities.filter(item => !item.landmarkEntity &&
+          !isStationProps(item.props) && !isSchoolFacilityProps(item.props)).length,
       } : null,
+      eligibleFacilityFamilies:STANDALONE_LANDMARK_MODE
+        ? countBy(poiSourceFacilities.filter(item => !item.landmarkEntity), item => item.assetFamily || 'generic')
+        : null,
       renderedLandmarkBuildings:landmarkBuildingRaster?.visibleFeatures || 0,
       matchedLandmarkFeatures:landmarkBuildingRaster?.matchedFeatures || 0,
       unmatchedLandmarkFeatures:landmarkBuildingRaster?.unmatchedFeatures || 0,
       matchedFacilityTargets:landmarkBuildingRaster?.matchedFacilityTargets || 0,
       unmatchedFacilityTargets:landmarkBuildingRaster?.unmatchedFacilityTargets || 0,
       matchedFacilityTypes:landmarkBuildingRaster?.matchedFacilityTypes || { station:0, school:0 },
+      facilitySiteCandidates:landmarkBuildingRaster?.facilitySiteCandidates || 0,
+      matchedFacilitySites:landmarkBuildingRaster?.matchedFacilitySites || 0,
+      unmatchedFacilitySites:landmarkBuildingRaster?.unmatchedFacilitySites || 0,
+      matchedFacilitySiteClasses:landmarkBuildingRaster?.matchedFacilitySiteClasses || {},
+      matchedFacilitySiteOwners:landmarkBuildingRaster?.matchedFacilitySiteOwners || [],
+      matchedFacilitySiteBuildings:landmarkBuildingRaster?.matchedFacilitySiteBuildings || 0,
       matchedSourceBuildings:landmarkBuildingRaster?.sourceBuildingIds || 0,
       total:resolvedView.facilities.length,
       visible:facilitiesInView.length,

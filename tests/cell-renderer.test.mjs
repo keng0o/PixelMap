@@ -104,7 +104,7 @@ test('標準16シーンpxマップチップをcell2/cell3の世界座標固定�
 test('細分化しても公園・建物の意味分類は96セル基準を維持する', () => {
   assert.match(html, /const semanticS = STANDARD_GRID \/ extent/);
   assert.match(html, /return Math\.abs\(twiceArea\) \* \.5 \* semanticS \* semanticS/);
-  assert.match(html, /geomAreaCells:Math\.abs\(outer\.signed\) \* \(STANDARD_GRID \/ buildingExtent\) \*\* 2/);
+  assert.match(html, /geomAreaCells:Math\.abs\(unit\.signed\) \* \(STANDARD_GRID \/ buildingExtent\) \*\* 2/);
 });
 
 test('セルモードの地形・交通・建物は専用ピクセルアート経路を使う', () => {
