@@ -3203,6 +3203,9 @@ const hi = (hex, f = 1.28) => {                 // 明るく
 // このページは確定済みの施設データを描くだけで、選抜の再計算は行わない。
 const RESOLVER = window.PixelMapFacilityResolver;
 const { isStationProps, tierValue } = RESOLVER;
+const SCHOOL_FACILITY_CLASSES = new Set(['school','college','university','kindergarten']);
+const isSchoolFacilityProps = props =>
+  SCHOOL_FACILITY_CLASSES.has(props?.subclass) || SCHOOL_FACILITY_CLASSES.has(props?.class);
 const POI_SPRITE_CATALOG = window.PixelMapPoiSprites;
 const POI_ASSETS_BY_ID = new Map(POI_SPRITE_CATALOG.assets.map(asset => [asset.id,asset]));
 function categoryTone(category){
@@ -3815,17 +3818,22 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
   };
 }
 
-// 収集ランドマークは表示対象の選抜にだけ使い、見た目は「たてもの」レイヤーの
-// 実建物ID・形状・配色をそのまま再利用する。対応建物がない場合だけ収集形状へ戻す。
+// 収集ランドマーク・駅・学校は表示対象の選抜にだけ使い、見た目は
+// 「たてもの」レイヤーの実建物ID・形状・配色をそのまま再利用する。
+// ランドマークに対応建物がない場合だけ収集形状へ戻す。
 function matchStandaloneLandmarksToSourceBuildings(
   landmark, sourceBuildingGrid, sourceBldGrid,
-  sourceBuildingKinds, sourceBuildingDescs, sourceBuildingAnchors, sourceBldStyle
+  sourceBuildingKinds, sourceBuildingDescs, sourceBuildingAnchors, sourceBldStyle,
+  facilityTargets = [], sourceUnitByRingKey = null, facilityToGridPoint = null
 ){
   if (!sourceBuildingGrid) return {
     ...landmark,
     layers:[landmark],
     matchedFeatures:0,
     unmatchedFeatures:landmark.visibleFeatures,
+    matchedFacilityTargets:0,
+    unmatchedFacilityTargets:facilityTargets.length,
+    matchedFacilityTypes:{ station:0, school:0 },
     sourceBuildingIds:0,
   };
 
@@ -3883,6 +3891,21 @@ function matchStandaloneLandmarksToSourceBuildings(
     }
   }
 
+  const matchedFacilityTypes = { station:0, school:0 };
+  let matchedFacilityTargets = 0;
+  for (const facility of facilityTargets){
+    let buildingId = facility.buildingId && sourceUnitByRingKey
+      ? sourceUnitByRingKey.get(facility.buildingId) || 0
+      : 0;
+    if (!buildingId && facilityToGridPoint)
+      buildingId = nearestSourceBuilding(facilityToGridPoint(facility));
+    if (!buildingId) continue;
+    sourceBuildingIds.add(buildingId);
+    matchedFacilityTargets++;
+    const type = isStationProps(facility.props) ? 'station' : 'school';
+    matchedFacilityTypes[type]++;
+  }
+
   const sourceGrid = new Uint8Array(sourceBuildingGrid.length);
   const fallbackGrid = new Uint8Array(landmark.grid.length);
   for (let index = 0; index < sourceBuildingGrid.length; index++){
@@ -3908,6 +3931,9 @@ function matchStandaloneLandmarksToSourceBuildings(
     layers,
     matchedFeatures:matchedFeatureIds.size,
     unmatchedFeatures:landmark.visibleFeatures - matchedFeatureIds.size,
+    matchedFacilityTargets,
+    unmatchedFacilityTargets:facilityTargets.length - matchedFacilityTargets,
+    matchedFacilityTypes,
     sourceBuildingIds:sourceBuildingIds.size,
   };
 }
@@ -4317,11 +4343,16 @@ function render(){
       return { ...f, pt, visualRadius:f.collisionRadius };
     })
     .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
-  // standalone testの「施設アイコン」は事前収集ランドマークだけを入力にする。
-  // embeddedでは従来どおり通常POIの選抜を維持する。
+  // standalone testの「施設アイコン」は事前収集ランドマークに加え、駅と学校を
+  // 実建物として表示する。embeddedでは従来どおり通常POIの選抜を維持する。
+  const isStandaloneBuildingFacility = item => item.landmarkEntity ||
+    isStationProps(item.props) || isSchoolFacilityProps(item.props);
   const poiSourceFacilities = STANDALONE_LANDMARK_MODE
-    ? facilitiesInView.filter(item => item.landmarkEntity)
+    ? facilitiesInView.filter(isStandaloneBuildingFacility)
     : facilitiesInView;
+  const facilityBuildingTargets = STANDALONE_LANDMARK_MODE
+    ? poiSourceFacilities.filter(item => !item.landmarkEntity)
+    : [];
   const viewportIconSelection = WORLD_STYLE_MODE
     ? RESOLVER.selectViewportIcons(poiSourceFacilities, WORLD_STYLE.density)
     : {
@@ -4341,7 +4372,7 @@ function render(){
     .map(item => item.buildingId ? unitByRingKey.get(item.buildingId) : 0)
     .filter(Boolean));
   const hiddenPois = STANDALONE_LANDMARK_MODE
-    ? facilitiesInView.filter(p => !p.landmarkEntity && p.representation === 'dot')
+    ? facilitiesInView.filter(p => !isStandaloneBuildingFacility(p) && p.representation === 'dot')
     : [
         ...facilitiesInView.filter(p => p.representation === 'dot'),
         ...viewportIconSelection.rejected,
@@ -4353,9 +4384,11 @@ function render(){
     ? rasterizeStandaloneLandmarkBuildings(resolvedView.landmarkFeatures, worldToGridPoint, RG)
     : null;
   const landmarkBuildingRaster = collectedLandmarkRaster
-    ? matchStandaloneLandmarksToSourceBuildings(
+      ? matchStandaloneLandmarksToSourceBuildings(
         collectedLandmarkRaster, grids.get('buildings'), bldGrid,
-        buildingKinds, buildingDescs, buildingAnchors, bldStyle
+        buildingKinds, buildingDescs, buildingAnchors, bldStyle,
+        facilityBuildingTargets, unitByRingKey,
+        facility => worldToGridCell(facility.worldX, facility.worldY)
       )
     : null;
   let drawnDotCount = 0;
@@ -4947,7 +4980,9 @@ function render(){
 
   if (CELL_ONLY_MODE){
     if (o.dots && (!o.poi || STANDALONE_LANDMARK_MODE)){
-      drawCellDots(facilitiesInView.filter(p => p.representation !== 'cluster-member'));
+      drawCellDots(facilitiesInView.filter(p =>
+        p.representation !== 'cluster-member' &&
+        (!o.poi || !STANDALONE_LANDMARK_MODE || !isStandaloneBuildingFacility(p))));
       drawCellClusters();
       renderOrder.push('Z4:dots');
     }
@@ -5230,12 +5265,20 @@ function render(){
     },
     landmarks:resolvedView.landmarks,
     poi:{
-      source:STANDALONE_LANDMARK_MODE ? 'precollected-landmarks' : 'mvt-facilities',
+      source:STANDALONE_LANDMARK_MODE ? 'landmarks-stations-schools' : 'mvt-facilities',
       renderer:STANDALONE_LANDMARK_MODE ? 'matched-map-building' : 'poi-sprite',
       eligible:poiSourceFacilities.length,
+      eligibleFacilityTypes:STANDALONE_LANDMARK_MODE ? {
+        landmark:poiSourceFacilities.filter(item => item.landmarkEntity).length,
+        station:poiSourceFacilities.filter(item => !item.landmarkEntity && isStationProps(item.props)).length,
+        school:poiSourceFacilities.filter(item => !item.landmarkEntity && isSchoolFacilityProps(item.props)).length,
+      } : null,
       renderedLandmarkBuildings:landmarkBuildingRaster?.visibleFeatures || 0,
       matchedLandmarkFeatures:landmarkBuildingRaster?.matchedFeatures || 0,
       unmatchedLandmarkFeatures:landmarkBuildingRaster?.unmatchedFeatures || 0,
+      matchedFacilityTargets:landmarkBuildingRaster?.matchedFacilityTargets || 0,
+      unmatchedFacilityTargets:landmarkBuildingRaster?.unmatchedFacilityTargets || 0,
+      matchedFacilityTypes:landmarkBuildingRaster?.matchedFacilityTypes || { station:0, school:0 },
       matchedSourceBuildings:landmarkBuildingRaster?.sourceBuildingIds || 0,
       total:resolvedView.facilities.length,
       visible:facilitiesInView.length,
