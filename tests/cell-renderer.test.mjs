@@ -28,6 +28,20 @@ test('共有マップのチェックはURLを保ったままcell2とcell3を切�
   assert.match(html, /location\.assign\(renderModeUrl\(renderModeToggle\.checked \? 'cell3' : 'cell2'\)\.href\)/);
 });
 
+test('standalone testだけ設定を閉じて地図を全画面表示できる', () => {
+  assert.match(html, /id="settingsCloseBtn"[\s\S]*?aria-controls="toolbar"[\s\S]*?hidden>－ 設定を閉じる/);
+  assert.match(html, /id="settingsOpenBtn"[\s\S]*?aria-controls="toolbar"[\s\S]*?>＋ 設定を開く/);
+  assert.match(html, /function setStandaloneSettingsCollapsed\(collapsed\)/);
+  assert.match(html, /if \(EMBEDDED \|\| CAPTURE_MODE\) return/);
+  assert.match(html, /if \(!EMBEDDED && !CAPTURE_MODE\)/);
+  assert.match(html, /classList\.toggle\('settings-collapsed', collapsed\)/);
+  assert.match(html, /settingsToolbar\.inert = collapsed/);
+  assert.match(html, /body\.settings-collapsed \.map-frame\{[\s\S]*?position:fixed;[\s\S]*?width:100vw;[\s\S]*?height:100dvh/);
+  assert.match(html, /body\.settings-collapsed canvas\{[\s\S]*?width:max\(100dvw, 100dvh\)/);
+  assert.match(html, /body\.settings-collapsed #settingsOpenBtn\{ display:block; \}/);
+  assert.match(html, /!document\.body\.classList\.contains\('settings-collapsed'\)/);
+});
+
 test('2マップは左右別、4マップは共通チェックでcell2とcell3を切り替える', () => {
   assert.equal((twoMapHtml.match(/map-02-refined\.html\?embedded=1/g) || []).length, 2);
   assert.doesNotMatch(twoMapHtml, /cell3Mode|pixelmap:set-render/);

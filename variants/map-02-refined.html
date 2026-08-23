@@ -184,6 +184,32 @@
   .location-btn:hover{ background:#f8f0d8; }
   .location-btn:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
   .location-btn:disabled{ cursor:wait; opacity:.65; }
+  .settings-toggle{
+    flex:0 0 auto;
+    min-height:34px;
+    padding:5px 10px;
+    border:2px solid #f8f0d8;
+    background:#181820;
+    color:#f8f0d8;
+    font:inherit;
+    letter-spacing:1px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .settings-toggle:hover{ background:#282838; }
+  .settings-toggle:focus-visible{ outline:3px solid #f8d038; outline-offset:3px; }
+  #settingsOpenBtn{
+    display:none;
+    position:fixed;
+    top:16px;
+    right:16px;
+    z-index:50;
+    min-height:42px;
+    padding:8px 12px;
+    background:#88c860;
+    color:#101018;
+    box-shadow:4px 4px 0 #101018aa;
+  }
   #stats{ width:min(92vw,700px); font-size:11px; color:#a8a088; display:flex; flex-wrap:wrap; gap:4px 14px; }
   #attrib{ font-size:10px; color:#a8a088; padding:6px 12px; }
   #attrib a{ color:#88c860; }
@@ -327,6 +353,11 @@
       padding:8px 12px;
       scroll-snap-align:start;
     }
+    #toolbar .settings-toggle{
+      min-height:38px;
+      padding:8px 12px;
+      scroll-snap-align:start;
+    }
     #toolbar label:has(input:checked){
       border-color:#88c860;
       background:#202818;
@@ -334,6 +365,64 @@
     }
     #toolbar input{ width:18px; height:18px; }
   }
+  body.settings-collapsed{
+    display:block;
+    width:100%;
+    height:100%;
+    min-height:100vh;
+    min-height:100dvh;
+    padding:0;
+    overflow:hidden;
+    background:#78b850;
+  }
+  body.settings-collapsed #patternBar,
+  body.settings-collapsed #toolbar,
+  body.settings-collapsed #stats,
+  body.settings-collapsed #attrib{ display:none; }
+  body.settings-collapsed .map-frame{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    width:100vw;
+    height:100vh;
+    height:100dvh;
+    padding:0;
+    overflow:auto;
+    overscroll-behavior:none;
+    scrollbar-width:none;
+    border:0;
+    box-shadow:none;
+    background:#78b850;
+  }
+  body.settings-collapsed .map-frame::-webkit-scrollbar{ display:none; }
+  body.settings-collapsed canvas{
+    display:block;
+    width:max(100vw, 100vh);
+    height:max(100vw, 100vh);
+    width:max(100dvw, 100dvh);
+    height:max(100dvw, 100dvh);
+    max-width:none;
+    cursor:default;
+  }
+  body.settings-collapsed #msg{
+    position:fixed;
+    top:auto;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:20;
+    width:auto;
+    min-height:56px;
+    padding:7px 10px calc(7px + env(safe-area-inset-bottom, 0px));
+    border:0;
+    border-top:2px solid #f8f0d8;
+    box-shadow:0 -2px 0 #101018, 0 -5px 18px #101018aa;
+    background:#101018dc;
+    font-size:11px;
+    line-height:1.5;
+    pointer-events:none;
+  }
+  body.settings-collapsed #settingsOpenBtn{ display:block; }
   #patternBar{ display:none; }
   body.shared-controls{
     display:block;
@@ -437,6 +526,7 @@
     <button id="locateBtn" class="location-btn" type="button" disabled>◎ 現在地へ</button>
     <label class="category-master"><input type="checkbox" id="tglAllLayers">全レイヤー</label>
     <label class="category-master"><input type="checkbox" id="tglCell3">3×3セル（cell3）</label>
+    <button id="settingsCloseBtn" class="settings-toggle" type="button" aria-controls="toolbar" aria-expanded="true" hidden>－ 設定を閉じる</button>
   </div>
 
   <section class="layer-category" role="group" aria-labelledby="natureCategoryTitle">
@@ -546,6 +636,8 @@
     </div>
   </section>
 </div>
+
+<button id="settingsOpenBtn" class="settings-toggle" type="button" aria-controls="toolbar" aria-expanded="false" aria-hidden="true">＋ 設定を開く</button>
 
 <div id="msg" class="rpg-window" role="status" aria-live="polite">マップデータを よみこんでいる……<span class="cursor">▼</span></div>
 
@@ -768,6 +860,29 @@ document.title = CELL_ONLY_MODE
   : `PixelMap｜z${TILE_ZOOM}マップ`;
 const renderModeToggle = document.getElementById('tglCell3');
 renderModeToggle.checked = RENDER_MODE === 'cell3';
+const settingsToolbar = document.getElementById('toolbar');
+const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+const settingsOpenBtn = document.getElementById('settingsOpenBtn');
+
+function setStandaloneSettingsCollapsed(collapsed){
+  if (EMBEDDED || CAPTURE_MODE) return;
+  document.body.classList.toggle('settings-collapsed', collapsed);
+  document.documentElement.dataset.settingsCollapsed = collapsed ? '1' : '0';
+  settingsToolbar.inert = collapsed;
+  if (collapsed) settingsToolbar.setAttribute('aria-hidden', 'true');
+  else settingsToolbar.removeAttribute('aria-hidden');
+  settingsCloseBtn.setAttribute('aria-expanded', String(!collapsed));
+  settingsOpenBtn.setAttribute('aria-expanded', String(!collapsed));
+  settingsOpenBtn.setAttribute('aria-hidden', String(!collapsed));
+  syncPixelViewport();
+  (collapsed ? settingsOpenBtn : settingsCloseBtn).focus({ preventScroll:true });
+}
+if (!EMBEDDED && !CAPTURE_MODE){
+  settingsCloseBtn.hidden = false;
+  settingsCloseBtn.addEventListener('click', () => setStandaloneSettingsCollapsed(true));
+  settingsOpenBtn.addEventListener('click', () => setStandaloneSettingsCollapsed(false));
+  document.documentElement.dataset.settingsCollapsed = '0';
+}
 
 function renderModeUrl(mode, source = location.href){
   const url = new URL(source, location.href);
@@ -5758,7 +5873,7 @@ renderModeToggle.addEventListener('change', () => {
 
 const mapFrame = document.querySelector('.map-frame');
 function centerMobileMap(){
-  if (!SHARED_CONTROLS && !window.matchMedia(MOBILE_QUERY).matches) return;
+  if (!SHARED_CONTROLS && !document.body.classList.contains('settings-collapsed') && !window.matchMedia(MOBILE_QUERY).matches) return;
   mapFrame.scrollLeft = Math.max(0, (mapFrame.scrollWidth - mapFrame.clientWidth) / 2);
   mapFrame.scrollTop = Math.max(0, (mapFrame.scrollHeight - mapFrame.clientHeight) / 2);
 }
