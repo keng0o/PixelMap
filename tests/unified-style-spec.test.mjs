@@ -88,7 +88,7 @@ test('POIはprofileに応じてproduction互換radiusと実測boundsを切り替
 
 test('POIの地理判定とprofile別密度・anchor条件をresolverへ集約する', () => {
   assert.match(spec, /selectionAuthority:'facility-resolver-world-style'/);
-  assert.match(html, /RESOLVER\.selectViewportIcons\(facilitiesInView, WORLD_STYLE\.density\)/);
+  assert.match(html, /RESOLVER\.selectViewportIcons\(poiSourceFacilities, WORLD_STYLE\.density\)/);
   assert.match(html, /WORLD_STYLE\.symbol\.minimumAssetSizeByRole\[item\.semanticRole\]/);
   assert.match(html, /displayAssetSize:worldStyleDisplayAssetSize\(item\)/);
   assert.match(html, /const drawnIcons = viewportIconSelection\.selected\.map/);
@@ -118,7 +118,7 @@ test('POI Asset Contractのroleが固定semantic z-orderを決め、座標移動
   assert.match(overlays, /WORLD_STYLE\.density\.drawClustersByDefault[\s\S]*drawClusters\(\)/);
   assert.match(html, /dots:\(\) => \{[\s\S]*drawDots\(hiddenPois\);[\s\S]*drawClusters\(\);/);
   assert.match(html, /drawUnifiedCorridorLayer\(option\);[\s\S]*Z2:ground-corridor:[\s\S]*drawStandalonePreciseBuildings\([\s\S]*drawPoiStructures\(\)/);
-  assert.match(html, /poi:STANDALONE_UNIFIED_STYLE \? drawPoiOverlays : drawPoi/);
+  assert.match(html, /poi:STANDALONE_LANDMARK_MODE[\s\S]*drawStandaloneLandmarkBuildings[\s\S]*STANDALONE_UNIFIED_STYLE \? drawPoiOverlays : drawPoi/);
   assert.doesNotMatch(html, /displace.*Poi|shift.*Poi|move.*Poi/i);
 });
 

@@ -78,11 +78,21 @@ test('overrideは生成データを変更せず別名とOSM形状中心を実行
 });
 
 test('ランドマーク処理は単体ページだけで有効になり共有iframeを変えない', () => {
-  assert.match(mapHtml, /const STANDALONE_LANDMARK_MODE = !EMBEDDED/);
+  assert.match(mapHtml, /const STANDALONE_LANDMARK_MODE = !EMBEDDED;/);
   assert.match(mapHtml, /data\/landmarks\/kanagawa\.generated\.geojson/);
   assert.match(mapHtml, /data\/landmarks\/kanagawa\.overrides\.json/);
   assert.match(mapHtml, /LANDMARK_ENTITY_API\.mergeOverrides\(generated, overrides\)/);
   assert.match(mapHtml, /applyStandaloneLandmarks\(collectResolvedFacilities\(\)\)/);
   assert.match(mapHtml, /if \(!STANDALONE_LANDMARK_MODE\)/);
   assert.match(mapHtml, /landmarks:resolvedView\.landmarks/);
+});
+
+test('施設アイコンは収集ランドマークだけを建物デザインで描く', () => {
+  assert.match(mapHtml, /const poiSourceFacilities = STANDALONE_LANDMARK_MODE[\s\S]*item\.landmarkEntity/);
+  assert.match(mapHtml, /function rasterizeStandaloneLandmarkBuildings\(features, worldToGridPoint, gridSize\)/);
+  assert.match(mapHtml, /function drawStandaloneLandmarkBuildings\(\)/);
+  assert.match(mapHtml, /drawCellPixelArtBuildingGrid\([\s\S]*landmark\.grid, landmark\.bldGrid/);
+  assert.match(mapHtml, /renderer:'building-footprint'/);
+  assert.match(mapHtml, /'precollected-landmark-building'/);
+  assert.match(mapHtml, /if \(STANDALONE_UNIFIED_STYLE && o\.poi && !STANDALONE_LANDMARK_MODE\)/);
 });

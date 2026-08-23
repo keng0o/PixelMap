@@ -49,6 +49,9 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /本番1・2・4マップの表示・設定UI・同期処理は変更なし/);
   assert.match(log, /設定ボタンを＋／－だけの右上固定へ変更/);
   assert.match(log, /設定の開閉状態にかかわらず同じ右上位置へ固定/);
+  assert.match(log, /施設アイコンを収集ランドマークの建物表示へ限定/);
+  assert.match(log, /事前収集ランドマークだけへ限定/);
+  assert.match(log, /「たてもの」と同じ屋根・壁・影の描画器/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

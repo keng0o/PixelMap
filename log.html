@@ -153,7 +153,7 @@
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>本番比較profileでは無効にし、本番と同じPOI入力・選抜を維持。<code>?profile=reference</code>だけ神奈川県の生成GeoJSONと手動overrideを使用。東京ランドマーク10点はアセットカタログだけに保持し、マップへは固定配置しない。</td>
+              <td>神奈川県の生成GeoJSONと手動overrideをstandaloneで読み込み、「施設アイコン」の唯一の表示入力として使用。東京ランドマーク10点はアセットカタログだけに保持し、マップへは固定配置しない。</td>
               <td>ランドマーク補助処理を無効化し、従来の施設表示を維持。</td>
             </tr>
             <tr>
@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>既存施設スプライトをcell2/cell3の単色セルテンプレートへ変換し、名称と操作領域を維持。<code>?profile=reference</code>では神奈川県ランドマーク補助データも利用可能。</td>
+              <td>「施設アイコン」では通常POIスプライトを表示せず、事前収集したランドマークのsource形状だけを「たてもの」と同じ屋根・壁・影のデザインで描画。施設名と操作領域を維持。</td>
               <td>同じ施設スプライトの原子セル版を使用し、ランドマーク補助処理は無効。pattern 07の選抜条件を維持。</td>
             </tr>
             <tr>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>施設アイコンを収集ランドマークの建物表示へ限定</h3>
+          <time datetime="2026-08-23">2026-08-23 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>「施設アイコン」の入力から通常MVT POIを外し、神奈川県の事前収集ランドマークだけへ限定。点スプライトではなく収集GeoJSONのsource形状を原子セル化し、「たてもの」と同じ屋根・壁・影の描画器で表示。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの「施設アイコン」で有効。「たてもの」と「小さな施設(点)」は独立した既存レイヤーとして維持。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guardにより従来のMVT施設スプライトと選抜条件を維持。production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>収集ランドマークだけの入力、通常POIスプライト非表示、建物用屋根・壁・影rendererの共用、レイヤー独立性、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>設定ボタンを＋／－だけの右上固定へ変更</h3>
