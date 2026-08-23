@@ -158,7 +158,7 @@
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
-              <td>交通中心線をcell2/cell3の原子セルへ直接分類し、道路の縁・面、鉄道路盤・レール・枕木を単色セルの多層として合成。地区幹線道路は斜め区間の不安定な表現を避けるため中央線を非表示。</td>
+              <td>交通中心線をcell2/cell3の原子セルへ直接分類し、道路の縁・面、鉄道路盤・レール・枕木を単色セルの多層として合成。地区幹線道路は斜め区間の不安定な表現を避けるため中央線を非表示。セル角で終わる斜め線も終点を越えず、パン前後で架空の線を発生させない。</td>
               <td>既存の原子セル描画とsource中心線配置を維持。pattern 07とembeddedのレイヤー設定も変更なし。</td>
             </tr>
             <tr>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>斜め線の終点越えによる架空線路を修正</h3>
+          <time datetime="2026-08-24">2026-08-24 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>交通線の4連結セル走査で、線分がセル角に終わると片方の軸が終点を通り越し、走査上限まで架空の直線を延長する不具合を修正。片軸が終点セルへ到達した後は他方の軸だけを進め、MVTの線分終点を越えないようにした。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの<code>cell2</code>／<code>cell3</code>交通線描画に適用。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップのページと共有実装は変更せず、production表示への影響なし。</dd></div>
+          <div><dt>確認内容</dt><dd>川崎駅南西で架空線を発生させていた実座標の回帰テスト、4連結と終点セル、パン前後の同一地理範囲、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>施設敷地内の全建物を汎用関連付け</h3>
