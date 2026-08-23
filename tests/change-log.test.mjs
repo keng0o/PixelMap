@@ -15,36 +15,34 @@ test('差分ログは不要な説明・対象ページ一覧・画面内ルー�
   assert.doesNotMatch(log, /class="rules"/);
 });
 
-test('差分ログは現行のtest専用機能と本番維持事項を記載する', () => {
+test('差分ログは現行のcell描画契約と主要な変更履歴を記載する', () => {
   assert.match(log, /\?render=cell2/);
   assert.match(log, /\?render=cell3/);
   assert.match(log, /3×3論理pxの単色セル/);
   assert.match(log, /神奈川県の生成GeoJSON/);
-  assert.match(log, /geometry-skin-symbol\/1/);
   assert.match(log, /production-comparison-z14/);
   assert.match(log, /retro-jrpg-z14/);
-  assert.match(log, /pixelmap-corridor-renderer\/3/);
-  assert.match(log, /pixelmap-asset-family-registry\/7/);
   assert.match(log, /本番copy profileで描画差をレイヤー別に収束/);
   assert.match(log, /BuildingSkin／RoadSkin／RailSkin／PoiPack/);
   assert.match(log, /水面・公園・スポーツ面をsurface familyへ分離/);
   assert.match(log, /generic fallbackを明示allowlistで監査/);
   assert.match(log, /z14固定/);
   assert.match(log, /2マップは位置同期/);
-  assert.match(log, /4マップは4地点への共通レイヤー操作/);
-  assert.match(log, /本番8px建物チップ描画/);
-  assert.match(log, /場所別例外や建物座標の移動は行わない/);
   assert.match(log, /既存のRPG風S／M／L施設スプライト/);
   assert.match(log, /facility-resolver/);
-  assert.match(log, /retro-jrpg-production-copy-v1/);
   assert.match(log, /WorldStyleでz14 POCのレトロJRPG表現を固定/);
-  assert.match(log, /ピクセルパーフェクト一致とExpo／Flutter移植は今回の対象外/);
   assert.match(log, /Asset Contractと共通描画基盤を正本化/);
   assert.match(log, /全7 iframe/);
   assert.match(log, /既存POIアセット描画を復旧/);
   assert.match(log, /不変ジオメトリ基準の統一Style Specを導入/);
   assert.match(log, /建物型施設アイコンの道路回避を取り消し/);
   assert.match(log, /ログページの表示内容を簡素化/);
+  assert.match(log, /cell2を全ページの既定にしてcell3切替を追加/);
+  assert.match(log, /<strong>全てに反映<\/strong>/);
+  assert.match(log, /1マップ（<code>index\.html<\/code>）/);
+  assert.match(log, /2マップ（<code>compare\.html<\/code>）/);
+  assert.match(log, /4マップ（<code>four-maps\.html<\/code>/);
+  assert.match(log, /standard、cell8、未知値を<code>cell2<\/code>へ正規化/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

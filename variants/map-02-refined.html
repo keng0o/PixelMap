@@ -133,7 +133,7 @@
   .pattern-rule b{ display:block; margin-bottom:1px; color:#f8f0d8; font-weight:normal; }
   #toolbar label{ display:inline-flex; gap:6px; align-items:center; cursor:pointer; color:#d8d0b8; }
   #toolbar input{ accent-color:#88c860; }
-  #toolbar .toolbar-actions{ grid-column:1 / -1; display:flex; }
+  #toolbar .toolbar-actions{ grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:8px; }
   #toolbar .layer-category{
     min-width:0;
     padding:8px;
@@ -436,6 +436,7 @@
   <div class="toolbar-actions">
     <button id="locateBtn" class="location-btn" type="button" disabled>◎ 現在地へ</button>
     <label class="category-master"><input type="checkbox" id="tglAllLayers">全レイヤー</label>
+    <label class="category-master"><input type="checkbox" id="tglCell3">3×3セル（cell3）</label>
   </div>
 
   <section class="layer-category" role="group" aria-labelledby="natureCategoryTitle">
@@ -686,7 +687,7 @@ const WORLD_STYLE_PROFILE = PAGE_PARAMS.get('profile') === 'reference'
   ? 'retroJrpgZ14' : 'productionComparisonZ14';
 const WORLD_STYLE = window.PixelMapWorldStyles[WORLD_STYLE_PROFILE];
 // ランドマーク補助データは単体検証ページだけで利用する。
-// map-02をiframeで共有する1・2・4マップの表示は変更しない。
+// cell描画を共有する1・2・4マップでも補助ランドマークは生成しない。
 const STANDALONE_LANDMARK_MODE = !EMBEDDED && WORLD_STYLE.landmarksEnabled !== false;
 const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260820';
 const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820-2';
@@ -696,13 +697,13 @@ let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
 const DEFAULT_TILE_ZOOM = 14;
 const TILE_ZOOM = DEFAULT_TILE_ZOOM;
 const REQUESTED_RENDER_MODE = PAGE_PARAMS.get('render');
-const CELL_RENDER_LOGICAL_SIZE = !EMBEDDED && ['cell2','cell3'].includes(REQUESTED_RENDER_MODE)
-  ? Number(REQUESTED_RENDER_MODE.slice(4))
-  : null;
-const CELL_ONLY_MODE = CELL_RENDER_LOGICAL_SIZE !== null;
-const RENDER_MODE = CELL_ONLY_MODE ? REQUESTED_RENDER_MODE : 'standard';
+// 全ページの既定をcell2へ統一し、cell3だけを明示指定として受け付ける。
+// 旧standard・cell8・未知値もcell2へ正規化する。
+const RENDER_MODE = REQUESTED_RENDER_MODE === 'cell3' ? 'cell3' : 'cell2';
+const CELL_RENDER_LOGICAL_SIZE = Number(RENDER_MODE.slice(4));
+const CELL_ONLY_MODE = ['cell2','cell3'].includes(RENDER_MODE);
 // standalone標準表示では、地物を移動させず「不変の地理形状＋共通スキン＋
-// 固定サイズのシンボル」で描く。cell2／cell3とembedded本番は従来描画を維持する。
+// 固定サイズのシンボル」で描く旧経路を保持するが、現行URL契約からは到達しない。
 const STANDALONE_UNIFIED_STYLE = !EMBEDDED && !CELL_ONLY_MODE;
 const SHARED_CONTROLS = EMBEDDED && PAGE_PARAMS.get('shared-controls') === '1';
 const MAP_ID = PAGE_PARAMS.get('map') || 'standalone';
@@ -720,11 +721,13 @@ const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPat
   assetArea:[], assetHeight:[], maxAssets:1, priority:['generic'], palette:{ generic:'#78828a' }, categoryScale:{},
 };
 const CAPTURE_MODE = PAGE_PARAMS.get('capture') === '1';
-// standaloneの既定は世界観を評価するgame profile。全レイヤー比較は明示的な
-// ?layers=studyだけで有効にし、embeddedの従来既定は変更しない。
+// cell2/cell3の既定は地図内容を評価できるstudyレイヤーとし、
+// ?layers=manualだけで手動選択へ戻す。到達不能なstandalone標準の条件は保持する。
 const STUDY_MODE = EMBEDDED
   ? PAGE_PARAMS.get('layers') !== 'manual'
-  : PAGE_PARAMS.get('layers') === 'study';
+  : CELL_ONLY_MODE
+    ? PAGE_PARAMS.get('layers') !== 'manual'
+    : PAGE_PARAMS.get('layers') === 'study';
 const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE;
 const INITIAL_LAT_PARAM = PAGE_PARAMS.get('lat');
 const INITIAL_LON_PARAM = PAGE_PARAMS.get('lon');
@@ -763,6 +766,14 @@ document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISP
 document.title = CELL_ONLY_MODE
   ? `PixelMap｜z${TILE_ZOOM}・${CELL_RENDER_LOGICAL_SIZE}×${CELL_RENDER_LOGICAL_SIZE}ピクセルアート検証`
   : `PixelMap｜z${TILE_ZOOM}マップ`;
+const renderModeToggle = document.getElementById('tglCell3');
+renderModeToggle.checked = RENDER_MODE === 'cell3';
+
+function renderModeUrl(mode, source = location.href){
+  const url = new URL(source, location.href);
+  url.searchParams.set('render', mode === 'cell3' ? 'cell3' : 'cell2');
+  return url;
+}
 
 function patternUrl(patternId){
   const params = new URLSearchParams(PAGE_PARAMS);
@@ -5741,6 +5752,9 @@ allLayersToggle.addEventListener('change', () => {
 });
 syncAllLayersToggle();
 locateBtn.addEventListener('click', locateMe);
+renderModeToggle.addEventListener('change', () => {
+  location.assign(renderModeUrl(renderModeToggle.checked ? 'cell3' : 'cell2').href);
+});
 
 const mapFrame = document.querySelector('.map-frame');
 function centerMobileMap(){

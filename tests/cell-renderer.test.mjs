@@ -3,15 +3,50 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+const fourMapHtml = await readFile(new URL('../variants/height-stack-four-map.html', import.meta.url), 'utf8');
+const fourMapShellHtml = await readFile(new URL('../four-maps.html', import.meta.url), 'utf8');
+const twoMapHtml = await readFile(new URL('../compare.html', import.meta.url), 'utf8');
+const oneMapHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 
-test('cell2とcell3は単独ページのrender指定でだけ有効になりcell8は廃止される', () => {
+test('全ページでcell2を既定にしcell3だけを明示指定として受け付ける', () => {
   assert.match(html, /const REQUESTED_RENDER_MODE = PAGE_PARAMS\.get\('render'\)/);
-  assert.match(html, /\['cell2','cell3'\]\.includes\(REQUESTED_RENDER_MODE\)/);
-  assert.match(html, /const CELL_ONLY_MODE = CELL_RENDER_LOGICAL_SIZE !== null/);
-  assert.match(html, /const RENDER_MODE = CELL_ONLY_MODE \? REQUESTED_RENDER_MODE : 'standard'/);
+  assert.match(html, /const RENDER_MODE = REQUESTED_RENDER_MODE === 'cell3' \? 'cell3' : 'cell2'/);
+  assert.match(html, /const CELL_RENDER_LOGICAL_SIZE = Number\(RENDER_MODE\.slice\(4\)\)/);
+  assert.match(html, /const CELL_ONLY_MODE = \['cell2','cell3'\]\.includes\(RENDER_MODE\)/);
+  assert.doesNotMatch(html, /!EMBEDDED && \['cell2','cell3'\]\.includes\(REQUESTED_RENDER_MODE\)/);
   assert.doesNotMatch(html, /PAGE_PARAMS\.get\('render'\) === 'cell8'/);
+  assert.match(html, /: CELL_ONLY_MODE[\s\S]*\? PAGE_PARAMS\.get\('layers'\) !== 'manual'/);
   assert.match(html, /dataset\.renderMode = RENDER_MODE/);
   assert.match(html, /renderMode:RENDER_MODE/);
+});
+
+test('共有マップのチェックはURLを保ったままcell2とcell3を切り替える', () => {
+  assert.match(html, /id="tglCell3">3×3セル（cell3）/);
+  assert.match(html, /renderModeToggle\.checked = RENDER_MODE === 'cell3'/);
+  assert.match(html, /function renderModeUrl\(mode, source = location\.href\)/);
+  assert.match(html, /url\.searchParams\.set\('render', mode === 'cell3' \? 'cell3' : 'cell2'\)/);
+  assert.match(html, /location\.assign\(renderModeUrl\(renderModeToggle\.checked \? 'cell3' : 'cell2'\)\.href\)/);
+});
+
+test('2マップは左右別、4マップは共通チェックでcell2とcell3を切り替える', () => {
+  assert.equal((twoMapHtml.match(/map-02-refined\.html\?embedded=1/g) || []).length, 2);
+  assert.doesNotMatch(twoMapHtml, /cell3Mode|pixelmap:set-render/);
+  assert.match(fourMapHtml, /id="cell3Mode" type="checkbox">3×3セル（cell3）/);
+  assert.match(fourMapHtml, /function applyFourMapRenderMode\(mode\)/);
+  assert.match(fourMapHtml, /url\.searchParams\.set\('render', nextMode\)/);
+  assert.match(fourMapHtml, /frame\.contentWindow\.location\.replace\(url\.href\)/);
+  assert.match(fourMapHtml, /window\.parent === window \? 'pushState' : 'replaceState'/);
+  assert.match(fourMapHtml, /window\.addEventListener\('popstate'/);
+  assert.match(fourMapHtml, /pixelmap:render-mode/);
+  assert.match(fourMapHtml, /pixelmap:set-render-mode/);
+  assert.match(fourMapShellHtml, /id="fourMapFrame"/);
+  assert.match(fourMapShellHtml, /function updateTopRenderUrl\(mode\)/);
+  assert.match(fourMapShellHtml, /pixelmap:render-mode/);
+  assert.match(fourMapShellHtml, /pixelmap:set-render-mode/);
+  assert.match(oneMapHtml, /v=20260823-1/);
+  assert.equal((twoMapHtml.match(/v=20260823-1/g) || []).length, 2);
+  assert.equal((fourMapHtml.match(/v=20260823-1/g) || []).length, 4);
+  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260823-1/);
 });
 
 test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {

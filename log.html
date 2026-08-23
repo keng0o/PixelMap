@@ -124,7 +124,7 @@
     <section class="panel" aria-labelledby="difference-title">
       <div class="section-heading">
         <h2 id="difference-title">現行の差分</h2>
-        <small>2026-08-21 / standalone test</small>
+        <small>2026-08-23 / cell2 default</small>
       </div>
       <div class="table-wrap">
         <table>
@@ -148,8 +148,8 @@
             </tr>
             <tr>
               <th scope="row">描画方式</th>
-              <td>既定は<code>geometry-skin-symbol/1</code>へ本番の有効レイヤー・pattern 07・skin・POI密度を独立copyした<code>production-comparison-z14</code>。testだけcontinuous corridorとAssetFamilyRegistryへ接続。意図的な参照テイストは<code>?profile=reference</code>へ分離。</td>
-              <td>標準描画のみ。<code>cell2</code>・<code>cell3</code>指定は適用しない。</td>
+              <td>既定は2×2論理pxの原子セルを使う<code>cell2</code>。「3×3セル（cell3）」チェックまたは<code>?render=cell3</code>で3×3論理pxへ切替。standard・cell8・未知値はcell2へ正規化。</td>
+              <td>1・2・4マップも既定は<code>cell2</code>。1マップは単独、2マップは左右別々、4マップは共通チェックで<code>cell3</code>へ切替。standard描画は使用しない。</td>
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
@@ -158,33 +158,33 @@
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
-              <td>全て同じ<code>pixelmap-corridor-renderer/3</code>連続距離マスク生成器を使用。本番copy RailSkinは8px路盤、砂利の明暗pattern、枕木周期、接線基準の複線レールを保持し、線形だけMVT連続形状を使用。reference profileの橋・踏切modifierは別設定。</td>
-              <td>各レイヤー固有の従来描画と線幅を維持。</td>
+              <td>交通中心線をcell2/cell3の原子セルへ直接分類し、道路の縁・面・中央線、鉄道路盤・レール・枕木を単色セルの多層として合成。</td>
+              <td>testと同じ原子セル描画。pattern 07とembeddedのレイヤー設定を維持。</td>
             </tr>
             <tr>
               <th scope="row">水面・公園・競技面</th>
-              <td>source名＋typeを<code>surface family</code>で解決し、水面area、公園・保護地、スタジアム・pitch／trackを別skinへ接続。waterway corridorは水面familyへ混在させない。</td>
-              <td>従来の水面・公園・土地利用分類と描画を維持。</td>
+              <td>意味分類を維持したまま原子セルへ直接ラスタライズし、単色セルを組み合わせた地表模様・水際・林縁・公園境界を描画。</td>
+              <td>testと同じcell2/cell3地表描画を使用。</td>
             </tr>
             <tr>
               <th scope="row">建物とcorridorの重なり</th>
-              <td>本番比較profileはコピーしたBuildingSkinと本番8px建物チップ描画を使用し、旧RPG風の密度を再現。<code>?profile=reference</code>では1論理px意味footprintとsemantic LODを使用。どちらも場所別例外や建物座標の移動は行わない。</td>
-              <td>従来の8×8論理px建物セル、通常建物／橋／POI建物の描画順を維持。</td>
+              <td>建物を棟単位で原子セル化し、屋根・壁・影・施設記号を描画。地表交通、建物、橋、施設の固定compositor順を維持。</td>
+              <td>testと同じ原子セル建物描画と固定compositor順を使用。</td>
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>本番POI対応を独立copyした<code>retro-jrpg-production-copy-v1</code>を<code>pixelmap-asset-family-registry/7</code>へ接続。pattern 07、表示1268件、icon 239／dot 340／cluster 82の選抜条件とdecision fingerprintを本番と一致させる。genericは明示allowlistで監査。</td>
-              <td>同じ従来施設スプライトを使用し、既存の配置処理を維持。</td>
+              <td>既存施設スプライトをcell2/cell3の単色セルテンプレートへ変換し、名称と操作領域を維持。<code>?profile=reference</code>では神奈川県ランドマーク補助データも利用可能。</td>
+              <td>同じ施設スプライトの原子セル版を使用し、ランドマーク補助処理は無効。pattern 07の選抜条件を維持。</td>
             </tr>
             <tr>
               <th scope="row">今回のPOC評価範囲</th>
-              <td>z14のスクリーンショット比較で、地理精度と旧RPG風の世界観を評価。ピクセルパーフェクト一致とExpo／Flutter移植は今回の対象外。</td>
-              <td>既存の本番表示を維持。Expo／Flutter実装は今回の対象外。生成manifestはWebと同じrenderer contract v3へmetadataだけ同期。</td>
+              <td>z14でcell2/cell3の地理精度と旧RPG風の世界観を評価。Expo／Flutter移植は今回の対象外。</td>
+              <td>Web本番も同じcell2/cell3描画へ変更。Expo／Flutter実装は今回の対象外で、生成manifestは既存metadataを維持。</td>
             </tr>
             <tr>
               <th scope="row">外側UIと同期</th>
-              <td>単独の地図・レイヤー操作・検証情報を表示。親ページとの同期通信なし。</td>
-              <td>1マップは全画面、2マップは位置同期、4マップは4地点への共通レイヤー操作を提供。</td>
+              <td>単独チェックでcell2/cell3を切替。URLの他条件とhashを保持して再読み込み。</td>
+              <td>1マップは単独切替、2マップは位置同期を保ったまま左右別切替、4マップは親URLと4つのiframeを共通チェックで同期。</td>
             </tr>
           </tbody>
         </table>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>cell2を全ページの既定にしてcell3切替を追加</h3>
+          <time datetime="2026-08-23">2026-08-23 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>render未指定、standard、cell8、未知値を<code>cell2</code>へ正規化し、「3×3セル（cell3）」チェックで<code>cell3</code>へ切替。2マップは左右別、4マップは共通切替としてURL状態も保持。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>全てに反映</strong>。standalone test、1マップ（<code>index.html</code>）、2マップ（<code>compare.html</code>）、4マップ（<code>four-maps.html</code>／<code>variants/height-stack-four-map.html</code>）。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップの既定描画をstandardからcell2へ変更し、cell3チェックを追加。既存の位置同期・共通レイヤー同期・ランドマーク無効条件は維持。</dd></div>
+          <div><dt>確認内容</dt><dd>render値の正規化、チェックとURL、2マップ左右別切替、4マップ4枚同期、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビュー、GitHub Pages公開状態を確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>cell3 studyの東京ランドマーク固定配置を取り消し</h3>
