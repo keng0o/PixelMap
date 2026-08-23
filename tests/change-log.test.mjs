@@ -58,6 +58,10 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /地区幹線道路の中央線を非表示/);
   assert.match(log, /道路の外縁色と路面色は維持/);
   assert.match(log, /従来の中央線を維持/);
+  assert.match(log, /ランドマーク収集を5,000㎡以上へ拡張/);
+  assert.match(log, /業務・商業ランドマーク/);
+  assert.match(log, /building=commercial/);
+  assert.match(log, /landuse=commercial/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

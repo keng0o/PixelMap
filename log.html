@@ -153,7 +153,7 @@
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>神奈川県の生成GeoJSONと手動overrideをstandaloneで読み込み、収集ランドマークの表示入力として使用。「施設アイコン」にはMVTの駅・学校も追加。東京ランドマーク10点はアセットカタログだけに保持し、マップへは固定配置しない。</td>
+              <td>神奈川県の生成GeoJSONは5,000㎡以上を対象に、従来条件へ<code>building=retail</code>・<code>shop=supermarket</code>・<code>shop=wholesale</code>を追加。<code>building=commercial</code>・<code>landuse=commercial</code>は「業務・商業ランドマーク」チェックで別枠表示。「施設アイコン」にはMVTの駅・学校も追加。</td>
               <td>ランドマーク補助処理を無効化し、従来の施設表示を維持。</td>
             </tr>
             <tr>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>ランドマーク収集を5,000㎡以上へ拡張</h3>
+          <time datetime="2026-08-23">2026-08-23 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>収集面積を10,000㎡以上から5,000㎡以上へ変更し、通常候補へ<code>building=retail</code>・<code>shop=supermarket</code>・<code>shop=wholesale</code>を追加。<code>building=commercial</code>・<code>landuse=commercial</code>は別グループで収集し、独立した「業務・商業ランドマーク」チェックを追加。生成結果は複合施設296件（通常219件・別枠77件）＋館内施設20件。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testでは通常候補を既定表示し、「業務・商業ランドマーク」は既定OFF。ONにした場合だけ別枠の親施設と館内施設を追加表示。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guardにより事前収集ランドマークと追加チェックを使用せず、従来の施設表示・共有レイヤー一覧を維持。production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>5,000㎡下限、通常／commercialグループ、追加タグ別施設、チェックOFF／ONの表示差、親子施設の同時切替、既存override、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>施設アイコンへ駅・学校の建物表示を追加</h3>

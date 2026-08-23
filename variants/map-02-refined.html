@@ -613,6 +613,9 @@
     <div class="category-items">
       <label><input type="checkbox" id="tglBuildings" data-category-item>たてもの</label>
       <label><input type="checkbox" id="tglPoi" data-category-item>施設アイコン</label>
+      <label id="commercialLandmarkControl" hidden title="building=commercial / landuse=commercial">
+        <input type="checkbox" id="tglCommercialLandmarks">業務・商業ランドマーク
+      </label>
       <label><input type="checkbox" id="tglDots" data-category-item>小さな施設(点)</label>
     </div>
   </section>
@@ -776,10 +779,15 @@ const WORLD_STYLE = window.PixelMapWorldStyles[WORLD_STYLE_PROFILE];
 // ランドマーク補助データは単体検証ページだけで利用する。
 // cell描画を共有する1・2・4マップでも補助ランドマークは生成しない。
 const STANDALONE_LANDMARK_MODE = !EMBEDDED;
-const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260820';
+const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260823-retail5000';
 const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820-2';
 let landmarkFeatureCollection = null;
 let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
+const commercialLandmarkControl = document.getElementById('commercialLandmarkControl');
+const commercialLandmarkToggle = document.getElementById('tglCommercialLandmarks');
+commercialLandmarkControl.hidden = !STANDALONE_LANDMARK_MODE;
+commercialLandmarkToggle.checked = false;
+document.documentElement.dataset.commercialLandmarks = STANDALONE_LANDMARK_MODE ? 'off' : 'disabled';
 // 今回のPOCは地理精度と世界観を同一縮尺で評価するためz14へ固定する。
 const DEFAULT_TILE_ZOOM = 14;
 const TILE_ZOOM = DEFAULT_TILE_ZOOM;
@@ -3660,7 +3668,21 @@ function applyStandaloneLandmarks(resolvedView){
       landmarks:{ enabled:false, state:landmarkLoadState, selected:[] },
     };
 
-  const selection = LANDMARK_ENTITY_API.selectForZoom(landmarkFeatureCollection, TILE.z);
+  const commercialEnabled = commercialLandmarkToggle.checked;
+  const eligibleParentIds = new Set(landmarkFeatureCollection.features
+    .filter(feature => feature.properties?.role === 'complex' &&
+      (feature.properties.collection_group !== 'commercial' || commercialEnabled))
+    .map(feature => LANDMARK_ENTITY_API.featureId(feature)));
+  const eligibleCollection = {
+    ...landmarkFeatureCollection,
+    features:landmarkFeatureCollection.features.filter(feature => {
+      const props = feature.properties || {};
+      if (props.role === 'complex') return eligibleParentIds.has(LANDMARK_ENTITY_API.featureId(feature));
+      if (props.collection_group === 'commercial') return commercialEnabled;
+      return !props.parent_id || eligibleParentIds.has(props.parent_id);
+    }),
+  };
+  const selection = LANDMARK_ENTITY_API.selectForZoom(eligibleCollection, TILE.z);
   const activeLandmarkAtZoom = feature => {
     const props = feature.properties || {};
     return TILE.z >= Number(props.minzoom ?? 0) && TILE.z <= Number(props.maxzoom ?? 24);
@@ -3711,6 +3733,7 @@ function applyStandaloneLandmarks(resolvedView){
       algorithmVersion:selection.algorithmVersion,
       scope:landmarkFeatureCollection.properties?.scope || null,
       overridesSchema:landmarkFeatureCollection.properties?.overrides_schema || null,
+      commercialEnabled,
       selected:landmarkFacilities.map(facility => ({
         id:facility.landmarkEntityId,
         name:facility.name,
@@ -6108,6 +6131,10 @@ allLayersToggle.addEventListener('change', () => {
   publishLayerState();
 });
 syncAllLayersToggle();
+commercialLandmarkToggle.addEventListener('change', () => {
+  document.documentElement.dataset.commercialLandmarks = commercialLandmarkToggle.checked ? 'on' : 'off';
+  render();
+});
 locateBtn.addEventListener('click', locateMe);
 renderModeToggle.addEventListener('change', () => {
   location.assign(renderModeUrl(renderModeToggle.checked ? 'cell3' : 'cell2').href);

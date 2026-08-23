@@ -10,9 +10,11 @@ const overrides = JSON.parse(await readFile(
   new URL('../data/landmarks/kanagawa.overrides.json', import.meta.url), 'utf8'));
 const collection = API.mergeOverrides(generated, overrides);
 const mapHtml = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+const builderSource = await readFile(new URL('../scripts/build-landmark-entities.mjs', import.meta.url), 'utf8');
 
 test('神奈川県ランドマークGeoJSONは県域と川崎の対象施設を保持する', () => {
   assert.deepEqual(collection.properties.scope, { type:'administrative_area', name:'神奈川県' });
+  assert.equal(collection.properties.min_parent_area_m2, 5000);
   assert.ok(collection.features.length >= 100);
   const parent = collection.features.find(feature => feature.properties.id === 'way/690489941');
   const club = collection.features.find(feature => feature.properties.name === "CLUB CITTA'");
@@ -27,6 +29,26 @@ test('神奈川県ランドマークGeoJSONは県域と川崎の対象施設を�
   assert.equal(cinema.geometry.type, 'Point');
   assert.equal(API.geometryContains(parent.geometry, API.anchorOf(club)), true);
   assert.equal(API.geometryContains(parent.geometry, API.anchorOf(cinema)), true);
+});
+
+test('5,000㎡以上の小売系タグと別枠のcommercialタグを収集する', () => {
+  const retailBuilding = collection.features.find(feature => feature.properties.id === 'relation/12409962');
+  const supermarket = collection.features.find(feature => feature.properties.id === 'way/500438995');
+  const wholesale = collection.features.find(feature => feature.properties.id === 'way/255221083');
+  const commercial = collection.features.find(feature => feature.properties.id === 'way/819656084');
+  assert.equal(retailBuilding.properties.building, 'retail');
+  assert.equal(retailBuilding.properties.collection_group, 'retail');
+  assert.equal(supermarket.properties.shop, 'supermarket');
+  assert.equal(supermarket.properties.collection_group, 'retail');
+  assert.equal(wholesale.properties.shop, 'wholesale');
+  assert.equal(wholesale.properties.collection_group, 'retail');
+  assert.equal(commercial.properties.landuse, 'commercial');
+  assert.equal(commercial.properties.collection_group, 'commercial');
+  assert.match(builderSource, /args\['min-parent-area'\] \|\| 5000/);
+  assert.match(builderSource, /shopping_centre\|supermarket\|wholesale/);
+  assert.match(builderSource, /building"="retail/);
+  assert.match(builderSource, /building"="commercial/);
+  assert.match(builderSource, /landuse"="commercial/);
 });
 
 test('親子関係は子施設の代表点を含む最小の複合施設から導出できる', () => {
@@ -85,6 +107,10 @@ test('ランドマーク処理は単体ページだけで有効になり共有if
   assert.match(mapHtml, /applyStandaloneLandmarks\(collectResolvedFacilities\(\)\)/);
   assert.match(mapHtml, /if \(!STANDALONE_LANDMARK_MODE\)/);
   assert.match(mapHtml, /landmarks:resolvedView\.landmarks/);
+  assert.match(mapHtml, /id="tglCommercialLandmarks"/);
+  assert.match(mapHtml, /commercialLandmarkControl\.hidden = !STANDALONE_LANDMARK_MODE/);
+  assert.match(mapHtml, /feature\.properties\.collection_group !== 'commercial' \|\| commercialEnabled/);
+  assert.match(mapHtml, /dataset\.commercialLandmarks = commercialLandmarkToggle\.checked \? 'on' : 'off'/);
 });
 
 test('施設アイコンは収集ランドマーク・駅・学校を既存建物と同じ見た目で描く', () => {
