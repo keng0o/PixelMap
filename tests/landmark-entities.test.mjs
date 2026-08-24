@@ -147,11 +147,11 @@ test('ランドマーク処理は単体ページだけで有効になり共有if
   assert.match(mapHtml, /dataset\.commercialLandmarks = commercialLandmarkToggle\.checked \? 'on' : 'off'/);
   assert.match(mapHtml, /feature\.properties\?\.display_mode !== 'symbol'/);
   assert.match(mapHtml, /landmarkDisplay:props\.display_mode \|\| 'building'/);
-  assert.match(mapHtml, /renderer:facility\.landmarkDisplay === 'symbol' \? 'landmark-symbol'/);
+  assert.match(mapHtml, /renderer:facility\.landmarkDisplay === 'symbol' \? 'solid-facility-marker'/);
   assert.match(mapHtml, /drawnIcons\.filter\(item => item\.landmarkDisplay === 'symbol'\)/);
 });
 
-test('施設アイコンはランドマークと汎用施設敷地の全棟を既存建物と同じ見た目で描く', () => {
+test('施設はランドマークと汎用施設敷地の全棟を既存建物と同じ見た目で描く', () => {
   assert.match(mapHtml, /const NON_FACILITY_SITE_CLASSES = new Set/);
   assert.match(mapHtml, /function facilityMatchesSite\(facility, site\)[\s\S]*facility\.assetFamily === family/);
   assert.match(mapHtml, /function facilitySiteContainsGridPoint\(site, point\)/);
@@ -178,4 +178,20 @@ test('施設アイコンはランドマークと汎用施設敷地の全棟を�
   assert.match(mapHtml, /'building-footprint'/);
   assert.match(mapHtml, /'precollected-landmark-building'/);
   assert.match(mapHtml, /if \(STANDALONE_UNIFIED_STYLE && o\.poi && !STANDALONE_LANDMARK_MODE\)/);
+});
+
+test('事前収集施設はPOIアセットを使わず建物形状または単色マーカーで描く', () => {
+  const makeStart = mapHtml.indexOf('function makeLandmarkFacility');
+  const makeEnd = mapHtml.indexOf('\nfunction applyStandaloneLandmarks', makeStart);
+  const makeLandmarkSource = mapHtml.slice(makeStart, makeEnd);
+  assert.doesNotMatch(makeLandmarkSource, /RESOLVER\.resolveAsset|assetCollisionGeometry|spriteKey/);
+  assert.match(makeLandmarkSource, /symbolSource:'solid-facility-marker'/);
+  assert.match(makeLandmarkSource, /semanticRole:'marker'/);
+
+  const drawStart = mapHtml.indexOf('function drawStandaloneLandmarkBuildings');
+  const drawEnd = mapHtml.indexOf('\n  const labelPoint', drawStart);
+  const drawLandmarkSource = mapHtml.slice(drawStart, drawEnd);
+  assert.match(mapHtml, /function drawStandaloneFacilityMarker\(item\)/);
+  assert.match(drawLandmarkSource, /drawStandaloneFacilityMarker\(p\)/);
+  assert.doesNotMatch(drawLandmarkSource, /drawSprite\(|spriteFor\(|drawCellSprite\(/);
 });

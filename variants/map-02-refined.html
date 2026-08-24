@@ -499,7 +499,7 @@
     <div>
       <p class="pattern-kicker" id="patternKicker">ICON STUDY 01 / 10</p>
       <h1 id="patternTitle">バランス階層</h1>
-      <p id="patternSummary">面積と高さから施設アイコンの大きさと情報量を調整します。</p>
+      <p id="patternSummary">面積と高さから施設表示の大きさと情報量を調整します。</p>
     </div>
     <a class="pattern-gallery-link" href="icon-pattern-study.html">10案を一覧で比較</a>
   </div>
@@ -3702,8 +3702,8 @@ const centroid = rings => {
 
 /* --- 単体ページ用ランドマーク施設 ---
    raw OSMから事前生成したGeoJSONの親施設・代表子施設を、通常POIとは別枠で
-   読み込む。「施設アイコン」では通常POIを出さず、この正本形状だけを建物と
-   同じ屋根・壁・影のデザインで描画する。 */
+   読み込む。「施設」では通常POIアセットを出さず、建物型は正本形状、
+   公園・神社仏閣は単色の小さなマーカーで描画する。 */
 const LANDMARK_ENTITY_API = window.PixelMapLandmarkEntities;
 function landmarkWorldPoint(coordinate){
   const point = tilePointFromCoordinates(coordinate[1], coordinate[0]);
@@ -3731,13 +3731,21 @@ function makeLandmarkFacility(feature, coordinate){
     osm_type:props.osm_type,
     osm_id:props.osm_id,
   };
-  const assetBinding = RESOLVER.resolveAsset(entityProps,ACTIVE_ASSET_PACK);
-  const resolvedSpriteKey = assetBinding.assetId;
-  const explicitLandmarkAsset = resolvedSpriteKey === 'generic' && POI_ASSETS_BY_ID.has(renderClass);
-  const spriteKey = explicitLandmarkAsset
-    ? renderClass : resolvedSpriteKey;
-  const collisionGeometry = RESOLVER.assetCollisionGeometry(
-    POI_SPRITE_CATALOG,spriteKey,size,ACTIVE_PATTERN,category,assetCount);
+  // 事前収集施設にはPOI Asset Contractを使わない。建物型はsource形状、
+  // 記号型は直接描く単色マーカーなので、衝突範囲も固定値で定義する。
+  const collisionRadius = size === 'L' ? 18 : 14;
+  const collisionGeometry = {
+    contractVersion:null,
+    semanticRole:'marker',
+    assetBounds:null,
+    assetAnchor:null,
+    assetSize:size,
+    collisionBounds:{
+      left:-collisionRadius, top:-collisionRadius,
+      right:collisionRadius, bottom:collisionRadius,
+    },
+    collisionRadius,
+  };
   const [worldX, worldY] = landmarkWorldPoint(coordinate);
   return {
     key:`landmark:${props.id || feature.id}`,
@@ -3747,15 +3755,8 @@ function makeLandmarkFacility(feature, coordinate){
     buildingId:null,
     facilityRole:props.role === 'complex' ? 'landmark_complex' : 'signature_venue',
     category,
-    assetPack:assetBinding.packId,
-    assetFamily:assetBinding.familyId,
-    assetVariant:assetBinding.variantId,
-    assetMatchedType:assetBinding.matchedType,
-    assetFallback:assetBinding.fallback && !explicitLandmarkAsset,
-    assetFallbackKey:explicitLandmarkAsset ? null : assetBinding.fallbackKey,
-    assetFallbackAllowed:explicitLandmarkAsset ? false : assetBinding.fallbackAllowed,
-    assetFallbackReason:explicitLandmarkAsset ? 'explicit-landmark-asset' : assetBinding.fallbackReason,
-    spriteKey,
+    collectionGroup:props.collection_group || null,
+    symbolSource:'solid-facility-marker',
     variant:0,
     importance:1,
     rank:Number(props.rank ?? 1),
@@ -3823,7 +3824,7 @@ function applyStandaloneLandmarks(resolvedView){
   const contextParentIds = new Set(activeFeatures
     .filter(feature => feature.properties.role === 'complex' && anchorInContext(feature))
     .map(feature => LANDMARK_ENTITY_API.featureId(feature)));
-  // 施設アイコンでは代表建物だけに絞らず、表示対象の複合施設にひもづく
+  // 施設表示では代表建物だけに絞らず、表示対象の複合施設にひもづく
   // 事前収集済みの館内施設もすべて表示する。
   const selectedFeatures = activeFeatures.filter(feature => {
     if (feature.properties.role === 'complex')
@@ -3861,7 +3862,7 @@ function applyStandaloneLandmarks(resolvedView){
         id:facility.landmarkEntityId,
         name:facility.name,
         role:facility.facilityRole,
-        renderer:facility.landmarkDisplay === 'symbol' ? 'landmark-symbol' : 'building-footprint',
+        renderer:facility.landmarkDisplay === 'symbol' ? 'solid-facility-marker' : 'building-footprint',
         representation:facility.landmarkDisplay === 'symbol' ? 'symbol' : 'building',
         anchor:facility.anchorCoordinate,
       })),
@@ -4554,7 +4555,7 @@ function render(){
       return { ...f, pt, visualRadius:f.collisionRadius };
     })
     .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
-  // standalone testの「施設アイコン」は、収集ランドマークと敷地所有施設を
+  // standalone testの「施設」は、収集ランドマークと敷地所有施設を
   // 実建物として表示する。敷地がない駅・学校は従来の1棟fallbackを維持する。
   const facilityBuildingTargets = STANDALONE_LANDMARK_MODE
     ? facilitiesInView.filter(item => !item.landmarkEntity)
@@ -4768,6 +4769,31 @@ function render(){
       });
     }
   }
+  function drawStandaloneFacilityMarker(item){
+    const tone = categoryTone(item.category);
+    if (CELL_ONLY_MODE){
+      const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
+      for (let dy = -1; dy <= 1; dy++){
+        for (let dx = -1; dx <= 1; dx++){
+          const color = dx === 0 && dy === 0 ? tone : OUT;
+          paintSolidMapCell(gx + dx, gy + dy, color, 'landmarkMarkers', cellRenderingStats);
+          cellRenderingStats.spriteCells++;
+        }
+      }
+      item.cellPt = solidMapCellCenter(gx, gy);
+      cellRenderingStats.facilitySymbols++;
+      return item.cellPt;
+    }
+    const [x0, y0] = item.pt;
+    const x = Math.round(x0), y = Math.round(y0);
+    ctx.save();
+    ctx.fillStyle = OUT;
+    ctx.fillRect(x - 5, y - 5, 10, 10);
+    ctx.fillStyle = tone;
+    ctx.fillRect(x - 3, y - 3, 6, 6);
+    ctx.restore();
+    return item.pt;
+  }
   const categoryIndex = p => {
     const index = ACTIVE_PATTERN.priority.indexOf(p.category);
     return index < 0 ? ACTIVE_PATTERN.priority.length : index;
@@ -4844,12 +4870,8 @@ function render(){
       cellRenderingStats.facilitySymbols += landmark.visibleFeatures;
       cellRenderingStats.cellizedFeatures += landmark.visibleFeatures;
     }
-    for (const p of drawnIcons.filter(item => item.landmarkDisplay === 'symbol')){
-      if (CELL_ONLY_MODE) drawCellSprite(p, 'landmarkSymbols');
-      else
-        drawSprite(spriteFor(p.props, p.displayAssetSize || p.assetSize || p.size, p.variant, p.spriteKey),
-          p.pt[0], p.pt[1], p);
-    }
+    for (const p of drawnIcons.filter(item => item.landmarkDisplay === 'symbol'))
+      drawStandaloneFacilityMarker(p);
     for (const item of drawnIcons){
       const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
       item.cellPt = solidMapCellCenter(gx, gy);

@@ -153,7 +153,7 @@
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>神奈川県の生成GeoJSONは3,000㎡以上を対象に、小売・commercialに加えて<code>leisure=park</code>の公園と、仏教・神道の<code>landuse=religious</code>・<code>amenity=place_of_worship</code>・<code>building=temple|shrine</code>を収集。公園・神社仏閣は敷地全体を建物化せず施設記号で表示し、commercialは「業務・商業ランドマーク」チェックで別枠表示。</td>
+              <td>神奈川県の生成GeoJSONは3,000㎡以上を対象に、小売・commercialに加えて<code>leisure=park</code>の公園と、仏教・神道の<code>landuse=religious</code>・<code>amenity=place_of_worship</code>・<code>building=temple|shrine</code>を収集。公園・神社仏閣は敷地全体を建物化せず、画像アセットを使わない単色マーカーで表示し、commercialは「業務・商業ランドマーク」チェックで別枠表示。</td>
               <td>ランドマーク補助処理を無効化し、従来の施設表示を維持。</td>
             </tr>
             <tr>
@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">POI</th>
-              <td>「施設アイコン」では通常POIスプライトを表示せず、事前収集した複合施設・館内施設と、MVT敷地の所有施設および敷地内全棟に「たてもの」の形状・屋根色・壁色・影を再利用。地域用途は除外し、敷地がない駅・学校は1棟fallbackを維持。</td>
+              <td>「施設アイコン」ではPOIアセットを表示せず、事前収集した複合施設・館内施設と、MVT敷地の所有施設および敷地内全棟に「たてもの」の形状・屋根色・壁色・影を再利用。建物化しない公園・神社仏閣だけは単色の小さなマーカーとし、地域用途は除外、敷地がない駅・学校は1棟fallbackを維持。</td>
               <td>同じ施設スプライトの原子セル版を使用し、ランドマーク補助処理は無効。pattern 07の選抜条件を維持。</td>
             </tr>
             <tr>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>施設表示からPOIアセットを廃止</h3>
+          <time datetime="2026-08-24">2026-08-24 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>事前収集施設の表示でPOI Asset Contractによるアセット解決を行わないよう変更。商業施設・駅・学校などは既存どおり実建物の形状・屋根・壁・影を使い、建物化しない公園・神社仏閣は画像アセットではなく直接描画する3×3セルの単色マーカーへ変更。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの「施設アイコン」表示に適用。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guardで従来の施設スプライトを維持し、production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>事前収集施設のアセット解決とスプライト描画がなく、建物型表示と単色マーカー、名称表示が維持されることを、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューで確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>斜め線の終点越えによる架空線路を修正</h3>

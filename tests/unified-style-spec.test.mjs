@@ -78,7 +78,7 @@ test('POIはprofileに応じてproduction互換radiusと実測boundsを切り替
   assert.match(html, /WORLD_STYLE\.symbol\.collisionBounds === 'poi-asset-measured-bounds'/);
   assert.match(html, /sourceAnchored:WORLD_STYLE_MODE[\s\S]*WORLD_STYLE\.symbol\.sourceAnchored !== false/);
   assert.match(html, /symbolCollisionBounds:WORLD_STYLE_MODE[\s\S]*WORLD_STYLE\.symbol\.collisionBounds/);
-  assert.match(html, /RESOLVER\.assetCollisionGeometry\(/);
+  assert.match(html, /assetCatalog:STANDALONE_UNIFIED_STYLE[\s\S]*\? POI_SPRITE_CATALOG : null/);
   assert.match(html, /anchorMode:'source-point'/);
   assert.match(html, /sourceCoordinateMismatches:resolvedView\.facilities\.filter/);
   assert.match(html, /decisionFingerprint/);

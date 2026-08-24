@@ -65,7 +65,9 @@ test('map診断はPOI・corridor・surfaceのallowlisted／unexpectedを別集�
     'allowlistedFallbacks','unexpectedFallbacks','unexpectedFallbackTypes',
   ]) assert.match(map,new RegExp(`${field}:`),field);
   assert.match(map,/if\(STANDALONE_UNIFIED_STYLE\)\{[\s\S]*document\.documentElement\.dataset\.fallbackAudit=unexpectedFallbackTotal \? 'fail' : 'pass'/);
-  assert.match(map,/assetFallbackKey:explicitLandmarkAsset \? null : assetBinding\.fallbackKey/);
-  assert.match(map,/assetFallbackAllowed:explicitLandmarkAsset \? false : assetBinding\.fallbackAllowed/);
-  assert.match(map,/assetFallbackReason:explicitLandmarkAsset \? 'explicit-landmark-asset' : assetBinding\.fallbackReason/);
+  const landmarkStart=map.indexOf('function makeLandmarkFacility');
+  const landmarkEnd=map.indexOf('\nfunction applyStandaloneLandmarks',landmarkStart);
+  const landmarkSource=map.slice(landmarkStart,landmarkEnd);
+  assert.doesNotMatch(landmarkSource,/resolveAsset|assetFallbackKey|assetFallbackAllowed|assetFallbackReason/);
+  assert.match(landmarkSource,/symbolSource:'solid-facility-marker'/);
 });
