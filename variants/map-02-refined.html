@@ -1428,6 +1428,12 @@ const ID = { GRASS:0, FOREST:1, PARK:2, DIRT:3, PAVE:4, GRAVEL:5, FARM:6, SAND:7
              WATER:9, PATH:10, ROAD:11, RAIL:12, BLD:13, ROAD_MAJOR:14, HIGHWAY:15,
              ROCK:16, WETLAND:17, ICE:18, MEADOW:19, TERRAIN_OTHER:20, WOODS:21,
              PARK_MEDIUM:22, PARK_LARGE:23, PARK_RESERVE:24 };
+function quantizedRailNormal(x0, y0, x1, y1){
+  const dx = x1 - x0, dy = y1 - y0;
+  const length = Math.hypot(dx, dy);
+  if (!length) return [0, 0];
+  return [Math.round(-dy / length) || 0, Math.round(dx / length) || 0];
+}
 const isRoad = id => id === ID.ROAD || id === ID.ROAD_MAJOR || id === ID.HIGHWAY;
 const isPark = id => id === ID.PARK || id === ID.PARK_MEDIUM || id === ID.PARK_LARGE || id === ID.PARK_RESERVE;
 const isBld = id => id === ID.BLD;
@@ -1529,8 +1535,10 @@ function rasterizeGrid(layers, options){
   // 0 = GRASS は未描画セルも兼ねるため、grass 以外は drawGrid の transparent で読み分ける。
   const grids = new Map();
   // cell2では塗り幅とは別に交通の中心線を保持し、縁取り・中央線・
-  // レール・枕木を原子セルの多層として再構成する。
+  // レール・枕木を原子セルの多層として再構成する。standalone testの
+  // 線路だけは元線分の法線も保持し、斜線でも2本のレールを平行にする。
   const transportCenters = new Map();
+  const transportRailNormals = new Map();
   const featureCountsByOption = Object.create(null);
   const countFeatures = (option, count) => {
     featureCountsByOption[option] = (featureCountsByOption[option] || 0) + count;
@@ -1542,6 +1550,15 @@ function rasterizeGrid(layers, options){
   const centerGrid = option => {
     if (!transportCenters.has(option)) transportCenters.set(option, new Uint8Array(RG * RG));
     return transportCenters.get(option);
+  };
+  const railNormalGrid = option => {
+    if (!transportRailNormals.has(option)){
+      transportRailNormals.set(option, {
+        x:new Int8Array(RG * RG),
+        y:new Int8Array(RG * RG),
+      });
+    }
+    return transportRailNormals.get(option);
   };
   const oc = document.createElement('canvas');
   oc.width = oc.height = RG;
@@ -1977,14 +1994,40 @@ function rasterizeGrid(layers, options){
   function lineStamp(layer, fs, id, thick, routeOption = layer){
     const grid = layerGrid(layer);
     const center = CELL_ONLY_MODE ? centerGrid(layer) : null;
+    const railNormals = CELL_ONLY_MODE && !EMBEDDED && id === ID.RAIL
+      ? railNormalGrid(layer) : null;
+    const parallelRailCenterNearby = (cx, cy, normalX, normalY) => {
+      if (!railNormals || (normalX === 0 && normalY === 0)) return false;
+      const normalLength = Math.hypot(normalX, normalY);
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++){
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= RG || ny >= RG) continue;
+        const index = ny * RG + nx;
+        if (!center[index]) continue;
+        const otherX = railNormals.x[index], otherY = railNormals.y[index];
+        const otherLength = Math.hypot(otherX, otherY);
+        if (!otherLength) continue;
+        const alignment = Math.abs(normalX * otherX + normalY * otherY) / (normalLength * otherLength);
+        if (alignment >= .8) return true;
+      }
+      return false;
+    };
     const minimumMinorRoute = STANDALONE_MINIMUM_MINOR_ROUTES &&
       ['localRoads','paths'].includes(routeOption);
     for (const f of fs){
       for (const ln of f.geom){
+        const railPath = railNormals ? [] : null;
+        let previousRailPathIndex = -1;
         for (let i = 0; i + 1 < ln.length; i++){
           traverse(gx(ln[i][0]), gy(ln[i][1]), gx(ln[i+1][0]), gy(ln[i+1][1]), (cx, cy) => {
             if (CELL_ONLY_MODE){
-              setCell(center, cx, cy, 1);
+              if (railNormals && cx >= 0 && cy >= 0 && cx < RG && cy < RG){
+                const centerIndex = cy * RG + cx;
+                if (centerIndex !== previousRailPathIndex){
+                  railPath.push([cx, cy, centerIndex]);
+                  previousRailPathIndex = centerIndex;
+                }
+              } else setCell(center, cx, cy, 1);
               setCellBrush(grid, cx, cy, id,
                 minimumMinorRoute ? 1 : detailCellSpan(thick ? 2 : 1));
             } else {
@@ -1992,6 +2035,26 @@ function rasterizeGrid(layers, options){
               if (thick){ setCell(grid, cx + 1, cy, id); setCell(grid, cx, cy + 1, id); }
             }
           });
+        }
+        if (railPath){
+          const tangentRadius = 4;
+          const pathNormals = [];
+          for (let index = 0; index < railPath.length; index++){
+            const before = railPath[Math.max(0, index - tangentRadius)];
+            const after = railPath[Math.min(railPath.length - 1, index + tangentRadius)];
+            pathNormals.push(quantizedRailNormal(before[0], before[1], after[0], after[1]));
+          }
+          const keepPath = railPath.map(([cx, cy], index) =>
+            !parallelRailCenterNearby(cx, cy, pathNormals[index][0], pathNormals[index][1])
+          );
+          for (let index = 0; index < railPath.length; index++){
+            if (!keepPath[index]) continue;
+            const [cx, cy, centerIndex] = railPath[index];
+            const [normalX, normalY] = pathNormals[index];
+            center[centerIndex] = 1;
+            railNormals.x[centerIndex] = normalX;
+            railNormals.y[centerIndex] = normalY;
+          }
         }
       }
     }
@@ -2063,7 +2126,7 @@ function rasterizeGrid(layers, options){
     feature => paintGeometry(feature, 1.5, 1.25)
   );
   return {
-    grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea,
+    grids, transportCenters, transportRailNormals, bldGrid, bldUnits, unitByRingKey, bldArea,
     facilitySites, featureCountsByOption, size:RG,
   };
 }
@@ -2304,7 +2367,9 @@ function paintDarkenedMapCell(gx, gy, factor, layer, stats){
   paintSolidMapCell(gx, gy, color, layer, stats);
 }
 
-function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, bridge = false){
+function drawCellPixelArtTransportGrid(
+  grid, option, stats, centerGrid = null, railNormalGrid = null, bridge = false
+){
   const RG = GRID + 2;
   const has = (x, y) => x >= 0 && y >= 0 && x < RG && y < RG && grid[y * RG + x] !== ID.GRASS;
   const centered = (x, y) => centerGrid && x >= 0 && y >= 0 && x < RG && y < RG && centerGrid[y * RG + x];
@@ -2345,6 +2410,18 @@ function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, b
   }
 
   if (rail){
+    const sourceNormalRails = !EMBEDDED && railNormalGrid;
+    const paintRailPair = (x, y, useHorizontal) => {
+      const centerIndex = y * RG + x;
+      const normalX = sourceNormalRails ? railNormalGrid.x[centerIndex] : 0;
+      const normalY = sourceNormalRails ? railNormalGrid.y[centerIndex] : 0;
+      const hasSourceNormal = normalX !== 0 || normalY !== 0;
+      for (const offset of [-1,1]){
+        const rx = hasSourceNormal ? x + normalX * offset : useHorizontal ? x : x + offset;
+        const ry = hasSourceNormal ? y + normalY * offset : useHorizontal ? y + offset : y;
+        if (has(rx, ry)) paintSolidMapCell(rx, ry, P.rail, option, stats);
+      }
+    };
     for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
       if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
       const horizontal = centered(x-1,y) || centered(x+1,y);
@@ -2358,9 +2435,16 @@ function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, b
         }
         stats.railTieCells++;
       }
-      for (const offset of [-1,1]){
-        const rx = useHorizontal ? x : x + offset, ry = useHorizontal ? y + offset : y;
-        if (has(rx, ry)) paintSolidMapCell(rx, ry, P.rail, option, stats);
+      // productionは従来どおり1pass。testは全枕木の後にレールを重ね、
+      // 斜線の枕木がレールを上書きして連続ストライプになるのを防ぐ。
+      if (!sourceNormalRails) paintRailPair(x, y, useHorizontal);
+    }
+    if (sourceNormalRails){
+      for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
+        if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
+        const horizontal = centered(x-1,y) || centered(x+1,y);
+        const vertical = centered(x,y-1) || centered(x,y+1);
+        paintRailPair(x, y, horizontal || !vertical);
       }
     }
     return;
@@ -4191,7 +4275,7 @@ function render(){
   /* --- 地形のマップグリッド + 建物情報 --- */
   const rasterized = getRasterizedGrid(tileLayers, o);
   const {
-    grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea,
+    grids, transportCenters, transportRailNormals, bldGrid, bldUnits, unitByRingKey, bldArea,
     facilitySites, featureCountsByOption,
   } = rasterized;
   const RG = GRID + 2;
@@ -5141,7 +5225,10 @@ function render(){
     if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option]) continue;
     if (CELL_ONLY_MODE){
       const grid = grids.get(option);
-      if (grid) drawCellPixelArtTransportGrid(grid, option, cellRenderingStats, transportCenters.get(option));
+      if (grid) drawCellPixelArtTransportGrid(
+        grid, option, cellRenderingStats,
+        transportCenters.get(option), transportRailNormals.get(option)
+      );
       countCellFeatures(option);
     }
     else if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option);
@@ -5201,7 +5288,10 @@ function render(){
     const bridgeOption = `bridge:${option}`;
     if (CELL_ONLY_MODE){
       const grid = grids.get(bridgeOption);
-      if (grid) drawCellPixelArtTransportGrid(grid, option, cellRenderingStats, transportCenters.get(bridgeOption), true);
+      if (grid) drawCellPixelArtTransportGrid(
+        grid, option, cellRenderingStats,
+        transportCenters.get(bridgeOption), transportRailNormals.get(bridgeOption), true
+      );
       countCellFeatures(bridgeOption);
     }
     else if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option])

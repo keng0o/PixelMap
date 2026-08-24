@@ -109,7 +109,7 @@ test('細分化しても公園・建物の意味分類は96セル基準を維持
 
 test('セルモードの地形・交通・建物は専用ピクセルアート経路を使う', () => {
   assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtSurfaceGrid\(grid, option, cellRenderingStats/);
-  assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtTransportGrid\(grid, option, cellRenderingStats, transportCenters\.get\(option\)\)/);
+  assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtTransportGrid\([\s\S]*?transportCenters\.get\(option\), transportRailNormals\.get\(option\)/);
   assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtBuildingGrid\(normalBuildingGrid/);
   assert.match(html, /else if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option\)/);
   assert.match(html, /else if \(tunnelOptions\.has\(option\)\) drawTunnelLayer\(option\)/);
@@ -157,13 +157,36 @@ test('交通線のセル走査はセル角の終点を越えて架空の線を�
 });
 
 test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分ける', () => {
-  assert.match(html, /function drawCellPixelArtTransportGrid\(grid, option, stats, centerGrid = null, bridge = false\)/);
+  assert.match(html, /function drawCellPixelArtTransportGrid\([\s\S]*?railNormalGrid = null, bridge = false/);
   assert.match(html, /const color = minimumMinorRoute[\s\S]*?: boundary \? edge : fill/);
   assert.match(html, /paintSolidMapCell\(x, y, color, option, stats\)/);
   assert.match(html, /paintSolidMapCell\(x, y, roadStyle\.center/);
   assert.match(html, /for \(const offset of \[-1,1\]\)/);
   assert.match(html, /paintSolidMapCell\(tx, ty, P\.tie/);
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
+});
+
+test('standalone testの斜線路は元線分の法線へ2本のレールを平行配置する', () => {
+  const source = html.match(/function quantizedRailNormal\(x0, y0, x1, y1\)\{[\s\S]*?\n\}/)?.[0];
+  assert.ok(source, '線路法線の量子化実装を取得できる');
+  const normalFor = Function(`'use strict';\n${source}\nreturn quantizedRailNormal;`)();
+  assert.deepEqual(normalFor(0, 0, 4, 0), [0, 1]);
+  assert.deepEqual(normalFor(0, 0, 0, 4), [-1, 0]);
+  assert.deepEqual(normalFor(0, 0, 4, 4), [-1, 1]);
+  assert.deepEqual(normalFor(0, 4, 4, 0), [1, 1]);
+  assert.match(html, /const transportRailNormals = new Map\(\)/);
+  assert.match(html, /CELL_ONLY_MODE && !EMBEDDED && id === ID\.RAIL/);
+  assert.match(html, /const tangentRadius = 4/);
+  assert.match(html, /const alignment = Math\.abs\(normalX \* otherX \+ normalY \* otherY\)/);
+  assert.match(html, /if \(alignment >= \.8\) return true/);
+  assert.match(html, /const keepPath = railPath\.map/);
+  assert.match(html, /railNormals\.x\[centerIndex\] = normalX/);
+  assert.match(html, /const hasSourceNormal = normalX !== 0 \|\| normalY !== 0/);
+  assert.match(html, /x \+ normalX \* offset/);
+  assert.match(html, /y \+ normalY \* offset/);
+  assert.match(html, /if \(!sourceNormalRails\) paintRailPair\(x, y, useHorizontal\)/);
+  assert.match(html, /if \(sourceNormalRails\)\{[\s\S]*?paintRailPair\(x, y, horizontal \|\| !vertical\)/);
+  assert.doesNotMatch(html, /transportCenterPhases|standaloneTiePeriod|tieAnchor/);
 });
 
 test('standalone testの地区幹線道路は中央線を描かない', () => {
