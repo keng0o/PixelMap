@@ -15,7 +15,6 @@ const output = resolve(String(args.output || 'data/landmarks/region.generated.ge
 const baseGeneratedPath = typeof args['base-generated'] === 'string'
   ? resolve(args['base-generated']) : null;
 const minParentArea = Number(args['min-parent-area'] || 3000);
-const minHighriseArea = Number(args['min-highrise-area'] || 1000);
 const minHighriseHeight = Number(args['min-highrise-height'] || 30);
 const minHighriseLevels = Number(args['min-highrise-levels'] || 8);
 const endpoint = String(args.endpoint || 'https://overpass-api.de/api/interpreter');
@@ -266,8 +265,7 @@ const parentCandidates = records.filter(isParent).map(record => ({
     : isRetailParent(record) ? 'retail'
       : isCommercialParent(record) ? 'commercial'
         : isParkParent(record) ? 'park' : 'religious',
-})).filter(parent => parent.area >=
-  (parent.collectionGroup === 'highrise' ? minHighriseArea : minParentArea));
+})).filter(parent => parent.collectionGroup === 'highrise' || parent.area >= minParentArea);
 const collectedParentIds = new Set(parentCandidates.map(parent => parent.id));
 const parentsByFingerprint = new Map();
 for (const parent of parentCandidates){
@@ -376,8 +374,8 @@ const collectionGroups = {
   park:['leisure=park'],
   religious:['landuse=religious + religion=buddhist|shinto',
     'amenity=place_of_worship + religion=buddhist|shinto','building=temple|shrine'],
-  highrise:[`building=* + area>=${minHighriseArea}m2 + height>=${minHighriseHeight}m`,
-    `building=* + area>=${minHighriseArea}m2 + building:levels>=${minHighriseLevels}`],
+  highrise:[`building=* + height>=${minHighriseHeight}m`,
+    `building=* + building:levels>=${minHighriseLevels}`],
 };
 const outputData = {
   type:'FeatureCollection',
@@ -389,7 +387,6 @@ const outputData = {
     scope:areaName ? { type:'administrative_area', name:areaName } : { type:'bbox', bbox },
     min_parent_area_m2:minParentArea,
     highrise_thresholds:{
-      min_building_area_m2:minHighriseArea,
       min_height_m:minHighriseHeight,
       min_building_levels:minHighriseLevels,
     },

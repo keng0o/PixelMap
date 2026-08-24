@@ -153,7 +153,7 @@
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>神奈川県の生成GeoJSONは小売・commercial・公園・神社仏閣を3,000㎡以上で収集。加えて、建築面積1,000㎡以上かつ<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集し、高さによりz12～z14で表示開始。公園・神社仏閣は画像アセットを使わない単色マーカー、その他は建物形状で表示し、commercialは別チェックで表示。</td>
+              <td>神奈川県の生成GeoJSONは小売・commercial・公園・神社仏閣を3,000㎡以上で収集。加えて、面積制限なしで<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集し、高さによりz12～z14で表示開始。公園・神社仏閣は画像アセットを使わない単色マーカー、その他は建物形状で表示し、commercialは別チェックで表示。</td>
               <td>ランドマーク補助処理を無効化し、従来の施設表示を維持。</td>
             </tr>
             <tr>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>高層建物の建築面積下限を撤廃</h3>
+          <time datetime="2026-08-24">2026-08-24 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>高層建物の収集条件から建築面積1,000㎡以上を削除し、名前付きの<code>building=*</code>を面積に関係なく<code>height>=30m</code>または<code>building:levels>=8</code>で収集するよう変更。高さによるz12～z14の表示開始と、実建物形状による非アセット表示は維持。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの「施設アイコン」で表示。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guardにより生成GeoJSONを読み込まず、production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>生成結果は親施設3,051件（高層建物1,043件）＋館内施設30件の計3,081件。面積下限撤廃前より626件増え、追加分はいずれも1,000㎡未満。高さ・階数条件、面積1,000㎡未満の実例、表示ズーム、ID・形状重複、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>建築面積・高さ・階数による高層建物を追加</h3>

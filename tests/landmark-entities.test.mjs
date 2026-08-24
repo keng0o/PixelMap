@@ -31,7 +31,7 @@ test('神奈川県ランドマークGeoJSONは県域と川崎の対象施設を�
   assert.equal(API.geometryContains(parent.geometry, API.anchorOf(cinema)), true);
 });
 
-test('3,000㎡以上の小売・commercial・公園・神社仏閣と条件付き高層建物を収集する', () => {
+test('3,000㎡以上の小売・commercial・公園・神社仏閣と面積制限なしの高層建物を収集する', () => {
   const retailBuilding = collection.features.find(feature => feature.properties.id === 'relation/12409962');
   const supermarket = collection.features.find(feature => feature.properties.id === 'way/500438995');
   const wholesale = collection.features.find(feature => feature.properties.id === 'way/255221083');
@@ -41,6 +41,7 @@ test('3,000㎡以上の小売・commercial・公園・神社仏閣と条件付�
   const newlyEligible = collection.features.find(feature => feature.properties.id === 'way/494991675');
   const highrise = collection.features.find(feature => feature.properties.id === 'way/936707032');
   const levelsHighrise = collection.features.find(feature => feature.properties.id === 'way/220991441');
+  const smallHighrise = collection.features.find(feature => feature.properties.id === 'way/1107873562');
   assert.equal(retailBuilding.properties.building, 'retail');
   assert.equal(retailBuilding.properties.collection_group, 'retail');
   assert.equal(supermarket.properties.shop, 'supermarket');
@@ -69,21 +70,24 @@ test('3,000㎡以上の小売・commercial・公園・神社仏閣と条件付�
   assert.equal(levelsHighrise.properties.height_m < 30, true);
   assert.equal(levelsHighrise.properties.building_levels, 9);
   assert.equal(levelsHighrise.properties.highrise_rule, 'building:levels');
+  assert.equal(smallHighrise.properties.name, 'イセザキカザマビル');
+  assert.equal(smallHighrise.properties.area_m2 < 1000, true);
+  assert.equal(smallHighrise.properties.height_m >= 30, true);
+  assert.equal(smallHighrise.properties.collection_group, 'highrise');
   assert.ok(collection.features
     .filter(feature => feature.properties.role === 'complex')
-    .every(feature => feature.properties.area_m2 >=
-      (feature.properties.collection_group === 'highrise' ? 1000 : 3000)));
+    .filter(feature => feature.properties.collection_group !== 'highrise')
+    .every(feature => feature.properties.area_m2 >= 3000));
   assert.deepEqual(collection.properties.highrise_thresholds, {
-    min_building_area_m2:1000,
     min_height_m:30,
     min_building_levels:8,
   });
   assert.ok(collection.features.filter(feature =>
-    feature.properties.collection_group === 'highrise').length >= 400);
+    feature.properties.collection_group === 'highrise').length >= 1000);
   assert.equal(collection.features.filter(feature =>
     feature.properties['name:ja'] === '川崎市役所本庁舎').length, 1);
   assert.match(builderSource, /args\['min-parent-area'\] \|\| 3000/);
-  assert.match(builderSource, /args\['min-highrise-area'\] \|\| 1000/);
+  assert.doesNotMatch(builderSource, /min-highrise-area/);
   assert.match(builderSource, /args\['min-highrise-height'\] \|\| 30/);
   assert.match(builderSource, /args\['min-highrise-levels'\] \|\| 8/);
   assert.match(builderSource, /shopping_centre\|supermarket\|wholesale/);
