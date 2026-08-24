@@ -64,6 +64,15 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /landuse=commercial/);
   assert.match(log, /ランドマーク下限を3,000㎡へ変更し公園・神社仏閣を追加/);
   assert.match(log, /ランドマーク収集下限を2,000㎡へ変更/);
+  assert.match(log, /1,000㎡以上の施設敷地を意味タグから汎用収集/);
+  assert.match(log, /汎用施設を選択だけでなく敷地面として確実に描画/);
+  assert.match(log, /収集形状を必ず先に描き、その上へ敷地内のMVT建物を重ねる/);
+  assert.match(log, /施設名ラベルは引き続き表示しない/);
+  assert.match(log, /親施設20,169件/);
+  assert.match(log, /汎用施設13,562件/);
+  assert.match(log, /川崎変電所48,571㎡/);
+  assert.match(log, /汎用施設ラベルは表示しない/);
+  assert.match(log, /開いたwayは強制的に閉じず/);
   assert.match(log, /JR川崎タワー 商業棟/);
   assert.match(log, /leisure=park/);
   assert.match(log, /landuse=religious/);

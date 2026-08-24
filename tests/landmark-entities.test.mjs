@@ -14,7 +14,7 @@ const builderSource = await readFile(new URL('../scripts/build-landmark-entities
 
 test('神奈川県ランドマークGeoJSONは県域と川崎の対象施設を保持する', () => {
   assert.deepEqual(collection.properties.scope, { type:'administrative_area', name:'神奈川県' });
-  assert.equal(collection.properties.min_parent_area_m2, 2000);
+  assert.equal(collection.properties.min_parent_area_m2, 1000);
   assert.ok(collection.features.length >= 100);
   const parent = collection.features.find(feature => feature.properties.id === 'way/690489941');
   const club = collection.features.find(feature => feature.properties.name === "CLUB CITTA'");
@@ -31,7 +31,7 @@ test('神奈川県ランドマークGeoJSONは県域と川崎の対象施設を�
   assert.equal(API.geometryContains(parent.geometry, API.anchorOf(cinema)), true);
 });
 
-test('2,000㎡以上の小売・commercial・公園・神社仏閣と面積制限なしの高層建物を収集する', () => {
+test('1,000㎡以上の施設敷地と面積制限なしの高層建物を収集する', () => {
   const retailBuilding = collection.features.find(feature => feature.properties.id === 'relation/12409962');
   const supermarket = collection.features.find(feature => feature.properties.id === 'way/500438995');
   const wholesale = collection.features.find(feature => feature.properties.id === 'way/255221083');
@@ -43,6 +43,10 @@ test('2,000㎡以上の小売・commercial・公園・神社仏閣と面積制�
   const jrKawasakiTowerCommercial = collection.features.find(feature => feature.properties.id === 'way/936707031');
   const levelsHighrise = collection.features.find(feature => feature.properties.id === 'way/220991441');
   const smallHighrise = collection.features.find(feature => feature.properties.id === 'way/1107873562');
+  const kawasakiSubstation = collection.features.find(feature => feature.properties.id === 'way/81844460');
+  const wataridaSubstation = collection.features.find(feature => feature.properties.id === 'way/86220796');
+  const unnamedFacility = collection.features.find(feature =>
+    feature.properties.collection_group === 'facility' && !feature.properties.name);
   assert.equal(retailBuilding.properties.building, 'retail');
   assert.equal(retailBuilding.properties.collection_group, 'retail');
   assert.equal(supermarket.properties.shop, 'supermarket');
@@ -79,10 +83,22 @@ test('2,000㎡以上の小売・commercial・公園・神社仏閣と面積制�
   assert.equal(smallHighrise.properties.area_m2 < 1000, true);
   assert.equal(smallHighrise.properties.height_m >= 30, true);
   assert.equal(smallHighrise.properties.collection_group, 'highrise');
+  assert.equal(kawasakiSubstation.properties.name, '川崎変電所');
+  assert.equal(kawasakiSubstation.properties.collection_group, 'facility');
+  assert.equal(kawasakiSubstation.properties.power, 'substation');
+  assert.equal(kawasakiSubstation.properties.facility_tag_key, 'power');
+  assert.equal(kawasakiSubstation.properties.facility_tag_value, 'substation');
+  assert.equal(kawasakiSubstation.properties.label_enabled, false);
+  assert.ok(kawasakiSubstation.properties.area_m2 > 48000);
+  assert.equal(wataridaSubstation.properties.collection_group, 'facility');
+  assert.ok(wataridaSubstation.properties.area_m2 >= 1000 &&
+    wataridaSubstation.properties.area_m2 < 2000);
+  assert.ok(unnamedFacility.properties.area_m2 >= 1000);
+  assert.equal(unnamedFacility.properties.label_enabled, false);
   assert.ok(collection.features
     .filter(feature => feature.properties.role === 'complex')
     .filter(feature => feature.properties.collection_group !== 'highrise')
-    .every(feature => feature.properties.area_m2 >= 2000));
+    .every(feature => feature.properties.area_m2 >= 1000));
   assert.deepEqual(collection.properties.highrise_thresholds, {
     min_height_m:30,
     min_building_levels:8,
@@ -91,7 +107,7 @@ test('2,000㎡以上の小売・commercial・公園・神社仏閣と面積制�
     feature.properties.collection_group === 'highrise').length >= 1000);
   assert.equal(collection.features.filter(feature =>
     feature.properties['name:ja'] === '川崎市役所本庁舎').length, 1);
-  assert.match(builderSource, /args\['min-parent-area'\] \|\| 2000/);
+  assert.match(builderSource, /args\['min-parent-area'\] \|\| 1000/);
   assert.doesNotMatch(builderSource, /min-highrise-area/);
   assert.match(builderSource, /args\['min-highrise-height'\] \|\| 30/);
   assert.match(builderSource, /args\['min-highrise-levels'\] \|\| 8/);
@@ -107,6 +123,11 @@ test('2,000㎡以上の小売・commercial・公園・神社仏閣と面積制�
   assert.match(builderSource, /is_number\(t\["building:levels"\]\)/);
   assert.match(builderSource, /function heightMeters\(value\)/);
   assert.match(builderSource, /const baseGeneratedPath/);
+  assert.match(builderSource, /const genericFacilityKeys/);
+  assert.match(builderSource, /power:\['substation','plant','generator'\]/);
+  assert.match(builderSource, /if \(first\[0\] !== last\[0\] \|\| first\[1\] !== last\[1\]\) return null/);
+  assert.match(builderSource, /isFacilityParent/);
+  assert.match(builderSource, /facility_tag_key/);
 });
 
 test('高層建物は高さに応じて表示開始ズームを分ける', () => {
@@ -149,7 +170,7 @@ test('親子関係は子施設の代表点を含む最小の複合施設から�
   assert.ok(children.every(feature => feature.properties.parent_id === 'way/690489941'));
 });
 
-test('z14では2,000㎡以上の親ごとに代表館内施設を選ぶ', () => {
+test('z14では1,000㎡以上の親ごとに代表館内施設を選ぶ', () => {
   const result = API.selectForZoom(collection, 14);
   const selected = new Set(result.features.map(feature => feature.properties.name));
   assert.equal(selected.has('ラゾーナ川崎プラザ'), true);
@@ -198,7 +219,10 @@ test('ランドマーク処理は単体ページだけで有効になり共有if
   assert.match(mapHtml, /dataset\.commercialLandmarks = commercialLandmarkToggle\.checked \? 'on' : 'off'/);
   assert.match(mapHtml, /feature\.properties\?\.display_mode !== 'symbol'/);
   assert.match(mapHtml, /landmarkDisplay:props\.display_mode \|\| 'building'/);
+  assert.match(mapHtml, /labelEnabled:props\.label_enabled !== false/);
+  assert.match(mapHtml, /p\.labelEnabled !== false && featureName\(p\.props\)/);
   assert.match(mapHtml, /renderer:facility\.landmarkDisplay === 'symbol' \? 'solid-facility-marker'/);
+  assert.match(mapHtml, /geometrySource:facility\.collectionGroup === 'facility'[\s\S]*'precollected-facility-footprint'/);
   assert.match(mapHtml, /drawnIcons\.filter\(item => item\.landmarkDisplay === 'symbol'\)/);
 });
 
@@ -215,16 +239,23 @@ test('施設はランドマークと汎用施設敷地の全棟を既存建物�
   assert.match(mapHtml, /const activeFeatures = selection\.collection\.features\.filter\(activeLandmarkAtZoom\)/);
   assert.match(mapHtml, /if \(feature\.properties\.parent_id\)[\s\S]*contextParentIds\.has\(feature\.properties\.parent_id\)/);
   assert.match(mapHtml, /function rasterizeStandaloneLandmarkBuildings\(features, worldToGridPoint, gridSize\)/);
+  assert.match(mapHtml, /featureCollectionGroups\[bi\] = props\.collection_group \|\| null/);
   assert.match(mapHtml, /function matchStandaloneLandmarksToSourceBuildings\([\s\S]*sourceBuildingGrid, sourceBldGrid/);
   assert.match(mapHtml, /buildingKinds:sourceBuildingKinds[\s\S]*buildingDescs:sourceBuildingDescs[\s\S]*bldStyle:sourceBldStyle/);
   assert.match(mapHtml, /facilityBuildingTargets, unitByRingKey,[\s\S]*facility => worldToGridPoint\(facility\.worldX, facility\.worldY\),[\s\S]*facilitySites/);
   assert.match(mapHtml, /owners\.sort\(\(a, b\) => compareFacilitySiteOwners\(a, b, site\)\)/);
   assert.match(mapHtml, /siteBuildingIds\.has\(facilitySourceBuildingIds\.get\(facility\)\)/);
   assert.match(mapHtml, /for \(const buildingId of site\.buildingIds\)/);
+  assert.match(mapHtml, /featureCollectionGroups\?\.\[featureId\] === 'facility'[\s\S]*facilityFootprintGrid\[index\] = ID\.BLD/);
+  const facilityFootprintLayer = mapHtml.indexOf("source:'facility-site-footprints'");
+  const matchedBuildingLayer = mapHtml.indexOf("source:'map-buildings'", facilityFootprintLayer);
+  assert.ok(facilityFootprintLayer >= 0 && matchedBuildingLayer > facilityFootprintLayer,
+    '施設敷地を先に描き、MVT建物を後から重ねる');
   assert.match(mapHtml, /function drawStandaloneLandmarkBuildings\(\)/);
   assert.match(mapHtml, /for \(const layer of landmark\.layers\)[\s\S]*drawCellPixelArtBuildingGrid\([\s\S]*layer\.grid, layer\.bldGrid/);
   assert.match(mapHtml, /source:STANDALONE_LANDMARK_MODE \? 'landmarks-facility-sites'/);
   assert.match(mapHtml, /matchedFacilitySiteClasses:landmarkBuildingRaster\?\.matchedFacilitySiteClasses/);
+  assert.match(mapHtml, /facilityFootprintFeatures:landmarkBuildingRaster\?\.facilityFootprintFeatures/);
   assert.match(mapHtml, /renderer:STANDALONE_LANDMARK_MODE \? 'matched-map-building'/);
   assert.match(mapHtml, /'building-footprint'/);
   assert.match(mapHtml, /'precollected-landmark-building'/);

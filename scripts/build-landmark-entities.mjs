@@ -17,7 +17,7 @@ if (areaId != null && (!Number.isInteger(areaId) || areaId <= 0))
 const output = resolve(String(args.output || 'data/landmarks/region.generated.geojson'));
 const baseGeneratedPath = typeof args['base-generated'] === 'string'
   ? resolve(args['base-generated']) : null;
-const minParentArea = Number(args['min-parent-area'] || 2000);
+const minParentArea = Number(args['min-parent-area'] || 1000);
 const minHighriseHeight = Number(args['min-highrise-height'] || 30);
 const minHighriseLevels = Number(args['min-highrise-levels'] || 8);
 const endpoint = String(args.endpoint || 'https://overpass-api.de/api/interpreter');
@@ -31,6 +31,49 @@ const scope = areaName
 const collectionQuery = statements => `[out:json][timeout:180];${scopePrefix}(
 ${statements}
 );out body center geom;`;
+// 「すべてのOSM面」を集めると道路・河川・行政界まで施設化してしまうため、
+// 建物本体は既存MVTのbuildingレイヤーへ任せ、補助GeoJSONでは施設を表す
+// 意味タグを持つ閉じた敷地だけを汎用収集する。100mの周長下限は、1,000㎡の
+// 面が取り得る最小周長（約112m）より小さく、対象面を落とさず小物を減らす。
+const genericFacilityKeys = Object.freeze([
+  'amenity','shop','tourism','leisure','office','craft','healthcare','emergency',
+  'club','sport','historic','military','public_transport','social_facility',
+  'telecom','utility','industrial',
+]);
+const valuedFacilityKeys = Object.freeze({
+  power:['substation','plant','generator'],
+  aeroway:['aerodrome','heliport','terminal','hangar','apron'],
+  railway:['station','halt','tram_stop','depot','roundhouse','substation','yard'],
+  man_made:[
+    'works','wastewater_plant','water_works','pumping_station','storage_tank','silo',
+    'gasometer','reservoir_covered','observatory','tower','mast','communications_tower',
+    'chimney','lighthouse',
+  ],
+  landuse:[
+    'retail','commercial','industrial','institutional','education','religious','military',
+    'railway','port','landfill','quarry','cemetery',
+  ],
+});
+const facilityTagDefinitions = Object.freeze([
+  ...genericFacilityKeys.map(key => Object.freeze({ key, values:null })),
+  ...Object.entries(valuedFacilityKeys).map(([key, values]) => Object.freeze({
+    key, values:Object.freeze(values),
+  })),
+]);
+const facilityFilter = definition => definition.values
+  ? `["${definition.key}"~"^(${definition.values.join('|')})$"]`
+  : `["${definition.key}"]`;
+const facilityStatements = definitions => definitions.map(definition => {
+  const filter = facilityFilter(definition);
+  return `way${filter}${scope}(if:is_closed() && length() >= 100);\n`+
+    `  relation${filter}["type"="multipolygon"]${scope};`;
+}).join('\n  ');
+// API負荷と再試行単位を抑えるため、汎用施設タグは複数クエリへ分割する。
+const facilityQueryGroups = [
+  facilityTagDefinitions.slice(0, 6),
+  facilityTagDefinitions.slice(6, 12),
+  facilityTagDefinitions.slice(12),
+];
 const standardQueries = [
   collectionQuery(`
   nwr["name"]["landuse"="retail"]${scope};
@@ -52,6 +95,7 @@ const standardQueries = [
   collectionQuery(`
   nwr["name"]["amenity"~"^(theatre|cinema|arts_centre)$"]${scope};
   `),
+  ...facilityQueryGroups.map(definitions => collectionQuery(facilityStatements(definitions))),
 ];
 const highriseQuery = `[out:json][timeout:180];${scopePrefix}
   wr${scope}["name"]["building"](if:
@@ -141,7 +185,8 @@ const elementGeometry = element => {
   const coordinates = (element.geometry || []).map(point => [point.lon, point.lat]);
   if (coordinates.length < 4) return null;
   const first = coordinates[0], last = coordinates[coordinates.length - 1];
-  if (first[0] !== last[0] || first[1] !== last[1]) coordinates.push(first.slice());
+  // 開いた道路・河川・鉄道などを強制的に閉じた偽ポリゴンへ変換しない。
+  if (first[0] !== last[0] || first[1] !== last[1]) return null;
   return { type:'Polygon', coordinates:[coordinates] };
 };
 const polygons = geometry => geometry?.type === 'Polygon' ? [geometry.coordinates]
@@ -236,17 +281,17 @@ const records = osmElements.map(element => ({
   geometry:elementGeometry(element),
   tags:element.tags || {},
 })).filter(record => record.geometry);
-const isRetailParent = record => record.geometry.type !== 'Point' && record.tags.name && (
+const isRetailParent = record => record.geometry.type !== 'Point' && (
   record.tags.landuse === 'retail' ||
   ['mall','department_store','shopping_centre','supermarket','wholesale'].includes(record.tags.shop) ||
   record.tags.building === 'retail'
 );
-const isCommercialParent = record => record.geometry.type !== 'Point' && record.tags.name && (
+const isCommercialParent = record => record.geometry.type !== 'Point' && (
   record.tags.building === 'commercial' || record.tags.landuse === 'commercial'
 );
-const isParkParent = record => record.geometry.type !== 'Point' && record.tags.name &&
+const isParkParent = record => record.geometry.type !== 'Point' &&
   record.tags.leisure === 'park';
-const isReligiousParent = record => record.geometry.type !== 'Point' && record.tags.name && (
+const isReligiousParent = record => record.geometry.type !== 'Point' && (
   (record.tags.landuse === 'religious' && ['buddhist','shinto'].includes(record.tags.religion)) ||
   (record.tags.amenity === 'place_of_worship' && ['buddhist','shinto'].includes(record.tags.religion)) ||
   ['temple','shrine'].includes(record.tags.building)
@@ -255,22 +300,40 @@ const isHighriseParent = record => record.geometry.type !== 'Point' && record.ta
   Boolean(record.tags.building) && (
     Number(record.heightM) >= minHighriseHeight || Number(record.levels) >= minHighriseLevels
   );
+const facilityTagFor = record => facilityTagDefinitions.find(definition => {
+  const value = record.tags[definition.key];
+  return value != null && value !== '' && (!definition.values || definition.values.includes(value));
+}) || null;
+const isFacilityParent = record => record.geometry.type !== 'Point' && Boolean(facilityTagFor(record));
 const isParent = record => isRetailParent(record) || isCommercialParent(record) ||
-  isParkParent(record) || isReligiousParent(record) || isHighriseParent(record);
+  isParkParent(record) || isReligiousParent(record) || isHighriseParent(record) ||
+  isFacilityParent(record);
 const isVenue = record => record.tags.name && ['theatre','cinema','arts_centre'].includes(record.tags.amenity);
 for (const record of records){
   record.heightM = heightMeters(record.tags.height);
   record.levels = buildingLevels(record.tags['building:levels']);
 }
-const parentCandidates = records.filter(isParent).map(record => ({
+const initialParentCandidates = records.filter(isParent).map(record => ({
   ...record,
   id:elementId(record.element),
   area:areaM2(record.geometry),
   collectionGroup:isHighriseParent(record) ? 'highrise'
     : isRetailParent(record) ? 'retail'
       : isCommercialParent(record) ? 'commercial'
-        : isParkParent(record) ? 'park' : 'religious',
-})).filter(parent => parent.collectionGroup === 'highrise' || parent.area >= minParentArea);
+        : isParkParent(record) ? 'park'
+          : isReligiousParent(record) ? 'religious' : 'facility',
+})).map(parent => {
+  parent.facilityTag = parent.collectionGroup === 'facility' ? facilityTagFor(parent) : null;
+  return parent;
+}).filter(parent => parent.collectionGroup === 'highrise' || parent.area >= minParentArea);
+// 劇場・映画館などが大型複合施設の内側にある場合は従来どおり館内施設とし、
+// 同じOSM IDを汎用親施設と子施設の両方へ重複出力しない。
+const parentCandidates = initialParentCandidates.filter(parent => {
+  if (parent.collectionGroup !== 'facility' || !isVenue(parent)) return true;
+  const anchor = anchorOf(parent.geometry);
+  return !anchor || !initialParentCandidates.some(container =>
+    container.id !== parent.id && container.area > parent.area && contains(container.geometry, anchor));
+});
 const collectedParentIds = new Set(parentCandidates.map(parent => parent.id));
 const parentsByFingerprint = new Map();
 for (const parent of parentCandidates){
@@ -289,7 +352,8 @@ for (const parent of parentCandidates){
     parentsByFingerprint.set(fingerprint, parent);
 }
 const parents = [...parentsByFingerprint.values()];
-const children = (baseGeneratedPath ? [] : records.filter(isVenue)).map(record => ({
+const children = (baseGeneratedPath ? [] : records.filter(record =>
+  isVenue(record) && !collectedParentIds.has(elementId(record)))).map(record => ({
   ...record,
   id:elementId(record.element),
   area:areaM2(record.geometry),
@@ -310,10 +374,13 @@ for (const parent of parents){
   const symbolicLandmark = ['park','religious'].includes(parent.collectionGroup);
   const renderClass = parent.collectionGroup === 'park' ? 'park'
     : parent.collectionGroup === 'religious' ? 'place_of_worship'
-      : parent.collectionGroup === 'highrise' ? 'building' : 'mall';
-  const category = parent.collectionGroup === 'park' ? 'nature' : 'landmark';
+      : parent.collectionGroup === 'highrise' ? 'building'
+        : parent.collectionGroup === 'facility' ? 'building' : 'mall';
+  const category = parent.collectionGroup === 'park' ? 'nature'
+    : parent.collectionGroup === 'facility' ? 'generic' : 'landmark';
   const estimatedHeightM = parent.heightM ?? (parent.levels == null ? null : parent.levels * 3);
-  const minzoom = parent.collectionGroup !== 'highrise' ? 13
+  const minzoom = parent.collectionGroup === 'facility' ? 14
+    : parent.collectionGroup !== 'highrise' ? 13
     : estimatedHeightM >= 60 || parent.levels >= 20 ? 12
       : estimatedHeightM >= 45 || parent.levels >= 15 ? 13 : 14;
   features.push({
@@ -326,9 +393,11 @@ for (const parent of parents){
       class:entertainment ? 'entertainment_complex'
         : parent.collectionGroup === 'commercial' ? 'commercial_complex'
           : parent.collectionGroup === 'highrise' ? 'highrise_building'
-          : parent.collectionGroup === 'park' ? 'park_complex'
-            : parent.collectionGroup === 'religious' ? 'religious_complex' : 'retail_complex',
+            : parent.collectionGroup === 'park' ? 'park_complex'
+            : parent.collectionGroup === 'religious' ? 'religious_complex'
+              : parent.collectionGroup === 'facility' ? 'facility_complex' : 'retail_complex',
       render_class:renderClass, category, display_mode:symbolicLandmark ? 'symbol' : 'building',
+      label_enabled:parent.collectionGroup === 'facility' ? false : undefined,
       area_m2:Math.round(parent.area),
       height_m:estimatedHeightM == null ? undefined : Math.round(estimatedHeightM * 10) / 10,
       height_estimated:parent.heightM == null && parent.levels != null ? true : undefined,
@@ -339,6 +408,9 @@ for (const parent of parents){
       minzoom, detail_zoom:16, max_signature_children:1, icon_size:'L', icon_anchor:anchor,
       building:parent.tags.building, landuse:parent.tags.landuse, shop:parent.tags.shop,
       leisure:parent.tags.leisure, amenity:parent.tags.amenity, religion:parent.tags.religion,
+      facility_tag_key:parent.facilityTag?.key,
+      facility_tag_value:parent.facilityTag ? parent.tags[parent.facilityTag.key] : undefined,
+      ...(parent.facilityTag ? { [parent.facilityTag.key]:parent.tags[parent.facilityTag.key] } : {}),
     },
   });
   for (const child of members){
@@ -381,6 +453,8 @@ const collectionGroups = {
     'amenity=place_of_worship + religion=buddhist|shinto','building=temple|shrine'],
   highrise:[`building=* + height>=${minHighriseHeight}m`,
     `building=* + building:levels>=${minHighriseLevels}`],
+  facility:facilityTagDefinitions.map(definition => definition.values
+    ? `${definition.key}=${definition.values.join('|')}` : `${definition.key}=*`),
 };
 const outputData = {
   type:'FeatureCollection',

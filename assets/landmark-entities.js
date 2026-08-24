@@ -6,7 +6,7 @@
    * 描画処理やビューポートには依存せず、地域別GeoJSONの事前生成結果と
    * ブラウザ描画のどちらからも利用できる純粋な幾何・選択モジュール。
    */
-  const ALGORITHM_VERSION = 'landmark-entities/1';
+  const ALGORITHM_VERSION = 'landmark-entities/2';
 
   const featureId = feature => String(
     feature?.properties?.id || feature?.id ||
@@ -127,11 +127,17 @@
     const parents = active.filter(feature => feature.properties.role === 'complex');
     const selected = [...parents];
     const signatureByParent = new Map();
+    // 親ごとにactive全件を再走査せず、子施設を一度だけ親IDへ索引化する。
+    const childrenByParent = new Map();
+    for (const feature of active){
+      const parentId = feature.properties.parent_id;
+      if (!parentId) continue;
+      if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, []);
+      childrenByParent.get(parentId).push(feature);
+    }
     for (const parent of parents){
       const parentId = featureId(parent);
-      const children = active
-        .filter(feature => feature.properties.parent_id === parentId)
-        .sort(compareSignatureChildren);
+      const children = (childrenByParent.get(parentId) || []).sort(compareSignatureChildren);
       const detailZoom = Number(parent.properties.detail_zoom ?? 16);
       const limit = zoom >= detailZoom
         ? children.length

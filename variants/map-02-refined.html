@@ -650,7 +650,7 @@
 <script src="../assets/icon-patterns.js"></script>
 <script src="../assets/asset-family-registry.js?v=7"></script>
 <script src="../assets/facility-resolver.js?v=7"></script>
-<script src="../assets/landmark-entities.js"></script>
+<script src="../assets/landmark-entities.js?v=20260824-generic-facilities-1000"></script>
 <script src="../assets/poi-sprites.js?v=5"></script>
 <script src="../assets/building-styles.js"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
@@ -779,7 +779,7 @@ const WORLD_STYLE = window.PixelMapWorldStyles[WORLD_STYLE_PROFILE];
 // ランドマーク補助データは単体検証ページだけで利用する。
 // cell描画を共有する1・2・4マップでも補助ランドマークは生成しない。
 const STANDALONE_LANDMARK_MODE = !EMBEDDED;
-const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260824-min-area-2000';
+const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260824-generic-facilities-1000';
 const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820-2';
 let landmarkFeatureCollection = null;
 let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
@@ -3871,6 +3871,7 @@ function makeLandmarkFacility(feature, coordinate){
     landmarkEntityId:String(props.id || feature.id),
     parentId:props.parent_id || null,
     landmarkDisplay:props.display_mode || 'building',
+    labelEnabled:props.label_enabled !== false,
     anchorCoordinate:coordinate,
   };
 }
@@ -3954,6 +3955,8 @@ function applyStandaloneLandmarks(resolvedView){
         role:facility.facilityRole,
         renderer:facility.landmarkDisplay === 'symbol' ? 'solid-facility-marker' : 'building-footprint',
         representation:facility.landmarkDisplay === 'symbol' ? 'symbol' : 'building',
+        geometrySource:facility.collectionGroup === 'facility'
+          ? 'precollected-facility-footprint' : 'matched-or-collected-building',
         anchor:facility.anchorCoordinate,
       })),
       suppressed:0,
@@ -3974,6 +3977,7 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
   const buildingDescs = Array(features.length + 1).fill(null);
   const buildingAnchors = Array(features.length + 1).fill(null);
   const featureRoles = Array(features.length + 1).fill(null);
+  const featureCollectionGroups = Array(features.length + 1).fill(null);
   const featureGridAnchors = Array(features.length + 1).fill(null);
   const bldStyle = new Uint8Array(features.length + 1);
   let visibleFeatures = 0;
@@ -3991,6 +3995,7 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
     const anchor = LANDMARK_ENTITY_API.anchorOf(feature);
     const latitude = Number(anchor?.[1] || 0);
     featureRoles[bi] = props.role || 'standalone';
+    featureCollectionGroups[bi] = props.collection_group || null;
     if (anchor){
       const [worldX, worldY] = landmarkWorldPoint(anchor);
       const [gx, gy] = worldToGridPoint(worldX, worldY);
@@ -4051,7 +4056,7 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
   }
   return {
     grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, bldStyle,
-    featureRoles, featureGridAnchors, visibleFeatures,
+    featureRoles, featureCollectionGroups, featureGridAnchors, visibleFeatures,
   };
 }
 
@@ -4199,15 +4204,29 @@ function matchStandaloneLandmarksToSourceBuildings(
   }
 
   const sourceGrid = new Uint8Array(sourceBuildingGrid.length);
+  const facilityFootprintGrid = new Uint8Array(landmark.grid.length);
   const fallbackGrid = new Uint8Array(landmark.grid.length);
+  const facilityFootprintFeatureIds = new Set();
   for (let index = 0; index < sourceBuildingGrid.length; index++){
     if (sourceBuildingGrid[index] === ID.BLD && sourceBuildingIds.has(sourceBldGrid[index]))
       sourceGrid[index] = ID.BLD;
     const featureId = landmark.bldGrid[index];
-    if (landmark.grid[index] === ID.BLD && featureId && !matchedFeatureIds.has(featureId))
+    if (landmark.grid[index] !== ID.BLD || !featureId) continue;
+    // 汎用施設は通常建物との重なり有無にかかわらず、収集した閉じた敷地形状を
+    // 必ず描く。通常建物だけへ置換すると、川崎変電所のように敷地の大半が
+    // 建物ではない施設が選択済みでも画面上から消えてしまう。
+    if (landmark.featureCollectionGroups?.[featureId] === 'facility'){
+      facilityFootprintGrid[index] = ID.BLD;
+      facilityFootprintFeatureIds.add(featureId);
+    } else if (!matchedFeatureIds.has(featureId)){
       fallbackGrid[index] = ID.BLD;
+    }
   }
   const layers = [];
+  // 敷地面を先に、その中のMVT建物を後から描いて内部棟の輪郭を保持する。
+  if (facilityFootprintGrid.some(Boolean)) layers.push({
+    ...landmark, grid:facilityFootprintGrid, source:'facility-site-footprints',
+  });
   if (sourceBuildingIds.size) layers.push({
     grid:sourceGrid,
     bldGrid:sourceBldGrid,
@@ -4234,6 +4253,7 @@ function matchStandaloneLandmarksToSourceBuildings(
     matchedFacilitySiteOwners,
     matchedFacilitySiteBuildings:matchedFacilitySiteBuildingIds.size,
     sourceBuildingIds:sourceBuildingIds.size,
+    facilityFootprintFeatures:facilityFootprintFeatureIds.size,
   };
 }
 
@@ -4996,7 +5016,7 @@ function render(){
   function drawPoiNames(){
     const placedRects = [];
     const labelTargets = drawnIcons
-      .filter(p => featureName(p.props) && !isStationProps(p.props))
+      .filter(p => p.labelEnabled !== false && featureName(p.props) && !isStationProps(p.props))
       .sort((a, b) => a.selectionPriority - b.selectionPriority || a.rank - b.rank)
       .slice(0, ACTIVE_PATTERN.labelLimit);
     for (const p of labelTargets){
@@ -5630,6 +5650,7 @@ function render(){
       matchedFacilitySiteOwners:landmarkBuildingRaster?.matchedFacilitySiteOwners || [],
       matchedFacilitySiteBuildings:landmarkBuildingRaster?.matchedFacilitySiteBuildings || 0,
       matchedSourceBuildings:landmarkBuildingRaster?.sourceBuildingIds || 0,
+      facilityFootprintFeatures:landmarkBuildingRaster?.facilityFootprintFeatures || 0,
       total:resolvedView.facilities.length,
       visible:facilitiesInView.length,
       offscreen:resolvedView.facilities.length - facilitiesInView.length,

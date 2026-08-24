@@ -3,6 +3,8 @@
 - Deploy this project to GitHub Pages by pushing the validated site to `origin/main`.
 - Do not deploy to OpenAI Sites unless the user explicitly changes the deployment target.
 - After pushing, wait for the GitHub Pages build and verify the published URL.
+- Unless the user explicitly says not to deploy, every requested project change is incomplete until its validated commit is pushed to `origin/main`, the GitHub Pages build succeeds, and the affected published page is verified.
+- Do not stop at local validation or report a change as complete while deployment or published-page verification remains outstanding.
 
 # Change scope
 
