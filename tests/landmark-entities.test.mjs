@@ -31,7 +31,7 @@ test('神奈川県ランドマークGeoJSONは県域と川崎の対象施設を�
   assert.equal(API.geometryContains(parent.geometry, API.anchorOf(cinema)), true);
 });
 
-test('3,000㎡以上の小売・commercial・公園・神社仏閣を収集する', () => {
+test('3,000㎡以上の小売・commercial・公園・神社仏閣と条件付き高層建物を収集する', () => {
   const retailBuilding = collection.features.find(feature => feature.properties.id === 'relation/12409962');
   const supermarket = collection.features.find(feature => feature.properties.id === 'way/500438995');
   const wholesale = collection.features.find(feature => feature.properties.id === 'way/255221083');
@@ -39,6 +39,8 @@ test('3,000㎡以上の小売・commercial・公園・神社仏閣を収集す�
   const park = collection.features.find(feature => feature.properties.id === 'way/29178626');
   const temple = collection.features.find(feature => feature.properties.id === 'way/29178625');
   const newlyEligible = collection.features.find(feature => feature.properties.id === 'way/494991675');
+  const highrise = collection.features.find(feature => feature.properties.id === 'way/936707032');
+  const levelsHighrise = collection.features.find(feature => feature.properties.id === 'way/220991441');
   assert.equal(retailBuilding.properties.building, 'retail');
   assert.equal(retailBuilding.properties.collection_group, 'retail');
   assert.equal(supermarket.properties.shop, 'supermarket');
@@ -57,10 +59,33 @@ test('3,000㎡以上の小売・commercial・公園・神社仏閣を収集す�
   assert.equal(temple.properties.collection_group, 'religious');
   assert.equal(temple.properties.display_mode, 'symbol');
   assert.ok(newlyEligible.properties.area_m2 >= 3000 && newlyEligible.properties.area_m2 < 5000);
+  assert.equal(highrise.properties.name, 'JR川崎タワー オフィス棟');
+  assert.equal(highrise.properties.collection_group, 'highrise');
+  assert.equal(highrise.properties.area_m2 >= 1000, true);
+  assert.equal(highrise.properties.height_m, 135);
+  assert.equal(highrise.properties.highrise_rule, 'height');
+  assert.equal(highrise.properties.minzoom, 12);
+  assert.equal(levelsHighrise.properties.area_m2 >= 1000, true);
+  assert.equal(levelsHighrise.properties.height_m < 30, true);
+  assert.equal(levelsHighrise.properties.building_levels, 9);
+  assert.equal(levelsHighrise.properties.highrise_rule, 'building:levels');
   assert.ok(collection.features
     .filter(feature => feature.properties.role === 'complex')
-    .every(feature => feature.properties.area_m2 >= 3000));
+    .every(feature => feature.properties.area_m2 >=
+      (feature.properties.collection_group === 'highrise' ? 1000 : 3000)));
+  assert.deepEqual(collection.properties.highrise_thresholds, {
+    min_building_area_m2:1000,
+    min_height_m:30,
+    min_building_levels:8,
+  });
+  assert.ok(collection.features.filter(feature =>
+    feature.properties.collection_group === 'highrise').length >= 400);
+  assert.equal(collection.features.filter(feature =>
+    feature.properties['name:ja'] === '川崎市役所本庁舎').length, 1);
   assert.match(builderSource, /args\['min-parent-area'\] \|\| 3000/);
+  assert.match(builderSource, /args\['min-highrise-area'\] \|\| 1000/);
+  assert.match(builderSource, /args\['min-highrise-height'\] \|\| 30/);
+  assert.match(builderSource, /args\['min-highrise-levels'\] \|\| 8/);
   assert.match(builderSource, /shopping_centre\|supermarket\|wholesale/);
   assert.match(builderSource, /building"="retail/);
   assert.match(builderSource, /building"="commercial/);
@@ -69,6 +94,23 @@ test('3,000㎡以上の小売・commercial・公園・神社仏閣を収集す�
   assert.match(builderSource, /landuse"="religious/);
   assert.match(builderSource, /amenity"="place_of_worship/);
   assert.match(builderSource, /building"~"\^\(temple\|shrine\)\$/);
+  assert.match(builderSource, /is_number\(t\["height"\]\)/);
+  assert.match(builderSource, /is_number\(t\["building:levels"\]\)/);
+  assert.match(builderSource, /function heightMeters\(value\)/);
+  assert.match(builderSource, /const baseGeneratedPath/);
+});
+
+test('高層建物は高さに応じて表示開始ズームを分ける', () => {
+  const highrises = collection.features.filter(feature =>
+    feature.properties.collection_group === 'highrise');
+  assert.ok(highrises.every(feature => [12,13,14].includes(feature.properties.minzoom)));
+  assert.ok(highrises.filter(feature => feature.properties.minzoom === 12).length >= 100);
+  assert.ok(highrises.filter(feature => feature.properties.minzoom === 14).length >= 100);
+  const z12 = new Set(API.selectForZoom(collection, 12).features.map(feature => feature.properties.id));
+  const z14 = new Set(API.selectForZoom(collection, 14).features.map(feature => feature.properties.id));
+  assert.equal(z12.has('way/936707032'), true);
+  assert.equal(z12.has('way/220991441'), false);
+  assert.equal(z14.has('way/220991441'), true);
 });
 
 test('公園と神社仏閣はz13から敷地全体を建物化せず施設記号で選ばれる', () => {

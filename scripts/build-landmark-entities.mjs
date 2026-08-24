@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 const args = Object.fromEntries(process.argv.slice(2).map(argument => {
@@ -12,30 +12,82 @@ const bbox = areaName ? null : String(args.bbox || '35.5265,139.6955,35.5296,139
 if (!areaName && (bbox.length !== 4 || bbox.some(value => !Number.isFinite(value))))
   throw new Error('--bbox=south,west,north,east の形式で指定してください');
 const output = resolve(String(args.output || 'data/landmarks/region.generated.geojson'));
+const baseGeneratedPath = typeof args['base-generated'] === 'string'
+  ? resolve(args['base-generated']) : null;
 const minParentArea = Number(args['min-parent-area'] || 3000);
+const minHighriseArea = Number(args['min-highrise-area'] || 1000);
+const minHighriseHeight = Number(args['min-highrise-height'] || 30);
+const minHighriseLevels = Number(args['min-highrise-levels'] || 8);
 const endpoint = String(args.endpoint || 'https://overpass-api.de/api/interpreter');
 const scopePrefix = areaName
   ? `area["name"="${areaName.replaceAll('"', '\\"')}"]["boundary"="administrative"]->.searchArea;`
   : '';
 const scope = areaName ? '(area.searchArea)' : `(${bbox.join(',')})`;
 
-const query = `[out:json][timeout:180];${scopePrefix}(
+const collectionQuery = statements => `[out:json][timeout:180];${scopePrefix}(
+${statements}
+);out body center geom;`;
+const standardQueries = [
+  collectionQuery(`
   nwr["name"]["landuse"="retail"]${scope};
   nwr["name"]["shop"~"^(mall|department_store|shopping_centre|supermarket|wholesale)$"]${scope};
   nwr["name"]["building"="retail"]${scope};
+  `),
+  collectionQuery(`
   nwr["name"]["building"="commercial"]${scope};
   nwr["name"]["landuse"="commercial"]${scope};
+  `),
+  collectionQuery(`
   nwr["name"]["leisure"="park"]${scope};
+  `),
+  collectionQuery(`
   nwr["name"]["landuse"="religious"]["religion"~"^(buddhist|shinto)$"]${scope};
   nwr["name"]["amenity"="place_of_worship"]["religion"~"^(buddhist|shinto)$"]${scope};
   nwr["name"]["building"~"^(temple|shrine)$"]${scope};
+  `),
+  collectionQuery(`
   nwr["name"]["amenity"~"^(theatre|cinema|arts_centre)$"]${scope};
-);out body center geom;`;
-const url = new URL(endpoint);
-url.searchParams.set('data', query);
-const response = await fetch(url, { headers:{ 'user-agent':'PixelMap landmark builder/1' } });
-if (!response.ok) throw new Error(`Overpass API ${response.status}: ${await response.text()}`);
-const osm = await response.json();
+  `),
+];
+const highriseQuery = `[out:json][timeout:180];${scopePrefix}
+  wr${scope}["name"]["building"](if:
+    (is_number(t["height"]) && number(t["height"]) >= ${minHighriseHeight}) ||
+    (is_number(t["building:levels"]) && number(t["building:levels"]) >= ${minHighriseLevels})
+  );
+out body center geom;`;
+const queries = baseGeneratedPath ? [highriseQuery] : [...standardQueries, highriseQuery];
+const wait = milliseconds => new Promise(resolveWait => setTimeout(resolveWait, milliseconds));
+async function fetchOverpass(query){
+  for (let attempt = 0; attempt < 4; attempt++){
+    const response = await fetch(endpoint, {
+      method:'POST',
+      headers:{
+        'content-type':'application/x-www-form-urlencoded;charset=UTF-8',
+        'user-agent':'PixelMap landmark builder/1',
+      },
+      body:new URLSearchParams({ data:query }),
+    });
+    if (response.ok){
+      const result = await response.json();
+      if (result.remark) throw new Error(`Overpass API: ${result.remark}`);
+      return result.elements || [];
+    }
+    const detail = await response.text();
+    if (![429,502,503,504].includes(response.status) || attempt === 3)
+      throw new Error(`Overpass API ${response.status}: ${detail}`);
+    await wait(5000 * 2 ** attempt);
+  }
+  return [];
+}
+const osmElementsById = new Map();
+for (let index = 0; index < queries.length; index++){
+  const elements = await fetchOverpass(queries[index]);
+  console.log(`Fetched query ${index + 1}/${queries.length}: ${elements.length} OSM elements`);
+  for (const element of elements)
+    osmElementsById.set(`${element.type}/${element.id}`, element);
+  if (index + 1 < queries.length) await wait(1500);
+}
+const osmElements = [...osmElementsById.values()];
 
 const samePoint = (a, b) => a && b && a[0] === b[0] && a[1] === b[1];
 function joinMemberRings(members, acceptedRoles){
@@ -116,6 +168,20 @@ const ringAreaM2 = ring => {
 };
 const areaM2 = geometry => polygons(geometry).reduce((total, polygon) =>
   total + ringAreaM2(polygon[0] || []) - polygon.slice(1).reduce((sum, ring) => sum + ringAreaM2(ring), 0), 0);
+function heightMeters(value){
+  const text = String(value ?? '').trim().toLowerCase().replace(',', '.');
+  let match = text.match(/^(\d+(?:\.\d+)?)\s*(?:m|meter|meters|metre|metres)?$/);
+  if (match) return Number(match[1]);
+  match = text.match(/^(\d+(?:\.\d+)?)\s*(?:ft|foot|feet)$/);
+  if (match) return Number(match[1]) * .3048;
+  match = text.match(/^(\d+)'(?:(\d+(?:\.\d+)?)")?$/);
+  if (match) return Number(match[1]) * .3048 + Number(match[2] || 0) * .0254;
+  return null;
+}
+function buildingLevels(value){
+  const text = String(value ?? '').trim();
+  return /^\d+(?:\.0+)?$/.test(text) ? Number(text) : null;
+}
 const anchorOf = geometry => {
   if (geometry?.type === 'Point') return geometry.coordinates.slice(0, 2);
   const outer = polygons(geometry)[0]?.[0] || [];
@@ -161,7 +227,7 @@ function parentAnchor(parent, signatureChildren){
   return best?.candidate || anchorOf(parent.geometry);
 }
 
-const records = osm.elements.map(element => ({
+const records = osmElements.map(element => ({
   element,
   geometry:elementGeometry(element),
   tags:element.tags || {},
@@ -181,18 +247,46 @@ const isReligiousParent = record => record.geometry.type !== 'Point' && record.t
   (record.tags.amenity === 'place_of_worship' && ['buddhist','shinto'].includes(record.tags.religion)) ||
   ['temple','shrine'].includes(record.tags.building)
 );
+const isHighriseParent = record => record.geometry.type !== 'Point' && record.tags.name &&
+  Boolean(record.tags.building) && (
+    Number(record.heightM) >= minHighriseHeight || Number(record.levels) >= minHighriseLevels
+  );
 const isParent = record => isRetailParent(record) || isCommercialParent(record) ||
-  isParkParent(record) || isReligiousParent(record);
+  isParkParent(record) || isReligiousParent(record) || isHighriseParent(record);
 const isVenue = record => record.tags.name && ['theatre','cinema','arts_centre'].includes(record.tags.amenity);
-const parents = records.filter(isParent).map(record => ({
+for (const record of records){
+  record.heightM = heightMeters(record.tags.height);
+  record.levels = buildingLevels(record.tags['building:levels']);
+}
+const parentCandidates = records.filter(isParent).map(record => ({
   ...record,
   id:elementId(record.element),
   area:areaM2(record.geometry),
-  collectionGroup:isRetailParent(record) ? 'retail'
-    : isCommercialParent(record) ? 'commercial'
-      : isParkParent(record) ? 'park' : 'religious',
-})).filter(parent => parent.area >= minParentArea);
-const children = records.filter(isVenue).map(record => ({
+  collectionGroup:isHighriseParent(record) ? 'highrise'
+    : isRetailParent(record) ? 'retail'
+      : isCommercialParent(record) ? 'commercial'
+        : isParkParent(record) ? 'park' : 'religious',
+})).filter(parent => parent.area >=
+  (parent.collectionGroup === 'highrise' ? minHighriseArea : minParentArea));
+const collectedParentIds = new Set(parentCandidates.map(parent => parent.id));
+const parentsByFingerprint = new Map();
+for (const parent of parentCandidates){
+  if (parent.collectionGroup !== 'highrise'){
+    parentsByFingerprint.set(parent.id, parent);
+    continue;
+  }
+  const anchor = anchorOf(parent.geometry) || [0, 0];
+  const fingerprint = [
+    parent.tags.name.trim().toLocaleLowerCase('ja'),
+    Math.round(parent.area),
+    anchor[0].toFixed(6), anchor[1].toFixed(6),
+  ].join('|');
+  const current = parentsByFingerprint.get(fingerprint);
+  if (!current || (current.element.type !== 'relation' && parent.element.type === 'relation'))
+    parentsByFingerprint.set(fingerprint, parent);
+}
+const parents = [...parentsByFingerprint.values()];
+const children = (baseGeneratedPath ? [] : records.filter(isVenue)).map(record => ({
   ...record,
   id:elementId(record.element),
   area:areaM2(record.geometry),
@@ -212,8 +306,13 @@ for (const parent of parents){
   const anchor = parentAnchor(parent, members.slice(0, 1));
   const symbolicLandmark = ['park','religious'].includes(parent.collectionGroup);
   const renderClass = parent.collectionGroup === 'park' ? 'park'
-    : parent.collectionGroup === 'religious' ? 'place_of_worship' : 'mall';
+    : parent.collectionGroup === 'religious' ? 'place_of_worship'
+      : parent.collectionGroup === 'highrise' ? 'building' : 'mall';
   const category = parent.collectionGroup === 'park' ? 'nature' : 'landmark';
+  const estimatedHeightM = parent.heightM ?? (parent.levels == null ? null : parent.levels * 3);
+  const minzoom = parent.collectionGroup !== 'highrise' ? 13
+    : estimatedHeightM >= 60 || parent.levels >= 20 ? 12
+      : estimatedHeightM >= 45 || parent.levels >= 15 ? 13 : 14;
   features.push({
     type:'Feature', id:parent.id, geometry:parent.geometry,
     properties:{
@@ -223,11 +322,18 @@ for (const parent of parents){
       role:'complex', collection_group:parent.collectionGroup,
       class:entertainment ? 'entertainment_complex'
         : parent.collectionGroup === 'commercial' ? 'commercial_complex'
+          : parent.collectionGroup === 'highrise' ? 'highrise_building'
           : parent.collectionGroup === 'park' ? 'park_complex'
             : parent.collectionGroup === 'religious' ? 'religious_complex' : 'retail_complex',
       render_class:renderClass, category, display_mode:symbolicLandmark ? 'symbol' : 'building',
       area_m2:Math.round(parent.area),
-      minzoom:13, detail_zoom:16, max_signature_children:1, icon_size:'L', icon_anchor:anchor,
+      height_m:estimatedHeightM == null ? undefined : Math.round(estimatedHeightM * 10) / 10,
+      height_estimated:parent.heightM == null && parent.levels != null ? true : undefined,
+      building_levels:parent.levels ?? undefined,
+      highrise_rule:parent.collectionGroup === 'highrise'
+        ? parent.heightM >= minHighriseHeight ? 'height' : 'building:levels'
+        : undefined,
+      minzoom, detail_zoom:16, max_signature_children:1, icon_size:'L', icon_anchor:anchor,
       building:parent.tags.building, landuse:parent.tags.landuse, shop:parent.tags.shop,
       leisure:parent.tags.leisure, amenity:parent.tags.amenity, religion:parent.tags.religion,
     },
@@ -250,25 +356,48 @@ for (const parent of parents){
   }
 }
 
+const baseGenerated = baseGeneratedPath
+  ? JSON.parse(await readFile(baseGeneratedPath, 'utf8')) : null;
+const refreshedIds = new Set([
+  ...features.map(feature => feature.properties.id),
+  ...(baseGenerated ? collectedParentIds : []),
+]);
+const outputFeatures = baseGenerated
+  ? [
+      ...baseGenerated.features.filter(feature => !refreshedIds.has(feature.properties.id)),
+      ...features,
+    ]
+  : features;
+const collectionGroups = {
+  ...(baseGenerated?.properties?.collection_groups || {}),
+  retail:['landuse=retail','shop=mall','shop=department_store','shop=shopping_centre',
+    'shop=supermarket','shop=wholesale','building=retail'],
+  commercial:['building=commercial','landuse=commercial'],
+  park:['leisure=park'],
+  religious:['landuse=religious + religion=buddhist|shinto',
+    'amenity=place_of_worship + religion=buddhist|shinto','building=temple|shrine'],
+  highrise:[`building=* + area>=${minHighriseArea}m2 + height>=${minHighriseHeight}m`,
+    `building=* + area>=${minHighriseArea}m2 + building:levels>=${minHighriseLevels}`],
+};
 const outputData = {
   type:'FeatureCollection',
   name:'PixelMap generated landmark entities',
   properties:{
+    ...(baseGenerated?.properties || {}),
     schema:'pixelmap-landmark-entities/1', source:'OpenStreetMap',
     generated_at:new Date().toISOString(),
     scope:areaName ? { type:'administrative_area', name:areaName } : { type:'bbox', bbox },
     min_parent_area_m2:minParentArea,
-    collection_groups:{
-      retail:['landuse=retail','shop=mall','shop=department_store','shop=shopping_centre',
-        'shop=supermarket','shop=wholesale','building=retail'],
-      commercial:['building=commercial','landuse=commercial'],
-      park:['leisure=park'],
-      religious:['landuse=religious + religion=buddhist|shinto',
-        'amenity=place_of_worship + religion=buddhist|shinto','building=temple|shrine'],
+    highrise_thresholds:{
+      min_building_area_m2:minHighriseArea,
+      min_height_m:minHighriseHeight,
+      min_building_levels:minHighriseLevels,
     },
+    collection_groups:collectionGroups,
   },
-  features,
+  features:outputFeatures,
 };
 await mkdir(dirname(output), { recursive:true });
 await writeFile(output, `${JSON.stringify(outputData, null, 2)}\n`);
-console.log(`Generated ${parents.length} complexes and ${features.length - parents.length} children: ${output}`);
+const outputParents = outputFeatures.filter(feature => feature.properties.role === 'complex');
+console.log(`Generated ${outputParents.length} complexes and ${outputFeatures.length - outputParents.length} children: ${output}`);
