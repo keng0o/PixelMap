@@ -176,6 +176,12 @@ test('全Webマップの地区幹線道路は中央線を描かない', () => {
 
 test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで描く', () => {
   assert.match(html, /function drawCellPixelArtBuildingGrid\(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats\)/);
+  assert.match(html, /const STANDALONE_HEIGHT_EXTRUSION = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /function drawCellHeightExtrudedBuildingGrid\(/);
+  assert.match(html, /BUILDING_STYLES\.heightRiseLogicalPixels\(buildingDescs\[bi\]\?\.heightM \|\| 0\)/);
+  assert.match(html, /shiftX:Math\.max\(0, Math\.round\(riseCells \* \.34\)\)/);
+  assert.match(html, /paintProjected\(group, x, y, roofOffsetX, roofOffsetY, color, `\$\{layer\}:height-roof`\)/);
+  assert.match(html, /paintProjected\(group, anchor\.ex, anchor\.ey, 0, 0, P\.door/);
   assert.match(html, /paintDarkenedMapCell\(x, y, \.68/);
   assert.match(html, /if \(!below\)[\s\S]*?P\.wall/);
   assert.match(html, /kind === 'hospital'/);
@@ -229,7 +235,8 @@ test('セル描画の件数を診断情報へ公開する', () => {
   for (const field of [
     'gridCellsPerSide','cellizedFeatures','facilitySymbols','terrainSymbols','paintedCells','occupiedCells',
     'groundPatternCells','boundaryCells','roadCasingCells','roadCenterCells','railTieCells',
-    'buildingDetailCells','spriteCells','layerCells',
+    'buildingDetailCells','heightExtrusionEnabled','extrudedBuildings','maxBuildingRiseCells',
+    'maxBuildingRiseLogicalPixels','spriteCells','layerCells',
   ])
     assert.match(html, new RegExp(`${field}:`), field);
   assert.match(html, /cellLogicalPixels:CELL_ONLY_MODE \? MAP_CELL_LOGICAL_SIZE : null/);

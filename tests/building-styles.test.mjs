@@ -17,6 +17,17 @@ test('高さバンドの閾値', () => {
   assert.equal(appearance({ heightM:60 }).band, 4);
   assert.equal(appearance({ heightM:60 }).roofKey, 'roofHigh');
   assert.equal(appearance({ heightM:31 }).roofKey, 'roofMid');
+  assert.equal(appearance({ heightM:31 }).heightM, 31);
+});
+
+test('高さの2.5D持ち上げ量は平方根で圧縮し、上限を持つ', () => {
+  assert.equal(STYLES.heightRiseLogicalPixels(0), 0);
+  assert.equal(STYLES.heightRiseLogicalPixels(-3), 0);
+  assert.equal(STYLES.heightRiseLogicalPixels(10), 4);
+  assert.equal(STYLES.heightRiseLogicalPixels(30), 7);
+  assert.equal(STYLES.heightRiseLogicalPixels(60), 10);
+  assert.equal(STYLES.heightRiseLogicalPixels(100), 13);
+  assert.equal(STYLES.heightRiseLogicalPixels(300), 18);
 });
 
 test('面積クラス: 低層の大型はbigBox/campusの屋根になる', () => {

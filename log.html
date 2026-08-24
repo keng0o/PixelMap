@@ -168,8 +168,8 @@
             </tr>
             <tr>
               <th scope="row">建物とcorridorの重なり</th>
-              <td>建物を棟単位で原子セル化し、屋根・壁・影・施設記号を描画。地表交通、建物、橋、施設の固定compositor順を維持。</td>
-              <td>testと同じ原子セル建物描画と固定compositor順を使用。</td>
+              <td>建物を棟単位で原子セル化し、高さがある棟は実高を平方根スケールで最大18論理pxへ圧縮して、接地形状から右上へ屋根を持ち上げた壁・窓・影・施設記号を2.5D描画。高さ不明の棟は従来の平面描画を維持。</td>
+              <td>従来の原子セル建物描画と固定compositor順を維持し、高さ連動の2.5D押し出しは使用しない。</td>
             </tr>
             <tr>
               <th scope="row">POI</th>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>施設・建物の実高を2.5Dピクセル描画へ反映</h3>
+          <time datetime="2026-08-24">2026-08-24 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd><code>render_height</code>／<code>height_m</code>を平方根スケールで最大18論理pxへ圧縮し、実形状の接地位置から右上へ屋根を持ち上げ、南面・東面の壁、窓、入口、高さ連動の影を原子セルで描画。高さ不明の棟は従来表示を維持する。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testのcell2／cell3で有効。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>!EMBEDDED</code> guardの対象外で、従来の平面建物描画を維持。production pageファイル・設定・同期処理は変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>高さ変換の境界値、test限定guard、cell2／cell3の押し出し量、屋根・壁・窓・入口・影、高さ不明棟の従来表示、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>現在のtestをWeb本番1・2・4マップへ全面リリース</h3>

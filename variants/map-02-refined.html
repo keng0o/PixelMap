@@ -652,7 +652,7 @@
 <script src="../assets/facility-resolver.js?v=7"></script>
 <script src="../assets/landmark-entities.js?v=20260824-generic-facilities-1000"></script>
 <script src="../assets/poi-sprites.js?v=5"></script>
-<script src="../assets/building-styles.js"></script>
+<script src="../assets/building-styles.js?v=3"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=5"></script>
 <script src="../assets/world-style.js?v=5"></script>
@@ -999,6 +999,9 @@ const GRID = SCENE_SIZE / CPX;
 const CELL_DETAIL_SCALE = GRID / STANDARD_GRID;
 const detailCellSpan = standardCells => Math.max(1, Math.round(standardCells * CELL_DETAIL_SCALE));
 const MAP_CELL_LOGICAL_SIZE = CPX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
+// 高さ連動の2.5D押し出しはstandalone testのcell2／cell3だけで評価する。
+// embedded本番は同じ記述子を受け取っても従来の平面描画を維持する。
+const STANDALONE_HEIGHT_EXTRUSION = !EMBEDDED && CELL_ONLY_MODE;
 // 単体標準ページでは、建物の意味輪郭だけを出力と同じ1論理pxで確定する。
 // cell2／cell3は指定サイズの原子セル、embeddedは既存ページの外観を維持する。
 const STANDALONE_PRECISE_BUILDINGS = !EMBEDDED && !CELL_ONLY_MODE &&
@@ -2385,9 +2388,16 @@ function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, b
   }
 }
 
-function drawCellPixelArtBuildingGrid(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats){
+function drawCellFlatPixelArtBuildingGrid(
+  grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats,
+  skippedBuildingIds = null
+){
   const RG = GRID + 2;
-  const isCell = (x, y) => x >= 0 && y >= 0 && x < RG && y < RG && grid[y * RG + x] === ID.BLD;
+  const isCell = (x, y) => {
+    if (x < 0 || y < 0 || x >= RG || y >= RG) return false;
+    const index = y * RG + x;
+    return grid[index] === ID.BLD && !skippedBuildingIds?.has(bldGrid[index]);
+  };
   const southEdges = new Map();
   for (let y = 1; y < RG; y++) for (let x = 0; x < RG; x++){
     if (!isCell(x, y) && isCell(x, y - 1)){
@@ -2400,6 +2410,7 @@ function drawCellPixelArtBuildingGrid(grid, bldGrid, buildingKinds, buildingDesc
       const index = y * RG + x;
       if (grid[index] !== ID.BLD) continue;
       const buildingIndex = bldGrid[index];
+      if (skippedBuildingIds?.has(buildingIndex)) continue;
       const desc = buildingDescs[buildingIndex];
       const kind = buildingKinds[buildingIndex] || 'normal';
       const pal = desc?.pal || ROOFPAL[0];
@@ -2429,6 +2440,7 @@ function drawCellPixelArtBuildingGrid(grid, bldGrid, buildingKinds, buildingDesc
     stats.buildingDetailCells++;
   };
   for (let bi = 1; bi < buildingKinds.length; bi++){
+    if (skippedBuildingIds?.has(bi)) continue;
     const anchor = buildingAnchors?.[bi];
     const desc = buildingDescs[bi];
     const kind = buildingKinds[bi] || 'normal';
@@ -2454,6 +2466,146 @@ function drawCellPixelArtBuildingGrid(grid, bldGrid, buildingKinds, buildingDesc
     }
     paintIfBuilding(bi, anchor.ex, anchor.ey, P.door);
   }
+}
+
+function drawCellHeightExtrudedBuildingGrid(
+  grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats
+){
+  const RG = GRID + 2;
+  const groups = new Map();
+  for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
+    const index = y * RG + x;
+    if (grid[index] !== ID.BLD) continue;
+    const bi = bldGrid[index];
+    const riseLogical = BUILDING_STYLES.heightRiseLogicalPixels(buildingDescs[bi]?.heightM || 0);
+    if (!riseLogical) continue;
+    let group = groups.get(bi);
+    if (!group){
+      const riseCells = Math.max(1, Math.round(riseLogical / MAP_CELL_LOGICAL_SIZE));
+      group = {
+        bi, cells:[], owned:new Set(), riseLogical, riseCells,
+        shiftX:Math.max(0, Math.round(riseCells * .34)), maxY:-Infinity,
+      };
+      groups.set(bi, group);
+    }
+    group.cells.push([x, y]);
+    group.owned.add(index);
+    group.maxY = Math.max(group.maxY, y);
+  }
+  if (!groups.size){
+    drawCellFlatPixelArtBuildingGrid(
+      grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats
+    );
+    return;
+  }
+
+  const extrudedIds = new Set(groups.keys());
+  drawCellFlatPixelArtBuildingGrid(
+    grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats, extrudedIds
+  );
+
+  const owns = (group, x, y) => x >= 0 && y >= 0 && x < RG && y < RG &&
+    group.owned.has(y * RG + x);
+  const paintProjected = (group, sourceX, sourceY, offsetX, offsetY, color, detailLayer) => {
+    if (!owns(group, sourceX, sourceY)) return;
+    paintSolidMapCell(sourceX + offsetX, sourceY + offsetY, color, detailLayer, stats);
+    stats.buildingDetailCells++;
+  };
+
+  // 影は立体より先に地表へ置く。高さに応じて南東へ最大3セルだけ伸ばし、
+  // 高層棟でも道路や周辺施設を暗くしすぎないよう制限する。
+  for (const group of groups.values()){
+    const shadowSteps = Math.min(3, Math.max(1, Math.ceil(group.riseCells / 3)));
+    for (const [x, y] of group.cells){
+      if (owns(group, x, y + 1)) continue;
+      for (let step = 1; step <= shadowSteps; step++){
+        paintDarkenedMapCell(x + step, y + step, .68, `${layer}:height-shadow`, stats);
+        stats.buildingDetailCells++;
+      }
+    }
+  }
+
+  // 北側の棟から描き、南側の棟が自然に手前へ重なるよう接地位置で整列する。
+  const orderedGroups = [...groups.values()].sort((a, b) =>
+    a.maxY - b.maxY || a.riseCells - b.riseCells || a.bi - b.bi);
+  for (const group of orderedGroups){
+    const desc = buildingDescs[group.bi];
+    const pal = desc?.pal || ROOFPAL[0];
+    const kind = buildingKinds[group.bi] || 'normal';
+    const anchor = buildingAnchors?.[group.bi] || null;
+
+    // 元のfootprintから屋根位置まで連続した壁体を作る。水平移動は高さの約1/3で、
+    // 南面と東面の両方が読める控えめな右上方向の投影にする。
+    for (let step = 0; step < group.riseCells; step++){
+      const offsetX = Math.round(group.shiftX * step / group.riseCells);
+      const offsetY = -step;
+      for (const [x, y] of group.cells){
+        const south = !owns(group, x, y + 1);
+        const east = !owns(group, x + 1, y);
+        const west = !owns(group, x - 1, y);
+        let color = east ? P.wallDk : P.wall;
+        if (west && !south) color = P.outline;
+        const [wx] = worldFineCell(x, y);
+        if ((south || east) && step > 0 && step % 2 === 0 && positiveModulo(wx + step, 3) === 1)
+          color = P.win;
+        paintProjected(group, x, y, offsetX, offsetY, color, `${layer}:height-wall`);
+      }
+    }
+
+    const roofOffsetX = group.shiftX;
+    const roofOffsetY = -group.riseCells;
+    for (const [x, y] of group.cells){
+      const north = owns(group, x, y - 1), south = owns(group, x, y + 1);
+      const west = owns(group, x - 1, y), east = owns(group, x + 1, y);
+      const [wx, wy] = worldFineCell(x, y);
+      let color = pal[0];
+      if (!south) color = pal[1];
+      else if (!north) color = pal[2];
+      else if (!west || !east) color = P.outline;
+      else if (positiveModulo(wx * 3 + wy * 5 + group.bi, 17) === 0) color = pal[1];
+      paintProjected(group, x, y, roofOffsetX, roofOffsetY, color, `${layer}:height-roof`);
+    }
+
+    // 施設記号は持ち上げた屋根へ、入口は接地側の壁面へ残す。
+    const accent = desc?.accent || pal[0];
+    if (anchor){
+      if (kind === 'hospital'){
+        for (const [dx,dy] of [[0,-2],[0,-1],[-2,0],[-1,0],[0,0],[1,0],[2,0],[0,1],[0,2]])
+          paintProjected(group, anchor.gx + dx, anchor.gy + dy, roofOffsetX, roofOffsetY,
+            dx === 0 && dy === 0 ? GLYPH_WHITE : '#48a050', `${layer}:height-symbol`);
+      } else if (kind === 'convenience'){
+        ['#48a058','#f8d038','#5078d8'].forEach((color, row) => {
+          for (let dx = -3; dx <= 3; dx++)
+            paintProjected(group, anchor.gx + dx, anchor.gy + row, roofOffsetX, roofOffsetY,
+              color, `${layer}:height-symbol`);
+        });
+      } else if (kind === 'mixed'){
+        ['#e05038','#f8d038','#5078d8'].forEach((color, column) =>
+          paintProjected(group, anchor.ex - 1 + column, anchor.ey, roofOffsetX, roofOffsetY,
+            color, `${layer}:height-symbol`));
+      } else if (kind === 'poi' && desc?.glyph){
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
+          paintProjected(group, anchor.gx + dx, anchor.gy + dy, roofOffsetX, roofOffsetY,
+            dx === 0 || dy === 0 ? GLYPH_WHITE : accent, `${layer}:height-symbol`);
+      }
+      paintProjected(group, anchor.ex, anchor.ey, 0, 0, P.door, `${layer}:height-entrance`);
+    }
+    stats.extrudedBuildings++;
+    stats.maxBuildingRiseCells = Math.max(stats.maxBuildingRiseCells, group.riseCells);
+    stats.maxBuildingRiseLogicalPixels = Math.max(stats.maxBuildingRiseLogicalPixels, group.riseLogical);
+  }
+}
+
+function drawCellPixelArtBuildingGrid(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats){
+  if (STANDALONE_HEIGHT_EXTRUSION){
+    drawCellHeightExtrudedBuildingGrid(
+      grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats
+    );
+    return;
+  }
+  drawCellFlatPixelArtBuildingGrid(
+    grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats
+  );
 }
 
 function drawGrid(grid, bldGrid, bldStyle, options, transparent = false, drawContext = ctx){
@@ -4236,6 +4388,9 @@ function render(){
     roadCenterCells:0,
     railTieCells:0,
     buildingDetailCells:0,
+    extrudedBuildings:0,
+    maxBuildingRiseCells:0,
+    maxBuildingRiseLogicalPixels:0,
     spriteCells:0,
     flushed:false,
   };
@@ -5514,6 +5669,10 @@ function render(){
       roadCenterCells:CELL_ONLY_MODE ? cellRenderingStats.roadCenterCells : 0,
       railTieCells:CELL_ONLY_MODE ? cellRenderingStats.railTieCells : 0,
       buildingDetailCells:CELL_ONLY_MODE ? cellRenderingStats.buildingDetailCells : 0,
+      heightExtrusionEnabled:STANDALONE_HEIGHT_EXTRUSION,
+      extrudedBuildings:CELL_ONLY_MODE ? cellRenderingStats.extrudedBuildings : 0,
+      maxBuildingRiseCells:CELL_ONLY_MODE ? cellRenderingStats.maxBuildingRiseCells : 0,
+      maxBuildingRiseLogicalPixels:CELL_ONLY_MODE ? cellRenderingStats.maxBuildingRiseLogicalPixels : 0,
       spriteCells:CELL_ONLY_MODE ? cellRenderingStats.spriteCells : 0,
       layerCells:CELL_ONLY_MODE ? { ...cellRenderingStats.layerCells } : {},
     },

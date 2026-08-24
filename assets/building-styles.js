@@ -9,7 +9,7 @@
      カテゴリ色は icon-patterns.js のパターン07パレットと同一。
      ===================================================== */
 
-  const VERSION = 'building-styles/2';
+  const VERSION = 'building-styles/3';
 
   // 高さバンド: 1=切妻住宅(<10m) 2=低層陸屋根(10-30m) 3=中層(31-59m) 4=高層(60m+)
   const HEIGHT_BANDS = { gableMax:10, lowMax:31, midMax:60 };
@@ -49,6 +49,15 @@
     let hash = 2166136261;
     for (const ch of String(key || '')){ hash ^= ch.codePointAt(0); hash = Math.imul(hash, 16777619); }
     return hash >>> 0;
+  }
+
+  /* 実高をドット絵上の持ち上げ量へ圧縮する。
+     平方根スケールにすることで低層の差を残しつつ、高層棟が地図全体を
+     過度に覆わないよう最大18論理pxへ収める。高さ不明は押し出さない。 */
+  function heightRiseLogicalPixels(heightM){
+    const height = Number(heightM) || 0;
+    if (height <= 0) return 0;
+    return Math.min(18, Math.max(1, Math.round(Math.sqrt(height) * 1.25)));
   }
 
   /* 密集した棟の表示選抜。
@@ -147,6 +156,7 @@
     }
 
     return {
+      heightM:h,
       band,
       areaClass,
       roofKey,
@@ -169,6 +179,7 @@
     HOUSE_PALETTES,
     FLAT_PALETTES,
     seedFromKey,
+    heightRiseLogicalPixels,
     selectDenseBuildings,
     buildingAppearance,
   };
