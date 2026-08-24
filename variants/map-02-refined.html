@@ -1996,22 +1996,6 @@ function rasterizeGrid(layers, options){
     const center = CELL_ONLY_MODE ? centerGrid(layer) : null;
     const railNormals = CELL_ONLY_MODE && !EMBEDDED && id === ID.RAIL
       ? railNormalGrid(layer) : null;
-    const parallelRailCenterNearby = (cx, cy, normalX, normalY) => {
-      if (!railNormals || (normalX === 0 && normalY === 0)) return false;
-      const normalLength = Math.hypot(normalX, normalY);
-      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++){
-        const nx = cx + dx, ny = cy + dy;
-        if (nx < 0 || ny < 0 || nx >= RG || ny >= RG) continue;
-        const index = ny * RG + nx;
-        if (!center[index]) continue;
-        const otherX = railNormals.x[index], otherY = railNormals.y[index];
-        const otherLength = Math.hypot(otherX, otherY);
-        if (!otherLength) continue;
-        const alignment = Math.abs(normalX * otherX + normalY * otherY) / (normalLength * otherLength);
-        if (alignment >= .8) return true;
-      }
-      return false;
-    };
     const minimumMinorRoute = STANDALONE_MINIMUM_MINOR_ROUTES &&
       ['localRoads','paths'].includes(routeOption);
     for (const f of fs){
@@ -2039,16 +2023,21 @@ function rasterizeGrid(layers, options){
         if (railPath){
           const tangentRadius = 4;
           const pathNormals = [];
+          let previousNormal = null;
           for (let index = 0; index < railPath.length; index++){
             const before = railPath[Math.max(0, index - tangentRadius)];
             const after = railPath[Math.min(railPath.length - 1, index + tangentRadius)];
-            pathNormals.push(quantizedRailNormal(before[0], before[1], after[0], after[1]));
+            let normal = quantizedRailNormal(before[0], before[1], after[0], after[1]);
+            if (previousNormal){
+              const continuity = normal[0] * previousNormal[0] + normal[1] * previousNormal[1];
+              if (continuity < 0) normal = [-normal[0], -normal[1]];
+              else if (continuity === 0) normal = previousNormal;
+            }
+            if (normal[0] !== 0 || normal[1] !== 0) previousNormal = normal;
+            else if (previousNormal) normal = previousNormal;
+            pathNormals.push(normal);
           }
-          const keepPath = railPath.map(([cx, cy], index) =>
-            !parallelRailCenterNearby(cx, cy, pathNormals[index][0], pathNormals[index][1])
-          );
           for (let index = 0; index < railPath.length; index++){
-            if (!keepPath[index]) continue;
             const [cx, cy, centerIndex] = railPath[index];
             const [normalX, normalY] = pathNormals[index];
             center[centerIndex] = 1;
@@ -2394,23 +2383,26 @@ function drawCellPixelArtTransportGrid(
 
   const fill = roadStyle?.fill || (rail ? P.gravel : CELL_COLOR_BY_OPTION[option] || P.pave);
   const edge = bridge ? P.outline : roadStyle?.edge || (rail ? P.gravelDk : option === 'paths' ? P.trailDot : P.paveDk);
-  for (let y = 0; y < RG; y++){
-    for (let x = 0; x < RG; x++){
-      if (!has(x, y) || (tunnel && !dashOn(x, y))) continue;
-      const boundary = !has(x-1,y) || !has(x+1,y) || !has(x,y-1) || !has(x,y+1);
-      const color = minimumMinorRoute
-        ? (option === 'paths' ? P.trail : roadStyle.fill)
-        : boundary ? edge : fill;
-      paintSolidMapCell(x, y, color, option, stats);
-      if (boundary && !minimumMinorRoute){
-        if (rail) stats.boundaryCells++;
-        else stats.roadCasingCells++;
+  const standaloneParallelRails = rail && !EMBEDDED && railNormalGrid;
+  if (!standaloneParallelRails){
+    for (let y = 0; y < RG; y++){
+      for (let x = 0; x < RG; x++){
+        if (!has(x, y) || (tunnel && !dashOn(x, y))) continue;
+        const boundary = !has(x-1,y) || !has(x+1,y) || !has(x,y-1) || !has(x,y+1);
+        const color = minimumMinorRoute
+          ? (option === 'paths' ? P.trail : roadStyle.fill)
+          : boundary ? edge : fill;
+        paintSolidMapCell(x, y, color, option, stats);
+        if (boundary && !minimumMinorRoute){
+          if (rail) stats.boundaryCells++;
+          else stats.roadCasingCells++;
+        }
       }
     }
   }
 
   if (rail){
-    const sourceNormalRails = !EMBEDDED && railNormalGrid;
+    const sourceNormalRails = standaloneParallelRails;
     const paintRailPair = (x, y, useHorizontal) => {
       const centerIndex = y * RG + x;
       const normalX = sourceNormalRails ? railNormalGrid.x[centerIndex] : 0;
@@ -2422,29 +2414,46 @@ function drawCellPixelArtTransportGrid(
         if (has(rx, ry)) paintSolidMapCell(rx, ry, P.rail, option, stats);
       }
     };
-    for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
-      if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
-      const horizontal = centered(x-1,y) || centered(x+1,y);
-      const vertical = centered(x,y-1) || centered(x,y+1);
-      const useHorizontal = horizontal || !vertical;
-      const [wx, wy] = worldFineCell(x, y);
-      if (positiveModulo(useHorizontal ? wx : wy, 3) === 0){
-        for (let d = -2; d <= 2; d++){
-          const tx = useHorizontal ? x : x + d, ty = useHorizontal ? y + d : y;
-          if (has(tx, ty)) paintSolidMapCell(tx, ty, P.tie, option, stats);
-        }
-        stats.railTieCells++;
-      }
-      // productionは従来どおり1pass。testは全枕木の後にレールを重ね、
-      // 斜線の枕木がレールを上書きして連続ストライプになるのを防ぐ。
-      if (!sourceNormalRails) paintRailPair(x, y, useHorizontal);
-    }
-    if (sourceNormalRails){
+    if (!sourceNormalRails){
       for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
         if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
         const horizontal = centered(x-1,y) || centered(x+1,y);
         const vertical = centered(x,y-1) || centered(x,y+1);
-        paintRailPair(x, y, horizontal || !vertical);
+        const useHorizontal = horizontal || !vertical;
+        const [wx, wy] = worldFineCell(x, y);
+        if (positiveModulo(useHorizontal ? wx : wy, 3) === 0){
+          for (let d = -2; d <= 2; d++){
+            const tx = useHorizontal ? x : x + d, ty = useHorizontal ? y + d : y;
+            if (has(tx, ty)) paintSolidMapCell(tx, ty, P.tie, option, stats);
+          }
+          stats.railTieCells++;
+        }
+        paintRailPair(x, y, useHorizontal);
+      }
+    }
+    if (sourceNormalRails){
+      const parallelSideBoundary = (x, y) => {
+        const normalSearchRadius = 4;
+        for (let dy = -normalSearchRadius; dy <= normalSearchRadius; dy++)
+          for (let dx = -normalSearchRadius; dx <= normalSearchRadius; dx++){
+            const cx = x + dx, cy = y + dy;
+            if (!centered(cx, cy)) continue;
+            const centerIndex = cy * RG + cx;
+            const normalX = railNormalGrid.x[centerIndex], normalY = railNormalGrid.y[centerIndex];
+            const normalLength = Math.hypot(normalX, normalY);
+            if (!normalLength) continue;
+            const fromCenterX = x - cx, fromCenterY = y - cy;
+            const normalProjection = Math.abs(fromCenterX * normalX + fromCenterY * normalY) / normalLength;
+            const tangentProjection = Math.abs(fromCenterX * -normalY + fromCenterY * normalX) / normalLength;
+            if (normalProjection >= 1 && tangentProjection <= .25) return true;
+          }
+        return false;
+      };
+      for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
+        if (!has(x, y) || (tunnel && !dashOn(x, y))) continue;
+        const boundary = !has(x-1,y) || !has(x+1,y) || !has(x,y-1) || !has(x,y+1);
+        if (!boundary || !parallelSideBoundary(x, y)) continue;
+        paintSolidMapCell(x, y, P.rail, option, stats);
       }
     }
     return;
@@ -4279,6 +4288,34 @@ function render(){
     facilitySites, featureCountsByOption,
   } = rasterized;
   const RG = GRID + 2;
+  const standaloneRailLayerKeys = !EMBEDDED && CELL_ONLY_MODE
+    ? [
+        ...(o.rail ? ['rail', 'bridge:rail'] : []),
+        ...(o.railTunnels ? ['railTunnels'] : []),
+      ]
+    : [];
+  const standaloneRailComposite = standaloneRailLayerKeys.some(key => grids.has(key))
+    ? {
+        grid:new Uint8Array(RG * RG),
+        center:new Uint8Array(RG * RG),
+        normals:{ x:new Int8Array(RG * RG), y:new Int8Array(RG * RG) },
+      }
+    : null;
+  if (standaloneRailComposite){
+    for (const key of standaloneRailLayerKeys){
+      const sourceGrid = grids.get(key);
+      const sourceCenter = transportCenters.get(key);
+      const sourceNormals = transportRailNormals.get(key);
+      for (let index = 0; index < RG * RG; index++){
+        if (sourceGrid?.[index]) standaloneRailComposite.grid[index] = sourceGrid[index];
+        if (sourceCenter?.[index]) standaloneRailComposite.center[index] = 1;
+        if (sourceNormals?.x[index] || sourceNormals?.y[index]){
+          standaloneRailComposite.normals.x[index] = sourceNormals.x[index];
+          standaloneRailComposite.normals.y[index] = sourceNormals.y[index];
+        }
+      }
+    }
+  }
   const worldToGridCell = (wx, wy) => [
     Math.floor(wx / CPX) - TILE.x * GRID - gridOriginX,
     Math.floor(wy / CPX) - TILE.y * GRID - gridOriginY,
@@ -5221,6 +5258,7 @@ function render(){
   drawRasterGroup('Z1', z1Water);
   for (const option of layerOrder){
     if (!o[option] || !z2Routes.has(option)) continue;
+    if (standaloneRailComposite && (option === 'rail' || option === 'railTunnels')) continue;
     // standalone標準のcorridorは地表areaの後へ一括して合成する。
     if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option]) continue;
     if (CELL_ONLY_MODE){
@@ -5238,6 +5276,15 @@ function render(){
       if (grid) drawGrid(grid, bldGrid, bldStyle, { grass:false, routeOption:option }, true);
     }
     renderOrder.push(`Z2:${option}`);
+  }
+  if (standaloneRailComposite){
+    drawCellPixelArtTransportGrid(
+      standaloneRailComposite.grid, 'rail', cellRenderingStats,
+      standaloneRailComposite.center, standaloneRailComposite.normals
+    );
+    if (o.rail) countCellFeatures('rail');
+    if (o.railTunnels) countCellFeatures('railTunnels');
+    renderOrder.push('Z2:rail:standalone-composite');
   }
 
   // 地上corridorは地表の上・建物の下。source geometryは変えず、建物との
@@ -5285,6 +5332,7 @@ function render(){
   }
   for (const option of layerOrder){
     if (!o[option] || !bridgeOptions.has(option)) continue;
+    if (standaloneRailComposite && option === 'rail') continue;
     const bridgeOption = `bridge:${option}`;
     if (CELL_ONLY_MODE){
       const grid = grids.get(bridgeOption);

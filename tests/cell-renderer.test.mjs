@@ -166,7 +166,7 @@ test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分�
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
 });
 
-test('standalone testの斜線路は元線分の法線へ2本のレールを平行配置する', () => {
+test('standalone testの鉄道は全種別を合成して側面2線だけ描く', () => {
   const source = html.match(/function quantizedRailNormal\(x0, y0, x1, y1\)\{[\s\S]*?\n\}/)?.[0];
   assert.ok(source, '線路法線の量子化実装を取得できる');
   const normalFor = Function(`'use strict';\n${source}\nreturn quantizedRailNormal;`)();
@@ -177,15 +177,24 @@ test('standalone testの斜線路は元線分の法線へ2本のレールを平�
   assert.match(html, /const transportRailNormals = new Map\(\)/);
   assert.match(html, /CELL_ONLY_MODE && !EMBEDDED && id === ID\.RAIL/);
   assert.match(html, /const tangentRadius = 4/);
-  assert.match(html, /const alignment = Math\.abs\(normalX \* otherX \+ normalY \* otherY\)/);
-  assert.match(html, /if \(alignment >= \.8\) return true/);
-  assert.match(html, /const keepPath = railPath\.map/);
+  assert.match(html, /const continuity = normal\[0\] \* previousNormal\[0\] \+ normal\[1\] \* previousNormal\[1\]/);
+  assert.match(html, /if \(continuity < 0\) normal = \[-normal\[0\], -normal\[1\]\]/);
+  assert.match(html, /else if \(continuity === 0\) normal = previousNormal/);
   assert.match(html, /railNormals\.x\[centerIndex\] = normalX/);
   assert.match(html, /const hasSourceNormal = normalX !== 0 \|\| normalY !== 0/);
   assert.match(html, /x \+ normalX \* offset/);
   assert.match(html, /y \+ normalY \* offset/);
-  assert.match(html, /if \(!sourceNormalRails\) paintRailPair\(x, y, useHorizontal\)/);
-  assert.match(html, /if \(sourceNormalRails\)\{[\s\S]*?paintRailPair\(x, y, horizontal \|\| !vertical\)/);
+  assert.match(html, /const standaloneParallelRails = rail && !EMBEDDED && railNormalGrid/);
+  assert.match(html, /const standaloneRailLayerKeys = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /o\.rail \? \['rail', 'bridge:rail'\] : \[\]/);
+  assert.match(html, /o\.railTunnels \? \['railTunnels'\] : \[\]/);
+  assert.match(html, /standaloneRailComposite\.grid, 'rail', cellRenderingStats/);
+  assert.match(html, /option === 'rail' \|\| option === 'railTunnels'/);
+  assert.match(html, /standaloneRailComposite && option === 'rail'/);
+  assert.match(html, /if \(!standaloneParallelRails\)\{[\s\S]*?paintSolidMapCell\(x, y, color, option, stats\)/);
+  assert.match(html, /if \(!sourceNormalRails\)\{[\s\S]*?paintSolidMapCell\(tx, ty, P\.tie[\s\S]*?paintRailPair\(x, y, useHorizontal\)/);
+  assert.match(html, /const parallelSideBoundary = \(x, y\) => \{[\s\S]*?normalProjection >= 1 && tangentProjection <= \.25/);
+  assert.match(html, /if \(sourceNormalRails\)\{[\s\S]*?const boundary = !has\(x-1,y\) \|\| !has\(x\+1,y\) \|\| !has\(x,y-1\) \|\| !has\(x,y\+1\)[\s\S]*?!parallelSideBoundary\(x, y\)[\s\S]*?paintSolidMapCell\(x, y, P\.rail/);
   assert.doesNotMatch(html, /transportCenterPhases|standaloneTiePeriod|tieAnchor/);
 });
 
