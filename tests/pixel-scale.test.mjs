@@ -78,15 +78,15 @@ test('道路は元形状を1論理px単位で直接描画する', () => {
   assert.match(html, /if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option, true\)/);
 });
 
-test('単体ページの生活道路と歩道・小径は各描画モードの最小幅にする', () => {
-  assert.match(html, /const STANDALONE_MINIMUM_MINOR_ROUTES = !EMBEDDED/);
+test('全Webマップの生活道路と歩道・小径は各描画モードの最小幅にする', () => {
+  assert.match(html, /const STANDALONE_MINIMUM_MINOR_ROUTES = true/);
   assert.match(html, /const MINIMUM_ROUTE_SCENE_WIDTH = SCENE_PIXELS_PER_LOGICAL_PIXEL/);
-  assert.match(html, /if\(EMBEDDED && option === 'localRoads'\)/);
-  assert.match(html, /canonical\.width=14/);
-  assert.match(html, /canonical\.casing=2/);
+  assert.doesNotMatch(html, /if\(EMBEDDED && option === 'localRoads'\)/);
+  assert.doesNotMatch(html, /canonical\.width=14/);
+  assert.doesNotMatch(html, /canonical\.casing=2/);
   assert.match(html, /\['localRoads','paths'\]\.includes\(routeOption\)/);
   assert.match(html, /minimumMinorRoute \? 1 : detailCellSpan\(thick \? 2 : 1\)/);
-  assert.match(html, /if\(EMBEDDED\) return false;[\s\S]*?drawStandardTransportCell/);
+  assert.doesNotMatch(html, /if\(EMBEDDED\) return false;[\s\S]*?drawStandardTransportCell/);
   assert.match(html, /minorRoutes:\{[\s\S]*?standaloneMinimum:STANDALONE_MINIMUM_MINOR_ROUTES/);
   assert.match(html, /localRoadWidth:CELL_ONLY_MODE[\s\S]*?pathWidth:CELL_ONLY_MODE/);
 });
@@ -103,7 +103,7 @@ test('test用RailSkinは本番セル値のcopyをcontinuous rendererへ渡す', 
   assert.match(html, /rail:WORLD_CORRIDOR_RULES\.rail/);
   assert.match(html, /drawUnifiedCorridorLayer\(option\)/);
   assert.match(html, /textureAt:worldLogicalPoint/);
-  assert.match(html, /if\(EMBEDDED\) return false/);
+  assert.doesNotMatch(html, /if\(EMBEDDED\) return false/);
 });
 
 test('production比較profileのBuildingSkinは本番8px建物チップをtest側だけで再現する',()=>{

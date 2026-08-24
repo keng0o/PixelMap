@@ -205,15 +205,15 @@ test('overrideは生成データを変更せず別名とOSM形状中心を実行
   assert.equal(collection.properties.overrides_schema, 'pixelmap-landmark-overrides/1');
 });
 
-test('ランドマーク処理は単体ページだけで有効になり共有iframeを変えない', () => {
-  assert.match(mapHtml, /const STANDALONE_LANDMARK_MODE = !EMBEDDED;/);
+test('ランドマーク処理はstandaloneと1・2・4マップの全Webページで有効になる', () => {
+  assert.match(mapHtml, /const STANDALONE_LANDMARK_MODE = true;/);
   assert.match(mapHtml, /data\/landmarks\/kanagawa\.generated\.geojson/);
   assert.match(mapHtml, /data\/landmarks\/kanagawa\.overrides\.json/);
   assert.match(mapHtml, /LANDMARK_ENTITY_API\.mergeOverrides\(generated, overrides\)/);
   assert.match(mapHtml, /applyStandaloneLandmarks\(collectResolvedFacilities\(\)\)/);
   assert.match(mapHtml, /if \(!STANDALONE_LANDMARK_MODE\)/);
   assert.match(mapHtml, /landmarks:resolvedView\.landmarks/);
-  assert.match(mapHtml, /id="tglCommercialLandmarks"/);
+  assert.match(mapHtml, /id="tglCommercialLandmarks" data-category-item/);
   assert.match(mapHtml, /commercialLandmarkControl\.hidden = !STANDALONE_LANDMARK_MODE/);
   assert.match(mapHtml, /feature\.properties\.collection_group !== 'commercial' \|\| commercialEnabled/);
   assert.match(mapHtml, /dataset\.commercialLandmarks = commercialLandmarkToggle\.checked \? 'on' : 'off'/);

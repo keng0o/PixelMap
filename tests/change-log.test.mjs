@@ -78,6 +78,9 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /landuse=religious/);
   assert.match(log, /amenity=place_of_worship/);
   assert.match(log, /敷地全体を建物化せず施設記号/);
+  assert.match(log, /現在のtestをWeb本番1・2・4マップへ全面リリース/);
+  assert.match(log, /本番1・2・4マップの地図描画と施設データを現在のtest既定状態へ統一/);
+  assert.match(log, /standalone・1・2・4マップの描画契約/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

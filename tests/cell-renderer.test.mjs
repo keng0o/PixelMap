@@ -28,13 +28,14 @@ test('共有マップのチェックはURLを保ったままcell2とcell3を切�
   assert.match(html, /location\.assign\(renderModeUrl\(renderModeToggle\.checked \? 'cell3' : 'cell2'\)\.href\)/);
 });
 
-test('standalone testだけ設定を閉じて地図を全画面表示できる', () => {
+test('standaloneと1・2マップは設定を閉じて地図を全画面表示できる', () => {
   assert.match(html, /id="settingsCloseBtn"[\s\S]*?aria-label="設定を閉じる"[\s\S]*?hidden>－<\/button>/);
   assert.match(html, /id="settingsOpenBtn"[\s\S]*?aria-label="設定を開く"[\s\S]*?>＋<\/button>/);
   assert.match(html, /\.settings-toggle\{[\s\S]*?position:fixed;[\s\S]*?top:max\(14px,[\s\S]*?right:max\(14px,[\s\S]*?width:44px;[\s\S]*?height:44px/);
   assert.match(html, /function setStandaloneSettingsCollapsed\(collapsed\)/);
-  assert.match(html, /if \(EMBEDDED \|\| CAPTURE_MODE\) return/);
-  assert.match(html, /if \(!EMBEDDED && !CAPTURE_MODE\)/);
+  assert.match(html, /const SETTINGS_COLLAPSIBLE = !SHARED_CONTROLS && !CAPTURE_MODE/);
+  assert.match(html, /if \(!SETTINGS_COLLAPSIBLE\) return/);
+  assert.match(html, /if \(SETTINGS_COLLAPSIBLE\)/);
   assert.match(html, /classList\.toggle\('settings-collapsed', collapsed\)/);
   assert.match(html, /settingsToolbar\.inert = collapsed/);
   assert.match(html, /body\.settings-collapsed \.map-frame\{[\s\S]*?position:fixed;[\s\S]*?width:100vw;[\s\S]*?height:100dvh/);
@@ -60,10 +61,10 @@ test('2マップは左右別、4マップは共通チェックでcell2とcell3�
   assert.match(fourMapShellHtml, /function updateTopRenderUrl\(mode\)/);
   assert.match(fourMapShellHtml, /pixelmap:render-mode/);
   assert.match(fourMapShellHtml, /pixelmap:set-render-mode/);
-  assert.match(oneMapHtml, /v=20260823-1/);
-  assert.equal((twoMapHtml.match(/v=20260823-1/g) || []).length, 2);
-  assert.equal((fourMapHtml.match(/v=20260823-1/g) || []).length, 4);
-  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260823-2/);
+  assert.match(oneMapHtml, /v=20260824-production-1/);
+  assert.equal((twoMapHtml.match(/v=20260824-production-1/g) || []).length, 2);
+  assert.equal((fourMapHtml.match(/v=20260824-production-1/g) || []).length, 4);
+  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260824-production-1/);
 });
 
 test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {
@@ -144,7 +145,7 @@ test('交通線のセル走査はセル角の終点を越えて架空の線を�
   const source = html.match(/  function traverse\(x0, y0, x1, y1, visit\)\{[\s\S]*?\n  \}\n  function lineStamp/)?.[0]
     .replace(/\n  function lineStamp[\s\S]*$/u, '');
   assert.ok(source, 'traverse実装を取得できる');
-  const traverse = Function('RG', 'EMBEDDED', `'use strict';\n${source}\nreturn traverse;`)(258, false);
+  const traverse = Function('RG', `'use strict';\n${source}\nreturn traverse;`)(258);
   const cells = [];
   // 川崎駅南西の線路で架空線を発生させていた、セル角が終点になる実座標。
   traverse(2.875, 218.125, 5, 215, (x, y) => cells.push([x, y]));
@@ -152,8 +153,9 @@ test('交通線のセル走査はセル角の終点を越えて架空の線を�
   assert.ok(cells.every(([x, y]) => x >= 2 && x <= 5 && y >= 215 && y <= 218));
   assert.ok(cells.slice(1).every(([x, y], index) =>
     Math.abs(x - cells[index][0]) + Math.abs(y - cells[index][1]) === 1));
-  assert.match(source, /!EMBEDDED && cx === ex/);
-  assert.match(source, /!EMBEDDED && cy === ey/);
+  assert.match(source, /if \(cx === ex\)/);
+  assert.match(source, /else if \(cy === ey\)/);
+  assert.doesNotMatch(source, /EMBEDDED/);
 });
 
 test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分ける', () => {
@@ -166,8 +168,8 @@ test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分�
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
 });
 
-test('standalone testの地区幹線道路は中央線を描かない', () => {
-  assert.match(html, /const hideRegionalRoadCenter = !EMBEDDED && option === 'regionalRoads'/);
+test('全Webマップの地区幹線道路は中央線を描かない', () => {
+  assert.match(html, /const hideRegionalRoadCenter = option === 'regionalRoads'/);
   assert.match(html, /if \(roadStyle\?\.center && !hideRegionalRoadCenter\)/);
   assert.doesNotMatch(html, /function boundaryAlignedRoadCenter/);
 });

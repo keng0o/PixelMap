@@ -614,7 +614,7 @@
       <label><input type="checkbox" id="tglBuildings" data-category-item>たてもの</label>
       <label><input type="checkbox" id="tglPoi" data-category-item>施設アイコン</label>
       <label id="commercialLandmarkControl" hidden title="building=commercial / landuse=commercial">
-        <input type="checkbox" id="tglCommercialLandmarks">業務・商業ランドマーク
+        <input type="checkbox" id="tglCommercialLandmarks" data-category-item>業務・商業ランドマーク
       </label>
       <label><input type="checkbox" id="tglDots" data-category-item>小さな施設(点)</label>
     </div>
@@ -776,9 +776,9 @@ const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window
 const WORLD_STYLE_PROFILE = PAGE_PARAMS.get('profile') === 'reference'
   ? 'retroJrpgZ14' : 'productionComparisonZ14';
 const WORLD_STYLE = window.PixelMapWorldStyles[WORLD_STYLE_PROFILE];
-// ランドマーク補助データは単体検証ページだけで利用する。
-// cell描画を共有する1・2・4マップでも補助ランドマークは生成しない。
-const STANDALONE_LANDMARK_MODE = !EMBEDDED;
+// 検証済みのランドマーク補助データと施設描画を、standalone testと
+// 1・2・4マップの全Web本番で共通利用する。
+const STANDALONE_LANDMARK_MODE = true;
 const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260824-generic-facilities-1000';
 const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820-2';
 let landmarkFeatureCollection = null;
@@ -816,6 +816,7 @@ const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPat
   assetArea:[], assetHeight:[], maxAssets:1, priority:['generic'], palette:{ generic:'#78828a' }, categoryScale:{},
 };
 const CAPTURE_MODE = PAGE_PARAMS.get('capture') === '1';
+const SETTINGS_COLLAPSIBLE = !SHARED_CONTROLS && !CAPTURE_MODE;
 // cell2/cell3の既定は地図内容を評価できるstudyレイヤーとし、
 // ?layers=manualだけで手動選択へ戻す。到達不能なstandalone標準の条件は保持する。
 const STUDY_MODE = EMBEDDED
@@ -868,7 +869,7 @@ const settingsCloseBtn = document.getElementById('settingsCloseBtn');
 const settingsOpenBtn = document.getElementById('settingsOpenBtn');
 
 function setStandaloneSettingsCollapsed(collapsed){
-  if (EMBEDDED || CAPTURE_MODE) return;
+  if (!SETTINGS_COLLAPSIBLE) return;
   document.body.classList.toggle('settings-collapsed', collapsed);
   document.documentElement.dataset.settingsCollapsed = collapsed ? '1' : '0';
   settingsToolbar.inert = collapsed;
@@ -880,7 +881,7 @@ function setStandaloneSettingsCollapsed(collapsed){
   syncPixelViewport();
   (collapsed ? settingsOpenBtn : settingsCloseBtn).focus({ preventScroll:true });
 }
-if (!EMBEDDED && !CAPTURE_MODE){
+if (SETTINGS_COLLAPSIBLE){
   settingsCloseBtn.hidden = false;
   settingsCloseBtn.addEventListener('click', () => setStandaloneSettingsCollapsed(true));
   settingsOpenBtn.addEventListener('click', () => setStandaloneSettingsCollapsed(false));
@@ -949,9 +950,9 @@ ctx.imageSmoothingEnabled = false;
 presentationCtx.imageSmoothingEnabled = false;
 const W = sceneCanvas.width, H = sceneCanvas.height;
 const SCENE_PIXELS_PER_LOGICAL_PIXEL = 2;
-// 単体検証ページでは細街路を出力画像の最小単位（1論理px）で描く。
-// embedded表示は既存の1・2・4マップの見た目を維持する。
-const STANDALONE_MINIMUM_MINOR_ROUTES = !EMBEDDED;
+// 細街路はstandalone testと1・2・4マップの全Web本番で、
+// 出力画像の最小単位（1論理px）へ統一する。
+const STANDALONE_MINIMUM_MINOR_ROUTES = true;
 const MINIMUM_ROUTE_SCENE_WIDTH = SCENE_PIXELS_PER_LOGICAL_PIXEL;
 
 // アセットの輪郭を論理ピクセルグリッドへそろえる。
@@ -1497,10 +1498,6 @@ const SMOOTH_ROAD_STYLE = Object.freeze(Object.fromEntries(
       centerWidth:(rule.centerWidth || 1) * SCENE_PIXELS_PER_LOGICAL_PIXEL,
       dash:(rule.dash || []).map(value => value * SCENE_PIXELS_PER_LOGICAL_PIXEL),
     };
-    if(EMBEDDED && option === 'localRoads'){
-      canonical.width=14;
-      canonical.casing=2;
-    }
     return [option,Object.freeze(canonical)];
   }),
 ));
@@ -1967,8 +1964,8 @@ function rasterizeGrid(layers, options){
       // 片方の軸が終点セルへ着いた後は、その軸をそれ以上進めない。
       // セル角で tMX === tMY になる線分を片軸だけ進めると終点を通り越し、
       // guardまで架空の長い直線を延ばしてしまうため、終点セルを不変条件にする。
-      if (!EMBEDDED && cx === ex){ cy += stepY; tMY += tDY; }
-      else if (!EMBEDDED && cy === ey){ cx += stepX; tMX += tDX; }
+      if (cx === ex){ cy += stepY; tMY += tDY; }
+      else if (cy === ey){ cx += stepX; tMX += tDX; }
       else if (tMX < tMY){ cx += stepX; tMX += tDX; }
       else               { cy += stepY; tMY += tDY; }
       visit(cx, cy);
@@ -2367,8 +2364,8 @@ function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, b
   }
 
   // 斜め区間で原子セル幅の中央位置を安定して表現できないため、
-  // standalone testの地区幹線道路だけは中央線を描かない。
-  const hideRegionalRoadCenter = !EMBEDDED && option === 'regionalRoads';
+  // 全Webマップの地区幹線道路では中央線を描かない。
+  const hideRegionalRoadCenter = option === 'regionalRoads';
   if (roadStyle?.center && !hideRegionalRoadCenter){
     for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
       if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
@@ -2519,7 +2516,6 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false, drawCon
     ctx.fillRect(bx + 5, by + 5, 6, 6);
   };
   const drawCanonicalTransportCell = (x,y,id) => {
-    if(EMBEDDED) return false;
     const option=options.routeOption;
     const rule=CANONICAL_TRANSPORT_RULES[option];
     if(!rule || !['cell','rail-cell'].includes(rule.renderer)) return false;
@@ -6188,6 +6184,7 @@ function applySharedLayers(state){
   document.getElementById('toolbar').dataset.layerOrder = layerOrder.join(',');
   for (const panel of document.querySelectorAll('.layer-category')) syncCategoryMaster(panel);
   syncAllLayersToggle();
+  syncCommercialLandmarkState();
   render();
   publishLayerState();
 }
@@ -6348,6 +6345,9 @@ function syncAllLayersToggle(){
   allLayersToggle.checked = checkedCount === layerInputs.length;
   allLayersToggle.indeterminate = checkedCount > 0 && checkedCount < layerInputs.length;
 }
+function syncCommercialLandmarkState(){
+  document.documentElement.dataset.commercialLandmarks = commercialLandmarkToggle.checked ? 'on' : 'off';
+}
 for (const panel of document.querySelectorAll('.layer-category')){
   const master = panel.querySelector('[data-category-toggle]');
   const items = [...panel.querySelectorAll('[data-category-item]')];
@@ -6359,6 +6359,7 @@ for (const panel of document.querySelectorAll('.layer-category')){
     }
     syncCategoryMaster(panel);
     syncAllLayersToggle();
+    syncCommercialLandmarkState();
     render();
     publishLayerState();
   });
@@ -6366,6 +6367,7 @@ for (const panel of document.querySelectorAll('.layer-category')){
     updateLayerOrder(item);
     syncCategoryMaster(panel);
     syncAllLayersToggle();
+    syncCommercialLandmarkState();
     render();
     publishLayerState();
   });
@@ -6379,14 +6381,12 @@ allLayersToggle.addEventListener('change', () => {
   }
   for (const panel of document.querySelectorAll('.layer-category')) syncCategoryMaster(panel);
   syncAllLayersToggle();
+  syncCommercialLandmarkState();
   render();
   publishLayerState();
 });
 syncAllLayersToggle();
-commercialLandmarkToggle.addEventListener('change', () => {
-  document.documentElement.dataset.commercialLandmarks = commercialLandmarkToggle.checked ? 'on' : 'off';
-  render();
-});
+syncCommercialLandmarkState();
 locateBtn.addEventListener('click', locateMe);
 renderModeToggle.addEventListener('change', () => {
   location.assign(renderModeUrl(renderModeToggle.checked ? 'cell3' : 'cell2').href);
