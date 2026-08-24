@@ -7,21 +7,26 @@ const args = Object.fromEntries(process.argv.slice(2).map(argument => {
   return [key, value.join('=') || true];
 }));
 const areaName = typeof args.area === 'string' ? args.area.trim() : '';
+const areaId = typeof args['area-id'] === 'string' ? Number(args['area-id']) : null;
 const bbox = areaName ? null : String(args.bbox || '35.5265,139.6955,35.5296,139.6994')
   .split(',').map(Number);
 if (!areaName && (bbox.length !== 4 || bbox.some(value => !Number.isFinite(value))))
   throw new Error('--bbox=south,west,north,east の形式で指定してください');
+if (areaId != null && (!Number.isInteger(areaId) || areaId <= 0))
+  throw new Error('--area-id=Overpass area ID の形式で指定してください');
 const output = resolve(String(args.output || 'data/landmarks/region.generated.geojson'));
 const baseGeneratedPath = typeof args['base-generated'] === 'string'
   ? resolve(args['base-generated']) : null;
-const minParentArea = Number(args['min-parent-area'] || 3000);
+const minParentArea = Number(args['min-parent-area'] || 2000);
 const minHighriseHeight = Number(args['min-highrise-height'] || 30);
 const minHighriseLevels = Number(args['min-highrise-levels'] || 8);
 const endpoint = String(args.endpoint || 'https://overpass-api.de/api/interpreter');
-const scopePrefix = areaName
+const scopePrefix = areaName && areaId == null
   ? `area["name"="${areaName.replaceAll('"', '\\"')}"]["boundary"="administrative"]->.searchArea;`
   : '';
-const scope = areaName ? '(area.searchArea)' : `(${bbox.join(',')})`;
+const scope = areaName
+  ? areaId == null ? '(area.searchArea)' : `(area:${areaId})`
+  : `(${bbox.join(',')})`;
 
 const collectionQuery = statements => `[out:json][timeout:180];${scopePrefix}(
 ${statements}

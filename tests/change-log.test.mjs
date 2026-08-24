@@ -63,6 +63,8 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /building=commercial/);
   assert.match(log, /landuse=commercial/);
   assert.match(log, /ランドマーク下限を3,000㎡へ変更し公園・神社仏閣を追加/);
+  assert.match(log, /ランドマーク収集下限を2,000㎡へ変更/);
+  assert.match(log, /JR川崎タワー 商業棟/);
   assert.match(log, /leisure=park/);
   assert.match(log, /landuse=religious/);
   assert.match(log, /amenity=place_of_worship/);

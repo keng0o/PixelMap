@@ -153,7 +153,7 @@
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>神奈川県の生成GeoJSONは小売・commercial・公園・神社仏閣を3,000㎡以上で収集。加えて、面積制限なしで<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集し、高さによりz12～z14で表示開始。公園・神社仏閣は画像アセットを使わない単色マーカー、その他は建物形状で表示し、commercialは別チェックで表示。</td>
+              <td>神奈川県の生成GeoJSONは小売・commercial・公園・神社仏閣を2,000㎡以上で収集。加えて、面積制限なしで<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集し、高さによりz12～z14で表示開始。公園・神社仏閣は画像アセットを使わない単色マーカー、その他は建物形状で表示し、commercialは別チェックで表示。</td>
               <td>ランドマーク補助処理を無効化し、従来の施設表示を維持。</td>
             </tr>
             <tr>
@@ -196,6 +196,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>ランドマーク収集下限を2,000㎡へ変更</h3>
+          <time datetime="2026-08-24">2026-08-24 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>小売・commercial・公園・神社仏閣の収集下限を3,000㎡から2,000㎡へ変更し、神奈川県全域の生成GeoJSONを更新。親施設3,899件（小売467件・commercial 113件・公園1,857件・神社仏閣419件・高層建物1,043件）＋館内施設37件となり、2,000㎡以上3,000㎡未満の848件を追加。建築面積2,411㎡の「JR川崎タワー 商業棟」もcommercialグループへ追加した。高層建物の面積下限なしと高さ・階数条件は維持。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの「施設アイコン」で利用し、commercialグループは「業務・商業ランドマーク」をONにした場合だけ表示。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップは<code>embedded</code> guardにより生成GeoJSONを読み込まず、production pageファイルも変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>2,000㎡下限、2,000～3,000㎡の追加件数、JR川崎タワー商業棟の分類・面積・表示、業務・商業トグルのOFF／ON、高層建物条件、自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>高層建物の建築面積下限を撤廃</h3>
