@@ -106,6 +106,48 @@ describe('TileRepository', () => {
     expect(fetcher).toHaveBeenCalledWith('https://tiles.example/2/1/1.pbf', { signal: controller.signal });
   });
 
+  it.each([
+    ['a rejected request', new TypeError('Network request failed')],
+    ['an unavailable response', new Response('unavailable', { status: 503 })],
+    ['an empty response', new Response(new Uint8Array(), { status: 200 })],
+  ])('falls back to a stale tile after %s', async (_case, failure) => {
+    const fetcher = failure instanceof Response
+      ? vi.fn<TileFetcher>().mockResolvedValue(failure)
+      : vi.fn<TileFetcher>().mockRejectedValue(failure);
+    const { backend, repository } = setup(200, fetcher);
+    backend.records.set('test:2/1/1', {
+      record: { key: 'test:2/1/1', fileUri: 'old', byteLength: 2, storedAt: 0, lastAccessedAt: 0 },
+      bytes: new Uint8Array([7, 8]),
+    });
+
+    await expect(repository.load(address)).resolves.toMatchObject({
+      bytes: new Uint8Array([7, 8]),
+      source: 'stale-cache',
+    });
+  });
+
+  it('does not hide an aborted stale refresh', async () => {
+    const controller = new AbortController();
+    const abortError = Object.assign(new Error('cancelled'), { name: 'AbortError' });
+    const fetcher = vi.fn<TileFetcher>().mockRejectedValue(abortError);
+    const { backend, repository } = setup(200, fetcher);
+    backend.records.set('test:2/1/1', {
+      record: { key: 'test:2/1/1', fileUri: 'old', byteLength: 1, storedAt: 0, lastAccessedAt: 0 },
+      bytes: new Uint8Array([1]),
+    });
+    controller.abort();
+
+    await expect(repository.load(address, controller.signal)).rejects.toBe(abortError);
+  });
+
+  it('still rejects a network failure when no cached tile exists', async () => {
+    const failure = new TypeError('Network request failed');
+    const fetcher = vi.fn<TileFetcher>().mockRejectedValue(failure);
+    const { repository } = setup(200, fetcher);
+
+    await expect(repository.load(address)).rejects.toBe(failure);
+  });
+
   it('uses the platform fetch implementation by default', async () => {
     const platformFetch = vi.fn<TileFetcher>().mockResolvedValue(
       new Response(new Uint8Array([7]), { status: 200 }),

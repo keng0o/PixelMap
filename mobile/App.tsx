@@ -51,9 +51,11 @@ function PixelMapScreen() {
     ? '地図タイルを準備しています'
     : error
       ? `読み込みエラー: ${error}`
-      : tile?.source === 'disk-cache'
-        ? '端末キャッシュから地図タイルを読み込みました'
-        : '地図タイルを取得して端末へ保存しました';
+      : tile?.source === 'stale-cache'
+        ? '通信できないため、保存済みタイルを表示中です'
+        : tile?.source === 'disk-cache'
+          ? '端末キャッシュから地図タイルを読み込みました'
+          : '地図タイルを取得して端末へ保存しました';
 
   return (
     <SafeAreaView edges={['top', 'right', 'bottom', 'left']} style={styles.safeArea}>
@@ -66,7 +68,10 @@ function PixelMapScreen() {
 
         <PixelCachePreview seed={tile?.bytes.byteLength ?? 0} />
 
-        <View accessibilityLiveRegion="polite" style={styles.statusPanel}>
+        <View
+          accessibilityLiveRegion="polite"
+          style={[styles.statusPanel, tile?.source === 'stale-cache' ? styles.staleStatusPanel : null]}
+        >
           <View style={styles.statusHeading}>
             {loading ? <ActivityIndicator color="#f8d038" size="small" /> : null}
             <Text style={[styles.statusText, error ? styles.errorText : null]}>{status}</Text>
@@ -131,6 +136,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, gap: 4, padding: 12,
   },
   statusText: { color: '#f8f0d8', flex: 1, fontSize: 14, lineHeight: 20 },
+  staleStatusPanel: { borderColor: '#f8d038' },
   subtitle: { color: '#a8a088', fontSize: 13 },
   title: { color: '#f8f0d8', fontSize: 28, fontWeight: '700' },
 });
