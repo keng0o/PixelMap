@@ -6,6 +6,14 @@
     "version": "0.1.0",
     "orientation": "default",
     "userInterfaceStyle": "dark",
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "現在地周辺の地図を表示するために、アプリ使用中の位置情報を利用します。"
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.pixelmap.mobile"

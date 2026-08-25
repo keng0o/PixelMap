@@ -31,3 +31,9 @@ npm run android
 
 - A selected POI supplies a stable ID, localized name, category, coordinates, and data source to a presentation-only bottom sheet.
 - The preview exposes three deterministic Kawasaki facilities as minimum 44-point-equivalent hit targets; the MVT renderer can replace that source without changing the sheet contract.
+
+## Foreground location contract
+
+- Location permission is requested only after the user taps the current-location control; the app does not request background access.
+- Denied permission, disabled device services, and transient lookup failures each provide a Japanese recovery path.
+- The real map renderer can consume the successful coordinate result to recenter without changing the permission state machine.

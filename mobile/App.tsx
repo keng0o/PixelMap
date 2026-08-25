@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import type { TileCacheStats } from './src/cache/types';
+import {
+  IDLE_LOCATION_STATE,
+  requestCurrentLocation,
+  type LocationAccessState,
+} from './src/location/currentLocation';
+import { locationAdapter } from './src/location/services';
 import { tileCache, tileRepository } from './src/map/services';
 import type { TileLoadResult } from './src/map/tileRepository';
 import type { MapPoi } from './src/poi/types';
@@ -14,6 +20,7 @@ import {
 } from './src/settings/layerSettings';
 import { layerSettingsRepository } from './src/settings/services';
 import { LayerSettingsModal } from './src/ui/LayerSettingsModal';
+import { LocationStatusPanel } from './src/ui/LocationStatusPanel';
 import { PixelCachePreview } from './src/ui/PixelCachePreview';
 import { PoiDetailsSheet } from './src/ui/PoiDetailsSheet';
 
@@ -31,7 +38,9 @@ function PixelMapScreen() {
   const [layerSettingsError, setLayerSettingsError] = useState<string | null>(null);
   const [layerSettingsOpen, setLayerSettingsOpen] = useState(false);
   const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>(DEFAULT_LAYER_VISIBILITY);
+  const [locationState, setLocationState] = useState<LocationAccessState>(IDLE_LOCATION_STATE);
   const [selectedPoi, setSelectedPoi] = useState<MapPoi | null>(null);
+  const locationRequestId = useRef(0);
   const requestId = useRef(0);
 
   const loadTile = useCallback(async () => {
@@ -56,6 +65,7 @@ function PixelMapScreen() {
   useEffect(() => {
     void loadTile();
     return () => {
+      locationRequestId.current += 1;
       requestId.current += 1;
     };
   }, [loadTile]);
@@ -82,6 +92,21 @@ function PixelMapScreen() {
     });
   }, []);
 
+  const locateUser = useCallback(async () => {
+    const activeRequest = ++locationRequestId.current;
+    setLocationState({ kind: 'requesting' });
+    const result = await requestCurrentLocation(locationAdapter);
+    if (activeRequest === locationRequestId.current) setLocationState(result);
+  }, []);
+
+  const openLocationSettings = useCallback(async () => {
+    try {
+      await Linking.openSettings();
+    } catch {
+      setLocationState({ kind: 'unavailable' });
+    }
+  }, []);
+
   const status = loading
     ? '地図タイルを準備しています'
     : error
@@ -101,6 +126,22 @@ function PixelMapScreen() {
             <Text accessibilityRole="header" style={styles.title}>2pxマップ</Text>
             <Text style={styles.subtitle}>川崎駅周辺・OpenFreeMap z14</Text>
           </View>
+          <Pressable
+            accessibilityHint="位置情報の許可を確認して現在地を取得します"
+            accessibilityLabel="現在地を取得"
+            accessibilityRole="button"
+            accessibilityState={{ busy: locationState.kind === 'requesting' }}
+            disabled={locationState.kind === 'requesting'}
+            onPress={() => void locateUser()}
+            style={({ pressed }) => [styles.locationButton, pressed ? styles.buttonPressed : null]}
+          >
+            {locationState.kind === 'requesting'
+              ? <ActivityIndicator color="#f8d038" size="small" />
+              : <Text style={styles.locationButtonIcon}>◎</Text>}
+            <Text style={styles.locationButtonText}>
+              {locationState.kind === 'requesting' ? '確認中' : '現在地'}
+            </Text>
+          </Pressable>
           <Pressable
             accessibilityHint="表示する地図レイヤーを変更します"
             accessibilityLabel={`レイヤー設定、${enabledLayerCount(layerVisibility)}件を表示中`}
@@ -135,6 +176,12 @@ function PixelMapScreen() {
             上限: {cacheStats ? formatMiB(cacheStats.maxBytes) : '64.0 MB'}・LRU自動整理
           </Text>
         </View>
+
+        <LocationStatusPanel
+          onOpenSettings={() => void openLocationSettings()}
+          onRetry={() => void locateUser()}
+          state={locationState}
+        />
 
         {error ? (
           <Pressable
@@ -190,6 +237,12 @@ const styles = StyleSheet.create({
   heading: { flex: 1, gap: 3 },
   headingRow: { alignItems: 'center', alignSelf: 'stretch', flexDirection: 'row', gap: 12 },
   metric: { color: '#a8a088', fontSize: 12, lineHeight: 18 },
+  locationButton: {
+    alignItems: 'center', borderColor: '#88c860', borderWidth: 2,
+    justifyContent: 'center', minHeight: 48, minWidth: 68, paddingHorizontal: 8,
+  },
+  locationButtonIcon: { color: '#f8d038', fontSize: 15, fontWeight: '700', lineHeight: 16 },
+  locationButtonText: { color: '#f8f0d8', fontSize: 11, fontWeight: '700' },
   safeArea: { backgroundColor: '#101018', flex: 1 },
   settingsButton: {
     alignItems: 'center', borderColor: '#f8f0d8', borderWidth: 2,
