@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DotGothic16_400Regular } from '@expo-google-fonts/dotgothic16/400Regular';
+import NetInfo from '@react-native-community/netinfo';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   ActivityIndicator,
+  AppState,
+  type AppStateStatus,
   Linking,
   Pressable,
   ScrollView,
@@ -22,6 +25,12 @@ import {
 } from './src/location/currentLocation';
 import { locationAdapter } from './src/location/services';
 import { responsiveMapLayout } from './src/layout/responsiveLayout';
+import {
+  nextConnectivityStatus,
+  RefreshQueue,
+  shouldRefreshAfterAppState,
+  shouldRefreshAfterConnectivity,
+} from './src/lifecycle/refreshPolicy';
 import { tileCache, tileRepository } from './src/map/services';
 import type { TileLoadResult } from './src/map/tileRepository';
 import type { MapPoi } from './src/poi/types';
@@ -88,6 +97,34 @@ function PixelMapScreen() {
     return () => {
       locationRequestId.current += 1;
       requestId.current += 1;
+    };
+  }, [loadTile]);
+
+  useEffect(() => {
+    let previousAppState: AppStateStatus = AppState.currentState ?? 'unknown';
+    let previousConnectivity: boolean | null = null;
+    const refreshQueue = new RefreshQueue(loadTile);
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (shouldRefreshAfterAppState(previousAppState, nextState)) {
+        void refreshQueue.request();
+      }
+      previousAppState = nextState;
+    });
+    const unsubscribeNetInfo = NetInfo.addEventListener((nextState) => {
+      const snapshot = {
+        isConnected: nextState.isConnected,
+        isInternetReachable: nextState.isInternetReachable,
+      };
+      if (shouldRefreshAfterConnectivity(previousConnectivity, snapshot)) {
+        void refreshQueue.request();
+      }
+      previousConnectivity = nextConnectivityStatus(previousConnectivity, snapshot);
+    });
+
+    return () => {
+      appStateSubscription.remove();
+      unsubscribeNetInfo();
+      refreshQueue.dispose();
     };
   }, [loadTile]);
 

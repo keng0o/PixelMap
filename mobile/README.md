@@ -55,3 +55,9 @@ npm run android
 - Interactive map POIs expose button labels, selected state, hints, and 44-point-equivalent hit areas while decorative cells stay out of the accessibility tree.
 - Layer and POI modals constrain screen-reader navigation, focus their primary heading when shown, support the iOS escape gesture, and retain Android hardware-back handling.
 - Dynamic location outcomes are announced explicitly, switches expose checked state, and visual section labels do not create duplicate heading stops.
+
+## Lifecycle refresh contract
+
+- Returning from an inactive or background state reloads the visible tile so the map redraws from the latest cache state.
+- A confirmed offline-to-online transition retries the tile load; the initial connectivity snapshot does not cause a duplicate startup request.
+- Overlapping lifecycle events never start concurrent refreshes. They are coalesced into at most one sequential follow-up so a network recovery during an in-flight refresh is not lost.

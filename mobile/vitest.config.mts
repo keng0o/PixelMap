@@ -8,6 +8,7 @@ export default defineConfig({
         'src/cache/tileCache.ts',
         'src/map/tileRepository.ts',
         'src/location/currentLocation.ts',
+        'src/lifecycle/refreshPolicy.ts',
         'src/layout/responsiveLayout.ts',
         'src/poi/previewPois.ts',
         'src/settings/layerSettings.ts',
