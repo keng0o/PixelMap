@@ -1,9 +1,10 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   locationStateMessage,
   type LocationAccessState,
 } from '../location/currentLocation';
+import { PixelText as Text } from './PixelText';
 
 type Props = Readonly<{
   onOpenSettings: () => void;
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', borderColor: '#f8f0d8', borderWidth: 2,
     justifyContent: 'center', minHeight: 44, minWidth: 88, paddingHorizontal: 12,
   },
-  actionText: { color: '#f8f0d8', fontSize: 12, fontWeight: '700' },
+  actionText: { color: '#f8f0d8', fontSize: 12 },
   coordinates: { color: '#a8a088', fontSize: 11, letterSpacing: 0.5 },
   copy: { flex: 1, gap: 3 },
   errorPanel: { borderColor: '#ff9a88' },
@@ -67,5 +68,5 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.65 },
   successPanel: { borderColor: '#88c860' },
-  title: { color: '#f8f0d8', fontSize: 13, fontWeight: '700' },
+  title: { color: '#f8f0d8', fontSize: 13 },
 });

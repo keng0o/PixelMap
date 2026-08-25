@@ -1,8 +1,9 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { formatPoiCoordinate } from '../poi/previewPois';
 import type { MapPoi } from '../poi/types';
+import { PixelText as Text } from './PixelText';
 
 type Props = Readonly<{
   onClose: () => void;
@@ -69,12 +70,12 @@ function DetailRow({ label, value }: Readonly<{ label: string; value: string }>)
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1 },
-  category: { color: '#f8d038', fontSize: 13, fontWeight: '700' },
+  category: { color: '#f8d038', fontSize: 13 },
   closeButton: {
     alignItems: 'center', borderColor: '#f8f0d8', borderWidth: 2,
     justifyContent: 'center', minHeight: 44, paddingHorizontal: 14,
   },
-  closeButtonText: { color: '#f8f0d8', fontSize: 13, fontWeight: '700' },
+  closeButtonText: { color: '#f8f0d8', fontSize: 13 },
   detailLabel: { color: '#a8a088', fontSize: 12, width: 56 },
   detailRow: { alignItems: 'flex-start', flexDirection: 'row', gap: 12 },
   detailValue: { color: '#f8f0d8', flex: 1, fontSize: 14, lineHeight: 20 },
@@ -90,5 +91,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#202028', borderColor: '#f8f0d8', borderTopWidth: 2,
     gap: 0, paddingBottom: 18, paddingHorizontal: 16, paddingTop: 12,
   },
-  title: { color: '#f8f0d8', fontSize: 23, fontWeight: '700' },
+  title: { color: '#f8f0d8', fontSize: 23 },
 });

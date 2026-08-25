@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { DotGothic16_400Regular } from '@expo-google-fonts/dotgothic16/400Regular';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import {
   ActivityIndicator,
   Linking,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
@@ -32,9 +34,16 @@ import { layerSettingsRepository } from './src/settings/services';
 import { LayerSettingsModal } from './src/ui/LayerSettingsModal';
 import { LocationStatusPanel } from './src/ui/LocationStatusPanel';
 import { PixelCachePreview } from './src/ui/PixelCachePreview';
+import {
+  PixelFontProvider,
+  PixelText as Text,
+  PIXEL_FONT_FAMILY,
+} from './src/ui/PixelText';
 import { PoiDetailsSheet } from './src/ui/PoiDetailsSheet';
 
 const KAWASAKI_TILE = { sourceId: 'openfreemap', z: 14, x: 14549, y: 6460 } as const;
+
+void SplashScreen.preventAutoHideAsync();
 
 function formatMiB(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -240,10 +249,22 @@ function PixelMapScreen() {
 }
 
 export default function App() {
+  const [fontLoaded, fontError] = useFonts({
+    [PIXEL_FONT_FAMILY]: DotGothic16_400Regular,
+  });
+
+  useEffect(() => {
+    if (fontLoaded || fontError) void SplashScreen.hideAsync();
+  }, [fontError, fontLoaded]);
+
+  if (!fontLoaded && !fontError) return null;
+
   return (
-    <SafeAreaProvider>
-      <PixelMapScreen />
-    </SafeAreaProvider>
+    <PixelFontProvider enabled={fontLoaded}>
+      <SafeAreaProvider>
+        <PixelMapScreen />
+      </SafeAreaProvider>
+    </PixelFontProvider>
   );
 }
 
@@ -254,7 +275,7 @@ const styles = StyleSheet.create({
     borderColor: '#f8f0d8', borderWidth: 2, minHeight: 48, justifyContent: 'center', paddingHorizontal: 18,
   },
   buttonPressed: { opacity: 0.75 },
-  buttonText: { color: '#101018', fontSize: 16, fontWeight: '700' },
+  buttonText: { color: '#101018', fontSize: 16 },
   container: {
     alignItems: 'center', alignSelf: 'center', gap: 14, width: '100%',
   },
@@ -272,8 +293,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', borderColor: '#88c860', borderWidth: 2,
     justifyContent: 'center', minHeight: 48, minWidth: 68, paddingHorizontal: 8,
   },
-  locationButtonIcon: { color: '#f8d038', fontSize: 15, fontWeight: '700', lineHeight: 16 },
-  locationButtonText: { color: '#f8f0d8', fontSize: 11, fontWeight: '700' },
+  locationButtonIcon: { color: '#f8d038', fontSize: 15, lineHeight: 16 },
+  locationButtonText: { color: '#f8f0d8', fontSize: 11 },
   safeArea: { backgroundColor: '#101018', flex: 1 },
   scrollContent: { flexGrow: 1, justifyContent: 'center', paddingVertical: 16 },
   settingsButton: {
@@ -281,7 +302,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', minHeight: 48, minWidth: 78, paddingHorizontal: 10,
   },
   settingsButtonCount: { color: '#a8a088', fontSize: 11, marginTop: 2 },
-  settingsButtonText: { color: '#f8f0d8', fontSize: 12, fontWeight: '700' },
+  settingsButtonText: { color: '#f8f0d8', fontSize: 12 },
   statusHeading: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   statusPanel: {
     alignSelf: 'stretch', backgroundColor: '#202028', borderColor: '#f8f0d8',
@@ -290,5 +311,5 @@ const styles = StyleSheet.create({
   statusText: { color: '#f8f0d8', flex: 1, fontSize: 14, lineHeight: 20 },
   staleStatusPanel: { borderColor: '#f8d038' },
   subtitle: { color: '#a8a088', fontSize: 13 },
-  title: { color: '#f8f0d8', fontSize: 28, fontWeight: '700' },
+  title: { color: '#f8f0d8', fontSize: 28 },
 });

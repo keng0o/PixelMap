@@ -43,3 +43,9 @@ npm run android
 - Safe-area insets wrap the entire screen on every edge, while compact-height windows can scroll instead of clipping controls.
 - Portrait phones use one column. Phone landscape and tablet widths use a centered two-column canvas with a height-limited square map.
 - Window-size changes are derived from `useWindowDimensions`, so rotation and tablet split-view recalculate without stored orientation state.
+
+## Typography contract
+
+- UI text uses the Japanese-capable `DotGothic16` face from the Expo Google Fonts package, matching the web POC without a network font request.
+- The font is embedded for standalone iOS/Android builds and also loaded from the bundled asset at runtime for Expo Go; a load error falls back to the platform font instead of blocking the map.
+- DotGothic16 is distributed under the SIL Open Font License 1.1; the required notice is included in `assets/fonts/DotGothic16-OFL.txt`.

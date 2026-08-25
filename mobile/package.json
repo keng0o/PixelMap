@@ -15,9 +15,12 @@
     "check": "npm run lint && npm run typecheck && npm run test"
   },
   "dependencies": {
+    "@expo-google-fonts/dotgothic16": "^0.4.1",
     "expo": "~57.0.16",
     "expo-file-system": "~57.0.5",
+    "expo-font": "~57.0.1",
     "expo-location": "~57.0.13",
+    "expo-splash-screen": "~57.0.8",
     "expo-sqlite": "~57.0.1",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",

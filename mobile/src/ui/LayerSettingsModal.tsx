@@ -1,4 +1,4 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -8,6 +8,7 @@ import {
   LAYER_DEFINITIONS,
   type LayerVisibility,
 } from '../settings/layerSettings';
+import { PixelText as Text } from './PixelText';
 
 type Props = Readonly<{
   error: string | null;
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', borderColor: '#f8f0d8', borderWidth: 2,
     justifyContent: 'center', minHeight: 44, paddingHorizontal: 16,
   },
-  closeButtonText: { color: '#f8f0d8', fontSize: 14, fontWeight: '700' },
+  closeButtonText: { color: '#f8f0d8', fontSize: 14 },
   error: { color: '#ff9a88', fontSize: 13, marginHorizontal: 16, marginTop: 12 },
   eyebrow: { color: '#88c860', fontSize: 12, letterSpacing: 2 },
   header: {
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
   headerCopy: { gap: 2 },
   layerCopy: { flex: 1, gap: 3, paddingRight: 12 },
   layerDescription: { color: '#a8a088', fontSize: 12, lineHeight: 17 },
-  layerLabel: { color: '#f8f0d8', fontSize: 16, fontWeight: '700' },
+  layerLabel: { color: '#f8f0d8', fontSize: 16 },
   layerRow: {
     alignItems: 'center', backgroundColor: '#202028', borderColor: '#383840',
     borderWidth: 1, flexDirection: 'row', minHeight: 76, padding: 14,
@@ -105,10 +106,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', borderColor: '#686858', borderWidth: 1,
     flex: 1, justifyContent: 'center', minHeight: 44, paddingHorizontal: 8,
   },
-  presetButtonText: { color: '#d8d0b8', fontSize: 12, fontWeight: '700' },
+  presetButtonText: { color: '#d8d0b8', fontSize: 12 },
   presets: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 14 },
   pressed: { opacity: 0.65 },
   safeArea: { backgroundColor: '#101018', flex: 1 },
   summary: { color: '#a8a088', fontSize: 12 },
-  title: { color: '#f8f0d8', fontSize: 24, fontWeight: '700' },
+  title: { color: '#f8f0d8', fontSize: 24 },
 });

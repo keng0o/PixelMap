@@ -12,7 +12,16 @@
         {
           "locationWhenInUsePermission": "現在地周辺の地図を表示するために、アプリ使用中の位置情報を利用します。"
         }
-      ]
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/dotgothic16/400Regular/DotGothic16_400Regular.ttf"
+          ]
+        }
+      ],
+      "expo-splash-screen"
     ],
     "ios": {
       "supportsTablet": true,
