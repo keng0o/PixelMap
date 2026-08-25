@@ -1,2 +1,7 @@
 dist/
 *.tar.gz
+mobile/.expo/
+mobile/node_modules/
+mobile/coverage/
+mobile/web-build/
+mobile/.env*.local

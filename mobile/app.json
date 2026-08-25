@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "PixelMap",
+    "slug": "pixelmap",
+    "scheme": "pixelmap",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.pixelmap.mobile"
+    },
+    "android": {
+      "package": "app.pixelmap.mobile",
+      "predictiveBackGestureEnabled": true
+    }
+  }
+}
