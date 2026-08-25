@@ -19,7 +19,7 @@ The `preview` EAS profile produces a signed, production-like APK that runs witho
 npx eas-cli build --platform android --profile preview
 ```
 
-After the cloud build completes, download the artifact from its EAS build page. Install it on a USB-connected device with `adb install path/to/pixelmap.apk`, or open the build URL directly on the Android device. The checked-in `.env.example` documents optional Sentry settings; monitoring stays disabled when no DSN is configured.
+After the cloud build completes, download the artifact from its EAS build page. Install it on a USB-connected device with `adb install path/to/pixelmap.apk`, or open the build URL directly on the Android device. The checked-in `.env.example` documents optional Sentry settings; monitoring and source-map upload stay disabled for this preview profile when no DSN is configured.
 
 ## Tile cache contract
 
