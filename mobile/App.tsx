@@ -152,7 +152,7 @@ function PixelMapScreen() {
       <View style={[styles.container, { maxWidth: layout.contentMaxWidth }]}>
         <View style={styles.headingRow}>
           <View style={styles.heading}>
-            <Text accessibilityRole="header" style={styles.eyebrow}>PIXELMAP MOBILE</Text>
+            <Text style={styles.eyebrow}>PIXELMAP MOBILE</Text>
             <Text accessibilityRole="header" style={styles.title}>2pxマップ</Text>
             <Text style={styles.subtitle}>川崎駅周辺・OpenFreeMap z14</Text>
           </View>

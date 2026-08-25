@@ -49,3 +49,9 @@ npm run android
 - UI text uses the Japanese-capable `DotGothic16` face from the Expo Google Fonts package, matching the web POC without a network font request.
 - The font is embedded for standalone iOS/Android builds and also loaded from the bundled asset at runtime for Expo Go; a load error falls back to the platform font instead of blocking the map.
 - DotGothic16 is distributed under the SIL Open Font License 1.1; the required notice is included in `assets/fonts/DotGothic16-OFL.txt`.
+
+## Assistive technology contract
+
+- Interactive map POIs expose button labels, selected state, hints, and 44-point-equivalent hit areas while decorative cells stay out of the accessibility tree.
+- Layer and POI modals constrain screen-reader navigation, focus their primary heading when shown, support the iOS escape gesture, and retain Android hardware-back handling.
+- Dynamic location outcomes are announced explicitly, switches expose checked state, and visual section labels do not create duplicate heading stops.

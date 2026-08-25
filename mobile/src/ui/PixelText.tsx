@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext } from 'react';
+import { createContext, forwardRef, type ReactNode, useContext } from 'react';
 import { StyleSheet, Text as NativeText, type TextProps } from 'react-native';
 
 export const PIXEL_FONT_FAMILY = 'DotGothic16_400Regular';
@@ -16,10 +16,13 @@ export function PixelFontProvider({
   );
 }
 
-export function PixelText({ style, ...props }: TextProps) {
+export const PixelText = forwardRef<NativeText, TextProps>(function PixelText(
+  { style, ...props },
+  ref,
+) {
   const enabled = useContext(PixelFontEnabledContext);
-  return <NativeText {...props} style={[enabled ? styles.pixelFont : null, style]} />;
-}
+  return <NativeText {...props} ref={ref} style={[enabled ? styles.pixelFont : null, style]} />;
+});
 
 const styles = StyleSheet.create({
   pixelFont: { fontFamily: PIXEL_FONT_FAMILY, fontWeight: '400' },

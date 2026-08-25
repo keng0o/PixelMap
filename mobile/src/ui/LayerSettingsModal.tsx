@@ -1,4 +1,15 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  findNodeHandle,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text as NativeText,
+  View,
+} from 'react-native';
+import { useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -19,13 +30,29 @@ type Props = Readonly<{
 }>;
 
 export function LayerSettingsModal({ error, onChange, onClose, value, visible }: Props) {
+  const titleRef = useRef<NativeText>(null);
+  const focusTitle = () => {
+    const handle = findNodeHandle(titleRef.current);
+    if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
+  };
+
   return (
-    <Modal animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet" visible={visible}>
-      <SafeAreaView accessibilityViewIsModal style={styles.safeArea}>
+    <Modal
+      animationType="slide"
+      onRequestClose={onClose}
+      onShow={focusTitle}
+      presentationStyle="pageSheet"
+      visible={visible}
+    >
+      <SafeAreaView
+        accessibilityViewIsModal
+        onAccessibilityEscape={onClose}
+        style={styles.safeArea}
+      >
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text accessibilityRole="header" style={styles.eyebrow}>MAP DISPLAY</Text>
-            <Text accessibilityRole="header" style={styles.title}>レイヤー設定</Text>
+            <Text style={styles.eyebrow}>MAP DISPLAY</Text>
+            <Text accessibilityRole="header" ref={titleRef} style={styles.title}>レイヤー設定</Text>
             <Text style={styles.summary}>{enabledLayerCount(value)} / {LAYER_DEFINITIONS.length} 表示中</Text>
           </View>
           <Pressable
@@ -56,6 +83,7 @@ export function LayerSettingsModal({ error, onChange, onClose, value, visible }:
               <Switch
                 accessibilityHint={`${definition.label}レイヤーの表示を切り替えます`}
                 accessibilityLabel={definition.label}
+                accessibilityState={{ checked: value[definition.id] }}
                 onValueChange={(enabled) => onChange({ ...value, [definition.id]: enabled })}
                 thumbColor={value[definition.id] ? '#f8f0d8' : '#a8a088'}
                 trackColor={{ false: '#383840', true: '#619c42' }}

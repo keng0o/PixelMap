@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
 
 import {
   locationStateMessage,
@@ -14,6 +15,13 @@ type Props = Readonly<{
 
 export function LocationStatusPanel({ onOpenSettings, onRetry, state }: Props) {
   const message = locationStateMessage(state);
+
+  useEffect(() => {
+    if (message !== null && state.kind !== 'requesting') {
+      AccessibilityInfo.announceForAccessibility(message);
+    }
+  }, [message, state.kind]);
+
   if (message === null || state.kind === 'requesting') return null;
 
   const needsSettings = state.kind === 'services-disabled'
@@ -22,7 +30,6 @@ export function LocationStatusPanel({ onOpenSettings, onRetry, state }: Props) {
 
   return (
     <View
-      accessibilityLiveRegion="polite"
       style={[styles.panel, isSuccess ? styles.successPanel : styles.errorPanel]}
     >
       <View style={styles.copy}>

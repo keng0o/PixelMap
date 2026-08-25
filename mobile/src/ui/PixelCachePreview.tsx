@@ -66,8 +66,10 @@ function PoiCell({
   return (
     <Pressable
       accessibilityHint="施設の詳細を表示します"
-      accessibilityLabel={`${poi.name}、${poi.category}`}
+      accessibilityLabel={`${poi.name}、${poi.category}${selected ? '、選択中' : ''}`}
       accessibilityRole="button"
+      accessibilityState={{ selected }}
+      hitSlop={11}
       onPress={onPress}
       style={({ pressed }) => [
         styles.cell,

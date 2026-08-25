@@ -1,4 +1,13 @@
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  findNodeHandle,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text as NativeText,
+  View,
+} from 'react-native';
+import { useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { formatPoiCoordinate } from '../poi/previewPois';
@@ -11,18 +20,28 @@ type Props = Readonly<{
 }>;
 
 export function PoiDetailsSheet({ onClose, poi }: Props) {
+  const titleRef = useRef<NativeText>(null);
+  const focusTitle = () => {
+    const handle = findNodeHandle(titleRef.current);
+    if (handle !== null) AccessibilityInfo.setAccessibilityFocus(handle);
+  };
+
   return (
     <Modal
       animationType="slide"
       onRequestClose={onClose}
+      onShow={focusTitle}
       presentationStyle="overFullScreen"
       transparent
       visible={poi !== null}
     >
-      <SafeAreaView accessibilityViewIsModal style={styles.overlay}>
+      <SafeAreaView
+        accessibilityViewIsModal
+        onAccessibilityEscape={onClose}
+        style={styles.overlay}
+      >
         <Pressable
-          accessibilityLabel="施設情報を閉じる"
-          accessibilityRole="button"
+          accessible={false}
           onPress={onClose}
           style={styles.backdrop}
         />
@@ -32,7 +51,7 @@ export function PoiDetailsSheet({ onClose, poi }: Props) {
             <View style={styles.headingRow}>
               <View style={styles.headingCopy}>
                 <Text style={styles.eyebrow}>POINT OF INTEREST</Text>
-                <Text accessibilityRole="header" style={styles.title}>{poi.name}</Text>
+                <Text accessibilityRole="header" ref={titleRef} style={styles.title}>{poi.name}</Text>
                 <Text style={styles.category}>{poi.category}</Text>
               </View>
               <Pressable
