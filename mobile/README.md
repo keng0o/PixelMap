@@ -26,3 +26,8 @@ npm run android
 - The 62 detailed web controls are represented by six mobile renderer groups: nature, land use, transport, buildings, facilities, and labels.
 - Preferences are versioned and persisted with `expo-sqlite/kv-store`.
 - Invalid or future stored data falls back to the reviewed mobile defaults.
+
+## POI selection contract
+
+- A selected POI supplies a stable ID, localized name, category, coordinates, and data source to a presentation-only bottom sheet.
+- The preview exposes three deterministic Kawasaki facilities as minimum 44-point-equivalent hit targets; the MVT renderer can replace that source without changing the sheet contract.

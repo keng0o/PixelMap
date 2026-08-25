@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import type { TileCacheStats } from './src/cache/types';
 import { tileCache, tileRepository } from './src/map/services';
 import type { TileLoadResult } from './src/map/tileRepository';
+import type { MapPoi } from './src/poi/types';
 import {
   DEFAULT_LAYER_VISIBILITY,
   enabledLayerCount,
@@ -14,6 +15,7 @@ import {
 import { layerSettingsRepository } from './src/settings/services';
 import { LayerSettingsModal } from './src/ui/LayerSettingsModal';
 import { PixelCachePreview } from './src/ui/PixelCachePreview';
+import { PoiDetailsSheet } from './src/ui/PoiDetailsSheet';
 
 const KAWASAKI_TILE = { sourceId: 'openfreemap', z: 14, x: 14549, y: 6460 } as const;
 
@@ -29,6 +31,7 @@ function PixelMapScreen() {
   const [layerSettingsError, setLayerSettingsError] = useState<string | null>(null);
   const [layerSettingsOpen, setLayerSettingsOpen] = useState(false);
   const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>(DEFAULT_LAYER_VISIBILITY);
+  const [selectedPoi, setSelectedPoi] = useState<MapPoi | null>(null);
   const requestId = useRef(0);
 
   const loadTile = useCallback(async () => {
@@ -110,7 +113,12 @@ function PixelMapScreen() {
           </Pressable>
         </View>
 
-        <PixelCachePreview seed={tile?.bytes.byteLength ?? 0} visibility={layerVisibility} />
+        <PixelCachePreview
+          onSelectPoi={setSelectedPoi}
+          selectedPoiId={selectedPoi?.id ?? null}
+          seed={tile?.bytes.byteLength ?? 0}
+          visibility={layerVisibility}
+        />
 
         <View
           accessibilityLiveRegion="polite"
@@ -152,6 +160,7 @@ function PixelMapScreen() {
         value={layerVisibility}
         visible={layerSettingsOpen}
       />
+      <PoiDetailsSheet onClose={() => setSelectedPoi(null)} poi={selectedPoi} />
     </SafeAreaView>
   );
 }
