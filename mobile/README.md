@@ -37,3 +37,9 @@ npm run android
 - Location permission is requested only after the user taps the current-location control; the app does not request background access.
 - Denied permission, disabled device services, and transient lookup failures each provide a Japanese recovery path.
 - The real map renderer can consume the successful coordinate result to recenter without changing the permission state machine.
+
+## Responsive layout contract
+
+- Safe-area insets wrap the entire screen on every edge, while compact-height windows can scroll instead of clipping controls.
+- Portrait phones use one column. Phone landscape and tablet widths use a centered two-column canvas with a height-limited square map.
+- Window-size changes are derived from `useWindowDimensions`, so rotation and tablet split-view recalculate without stored orientation state.

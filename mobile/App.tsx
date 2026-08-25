@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
@@ -10,6 +19,7 @@ import {
   type LocationAccessState,
 } from './src/location/currentLocation';
 import { locationAdapter } from './src/location/services';
+import { responsiveMapLayout } from './src/layout/responsiveLayout';
 import { tileCache, tileRepository } from './src/map/services';
 import type { TileLoadResult } from './src/map/tileRepository';
 import type { MapPoi } from './src/poi/types';
@@ -31,6 +41,8 @@ function formatMiB(bytes: number): string {
 }
 
 function PixelMapScreen() {
+  const window = useWindowDimensions();
+  const layout = responsiveMapLayout(window.width, window.height);
   const [cacheStats, setCacheStats] = useState<TileCacheStats | null>(null);
   const [tile, setTile] = useState<TileLoadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +131,16 @@ function PixelMapScreen() {
 
   return (
     <SafeAreaView edges={['top', 'right', 'bottom', 'left']} style={styles.safeArea}>
-      <View style={styles.container}>
+      <ScrollView
+        bounces={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingHorizontal: layout.horizontalPadding },
+        ]}
+        contentInsetAdjustmentBehavior="never"
+        showsVerticalScrollIndicator={false}
+      >
+      <View style={[styles.container, { maxWidth: layout.contentMaxWidth }]}>
         <View style={styles.headingRow}>
           <View style={styles.heading}>
             <Text accessibilityRole="header" style={styles.eyebrow}>PIXELMAP MOBILE</Text>
@@ -154,51 +175,57 @@ function PixelMapScreen() {
           </Pressable>
         </View>
 
-        <PixelCachePreview
-          onSelectPoi={setSelectedPoi}
-          selectedPoiId={selectedPoi?.id ?? null}
-          seed={tile?.bytes.byteLength ?? 0}
-          visibility={layerVisibility}
-        />
-
-        <View
-          accessibilityLiveRegion="polite"
-          style={[styles.statusPanel, tile?.source === 'stale-cache' ? styles.staleStatusPanel : null]}
-        >
-          <View style={styles.statusHeading}>
-            {loading ? <ActivityIndicator color="#f8d038" size="small" /> : null}
-            <Text style={[styles.statusText, error ? styles.errorText : null]}>{status}</Text>
+        <View style={[styles.contentGrid, layout.wide ? styles.contentGridWide : null]}>
+          <View style={[styles.mapColumn, { width: layout.mapSize }]}>
+            <PixelCachePreview
+              onSelectPoi={setSelectedPoi}
+              selectedPoiId={selectedPoi?.id ?? null}
+              seed={tile?.bytes.byteLength ?? 0}
+              visibility={layerVisibility}
+            />
           </View>
-          <Text style={styles.metric}>
-            キャッシュ: {cacheStats ? `${cacheStats.entryCount}件・${formatMiB(cacheStats.totalBytes)}` : '確認中'}
-          </Text>
-          <Text style={styles.metric}>
-            上限: {cacheStats ? formatMiB(cacheStats.maxBytes) : '64.0 MB'}・LRU自動整理
-          </Text>
+          <View style={[styles.infoColumn, layout.wide ? styles.infoColumnWide : null]}>
+            <View
+              accessibilityLiveRegion="polite"
+              style={[styles.statusPanel, tile?.source === 'stale-cache' ? styles.staleStatusPanel : null]}
+            >
+              <View style={styles.statusHeading}>
+                {loading ? <ActivityIndicator color="#f8d038" size="small" /> : null}
+                <Text style={[styles.statusText, error ? styles.errorText : null]}>{status}</Text>
+              </View>
+              <Text style={styles.metric}>
+                キャッシュ: {cacheStats ? `${cacheStats.entryCount}件・${formatMiB(cacheStats.totalBytes)}` : '確認中'}
+              </Text>
+              <Text style={styles.metric}>
+                上限: {cacheStats ? formatMiB(cacheStats.maxBytes) : '64.0 MB'}・LRU自動整理
+              </Text>
+            </View>
+
+            <LocationStatusPanel
+              onOpenSettings={() => void openLocationSettings()}
+              onRetry={() => void locateUser()}
+              state={locationState}
+            />
+
+            {error ? (
+              <Pressable
+                accessibilityHint="地図タイルの取得をもう一度試します"
+                accessibilityRole="button"
+                disabled={loading}
+                onPress={() => void loadTile()}
+                style={({ pressed }) => [styles.button, pressed ? styles.buttonPressed : null]}
+              >
+                <Text style={styles.buttonText}>もう一度試す</Text>
+              </Pressable>
+            ) : null}
+
+            <Text style={styles.attribution}>
+              © OpenStreetMap contributors / OpenFreeMap / OpenMapTiles
+            </Text>
+          </View>
         </View>
-
-        <LocationStatusPanel
-          onOpenSettings={() => void openLocationSettings()}
-          onRetry={() => void locateUser()}
-          state={locationState}
-        />
-
-        {error ? (
-          <Pressable
-            accessibilityHint="地図タイルの取得をもう一度試します"
-            accessibilityRole="button"
-            disabled={loading}
-            onPress={() => void loadTile()}
-            style={({ pressed }) => [styles.button, pressed ? styles.buttonPressed : null]}
-          >
-            <Text style={styles.buttonText}>もう一度試す</Text>
-          </Pressable>
-        ) : null}
-
-        <Text style={styles.attribution}>
-          © OpenStreetMap contributors / OpenFreeMap / OpenMapTiles
-        </Text>
       </View>
+      </ScrollView>
       <StatusBar style="light" />
       <LayerSettingsModal
         error={layerSettingsError}
@@ -229,14 +256,18 @@ const styles = StyleSheet.create({
   buttonPressed: { opacity: 0.75 },
   buttonText: { color: '#101018', fontSize: 16, fontWeight: '700' },
   container: {
-    alignItems: 'center', flex: 1, gap: 14, justifyContent: 'center',
-    marginHorizontal: 'auto', maxWidth: 560, padding: 16, width: '100%',
+    alignItems: 'center', alignSelf: 'center', gap: 14, width: '100%',
   },
+  contentGrid: { alignItems: 'center', gap: 14, width: '100%' },
+  contentGridWide: { alignItems: 'flex-start', flexDirection: 'row', gap: 20, justifyContent: 'center' },
   errorText: { color: '#ff9a88' },
   eyebrow: { color: '#88c860', fontSize: 12, letterSpacing: 2 },
   heading: { flex: 1, gap: 3 },
   headingRow: { alignItems: 'center', alignSelf: 'stretch', flexDirection: 'row', gap: 12 },
+  infoColumn: { alignSelf: 'stretch', gap: 14 },
+  infoColumnWide: { flex: 1, minWidth: 0 },
   metric: { color: '#a8a088', fontSize: 12, lineHeight: 18 },
+  mapColumn: { alignSelf: 'center', maxWidth: '100%' },
   locationButton: {
     alignItems: 'center', borderColor: '#88c860', borderWidth: 2,
     justifyContent: 'center', minHeight: 48, minWidth: 68, paddingHorizontal: 8,
@@ -244,6 +275,7 @@ const styles = StyleSheet.create({
   locationButtonIcon: { color: '#f8d038', fontSize: 15, fontWeight: '700', lineHeight: 16 },
   locationButtonText: { color: '#f8f0d8', fontSize: 11, fontWeight: '700' },
   safeArea: { backgroundColor: '#101018', flex: 1 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingVertical: 16 },
   settingsButton: {
     alignItems: 'center', borderColor: '#f8f0d8', borderWidth: 2,
     justifyContent: 'center', minHeight: 48, minWidth: 78, paddingHorizontal: 10,
