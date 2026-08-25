@@ -6,6 +6,13 @@ import { StatusBar } from 'expo-status-bar';
 import type { TileCacheStats } from './src/cache/types';
 import { tileCache, tileRepository } from './src/map/services';
 import type { TileLoadResult } from './src/map/tileRepository';
+import {
+  DEFAULT_LAYER_VISIBILITY,
+  enabledLayerCount,
+  type LayerVisibility,
+} from './src/settings/layerSettings';
+import { layerSettingsRepository } from './src/settings/services';
+import { LayerSettingsModal } from './src/ui/LayerSettingsModal';
 import { PixelCachePreview } from './src/ui/PixelCachePreview';
 
 const KAWASAKI_TILE = { sourceId: 'openfreemap', z: 14, x: 14549, y: 6460 } as const;
@@ -19,6 +26,9 @@ function PixelMapScreen() {
   const [tile, setTile] = useState<TileLoadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [layerSettingsError, setLayerSettingsError] = useState<string | null>(null);
+  const [layerSettingsOpen, setLayerSettingsOpen] = useState(false);
+  const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>(DEFAULT_LAYER_VISIBILITY);
   const requestId = useRef(0);
 
   const loadTile = useCallback(async () => {
@@ -47,6 +57,28 @@ function PixelMapScreen() {
     };
   }, [loadTile]);
 
+  useEffect(() => {
+    let active = true;
+    void layerSettingsRepository.load()
+      .then((stored) => {
+        if (active) setLayerVisibility(stored);
+      })
+      .catch(() => {
+        if (active) setLayerSettingsError('保存済みのレイヤー設定を読み込めませんでした');
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const updateLayerVisibility = useCallback((next: LayerVisibility) => {
+    setLayerVisibility(next);
+    setLayerSettingsError(null);
+    void layerSettingsRepository.save(next).catch(() => {
+      setLayerSettingsError('レイヤー設定を保存できませんでした');
+    });
+  }, []);
+
   const status = loading
     ? '地図タイルを準備しています'
     : error
@@ -60,13 +92,25 @@ function PixelMapScreen() {
   return (
     <SafeAreaView edges={['top', 'right', 'bottom', 'left']} style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={styles.heading}>
-          <Text accessibilityRole="header" style={styles.eyebrow}>PIXELMAP MOBILE</Text>
-          <Text accessibilityRole="header" style={styles.title}>2pxマップ</Text>
-          <Text style={styles.subtitle}>川崎駅周辺・OpenFreeMap z14</Text>
+        <View style={styles.headingRow}>
+          <View style={styles.heading}>
+            <Text accessibilityRole="header" style={styles.eyebrow}>PIXELMAP MOBILE</Text>
+            <Text accessibilityRole="header" style={styles.title}>2pxマップ</Text>
+            <Text style={styles.subtitle}>川崎駅周辺・OpenFreeMap z14</Text>
+          </View>
+          <Pressable
+            accessibilityHint="表示する地図レイヤーを変更します"
+            accessibilityLabel={`レイヤー設定、${enabledLayerCount(layerVisibility)}件を表示中`}
+            accessibilityRole="button"
+            onPress={() => setLayerSettingsOpen(true)}
+            style={({ pressed }) => [styles.settingsButton, pressed ? styles.buttonPressed : null]}
+          >
+            <Text style={styles.settingsButtonText}>レイヤー</Text>
+            <Text style={styles.settingsButtonCount}>{enabledLayerCount(layerVisibility)} / 6</Text>
+          </Pressable>
         </View>
 
-        <PixelCachePreview seed={tile?.bytes.byteLength ?? 0} />
+        <PixelCachePreview seed={tile?.bytes.byteLength ?? 0} visibility={layerVisibility} />
 
         <View
           accessibilityLiveRegion="polite"
@@ -101,6 +145,13 @@ function PixelMapScreen() {
         </Text>
       </View>
       <StatusBar style="light" />
+      <LayerSettingsModal
+        error={layerSettingsError}
+        onChange={updateLayerVisibility}
+        onClose={() => setLayerSettingsOpen(false)}
+        value={layerVisibility}
+        visible={layerSettingsOpen}
+      />
     </SafeAreaView>
   );
 }
@@ -127,9 +178,16 @@ const styles = StyleSheet.create({
   },
   errorText: { color: '#ff9a88' },
   eyebrow: { color: '#88c860', fontSize: 12, letterSpacing: 2 },
-  heading: { alignSelf: 'stretch', gap: 3 },
+  heading: { flex: 1, gap: 3 },
+  headingRow: { alignItems: 'center', alignSelf: 'stretch', flexDirection: 'row', gap: 12 },
   metric: { color: '#a8a088', fontSize: 12, lineHeight: 18 },
   safeArea: { backgroundColor: '#101018', flex: 1 },
+  settingsButton: {
+    alignItems: 'center', borderColor: '#f8f0d8', borderWidth: 2,
+    justifyContent: 'center', minHeight: 48, minWidth: 78, paddingHorizontal: 10,
+  },
+  settingsButtonCount: { color: '#a8a088', fontSize: 11, marginTop: 2 },
+  settingsButtonText: { color: '#f8f0d8', fontSize: 12, fontWeight: '700' },
   statusHeading: { alignItems: 'center', flexDirection: 'row', gap: 8 },
   statusPanel: {
     alignSelf: 'stretch', backgroundColor: '#202028', borderColor: '#f8f0d8',
