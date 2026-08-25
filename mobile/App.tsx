@@ -33,6 +33,7 @@ import {
 } from './src/lifecycle/refreshPolicy';
 import { tileCache, tileRepository } from './src/map/services';
 import type { TileLoadResult } from './src/map/tileRepository';
+import { traceDiagnostic } from './src/observability/diagnostics';
 import type { MapPoi } from './src/poi/types';
 import {
   DEFAULT_LAYER_VISIBILITY,
@@ -41,6 +42,7 @@ import {
 } from './src/settings/layerSettings';
 import { layerSettingsRepository } from './src/settings/services';
 import { LayerSettingsModal } from './src/ui/LayerSettingsModal';
+import { AppErrorBoundary } from './src/ui/AppErrorBoundary';
 import { LocationStatusPanel } from './src/ui/LocationStatusPanel';
 import { PixelCachePreview } from './src/ui/PixelCachePreview';
 import {
@@ -78,9 +80,21 @@ function PixelMapScreen() {
     setLoading(true);
     setError(null);
     try {
-      await tileCache.initialize();
-      const result = await tileRepository.load(KAWASAKI_TILE);
-      const stats = await tileCache.stats();
+      const { result, stats } = await traceDiagnostic(
+        {
+          attributes: { 'tile.source_id': KAWASAKI_TILE.sourceId },
+          name: 'Load visible map tile',
+          operation: 'map.tile.load',
+        },
+        async (span) => {
+          await tileCache.initialize();
+          const nextResult = await tileRepository.load(KAWASAKI_TILE);
+          const nextStats = await tileCache.stats();
+          span.setAttribute('tile.bytes', nextResult.bytes.byteLength);
+          span.setAttribute('tile.result_source', nextResult.source);
+          return { result: nextResult, stats: nextStats };
+        },
+      );
       if (activeRequest !== requestId.current) return;
       setTile(result);
       setCacheStats(stats);
@@ -285,7 +299,7 @@ function PixelMapScreen() {
   );
 }
 
-export default function App() {
+function PixelMapApp() {
   const [fontLoaded, fontError] = useFonts({
     [PIXEL_FONT_FAMILY]: DotGothic16_400Regular,
   });
@@ -298,10 +312,18 @@ export default function App() {
 
   return (
     <PixelFontProvider enabled={fontLoaded}>
-      <SafeAreaProvider>
-        <PixelMapScreen />
-      </SafeAreaProvider>
+      <PixelMapScreen />
     </PixelFontProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppErrorBoundary>
+        <PixelMapApp />
+      </AppErrorBoundary>
+    </SafeAreaProvider>
   );
 }
 

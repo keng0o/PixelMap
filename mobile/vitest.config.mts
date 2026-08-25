@@ -10,6 +10,8 @@ export default defineConfig({
         'src/location/currentLocation.ts',
         'src/lifecycle/refreshPolicy.ts',
         'src/layout/responsiveLayout.ts',
+        'src/observability/diagnostics.ts',
+        'src/observability/monitoring.ts',
         'src/poi/previewPois.ts',
         'src/settings/layerSettings.ts',
         'src/settings/layerSettingsRepository.ts',

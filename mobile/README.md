@@ -61,3 +61,10 @@ npm run android
 - Returning from an inactive or background state reloads the visible tile so the map redraws from the latest cache state.
 - A confirmed offline-to-online transition retries the tile load; the initial connectivity snapshot does not cause a duplicate startup request.
 - Overlapping lifecycle events never start concurrent refreshes. They are coalesced into at most one sequential follow-up so a network recovery during an in-flight refresh is not lost.
+
+## Observability contract
+
+- Production builds enable Sentry only when `EXPO_PUBLIC_SENTRY_DSN` is present. With no DSN, the SDK is not loaded and Expo Go keeps running without a native-module dependency.
+- Native/JavaScript crashes, sessions, app-start performance, and a custom visible-tile load span are captured without default PII, screenshots, view hierarchies, or failed-request contents.
+- Root render failures show an accessible Japanese recovery screen instead of leaving a blank view. Retrying remounts the map subtree.
+- Sentry source-map upload requires `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` in the EAS build environment. Copy `.env.example` locally; never commit real credentials.
