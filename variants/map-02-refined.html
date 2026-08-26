@@ -25,6 +25,58 @@
     image-rendering:pixelated;
   }
   .map-frame{ padding:6px; line-height:0; }
+  #bearingIndicator{
+    position:absolute;
+    top:18px;
+    left:18px;
+    z-index:6;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:92px;
+    min-height:46px;
+    padding:6px 9px;
+    border:3px solid #f8f0d8;
+    outline:3px solid #101018;
+    background:#101018e8;
+    color:#f8f0d8;
+    font-size:12px;
+    line-height:1;
+    pointer-events:none;
+  }
+  #bearingIndicator[hidden]{ display:none; }
+  #bearingCompass{
+    position:relative;
+    display:grid;
+    place-items:center;
+    width:28px;
+    height:28px;
+    border:2px solid #f8f0d8;
+    border-radius:50%;
+    transform-origin:center;
+  }
+  #bearingCompass::before{
+    content:'N';
+    position:absolute;
+    top:-7px;
+    left:50%;
+    padding:0 2px;
+    background:#101018;
+    color:#f06048;
+    font-size:9px;
+    line-height:1;
+    transform:translateX(-50%);
+  }
+  #bearingCompass::after{
+    content:'';
+    width:0;
+    height:0;
+    border-left:5px solid transparent;
+    border-right:5px solid transparent;
+    border-bottom:12px solid #f06048;
+    transform:translateY(-2px);
+  }
+  #bearingValue{ min-width:4ch; font-variant-numeric:tabular-nums; }
   #captureBadge{
     display:none;
     position:absolute;
@@ -418,6 +470,11 @@
     pointer-events:none;
   }
   body.settings-collapsed #settingsOpenBtn{ display:block; }
+  body.settings-collapsed #bearingIndicator{
+    position:fixed;
+    top:max(14px, env(safe-area-inset-top, 0px));
+    left:max(14px, env(safe-area-inset-left, 0px));
+  }
   #patternBar{ display:none; }
   body.shared-controls{
     display:block;
@@ -514,6 +571,10 @@
     <div class="capture-place" id="capturePlace">川崎駅</div>
   </div>
   <canvas id="map" width="1536" height="1536" tabindex="0" aria-label="川崎駅周辺の読みやすいレトロRPG風マップ。ドラッグで移動、矢印キーで施設を選択できます" aria-describedby="msg"></canvas>
+  <div id="bearingIndicator" role="img" aria-label="地図の表示方位" hidden>
+    <span id="bearingCompass" aria-hidden="true"></span>
+    <span id="bearingValue">0°</span>
+  </div>
 </div>
 
 <div id="toolbar" class="rpg-window" aria-label="地図レイヤーの表示設定">
@@ -656,6 +717,7 @@
 <script src="../assets/corridor-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=5"></script>
 <script src="../assets/world-style.js?v=5"></script>
+<script src="../assets/map-bearing.js?v=1"></script>
 <script>
 'use strict';
 /* =====================================================
@@ -773,6 +835,14 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+const REQUESTED_MAP_BEARING = Number(PAGE_PARAMS.get('bearing'));
+// センサーのないPCでも実レンダラーの回転状態を確認できるstandalone test専用入口。
+// ユーザー向け回転操作ではなく、embedded本番には伝播させない。
+const BEARING_STUDY_MODE = !EMBEDDED && PAGE_PARAMS.has('bearing') &&
+  Number.isFinite(REQUESTED_MAP_BEARING);
+let mapBearing = BEARING_STUDY_MODE
+  ? window.PixelMapBearing.normalizeDegrees(REQUESTED_MAP_BEARING)
+  : 0;
 const WORLD_STYLE_PROFILE = PAGE_PARAMS.get('profile') === 'reference'
   ? 'retroJrpgZ14' : 'productionComparisonZ14';
 const WORLD_STYLE = window.PixelMapWorldStyles[WORLD_STYLE_PROFILE];
@@ -836,7 +906,7 @@ const HAS_INITIAL_LOCATION = HAS_INITIAL_COORDINATES &&
 const INITIAL_PLACE = PAGE_PARAMS.get('place') || (HAS_INITIAL_LOCATION ? '指定地点' : '川崎駅');
 document.getElementById('map').setAttribute(
   'aria-label',
-  `${INITIAL_PLACE}周辺の読みやすいレトロRPG風マップ。ドラッグで移動、矢印キーで施設を選択できます`
+  `${INITIAL_PLACE}周辺の読みやすいレトロRPG風マップ。${BEARING_STUDY_MODE ? `表示方位${mapBearing.toFixed(1)}度。` : ''}ドラッグで移動、矢印キーで施設を選択できます`
 );
 
 document.body.classList.toggle('embedded', EMBEDDED);
@@ -855,6 +925,8 @@ document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
   : 'legacy';
 document.documentElement.dataset.worldStyle = WORLD_STYLE_MODE ? WORLD_STYLE.id : 'none';
 document.documentElement.dataset.tileZoom = String(TILE_ZOOM);
+document.documentElement.dataset.mapBearing = mapBearing.toFixed(1);
+document.documentElement.dataset.bearingSource = BEARING_STUDY_MODE ? 'query-study' : 'north-up';
 document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
@@ -999,6 +1071,41 @@ const GRID = SCENE_SIZE / CPX;
 const CELL_DETAIL_SCALE = GRID / STANDARD_GRID;
 const detailCellSpan = standardCells => Math.max(1, Math.round(standardCells * CELL_DETAIL_SCALE));
 const MAP_CELL_LOGICAL_SIZE = CPX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
+// 任意方位の正方形ビューポートを逆回転しても地物が欠けないよう、
+// standalone bearing studyだけ意味グリッドを対角線長まで広げる。
+const ROTATION_SOURCE_MARGIN_CELLS = BEARING_STUDY_MODE
+  ? Math.ceil((Math.SQRT2 - 1) * GRID / 2) + 4
+  : 0;
+const RASTER_GRID_SIZE = GRID + 2 + ROTATION_SOURCE_MARGIN_CELLS * 2;
+const rotateScenePoint = point => BEARING_STUDY_MODE
+  ? window.PixelMapBearing.rotatePoint(point, mapBearing, W / 2, H / 2)
+  : point;
+const inverseRotateScenePoint = point => BEARING_STUDY_MODE
+  ? window.PixelMapBearing.inverseRotatePoint(point, mapBearing, W / 2, H / 2)
+  : point;
+const screenCellVectorToSource = (dx, dy) => {
+  if (!BEARING_STUDY_MODE) return [Math.round(dx), Math.round(dy)];
+  const vector = window.PixelMapBearing.screenVectorToWorld([dx, dy], mapBearing);
+  return [Math.round(vector[0]), Math.round(vector[1])];
+};
+function rotateWorldHitAreas(areas){
+  if (!BEARING_STUDY_MODE) return;
+  for (const area of areas){
+    const center = rotateScenePoint([area.x + area.w / 2, area.y + area.h / 2]);
+    area.x = center[0] - area.w / 2;
+    area.y = center[1] - area.h / 2;
+  }
+}
+function updateBearingUi(){
+  const indicator = document.getElementById('bearingIndicator');
+  indicator.hidden = !BEARING_STUDY_MODE;
+  if (!BEARING_STUDY_MODE) return;
+  const rounded = Math.round(mapBearing * 10) / 10;
+  document.getElementById('bearingValue').textContent = `${rounded}°`;
+  document.getElementById('bearingCompass').style.transform = `rotate(${-mapBearing}deg)`;
+  indicator.setAttribute('aria-label', `地図の表示方位 ${rounded}度。赤い矢印が北です。`);
+}
+updateBearingUi();
 // 高さ連動の2.5D押し出しはstandalone testのcell2／cell3だけで評価する。
 // embedded本番は同じ記述子を受け取っても従来の平面描画を維持する。
 const STANDALONE_HEIGHT_EXTRUSION = !EMBEDDED && CELL_ONLY_MODE;
@@ -1524,7 +1631,7 @@ function buildingAppearanceForActiveProfile(input){
 }
 
 function rasterizeGrid(layers, options){
-  const RG = GRID + 2;                           // 移動時に端が空かないよう外周も描画
+  const RG = RASTER_GRID_SIZE;                   // 回転時は対角線範囲まで外周を持つ
   // レイヤーごとに独立したグリッドを持ち、チェック順に合成できるようにする。
   // 0 = GRASS は未描画セルも兼ねるため、grass 以外は drawGrid の transparent で読み分ける。
   const grids = new Map();
@@ -2089,6 +2196,9 @@ const cellHash = (x, y) => {
 
 const cellCompositeCanvas = document.createElement('canvas');
 const cellCompositeContext = cellCompositeCanvas.getContext('2d');
+const bearingCompositeCanvas = document.createElement('canvas');
+bearingCompositeCanvas.width = bearingCompositeCanvas.height = PRESENTATION_SIZE;
+const bearingCompositeContext = bearingCompositeCanvas.getContext('2d');
 const CELL_RGBA_CACHE = new Map();
 function solidCellRgba(color){
   if (CELL_RGBA_CACHE.has(color)) return CELL_RGBA_CACHE.get(color);
@@ -2145,7 +2255,45 @@ function flushSolidCellBuffer(stats){
   ctx.imageSmoothingEnabled = false;
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
-  ctx.drawImage(cellCompositeCanvas, originX, originY, size * CPX, size * CPX);
+  if (BEARING_STUDY_MODE){
+    // 完成画像を回すのではなく、回転後の各論理ピクセルが参照する意味セルを
+    // 逆変換で引く。任意角度でも出力は論理ピクセルグリッドへ整列する。
+    const output = bearingCompositeContext.createImageData(PRESENTATION_SIZE, PRESENTATION_SIZE);
+    const radians = mapBearing * Math.PI / 180;
+    const cosine = Math.cos(radians);
+    const sine = Math.sin(radians);
+    const sceneCenterX = W / 2;
+    const sceneCenterY = H / 2;
+    for (let logicalY = 0; logicalY < PRESENTATION_SIZE; logicalY++){
+      const screenY = (logicalY + .5) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+      const dy = screenY - sceneCenterY;
+      for (let logicalX = 0; logicalX < PRESENTATION_SIZE; logicalX++){
+        const screenX = (logicalX + .5) * SCENE_PIXELS_PER_LOGICAL_PIXEL;
+        const dx = screenX - sceneCenterX;
+        const sourceX = sceneCenterX + dx * cosine - dy * sine;
+        const sourceY = sceneCenterY + dx * sine + dy * cosine;
+        const gx = Math.floor((sourceX - originX) / CPX);
+        const gy = Math.floor((sourceY - originY) / CPX);
+        if (gx < 0 || gy < 0 || gx >= size || gy >= size) continue;
+        const sourcePixel = (gy * size + gx) * 4;
+        const targetPixel = (logicalY * PRESENTATION_SIZE + logicalX) * 4;
+        output.data[targetPixel] = stats.pixelData[sourcePixel];
+        output.data[targetPixel + 1] = stats.pixelData[sourcePixel + 1];
+        output.data[targetPixel + 2] = stats.pixelData[sourcePixel + 2];
+        output.data[targetPixel + 3] = stats.pixelData[sourcePixel + 3];
+      }
+    }
+    bearingCompositeContext.putImageData(output, 0, 0);
+    ctx.drawImage(
+      bearingCompositeCanvas,
+      0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE,
+      0, 0, SCENE_SIZE, SCENE_SIZE
+    );
+    stats.rerasterizedLogicalPixels = PRESENTATION_SIZE * PRESENTATION_SIZE;
+  } else {
+    ctx.drawImage(cellCompositeCanvas, originX, originY, size * CPX, size * CPX);
+    stats.rerasterizedLogicalPixels = 0;
+  }
   ctx.restore();
   stats.flushed = true;
 }
@@ -2263,7 +2411,7 @@ function surfaceChipName(id, gx, gy){
 }
 
 function cellSurfaceBoundary(grid, x, y, id){
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
   const neighbors = [at(x-1,y), at(x+1,y), at(x,y-1), at(x,y+1)];
   const h = standardCellHash(x, y);
@@ -2278,7 +2426,7 @@ function cellSurfaceBoundary(grid, x, y, id){
 }
 
 function drawCellPixelArtSurfaceGrid(grid, option, stats, transparent = true){
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   for (let y = 0; y < RG; y++){
     for (let x = 0; x < RG; x++){
       const id = grid[y * RG + x];
@@ -2305,7 +2453,7 @@ function paintDarkenedMapCell(gx, gy, factor, layer, stats){
 }
 
 function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, bridge = false){
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const has = (x, y) => x >= 0 && y >= 0 && x < RG && y < RG && grid[y * RG + x] !== ID.GRASS;
   const centered = (x, y) => centerGrid && x >= 0 && y >= 0 && x < RG && y < RG && centerGrid[y * RG + x];
   const tunnel = ['subway','roadTunnels','pathTunnels','railTunnels'].includes(option);
@@ -2392,7 +2540,7 @@ function drawCellFlatPixelArtBuildingGrid(
   grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats,
   skippedBuildingIds = null
 ){
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const isCell = (x, y) => {
     if (x < 0 || y < 0 || x >= RG || y >= RG) return false;
     const index = y * RG + x;
@@ -2471,7 +2619,7 @@ function drawCellFlatPixelArtBuildingGrid(
 function drawCellHeightExtrudedBuildingGrid(
   grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats
 ){
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const groups = new Map();
   for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
     const index = y * RG + x;
@@ -2485,12 +2633,17 @@ function drawCellHeightExtrudedBuildingGrid(
       group = {
         bi, cells:[], owned:new Set(), riseLogical, riseCells,
         shiftX:Math.max(0, Math.round(riseCells * .34)), maxY:-Infinity,
+        maxScreenY:-Infinity,
       };
       groups.set(bi, group);
     }
     group.cells.push([x, y]);
     group.owned.add(index);
     group.maxY = Math.max(group.maxY, y);
+    const screenDepth = BEARING_STUDY_MODE
+      ? window.PixelMapBearing.worldVectorToScreen([x, y], mapBearing)[1]
+      : y;
+    group.maxScreenY = Math.max(group.maxScreenY, screenDepth);
   }
   if (!groups.size){
     drawCellFlatPixelArtBuildingGrid(
@@ -2517,17 +2670,21 @@ function drawCellHeightExtrudedBuildingGrid(
   for (const group of groups.values()){
     const shadowSteps = Math.min(3, Math.max(1, Math.ceil(group.riseCells / 3)));
     for (const [x, y] of group.cells){
-      if (owns(group, x, y + 1)) continue;
+      if (!BEARING_STUDY_MODE && owns(group, x, y + 1)) continue;
       for (let step = 1; step <= shadowSteps; step++){
-        paintDarkenedMapCell(x + step, y + step, .68, `${layer}:height-shadow`, stats);
+        const [shadowX, shadowY] = BEARING_STUDY_MODE
+          ? screenCellVectorToSource(step, step)
+          : [step, step];
+        if (BEARING_STUDY_MODE && owns(group, x + shadowX, y + shadowY)) continue;
+        paintDarkenedMapCell(x + shadowX, y + shadowY, .68, `${layer}:height-shadow`, stats);
         stats.buildingDetailCells++;
       }
     }
   }
 
-  // 北側の棟から描き、南側の棟が自然に手前へ重なるよう接地位置で整列する。
+  // 回転後の画面Yが小さい棟から描き、手前の棟を最後へ重ねる。
   const orderedGroups = [...groups.values()].sort((a, b) =>
-    a.maxY - b.maxY || a.riseCells - b.riseCells || a.bi - b.bi);
+    a.maxScreenY - b.maxScreenY || a.riseCells - b.riseCells || a.bi - b.bi);
   for (const group of orderedGroups){
     const desc = buildingDescs[group.bi];
     const pal = desc?.pal || ROOFPAL[0];
@@ -2537,8 +2694,8 @@ function drawCellHeightExtrudedBuildingGrid(
     // 元のfootprintから屋根位置まで連続した壁体を作る。水平移動は高さの約1/3で、
     // 南面と東面の両方が読める控えめな右上方向の投影にする。
     for (let step = 0; step < group.riseCells; step++){
-      const offsetX = Math.round(group.shiftX * step / group.riseCells);
-      const offsetY = -step;
+      const screenOffsetX = Math.round(group.shiftX * step / group.riseCells);
+      const [offsetX, offsetY] = screenCellVectorToSource(screenOffsetX, -step);
       for (const [x, y] of group.cells){
         const south = !owns(group, x, y + 1);
         const east = !owns(group, x + 1, y);
@@ -2552,8 +2709,7 @@ function drawCellHeightExtrudedBuildingGrid(
       }
     }
 
-    const roofOffsetX = group.shiftX;
-    const roofOffsetY = -group.riseCells;
+    const [roofOffsetX, roofOffsetY] = screenCellVectorToSource(group.shiftX, -group.riseCells);
     for (const [x, y] of group.cells){
       const north = owns(group, x, y - 1), south = owns(group, x, y + 1);
       const west = owns(group, x - 1, y), east = owns(group, x + 1, y);
@@ -2569,24 +2725,25 @@ function drawCellHeightExtrudedBuildingGrid(
     // 施設記号は持ち上げた屋根へ、入口は接地側の壁面へ残す。
     const accent = desc?.accent || pal[0];
     if (anchor){
+      const paintUprightRoofSymbol = (dx, dy, color, baseX = anchor.gx, baseY = anchor.gy) => {
+        const [sourceDx, sourceDy] = screenCellVectorToSource(dx, dy);
+        paintProjected(group, baseX + sourceDx, baseY + sourceDy,
+          roofOffsetX, roofOffsetY, color, `${layer}:height-symbol`);
+      };
       if (kind === 'hospital'){
         for (const [dx,dy] of [[0,-2],[0,-1],[-2,0],[-1,0],[0,0],[1,0],[2,0],[0,1],[0,2]])
-          paintProjected(group, anchor.gx + dx, anchor.gy + dy, roofOffsetX, roofOffsetY,
-            dx === 0 && dy === 0 ? GLYPH_WHITE : '#48a050', `${layer}:height-symbol`);
+          paintUprightRoofSymbol(dx, dy, dx === 0 && dy === 0 ? GLYPH_WHITE : '#48a050');
       } else if (kind === 'convenience'){
         ['#48a058','#f8d038','#5078d8'].forEach((color, row) => {
           for (let dx = -3; dx <= 3; dx++)
-            paintProjected(group, anchor.gx + dx, anchor.gy + row, roofOffsetX, roofOffsetY,
-              color, `${layer}:height-symbol`);
+            paintUprightRoofSymbol(dx, row, color);
         });
       } else if (kind === 'mixed'){
         ['#e05038','#f8d038','#5078d8'].forEach((color, column) =>
-          paintProjected(group, anchor.ex - 1 + column, anchor.ey, roofOffsetX, roofOffsetY,
-            color, `${layer}:height-symbol`));
+          paintUprightRoofSymbol(column - 1, 0, color, anchor.ex, anchor.ey));
       } else if (kind === 'poi' && desc?.glyph){
         for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
-          paintProjected(group, anchor.gx + dx, anchor.gy + dy, roofOffsetX, roofOffsetY,
-            dx === 0 || dy === 0 ? GLYPH_WHITE : accent, `${layer}:height-symbol`);
+          paintUprightRoofSymbol(dx, dy, dx === 0 || dy === 0 ? GLYPH_WHITE : accent);
       }
       paintProjected(group, anchor.ex, anchor.ey, 0, 0, P.door, `${layer}:height-entrance`);
     }
@@ -2610,7 +2767,7 @@ function drawCellPixelArtBuildingGrid(grid, bldGrid, buildingKinds, buildingDesc
 
 function drawGrid(grid, bldGrid, bldStyle, options, transparent = false, drawContext = ctx){
   const ctx = drawContext;
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
   const bAt = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? 0 : bldGrid[y * RG + x];
   const put = (name, x, y) => ctx.drawImage(TILES[name], gridShiftX + x * CPX, gridShiftY + y * CPX);
@@ -3092,7 +3249,7 @@ function selectWorldStyleBuildingLod(raster, buildingKinds, buildingDescs, foreg
 // 建物チップを置く粗いセルは、正確な意味マスクが触れた詳細棟のセルから作る。
 // 同一セルに複数棟がある場合だけ、占有画素数（同数ならPOI）で代表棟を選ぶ。
 function preciseBuildingTextureGrid(raster, buildingKinds, detailedBuildings = null){
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const votes = new Array(RG * RG);
   for (let y = 0; y < raster.size; y++) for (let x = 0; x < raster.size; x++){
     const bi = raster.owner[y * raster.size + x];
@@ -3288,7 +3445,7 @@ function drawStandalonePreciseBuildings(
 
 // 森林は他の地表と分離して描画し、連続面・林縁・植生の違いを専用アセットで表す。
 function drawForestGrid(grid){
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
   const put = (name, x, y) => ctx.drawImage(TILES[name], gridShiftX + x * CPX, gridShiftY + y * CPX);
   const boundary = (x, y, dir) => {
@@ -3324,7 +3481,7 @@ function drawForestGrid(grid){
 }
 
 function drawWoodsGrid(grid){
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
   const put = (name, x, y) => ctx.drawImage(TILES[name], gridShiftX + x * CPX, gridShiftY + y * CPX);
   const boundary = (x, y, dir) => {
@@ -3356,7 +3513,7 @@ function drawWoodsGrid(grid){
 }
 
 function drawParkGrid(grid){
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const at = (x, y) => (x < 0 || y < 0 || x >= RG || y >= RG) ? ID.GRASS : grid[y * RG + x];
   const put = (name, x, y) => ctx.drawImage(TILES[name], gridShiftX + x * CPX, gridShiftY + y * CPX);
   const boundary = (x, y, dir, id) => {
@@ -3800,10 +3957,10 @@ let renderCount = 0;
 let gridOriginX = -1, gridOriginY = -1;
 let gridShiftX = -CPX, gridShiftY = -CPX;
 const tp = ([x, y]) => [x * SCALE - viewOffset.x, y * SCALE - viewOffset.y];
-const locationCanvasPoint = () => currentLocation ? [
+const locationCanvasPoint = () => currentLocation ? rotateScenePoint([
   (currentLocation.tileX - TILE.x) * W - viewOffset.x,
   (currentLocation.tileY - TILE.y) * H - viewOffset.y,
-] : null;
+]) : null;
 
 const layerInputs = [...document.querySelectorAll('[data-category-item]')];
 const optionForInput = input => input.id.slice(3).replace(/^./, c => c.toLowerCase());
@@ -4154,7 +4311,7 @@ function matchStandaloneLandmarksToSourceBuildings(
   }
   const sourceBuildingIds = new Set();
   const matchedFeatureIds = new Set();
-  const size = GRID + 2;
+  const size = RASTER_GRID_SIZE;
   const nearestSourceBuilding = anchor => {
     if (!anchor) return 0;
     const [rawX, rawY] = anchor;
@@ -4351,8 +4508,13 @@ function render(){
     sourceLayers:Object.keys(tileLayers),
   };
   SCALE = W / (tileLayers.transportation?.extent || tileLayers.building?.extent || 4096);
-  gridOriginX = Math.floor(viewOffset.x / CPX) - 1;
-  gridOriginY = Math.floor(viewOffset.y / CPX) - 1;
+  if (BEARING_STUDY_MODE){
+    gridOriginX = Math.floor((viewOffset.x + W / 2) / CPX) - Math.floor(RASTER_GRID_SIZE / 2);
+    gridOriginY = Math.floor((viewOffset.y + H / 2) / CPX) - Math.floor(RASTER_GRID_SIZE / 2);
+  } else {
+    gridOriginX = Math.floor(viewOffset.x / CPX) - 1;
+    gridOriginY = Math.floor(viewOffset.y / CPX) - 1;
+  }
   gridShiftX = gridOriginX * CPX - viewOffset.x;
   gridShiftY = gridOriginY * CPX - viewOffset.y;
 
@@ -4362,7 +4524,7 @@ function render(){
     grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea,
     facilitySites, featureCountsByOption,
   } = rasterized;
-  const RG = GRID + 2;
+  const RG = RASTER_GRID_SIZE;
   const worldToGridCell = (wx, wy) => [
     Math.floor(wx / CPX) - TILE.x * GRID - gridOriginX,
     Math.floor(wy / CPX) - TILE.y * GRID - gridOriginY,
@@ -4392,6 +4554,7 @@ function render(){
     maxBuildingRiseCells:0,
     maxBuildingRiseLogicalPixels:0,
     spriteCells:0,
+    rerasterizedLogicalPixels:0,
     flushed:false,
   };
 
@@ -4478,7 +4641,7 @@ function render(){
     };
   }
   const { buildingKinds, buildingDescs, buildingAnchors, bldStyle, normalBuildingGrid, poiBuildingGrid } = rasterized.semantic;
-  const emptyGrid = new Uint8Array((GRID + 2) * (GRID + 2));
+  const emptyGrid = new Uint8Array(RASTER_GRID_SIZE * RASTER_GRID_SIZE);
   if (CELL_ONLY_MODE) drawCellPixelArtSurfaceGrid(emptyGrid, 'grass', cellRenderingStats, false);
   else drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
 
@@ -4720,12 +4883,16 @@ function render(){
      ここでは範囲内の確定データを画面座標へ変換して描くだけで、
      パンしても選抜・表示順・アイコンと点の切り替えは一切起きない。 --- */
   const worldToScreen = (wx, wy) => [wx - TILE.x * W - viewOffset.x, wy - TILE.y * H - viewOffset.y];
+  const rotationVisibilityMargin = BEARING_STUDY_MODE
+    ? Math.ceil((Math.SQRT2 - 1) * W / 2) + 90
+    : 70;
   const facilitiesInView = resolvedView.facilities
     .map(f => {
       const pt = worldToScreen(f.worldX, f.worldY);
       return { ...f, pt, visualRadius:f.collisionRadius };
     })
-    .filter(p => p.pt[0] >= -70 && p.pt[1] >= -70 && p.pt[0] <= W + 70 && p.pt[1] <= H + 70);
+    .filter(p => p.pt[0] >= -rotationVisibilityMargin && p.pt[1] >= -rotationVisibilityMargin &&
+      p.pt[0] <= W + rotationVisibilityMargin && p.pt[1] <= H + rotationVisibilityMargin);
   // standalone testの「施設」は、収集ランドマークと敷地所有施設を
   // 実建物として表示する。敷地がない駅・学校は従来の1棟fallbackを維持する。
   const facilityBuildingTargets = STANDALONE_LANDMARK_MODE
@@ -4777,7 +4944,8 @@ function render(){
       ];
   const clusterMarks = resolvedView.clusters
     .map(c => ({ ...c, pt:worldToScreen(c.worldX, c.worldY) }))
-    .filter(c => c.pt[0] >= -40 && c.pt[1] >= -40 && c.pt[0] <= W + 40 && c.pt[1] <= H + 40);
+    .filter(c => c.pt[0] >= -rotationVisibilityMargin && c.pt[1] >= -rotationVisibilityMargin &&
+      c.pt[0] <= W + rotationVisibilityMargin && c.pt[1] <= H + rotationVisibilityMargin);
   let drawnDotCount = 0;
   function drawDotMarker(p){
     const [x0, y0] = p.pt;
@@ -4880,7 +5048,8 @@ function render(){
     const visualScale = ACTIVE_PATTERN.scale * (ACTIVE_PATTERN.categoryScale[item.category] || 1);
     const radius = Math.max(3, Math.round(5 * visualScale));
     const paint = (x, y, color) => {
-      paintSolidMapCell(x, y, color, layer, cellRenderingStats);
+      const [sourceDx, sourceDy] = screenCellVectorToSource(x - gx, y - gy);
+      paintSolidMapCell(gx + sourceDx, gy + sourceDy, color, layer, cellRenderingStats);
       cellRenderingStats.spriteCells++;
     };
     if (marker === 'tower'){
@@ -4914,7 +5083,10 @@ function render(){
       for (let tx = 0; tx < template.width; tx++){
         const color = template.colors[ty * template.width + tx];
         if (!color) continue;
-        paintSolidMapCell(gx + tx - template.anchorX, gy + ty - template.anchorY, color, layer, cellRenderingStats);
+        const [sourceDx, sourceDy] = screenCellVectorToSource(
+          tx - template.anchorX, ty - template.anchorY
+        );
+        paintSolidMapCell(gx + sourceDx, gy + sourceDy, color, layer, cellRenderingStats);
         cellRenderingStats.spriteCells++;
       }
     }
@@ -5051,7 +5223,7 @@ function render(){
     }
   }
 
-  const labelPoint = p => CELL_ONLY_MODE && p.cellPt ? p.cellPt : p.pt;
+  const labelPoint = p => rotateScenePoint(CELL_ONLY_MODE && p.cellPt ? p.cellPt : p.pt);
 
   function drawStationNames(){
     const placedRects = [];
@@ -5069,7 +5241,7 @@ function render(){
     for (const f of L('park')){
       const name = featureName(f.props);
       if (!name || f.type !== 3) continue;
-      const [cx, cy] = centroid(f.geom);
+      const [cx, cy] = rotateScenePoint(centroid(f.geom));
       if (cx < 0 || cy < 0 || cx > W || cy > H) continue;
       labelWindow(name, cx, cy - 40, placedRects);
     }
@@ -5101,7 +5273,7 @@ function render(){
     for (const f of placeFeatures){
       const name = featureName(f.props);
       if (seenPlaces.has(name)) continue;
-      const [x, y] = tp(geometryAnchor(f));
+      const [x, y] = rotateScenePoint(tp(geometryAnchor(f)));
       if (x < 0 || y < 0 || x > W || y > H) continue;
       const big = ['continent','country','state','province','city','town'].includes(f.props.class);
       const r = outlinedTextPlaced(name, x, y, big ? 42 : 26, big ? '#f8f0d8' : '#f8e8a8', placedRects);
@@ -5119,7 +5291,7 @@ function render(){
     const placedRects = [];
     for (const { feature:f, anchor } of terrainItems){
       const kind = f.props.subclass || f.props.class || 'terrain';
-      const [ax, ay] = tp(anchor);
+      const [ax, ay] = rotateScenePoint(tp(anchor));
       if (f.type === 1){
         if (ax < -20 || ay < -20 || ax > W + 20 || ay > H + 20) continue;
         ctx.fillStyle = OUT;
@@ -5216,7 +5388,7 @@ function render(){
     for (const { feature:f, anchor } of terrainItems){
       const name = featureName(f.props);
       if (!name) continue;
-      const [ax, ay] = terrainCellPoints.get(f) || tp(anchor);
+      const [ax, ay] = rotateScenePoint(terrainCellPoints.get(f) || tp(anchor));
       outlinedTextPlaced(name, ax, ay - 16, 26, '#e8d8b0', placedRects);
     }
   }
@@ -5415,6 +5587,9 @@ function render(){
     }
     // 地図地物と記号を意味セルバッファへ合成し終えてから、名称を鮮明に重ねる。
     flushSolidCellBuffer(cellRenderingStats);
+    // 意味セルへ入った地物の当たり判定だけを表示方位へ追従させる。
+    // この後に追加する名称と現在地は、すでに画面正立座標で描かれる。
+    rotateWorldHitAreas(hitAreas);
     for (const option of layerOrder){
       if (!o[option] || !cellLabelDrawers[option]) continue;
       cellLabelDrawers[option]();
@@ -5512,6 +5687,15 @@ function render(){
   toolbar.dataset.renderCount = renderCount;
   window.PixelMapDiagnostics = {
     renderMode:RENDER_MODE,
+    mapBearing:{
+      enabled:BEARING_STUDY_MODE,
+      degrees:mapBearing,
+      source:BEARING_STUDY_MODE ? 'query-study' : 'north-up',
+      worldRerasterizedToLogicalPixelGrid:BEARING_STUDY_MODE && CELL_ONLY_MODE,
+      uprightHeightExtrusion:BEARING_STUDY_MODE && STANDALONE_HEIGHT_EXTRUSION,
+      uprightLabels:BEARING_STUDY_MODE,
+      uprightUi:true,
+    },
     retainedSourceLayers:[...RETAINED_SOURCE_LAYERS],
     loadedSourceLayers:Object.keys(tileLayers),
     unexpectedSourceLayers:Object.keys(tileLayers).filter(name => !RETAINED_SOURCE_LAYERS.has(name)),
@@ -5674,6 +5858,7 @@ function render(){
       maxBuildingRiseCells:CELL_ONLY_MODE ? cellRenderingStats.maxBuildingRiseCells : 0,
       maxBuildingRiseLogicalPixels:CELL_ONLY_MODE ? cellRenderingStats.maxBuildingRiseLogicalPixels : 0,
       spriteCells:CELL_ONLY_MODE ? cellRenderingStats.spriteCells : 0,
+      rerasterizedLogicalPixels:CELL_ONLY_MODE ? cellRenderingStats.rerasterizedLogicalPixels : 0,
       layerCells:CELL_ONLY_MODE ? { ...cellRenderingStats.layerCells } : {},
     },
     resolver:{
@@ -5919,7 +6104,7 @@ function resolveTileFacilities(x, y){
   if (result) resolvedTiles.set(key, { generation:tileGeneration, result });
   return result;
 }
-function viewTileRange(pad = 96){
+function viewTileRange(pad = 96 + ROTATION_SOURCE_MARGIN_CELLS * CPX){
   const max = 2 ** TILE.z;
   return {
     minX:TILE.x + Math.floor((viewOffset.x - pad) / W),
@@ -5985,7 +6170,8 @@ function updateMapPosition(){
     : '';
   mapPosition.dataset.offsetX = viewOffset.x.toFixed(3);
   mapPosition.dataset.offsetY = viewOffset.y.toFixed(3);
-  mapPosition.textContent = `${prefix}OpenFreeMap z${TILE.z} / ${t.x} / ${t.y} ─ 地理の読みやすさ`;
+  const bearingText = BEARING_STUDY_MODE ? ` / 方位 ${mapBearing.toFixed(1)}°` : '';
+  mapPosition.textContent = `${prefix}OpenFreeMap z${TILE.z} / ${t.x} / ${t.y}${bearingText} ─ 地理の読みやすさ`;
 }
 
 let ensureTilesRunning = false;
@@ -6417,12 +6603,18 @@ cv.addEventListener('pointermove', ev => {
     const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
     if (!drag.moved && Math.hypot(dx, dy) <= 4) return;
     drag.moved = true;
-    viewOffset.x = drag.offsetX - dx * drag.scaleX;
-    viewOffset.y = drag.offsetY - dy * drag.scaleY;
+    const screenDx = dx * drag.scaleX;
+    const screenDy = dy * drag.scaleY;
+    const [worldDx, worldDy] = BEARING_STUDY_MODE
+      ? window.PixelMapBearing.screenVectorToWorld([screenDx, screenDy], mapBearing)
+      : [screenDx, screenDy];
+    viewOffset.x = drag.offsetX - worldDx;
+    viewOffset.y = drag.offsetY - worldDy;
     const maxTile = 2 ** TILE.z;
     viewOffset.y = Math.max(-TILE.y * H, Math.min((maxTile - TILE.y - 1) * H, viewOffset.y));
-    drag.previewX = drag.offsetX - viewOffset.x;
-    drag.previewY = drag.offsetY - viewOffset.y;
+    // previewは既に回転・再ラスタライズ済みなので、指の画面移動量で平行移動する。
+    drag.previewX = screenDx;
+    drag.previewY = screenDy;
     scheduleDragPreview();
     updateMapPosition();
     if (drag.moved) setMsg('マップを いどうしている……');
@@ -6580,6 +6772,11 @@ boot().finally(async () => {
     assetTaste:'reference',
     assetPack:WORLD_STYLE_MODE ? WORLD_STYLE.assetPack : 'legacy',
     tileZoom:TILE.z,
+    mapBearing:{
+      enabled:BEARING_STUDY_MODE,
+      degrees:mapBearing,
+      source:BEARING_STUDY_MODE ? 'query-study' : 'north-up',
+    },
     pattern:ACTIVE_PATTERN,
     pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_DISPLAY_SCALE),
     pixelRequestedScale:REQUESTED_DISPLAY_SCALE,
