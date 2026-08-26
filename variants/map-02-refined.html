@@ -33,7 +33,7 @@
     display:flex;
     align-items:center;
     gap:8px;
-    min-width:92px;
+    min-width:164px;
     min-height:46px;
     padding:6px 9px;
     border:3px solid #f8f0d8;
@@ -42,7 +42,7 @@
     color:#f8f0d8;
     font-size:12px;
     line-height:1;
-    pointer-events:none;
+    pointer-events:auto;
   }
   #bearingIndicator[hidden]{ display:none; }
   #bearingCompass{
@@ -76,7 +76,25 @@
     border-bottom:12px solid #f06048;
     transform:translateY(-2px);
   }
-  #bearingValue{ min-width:4ch; font-variant-numeric:tabular-nums; }
+  #bearingValue{ min-width:4ch; font-variant-numeric:tabular-nums; text-align:center; }
+  .bearing-step{
+    display:grid;
+    place-items:center;
+    width:32px;
+    height:32px;
+    margin:0;
+    padding:0;
+    border:2px solid #f8f0d8;
+    border-radius:0;
+    background:#202028;
+    color:#f8f0d8;
+    font:18px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+    cursor:pointer;
+  }
+  .bearing-step:hover:not(:disabled),
+  .bearing-step:focus-visible{ background:#384850; color:#f8d038; }
+  .bearing-step:focus-visible{ outline:2px solid #f8d038; outline-offset:2px; }
+  .bearing-step:disabled{ cursor:wait; opacity:.45; }
   #captureBadge{
     display:none;
     position:absolute;
@@ -571,9 +589,11 @@
     <div class="capture-place" id="capturePlace">川崎駅</div>
   </div>
   <canvas id="map" width="1536" height="1536" tabindex="0" aria-label="川崎駅周辺の読みやすいレトロRPG風マップ。ドラッグで移動、矢印キーで施設を選択できます" aria-describedby="msg"></canvas>
-  <div id="bearingIndicator" role="img" aria-label="地図の表示方位" hidden>
+  <div id="bearingIndicator" role="group" aria-label="地図の表示方位と回転操作" hidden>
+    <button id="bearingMinusBtn" class="bearing-step" type="button" aria-label="表示方位を15度減らす" title="−15°" aria-controls="map">−</button>
     <span id="bearingCompass" aria-hidden="true"></span>
-    <span id="bearingValue">0°</span>
+    <output id="bearingValue" aria-live="polite">0°</output>
+    <button id="bearingPlusBtn" class="bearing-step" type="button" aria-label="表示方位を15度増やす" title="＋15°" aria-controls="map">＋</button>
   </div>
 </div>
 
@@ -836,13 +856,17 @@ function parseTile(buf){
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
 const REQUESTED_MAP_BEARING = Number(PAGE_PARAMS.get('bearing'));
-// センサーのないPCでも実レンダラーの回転状態を確認できるstandalone test専用入口。
-// ユーザー向け回転操作ではなく、embedded本番には伝播させない。
-const BEARING_STUDY_MODE = !EMBEDDED && PAGE_PARAMS.has('bearing') &&
+const HAS_REQUESTED_MAP_BEARING = PAGE_PARAMS.has('bearing') &&
   Number.isFinite(REQUESTED_MAP_BEARING);
-let mapBearing = BEARING_STUDY_MODE
+// standalone testではコンパスから連続方位を評価する。embedded本番と
+// capture契約には伝播させず、既存ページのviewport同期も変更しない。
+const BEARING_STUDY_MODE = !EMBEDDED && PAGE_PARAMS.get('capture') !== '1';
+let mapBearing = BEARING_STUDY_MODE && HAS_REQUESTED_MAP_BEARING
   ? window.PixelMapBearing.normalizeDegrees(REQUESTED_MAP_BEARING)
   : 0;
+let mapBearingSource = BEARING_STUDY_MODE
+  ? (HAS_REQUESTED_MAP_BEARING ? 'query' : 'manual-control')
+  : 'north-up';
 const WORLD_STYLE_PROFILE = PAGE_PARAMS.get('profile') === 'reference'
   ? 'retroJrpgZ14' : 'productionComparisonZ14';
 const WORLD_STYLE = window.PixelMapWorldStyles[WORLD_STYLE_PROFILE];
@@ -926,7 +950,7 @@ document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
 document.documentElement.dataset.worldStyle = WORLD_STYLE_MODE ? WORLD_STYLE.id : 'none';
 document.documentElement.dataset.tileZoom = String(TILE_ZOOM);
 document.documentElement.dataset.mapBearing = mapBearing.toFixed(1);
-document.documentElement.dataset.bearingSource = BEARING_STUDY_MODE ? 'query-study' : 'north-up';
+document.documentElement.dataset.bearingSource = mapBearingSource;
 document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
@@ -1110,6 +1134,10 @@ function rotateWorldHitAreas(areas){
     area.y = center[1] - area.h / 2;
   }
 }
+const BEARING_STEP_DEGREES = 15;
+const bearingMinusBtn = document.getElementById('bearingMinusBtn');
+const bearingPlusBtn = document.getElementById('bearingPlusBtn');
+let bearingRenderBusy = false;
 function updateBearingUi(){
   const indicator = document.getElementById('bearingIndicator');
   indicator.hidden = !BEARING_STUDY_MODE;
@@ -1117,7 +1145,10 @@ function updateBearingUi(){
   const rounded = Math.round(mapBearing * 10) / 10;
   document.getElementById('bearingValue').textContent = `${rounded}°`;
   document.getElementById('bearingCompass').style.transform = `rotate(${-mapBearing}deg)`;
-  indicator.setAttribute('aria-label', `地図の表示方位 ${rounded}度。赤い矢印が北です。`);
+  indicator.setAttribute('aria-label', `地図の表示方位 ${rounded}度。赤い矢印が北です。15度単位で変更できます。`);
+  const controlsDisabled = bearingRenderBusy || document.documentElement.dataset.mapReady !== '1';
+  bearingMinusBtn.disabled = controlsDisabled;
+  bearingPlusBtn.disabled = controlsDisabled;
 }
 updateBearingUi();
 // 高さ連動の2.5D押し出しはstandalone testのcell2／cell3だけで評価する。
@@ -5722,7 +5753,10 @@ function render(){
     mapBearing:{
       enabled:BEARING_STUDY_MODE,
       degrees:mapBearing,
-      source:BEARING_STUDY_MODE ? 'query-study' : 'north-up',
+      source:mapBearingSource,
+      control:BEARING_STUDY_MODE ? 'compass-buttons' : 'none',
+      stepDegrees:BEARING_STUDY_MODE ? BEARING_STEP_DEGREES : null,
+      reloadOnChange:false,
       worldRerasterizedToLogicalPixelGrid:BEARING_STUDY_MODE && CELL_ONLY_MODE,
       uprightHeightExtrusion:false,
       fixedVanishingPointHeightExtrusion:BEARING_STUDY_MODE && STANDALONE_HEIGHT_EXTRUSION,
@@ -6775,6 +6809,61 @@ allLayersToggle.addEventListener('change', () => {
 syncAllLayersToggle();
 syncCommercialLandmarkState();
 locateBtn.addEventListener('click', locateMe);
+
+function bearingUrl(degrees, source = location.href){
+  const url = new URL(source);
+  url.searchParams.set('bearing', String(Math.round(degrees * 10) / 10));
+  return url;
+}
+function syncBearingStudyState(){
+  document.documentElement.dataset.mapBearing = mapBearing.toFixed(1);
+  document.documentElement.dataset.bearingSource = mapBearingSource;
+  document.documentElement.dataset.renderCount = String(renderCount);
+  if (!window.PixelMapStudy) return;
+  window.PixelMapStudy.mapBearing = {
+    enabled:BEARING_STUDY_MODE,
+    degrees:mapBearing,
+    source:mapBearingSource,
+    control:BEARING_STUDY_MODE ? 'compass-buttons' : 'none',
+    stepDegrees:BEARING_STUDY_MODE ? BEARING_STEP_DEGREES : null,
+    reloadOnChange:false,
+  };
+  window.PixelMapStudy.diagnostics = window.PixelMapDiagnostics || null;
+}
+function setMapBearingWithoutReload(nextBearing){
+  if (!BEARING_STUDY_MODE || bearingRenderBusy || !tileLayers ||
+      document.documentElement.dataset.mapReady !== '1') return;
+  const normalized = window.PixelMapBearing.normalizeDegrees(nextBearing);
+  if (normalized === mapBearing) return;
+  mapBearing = normalized;
+  mapBearingSource = 'manual-control';
+  bearingRenderBusy = true;
+  history.replaceState(history.state, '', bearingUrl(mapBearing));
+  syncBearingStudyState();
+  updateBearingUi();
+  setMsg(`表示方位を ${mapBearing}度へ かいてんしている……`);
+  requestAnimationFrame(() => {
+    try {
+      render();
+      updateMapPosition();
+      syncBearingStudyState();
+      window.dispatchEvent(new CustomEvent('pixelmap:bearingchange', {
+        detail:{ degrees:mapBearing, source:mapBearingSource, reloaded:false },
+      }));
+      setMsg(`表示方位 ${mapBearing}度。ページを よみなおさずに かいてんした。`);
+    } catch (error){
+      console.error(error);
+      setMsg('表示方位を かえられなかった……');
+    } finally {
+      bearingRenderBusy = false;
+      updateBearingUi();
+    }
+  });
+}
+bearingMinusBtn.addEventListener('click', () =>
+  setMapBearingWithoutReload(mapBearing - BEARING_STEP_DEGREES));
+bearingPlusBtn.addEventListener('click', () =>
+  setMapBearingWithoutReload(mapBearing + BEARING_STEP_DEGREES));
 renderModeToggle.addEventListener('change', () => {
   location.assign(renderModeUrl(renderModeToggle.checked ? 'cell3' : 'cell2').href);
 });
@@ -6811,7 +6900,10 @@ boot().finally(async () => {
     mapBearing:{
       enabled:BEARING_STUDY_MODE,
       degrees:mapBearing,
-      source:BEARING_STUDY_MODE ? 'query-study' : 'north-up',
+      source:mapBearingSource,
+      control:BEARING_STUDY_MODE ? 'compass-buttons' : 'none',
+      stepDegrees:BEARING_STUDY_MODE ? BEARING_STEP_DEGREES : null,
+      reloadOnChange:false,
     },
     pattern:ACTIVE_PATTERN,
     pixelScale:Number(document.documentElement.dataset.pixelScale || REQUESTED_DISPLAY_SCALE),
@@ -6823,6 +6915,7 @@ boot().finally(async () => {
     diagnostics:window.PixelMapDiagnostics || null,
     tileCacheSize:tileCache.size,
   };
+  updateBearingUi();
   if (CAPTURE_MODE){
     if (window.PixelMapStudy.captureReady) document.documentElement.dataset.captureReady = '1';
     else document.documentElement.dataset.captureError = ready ? `tile-cache-${tileCache.size}` : 'map-not-ready';

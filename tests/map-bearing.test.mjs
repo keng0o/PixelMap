@@ -68,3 +68,19 @@ test('standalone test page exposes bearing study without production embedding', 
   assert.match(html, /fixedVanishingPointHeightExtrusion/);
   assert.match(html, /mapBearing:/);
 });
+
+test('compass buttons rotate by 15 degrees without page reload', () => {
+  const html = fs.readFileSync(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+  assert.match(html, /id="bearingMinusBtn"/);
+  assert.match(html, /id="bearingPlusBtn"/);
+  assert.match(html, /const BEARING_STEP_DEGREES = 15/);
+  assert.match(html, /const BEARING_STUDY_MODE = !EMBEDDED && PAGE_PARAMS\.get\('capture'\) !== '1'/);
+  const start = html.indexOf('function setMapBearingWithoutReload');
+  const end = html.indexOf("\nbearingMinusBtn.addEventListener", start);
+  assert.ok(start >= 0 && end > start);
+  const controlSource = html.slice(start, end);
+  assert.match(controlSource, /history\.replaceState/);
+  assert.match(controlSource, /render\(\)/);
+  assert.match(controlSource, /reloaded:false/);
+  assert.doesNotMatch(controlSource, /location\.(?:assign|reload|replace)/);
+});

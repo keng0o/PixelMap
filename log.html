@@ -153,7 +153,7 @@
             </tr>
             <tr>
               <th scope="row">表示方位の実装検証</th>
-              <td><code>?bearing=0〜359</code>を付けた場合だけ、地理を任意角度で論理ピクセルグリッドへ再ラスタライズする。建物の高さ線は北上時の投影方向に合わせた画面左下側の固定消失点へ収束させ、名称・方位表示・施設記号は画面へ正立。ドラッグは画面方向へ追従し、回転操作ボタンは設けない。</td>
+              <td>コンパスの<code>−／＋</code>で表示方位を15度ずつ変更し、ページ遷移や再読込なしで地理を論理ピクセルグリッドへ再描画する。角度はURLへ履歴置換で保存。建物の高さ線は画面左下側の固定消失点へ収束させ、名称・方位表示・施設記号は画面へ正立する。</td>
               <td>北上固定の従来表示を維持。query指定・方位表示・回転処理・同期契約の変更なし。</td>
             </tr>
             <tr>
@@ -201,6 +201,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>コンパスからリロードなしで表示方位を変更</h3>
+          <time datetime="2026-08-26">2026-08-26 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>コンパスの左右へ<code>−</code>／<code>＋</code>ボタンを追加し、表示方位を15度ずつ減算・加算する。クリック時は既存タイルと意味セルを同一ページ内で再描画し、<code>history.replaceState</code>でURLの<code>bearing</code>だけを更新するためページのリロードは発生しない。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testの通常表示で有効。captureとembedded本番では非表示・無効。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップの北上固定、viewport同期、設定UI、URL契約は変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>±15度、360度正規化、URL履歴置換、ページ遷移API不使用、同一ページ内のrenderCount増加、固定消失点、ネイティブbuttonとaria-label、自動テスト、実画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>回転中も建物の消失点を画面へ固定</h3>
