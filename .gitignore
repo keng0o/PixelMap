@@ -5,3 +5,5 @@ mobile/node_modules/
 mobile/coverage/
 mobile/web-build/
 mobile/.env*.local
+screenshots/expo-go-scan-qr-*.png
+screenshots/expo-go-scan-qr-*.svg

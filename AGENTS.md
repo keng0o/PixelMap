@@ -25,3 +25,10 @@
 - After capturing the screenshot, delegate an independent visual review to a sub-agent and give it the screenshot plus the original user-reported problem.
 - If the sub-agent finds the problem unresolved or identifies a new visual regression, continue fixing, capture a new screenshot, and repeat the sub-agent review.
 - Do not deploy or report completion until the latest screenshot passes the sub-agent review.
+
+# Expo Go QR handoff
+
+- After every feature addition or behavior fix that affects `mobile/`, run `npm run check` from `mobile/`, then run `npm run start:qr` and wait for Expo CLI to print `Scan the QR code above to open in Expo Go`.
+- Generate the QR code from the active Metro URL for that exact revision. Do not reuse a QR code from an earlier Metro session.
+- Keep the Metro server running for the handoff and share both the QR code and its `exp://` URL. Use LAN by default; if the user's device cannot reach the LAN server, restart with an Expo tunnel and regenerate the QR code.
+- A mobile feature change is incomplete until its fresh Expo Go QR code has been generated and shared after validation.

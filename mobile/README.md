@@ -7,9 +7,12 @@ Expo/React Native implementation of the single 2px PixelMap.
 ```sh
 npm install
 npm run check
+npm run start:qr
 npm run ios
 npm run android
 ```
+
+`npm run start:qr` starts Metro on the local network and prints a fresh QR code for Expo Go. Keep that terminal running while scanning. The phone and development machine must be on the same network; use `npx expo start --tunnel` when LAN access is unavailable.
 
 ## Android APK
 
