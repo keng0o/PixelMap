@@ -92,8 +92,7 @@ export class ExpoSqliteTileCacheBackend implements TileCacheBackend {
     const temporary = new File(this.directory, `${fileName}.${now}.tmp`);
     temporary.create({ intermediates: true, overwrite: true });
     temporary.write(bytes);
-    if (destination.exists) destination.delete();
-    temporary.move(destination);
+    await temporary.move(destination, { overwrite: true });
 
     await database.runAsync(
       `INSERT INTO tile_cache(cache_key, file_uri, byte_length, stored_at, last_accessed_at)
