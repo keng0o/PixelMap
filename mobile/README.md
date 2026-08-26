@@ -1,6 +1,6 @@
 # PixelMap mobile
 
-Expo/React Native implementation of the single 2px PixelMap.
+Expo SDK 54 / React Native 0.81 implementation of the single 2px PixelMap.
 
 ## Commands
 

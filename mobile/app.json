@@ -22,7 +22,8 @@
         }
       ],
       "expo-splash-screen",
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-sqlite"
     ],
     "ios": {
       "supportsTablet": true,
