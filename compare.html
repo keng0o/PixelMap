@@ -49,7 +49,8 @@
   .map-label{
     position:absolute;
     top:8px;
-    left:8px;
+    left:50%;
+    transform:translateX(-50%);
     z-index:2;
     padding:4px 7px;
     border:1px solid var(--ink);
@@ -76,7 +77,7 @@
   @media (max-width:680px){
     body{ gap:6px; padding:7px; }
     .comparison{ gap:5px; }
-    .map-label{ top:5px; left:5px; font-size:8px; }
+    .map-label{ top:5px; font-size:8px; }
     footer{ font-size:8px; }
   }
 </style>
@@ -86,7 +87,7 @@
   <section class="map-panel" aria-label="比較マップ A">
     <h1 class="map-label">MAP A</h1>
     <iframe
-      src="variants/map-02-refined.html?embedded=1&amp;pattern=07&amp;map=left&amp;lat=35.5314&amp;lon=139.6969&amp;place=%E5%B7%9D%E5%B4%8E%E9%A7%85&amp;v=20260824-production-1"
+      src="variants/map-02-refined.html?embedded=1&amp;pattern=07&amp;map=left&amp;lat=35.5314&amp;lon=139.6969&amp;place=%E5%B7%9D%E5%B4%8E%E9%A7%85&amp;v=20260826-bearing-production-1"
       title="比較マップ A。移動はもう一方の地図にも同期されます"
       allow="geolocation"
     ></iframe>
@@ -94,7 +95,7 @@
   <section class="map-panel" aria-label="比較マップ B">
     <h1 class="map-label">MAP B</h1>
     <iframe
-      src="variants/map-02-refined.html?embedded=1&amp;pattern=07&amp;map=right&amp;lat=35.5314&amp;lon=139.6969&amp;place=%E5%B7%9D%E5%B4%8E%E9%A7%85&amp;v=20260824-production-1"
+      src="variants/map-02-refined.html?embedded=1&amp;pattern=07&amp;map=right&amp;lat=35.5314&amp;lon=139.6969&amp;place=%E5%B7%9D%E5%B4%8E%E9%A7%85&amp;v=20260826-bearing-production-1"
       title="比較マップ B。移動はもう一方の地図にも同期されます"
       allow="geolocation"
     ></iframe>
@@ -112,6 +113,11 @@
 const frames = [...document.querySelectorAll('iframe')];
 const targetOrigin = location.origin === 'null' ? '*' : location.origin;
 let latestViewport = null;
+const normalizeBearing = value => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? ((numeric % 360) + 360) % 360 : 0;
+};
+let latestBearing = normalizeBearing(new URLSearchParams(location.search).get('bearing'));
 
 function isMapFrame(source){
   return frames.some(frame => frame.contentWindow === source);
@@ -119,15 +125,32 @@ function isMapFrame(source){
 function sendViewport(frame, state){
   frame.contentWindow?.postMessage({ type:'pixelmap:set-viewport', state }, targetOrigin);
 }
+function sendBearing(frame, bearing){
+  frame.contentWindow?.postMessage({ type:'pixelmap:set-bearing', bearing }, targetOrigin);
+}
+function updateTopBearingUrl(bearing){
+  latestBearing = normalizeBearing(bearing);
+  const url = new URL(location.href);
+  url.searchParams.set('bearing', String(latestBearing));
+  history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  document.documentElement.dataset.mapBearing = String(latestBearing);
+}
 window.addEventListener('message', event => {
   if (!isMapFrame(event.source)) return;
   if (location.origin !== 'null' && event.origin !== location.origin) return;
 
   if (event.data?.type === 'pixelmap:ready'){
+    const frame = frames.find(item => item.contentWindow === event.source);
     if (latestViewport){
-      const frame = frames.find(item => item.contentWindow === event.source);
       if (frame) sendViewport(frame, latestViewport);
     }
+    if (frame) sendBearing(frame, latestBearing);
+    return;
+  }
+  if (event.data?.type === 'pixelmap:bearing'){
+    if (!Number.isFinite(Number(event.data.bearing))) return;
+    updateTopBearingUrl(event.data.bearing);
+    for (const frame of frames) sendBearing(frame, latestBearing);
     return;
   }
   if (event.data?.type !== 'pixelmap:viewport') return;
@@ -137,6 +160,12 @@ window.addEventListener('message', event => {
     if (frame.contentWindow !== event.source) sendViewport(frame, latestViewport);
   }
 });
+window.addEventListener('popstate', () => {
+  latestBearing = normalizeBearing(new URLSearchParams(location.search).get('bearing'));
+  document.documentElement.dataset.mapBearing = String(latestBearing);
+  for (const frame of frames) sendBearing(frame, latestBearing);
+});
+document.documentElement.dataset.mapBearing = String(latestBearing);
 </script>
 </body>
 </html>

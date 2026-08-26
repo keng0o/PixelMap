@@ -154,7 +154,7 @@
             <tr>
               <th scope="row">表示方位の実装検証</th>
               <td>コンパスの<code>−／＋</code>で表示方位を15度ずつ変更し、ページ遷移や再読込なしで地理を論理ピクセルグリッドへ再描画する。角度はURLへ履歴置換で保存。建物の高さ線は画面左下側の固定消失点へ収束させ、名称・方位表示・施設記号は画面へ正立する。</td>
-              <td>北上固定の従来表示を維持。query指定・方位表示・回転処理・同期契約の変更なし。</td>
+              <td>testと同じコンパス・再ラスタライズ・固定消失点・正立要素を使用。1マップは単独、2マップは位置と方位、4マップは各地点を保ったまま方位だけを同期し、外側URLへ履歴置換で保存する。</td>
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
@@ -173,8 +173,8 @@
             </tr>
             <tr>
               <th scope="row">建物とcorridorの重なり</th>
-              <td>建物を棟単位で原子セル化し、高さがある棟は実高を平方根スケールで最大18論理pxへ圧縮して、接地形状から右上へ屋根を持ち上げた壁・窓・影・施設記号を2.5D描画。高さ不明の棟は従来の平面描画を維持。</td>
-              <td>従来の原子セル建物描画と固定compositor順を維持し、高さ連動の2.5D押し出しは使用しない。</td>
+              <td>建物を棟単位で原子セル化し、高さがある棟は実高を平方根スケールで最大18論理pxへ圧縮する。屋根・壁・窓・影・施設記号は接地位置と画面左下側の固定消失点を結ぶ放射方向へ2.5D投影し、高さ不明の棟は従来の平面描画を維持。</td>
+              <td>testと同じ高さ連動2.5Dと固定消失点を使用。地理を回しても消失点・光源・正立要素を画面へ固定し、固定compositor順を維持する。</td>
             </tr>
             <tr>
               <th scope="row">POI</th>
@@ -189,7 +189,7 @@
             <tr>
               <th scope="row">外側UIと同期</th>
               <td>単独チェックでcell2/cell3を切替。URLの他条件とhashを保持して再読み込み。設定パネルは右上固定の「－」で閉じ、閉じた間は地図を全画面表示。右上の「＋」で再表示。</td>
-              <td>1マップは単独切替、2マップは位置同期を保ったまま左右別切替し、それぞれ「＋／－」で設定を開閉。4マップは親URLと4つのiframeをcell3・全レイヤー・commercialを含む共通チェックで同期。</td>
+              <td>1マップは単独切替、2マップは位置同期を保ったまま左右別切替し、それぞれ「＋／－」で設定を開閉。コンパスの方位は2・4マップ内で同期し、操作時にiframeを再読込しない。4マップはcell3・全レイヤー・commercialも共通チェックで同期。</td>
             </tr>
           </tbody>
         </table>
@@ -201,6 +201,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>固定消失点とコンパス回転をWeb本番1・2・4マップへリリース</h3>
+          <time datetime="2026-08-26">2026-08-26 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>standalone testで検証した15度刻みのコンパス操作、論理ピクセルグリッドへの再ラスタライズ、画面左下側の固定消失点へ放射する高さ連動2.5Dをembedded本番へ昇格。1マップは単独、2マップは位置と表示方位、4マップは各地点を維持して同期表示方位だけを共有する。操作中は<code>postMessage</code>と<code>history.replaceState</code>を使い、iframeやページを再読込しない。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>全てに反映</strong>。standalone test、1マップ（<code>index.html</code>）、2マップ（<code>compare.html</code>）、4マップ（<code>four-maps.html</code>／<code>variants/height-stack-four-map.html</code>）。capture比較契約だけは北上固定を維持。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップへコンパスの<code>−／＋</code>、表示角度、固定消失点2.5Dを追加。2マップの位置同期、4マップの地点・レイヤー・cell3同期は維持し、表示方位だけを新しい独立メッセージで同期する。Expo／Flutter実装は変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト155件、ビルド、1画面のrenderCount 1→2とiframe <code>src</code>不変、2画面の0°→15°同期、4地点すべての0°→15°同期、4画面で逆方向を同時操作した場合の再収束、親URLの履歴置換、固定消失点立体、1・2・4画面スクリーンショット、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>コンパスからリロードなしで表示方位を変更</h3>

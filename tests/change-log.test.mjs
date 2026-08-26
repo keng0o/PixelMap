@@ -81,6 +81,11 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /現在のtestをWeb本番1・2・4マップへ全面リリース/);
   assert.match(log, /本番1・2・4マップの地図描画と施設データを現在のtest既定状態へ統一/);
   assert.match(log, /standalone・1・2・4マップの描画契約/);
+  assert.match(log, /固定消失点とコンパス回転をWeb本番1・2・4マップへリリース/);
+  assert.match(log, /2マップは位置と表示方位/);
+  assert.match(log, /4マップは各地点を維持して同期表示方位だけを共有/);
+  assert.match(log, /iframeやページを再読込しない/);
+  assert.match(log, /全自動テスト155件/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

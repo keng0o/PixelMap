@@ -58,10 +58,10 @@ test('caps fixed-vanishing projection and collapses at the vanishing point', () 
   closeTo(Math.hypot(...capped), 10);
 });
 
-test('standalone test page exposes bearing study without production embedding', () => {
+test('standaloneとembedded本番が同じ連続表示方位と固定消失点を使う', () => {
   const html = fs.readFileSync(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
   assert.match(html, /map-bearing\.js\?v=2/);
-  assert.match(html, /const BEARING_STUDY_MODE = !EMBEDDED/);
+  assert.match(html, /const BEARING_STUDY_MODE = PAGE_PARAMS\.get\('capture'\) !== '1'/);
   assert.match(html, /PAGE_PARAMS\.has\('bearing'\)/);
   assert.match(html, /screenVectorToWorld/);
   assert.match(html, /FIXED_VANISHING_POINT/);
@@ -69,12 +69,12 @@ test('standalone test page exposes bearing study without production embedding', 
   assert.match(html, /mapBearing:/);
 });
 
-test('compass buttons rotate by 15 degrees without page reload', () => {
+test('全Webマップのコンパスボタンは15度ずつリロードなしで再描画する', () => {
   const html = fs.readFileSync(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
   assert.match(html, /id="bearingMinusBtn"/);
   assert.match(html, /id="bearingPlusBtn"/);
   assert.match(html, /const BEARING_STEP_DEGREES = 15/);
-  assert.match(html, /const BEARING_STUDY_MODE = !EMBEDDED && PAGE_PARAMS\.get\('capture'\) !== '1'/);
+  assert.match(html, /const BEARING_STUDY_MODE = PAGE_PARAMS\.get\('capture'\) !== '1'/);
   const start = html.indexOf('function setMapBearingWithoutReload');
   const end = html.indexOf("\nbearingMinusBtn.addEventListener", start);
   assert.ok(start >= 0 && end > start);
@@ -82,5 +82,25 @@ test('compass buttons rotate by 15 degrees without page reload', () => {
   assert.match(controlSource, /history\.replaceState/);
   assert.match(controlSource, /render\(\)/);
   assert.match(controlSource, /reloaded:false/);
+  assert.match(controlSource, /pendingBearingUpdate/);
   assert.doesNotMatch(controlSource, /location\.(?:assign|reload|replace)/);
+});
+
+test('1・2・4マップは表示方位だけをpostMessageで同期する', () => {
+  const mapHtml = fs.readFileSync(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+  const oneMapHtml = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const twoMapHtml = fs.readFileSync(new URL('../compare.html', import.meta.url), 'utf8');
+  const fourMapHtml = fs.readFileSync(new URL('../variants/height-stack-four-map.html', import.meta.url), 'utf8');
+  const fourMapShellHtml = fs.readFileSync(new URL('../four-maps.html', import.meta.url), 'utf8');
+  assert.match(mapHtml, /type:'pixelmap:bearing'/);
+  assert.match(mapHtml, /type === 'pixelmap:set-bearing'/);
+  assert.match(mapHtml, /publish:false/);
+  assert.match(oneMapHtml, /pixelmap:set-bearing/);
+  assert.match(oneMapHtml, /pixelmap:bearing/);
+  assert.match(twoMapHtml, /function sendBearing\(frame, bearing\)/);
+  assert.match(twoMapHtml, /for \(const frame of frames\) sendBearing\(frame, latestBearing\)/);
+  assert.match(fourMapHtml, /function broadcastBearing\(\)/);
+  assert.match(fourMapHtml, /updateParentBearingUrl/);
+  assert.match(fourMapShellHtml, /pixelmap:set-bearing/);
+  assert.match(fourMapShellHtml, /pixelmap:bearing/);
 });

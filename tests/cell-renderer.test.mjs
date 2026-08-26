@@ -61,10 +61,10 @@ test('2マップは左右別、4マップは共通チェックでcell2とcell3�
   assert.match(fourMapShellHtml, /function updateTopRenderUrl\(mode\)/);
   assert.match(fourMapShellHtml, /pixelmap:render-mode/);
   assert.match(fourMapShellHtml, /pixelmap:set-render-mode/);
-  assert.match(oneMapHtml, /v=20260824-production-1/);
-  assert.equal((twoMapHtml.match(/v=20260824-production-1/g) || []).length, 2);
-  assert.equal((fourMapHtml.match(/v=20260824-production-1/g) || []).length, 4);
-  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260824-production-1/);
+  assert.match(oneMapHtml, /v=20260826-bearing-production-1/);
+  assert.equal((twoMapHtml.match(/v=20260826-bearing-production-1/g) || []).length, 2);
+  assert.equal((fourMapHtml.match(/v=20260826-bearing-production-1/g) || []).length, 4);
+  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260826-bearing-production-1/);
 });
 
 test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {
@@ -176,7 +176,7 @@ test('全Webマップの地区幹線道路は中央線を描かない', () => {
 
 test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで描く', () => {
   assert.match(html, /function drawCellPixelArtBuildingGrid\(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats\)/);
-  assert.match(html, /const STANDALONE_HEIGHT_EXTRUSION = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /const STANDALONE_HEIGHT_EXTRUSION = CELL_ONLY_MODE/);
   assert.match(html, /function drawCellHeightExtrudedBuildingGrid\(/);
   assert.match(html, /BUILDING_STYLES\.heightRiseLogicalPixels\(buildingDescs\[bi\]\?\.heightM \|\| 0\)/);
   assert.match(html, /shiftX:Math\.max\(0, Math\.round\(riseCells \* \.34\)\)/);

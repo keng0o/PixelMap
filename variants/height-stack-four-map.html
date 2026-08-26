@@ -130,7 +130,8 @@
   .map-card h2{
     position:absolute;
     top:9px;
-    left:9px;
+    left:50%;
+    transform:translateX(-50%);
     z-index:2;
     max-width:calc(100% - 18px);
     margin:0;
@@ -160,7 +161,7 @@
     .shared-panel{ max-height:38dvh; }
     .lead{ display:none; }
     .map-grid{ gap:4px; padding:4px; }
-    .map-card h2{ top:5px; left:5px; padding:4px 5px; font-size:9px; }
+    .map-card h2{ top:5px; padding:4px 5px; font-size:9px; }
     .map-card h2 small{ display:none; }
   }
   @media (prefers-reduced-motion:reduce){ *{ scroll-behavior:auto !important; } }
@@ -191,22 +192,22 @@
   <section class="map-card">
     <h2>川崎駅<small>35.5314, 139.6969</small></h2>
     <iframe data-map-id="kawasaki" title="高さスタック・川崎駅" loading="eager"
-      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kawasaki&amp;lat=35.5314&amp;lon=139.6969&amp;place=%E5%B7%9D%E5%B4%8E%E9%A7%85&amp;v=20260824-production-1"></iframe>
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kawasaki&amp;lat=35.5314&amp;lon=139.6969&amp;place=%E5%B7%9D%E5%B4%8E%E9%A7%85&amp;v=20260826-bearing-production-1"></iframe>
   </section>
   <section class="map-card">
     <h2>北鎌倉<small>北鎌倉駅</small></h2>
     <iframe data-map-id="kita-kamakura" title="高さスタック・北鎌倉" loading="eager"
-      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kita-kamakura&amp;lat=35.3372&amp;lon=139.5451&amp;place=%E5%8C%97%E9%8E%8C%E5%80%89%E9%A7%85&amp;v=20260824-production-1"></iframe>
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kita-kamakura&amp;lat=35.3372&amp;lon=139.5451&amp;place=%E5%8C%97%E9%8E%8C%E5%80%89%E9%A7%85&amp;v=20260826-bearing-production-1"></iframe>
   </section>
   <section class="map-card">
     <h2>箱根<small>箱根湯本駅</small></h2>
     <iframe data-map-id="hakone" title="高さスタック・箱根" loading="eager"
-      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=hakone&amp;lat=35.2333&amp;lon=139.1069&amp;place=%E7%AE%B1%E6%A0%B9%E6%B9%AF%E6%9C%AC%E9%A7%85&amp;v=20260824-production-1"></iframe>
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=hakone&amp;lat=35.2333&amp;lon=139.1069&amp;place=%E7%AE%B1%E6%A0%B9%E6%B9%AF%E6%9C%AC%E9%A7%85&amp;v=20260826-bearing-production-1"></iframe>
   </section>
   <section class="map-card">
     <h2>石垣島<small>石垣港離島ターミナル</small></h2>
     <iframe data-map-id="ishigaki" title="高さスタック・石垣島" loading="eager"
-      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=ishigaki&amp;lat=24.3367&amp;lon=124.1557&amp;place=%E7%9F%B3%E5%9E%A3%E6%B8%AF%E9%9B%A2%E5%B3%B6%E3%82%BF%E3%83%9F%E3%83%8A%E3%83%AB&amp;v=20260824-production-1"></iframe>
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=ishigaki&amp;lat=24.3367&amp;lon=124.1557&amp;place=%E7%9F%B3%E5%9E%A3%E6%B8%AF%E9%9B%A2%E5%B3%B6%E3%82%BF%E3%83%9F%E3%83%8A%E3%83%AB&amp;v=20260826-bearing-production-1"></iframe>
   </section>
 </main>
 
@@ -224,6 +225,11 @@ const activeCount = document.getElementById('activeCount');
 const syncStatus = document.getElementById('syncStatus');
 const pageParams = new URLSearchParams(location.search);
 const initialRenderMode = pageParams.get('render') === 'cell3' ? 'cell3' : 'cell2';
+const normalizeBearing = value => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? ((numeric % 360) + 360) % 360 : 0;
+};
+let latestBearing = normalizeBearing(pageParams.get('bearing'));
 let catalog = null;
 let activeOptions = new Set();
 let layerOrder = [];
@@ -249,6 +255,21 @@ function broadcastLayers(){
   layerAcks.clear();
   for (const frame of frames) sendLayers(frame);
   updateStatus();
+}
+function sendBearing(frame, bearing = latestBearing){
+  frame.contentWindow?.postMessage({ type:'pixelmap:set-bearing', bearing }, targetOrigin);
+}
+function broadcastBearing(){
+  for (const frame of frames) sendBearing(frame);
+}
+function updateParentBearingUrl(bearing){
+  latestBearing = normalizeBearing(bearing);
+  const url = new URL(location.href);
+  url.searchParams.set('bearing', String(latestBearing));
+  history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  document.documentElement.dataset.mapBearing = String(latestBearing);
+  if (window.parent !== window)
+    window.parent.postMessage({ type:'pixelmap:bearing', bearing:latestBearing }, targetOrigin);
 }
 function normalizedRenderMode(value){
   return value === 'cell3' ? 'cell3' : 'cell2';
@@ -292,8 +313,8 @@ function updateStatus(){
   const synced = [...frameIds].filter(id => layerAcks.get(id) === expected).length;
   const ready = readyMaps.size === frames.length && synced === frames.length;
   syncStatus.textContent = ready
-    ? `4地点 同期済み・${activeOptions.size}レイヤー・${document.documentElement.dataset.renderMode}`
-    : `読込 ${readyMaps.size}/4・同期 ${synced}/4・${document.documentElement.dataset.renderMode}`;
+    ? `4地点 同期済み・方位${latestBearing}°・${activeOptions.size}レイヤー・${document.documentElement.dataset.renderMode}`
+    : `読込 ${readyMaps.size}/4・同期 ${synced}/4・方位${latestBearing}°・${document.documentElement.dataset.renderMode}`;
   document.documentElement.dataset.fourMapReady = ready ? '1' : '0';
   document.documentElement.dataset.commonLayerCount = String(activeOptions.size);
 }
@@ -393,6 +414,9 @@ cell3Mode.addEventListener('change', () => {
 });
 window.addEventListener('popstate', () => {
   applyFourMapRenderMode(new URLSearchParams(location.search).get('render'));
+  latestBearing = normalizeBearing(new URLSearchParams(location.search).get('bearing'));
+  document.documentElement.dataset.mapBearing = String(latestBearing);
+  broadcastBearing();
 });
 
 window.addEventListener('message', event => {
@@ -405,6 +429,13 @@ window.addEventListener('message', event => {
     applyFourMapRenderMode(mode);
     return;
   }
+  if (event.source === window.parent && window.parent !== window && event.data?.type === 'pixelmap:set-bearing'){
+    if (location.origin !== 'null' && event.origin !== location.origin) return;
+    updateParentBearingUrl(event.data.bearing);
+    broadcastBearing();
+    updateStatus();
+    return;
+  }
   const frame = frameForSource(event.source);
   if (!frame) return;
   if (location.origin !== 'null' && event.origin !== location.origin) return;
@@ -414,6 +445,14 @@ window.addEventListener('message', event => {
     readyMaps.add(mapId);
     if (!catalog && event.data.layers?.catalog) buildControls(event.data.layers);
     if (catalog) sendLayers(frame);
+    sendBearing(frame);
+    updateStatus();
+    return;
+  }
+  if (event.data?.type === 'pixelmap:bearing'){
+    if (!Number.isFinite(Number(event.data.bearing))) return;
+    updateParentBearingUrl(event.data.bearing);
+    broadcastBearing();
     updateStatus();
     return;
   }
@@ -423,6 +462,7 @@ window.addEventListener('message', event => {
   }
 });
 applyFourMapRenderMode(initialRenderMode);
+document.documentElement.dataset.mapBearing = String(latestBearing);
 </script>
 </body>
 </html>

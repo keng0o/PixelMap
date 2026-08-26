@@ -507,6 +507,13 @@
   body.shared-controls #msg,
   body.shared-controls #stats,
   body.shared-controls #attrib{ display:none; }
+  body.shared-controls #bearingIndicator{
+    position:fixed;
+    top:10px;
+    left:10px;
+    transform:scale(.78);
+    transform-origin:top left;
+  }
   body.shared-controls .map-frame{
     position:fixed;
     inset:0;
@@ -858,14 +865,14 @@ const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window
 const REQUESTED_MAP_BEARING = Number(PAGE_PARAMS.get('bearing'));
 const HAS_REQUESTED_MAP_BEARING = PAGE_PARAMS.has('bearing') &&
   Number.isFinite(REQUESTED_MAP_BEARING);
-// standalone testではコンパスから連続方位を評価する。embedded本番と
-// capture契約には伝播させず、既存ページのviewport同期も変更しない。
-const BEARING_STUDY_MODE = !EMBEDDED && PAGE_PARAMS.get('capture') !== '1';
+// standalone testと1・2・4マップの全Web本番で連続方位を扱う。
+// 比較撮影のcapture契約だけは従来どおり北上固定にする。
+const BEARING_STUDY_MODE = PAGE_PARAMS.get('capture') !== '1';
 let mapBearing = BEARING_STUDY_MODE && HAS_REQUESTED_MAP_BEARING
   ? window.PixelMapBearing.normalizeDegrees(REQUESTED_MAP_BEARING)
   : 0;
 let mapBearingSource = BEARING_STUDY_MODE
-  ? (HAS_REQUESTED_MAP_BEARING ? 'query' : 'manual-control')
+  ? (HAS_REQUESTED_MAP_BEARING ? 'query' : 'compass-control')
   : 'north-up';
 const WORLD_STYLE_PROFILE = PAGE_PARAMS.get('profile') === 'reference'
   ? 'retroJrpgZ14' : 'productionComparisonZ14';
@@ -1096,7 +1103,7 @@ const CELL_DETAIL_SCALE = GRID / STANDARD_GRID;
 const detailCellSpan = standardCells => Math.max(1, Math.round(standardCells * CELL_DETAIL_SCALE));
 const MAP_CELL_LOGICAL_SIZE = CPX / SCENE_PIXELS_PER_LOGICAL_PIXEL;
 // 任意方位の正方形ビューポートを逆回転しても地物が欠けないよう、
-// standalone bearing studyだけ意味グリッドを対角線長まで広げる。
+// 表示方位を扱うWebマップは意味グリッドを対角線長まで広げる。
 const ROTATION_SOURCE_MARGIN_CELLS = BEARING_STUDY_MODE
   ? Math.ceil((Math.SQRT2 - 1) * GRID / 2) + 4
   : 0;
@@ -1138,6 +1145,7 @@ const BEARING_STEP_DEGREES = 15;
 const bearingMinusBtn = document.getElementById('bearingMinusBtn');
 const bearingPlusBtn = document.getElementById('bearingPlusBtn');
 let bearingRenderBusy = false;
+let pendingBearingUpdate = null;
 function updateBearingUi(){
   const indicator = document.getElementById('bearingIndicator');
   indicator.hidden = !BEARING_STUDY_MODE;
@@ -1151,9 +1159,8 @@ function updateBearingUi(){
   bearingPlusBtn.disabled = controlsDisabled;
 }
 updateBearingUi();
-// 高さ連動の2.5D押し出しはstandalone testのcell2／cell3だけで評価する。
-// embedded本番は同じ記述子を受け取っても従来の平面描画を維持する。
-const STANDALONE_HEIGHT_EXTRUSION = !EMBEDDED && CELL_ONLY_MODE;
+// 高さ連動の2.5D押し出しと固定消失点を、全Webマップのcell2／cell3で使う。
+const STANDALONE_HEIGHT_EXTRUSION = CELL_ONLY_MODE;
 // 単体標準ページでは、建物の意味輪郭だけを出力と同じ1論理pxで確定する。
 // cell2／cell3は指定サイズの原子セル、embeddedは既存ページの外観を維持する。
 const STANDALONE_PRECISE_BUILDINGS = !EMBEDDED && !CELL_ONLY_MODE &&
@@ -6558,6 +6565,14 @@ function publishViewport(){
     state:viewportState(),
   }, MESSAGE_ORIGIN);
 }
+function publishBearing(){
+  if (!EMBEDDED) return;
+  window.parent.postMessage({
+    type:'pixelmap:bearing',
+    mapId:MAP_ID,
+    bearing:mapBearing,
+  }, MESSAGE_ORIGIN);
+}
 function layerSnapshot(){
   return {
     activeOptions:layerInputs.filter(input => input.checked).map(optionForInput),
@@ -6646,6 +6661,8 @@ if (EMBEDDED){
     if (location.origin !== 'null' && ev.origin !== location.origin) return;
     if (ev.data?.type === 'pixelmap:set-viewport') applySharedViewport(ev.data.state);
     if (ev.data?.type === 'pixelmap:set-layers') applySharedLayers(ev.data.layers);
+    if (ev.data?.type === 'pixelmap:set-bearing')
+      setMapBearingWithoutReload(ev.data.bearing, { source:'synchronized-map-bearing', publish:false });
   });
 }
 cv.addEventListener('pointerdown', ev => {
@@ -6830,13 +6847,17 @@ function syncBearingStudyState(){
   };
   window.PixelMapStudy.diagnostics = window.PixelMapDiagnostics || null;
 }
-function setMapBearingWithoutReload(nextBearing){
-  if (!BEARING_STUDY_MODE || bearingRenderBusy || !tileLayers ||
+function setMapBearingWithoutReload(nextBearing, options = {}){
+  if (!BEARING_STUDY_MODE || !tileLayers ||
       document.documentElement.dataset.mapReady !== '1') return;
   const normalized = window.PixelMapBearing.normalizeDegrees(nextBearing);
+  if (bearingRenderBusy){
+    pendingBearingUpdate = { bearing:normalized, options };
+    return;
+  }
   if (normalized === mapBearing) return;
   mapBearing = normalized;
-  mapBearingSource = 'manual-control';
+  mapBearingSource = options.source || 'compass-control';
   bearingRenderBusy = true;
   history.replaceState(history.state, '', bearingUrl(mapBearing));
   syncBearingStudyState();
@@ -6850,6 +6871,7 @@ function setMapBearingWithoutReload(nextBearing){
       window.dispatchEvent(new CustomEvent('pixelmap:bearingchange', {
         detail:{ degrees:mapBearing, source:mapBearingSource, reloaded:false },
       }));
+      if (options.publish !== false) publishBearing();
       setMsg(`表示方位 ${mapBearing}度。ページを よみなおさずに かいてんした。`);
     } catch (error){
       console.error(error);
@@ -6857,6 +6879,11 @@ function setMapBearingWithoutReload(nextBearing){
     } finally {
       bearingRenderBusy = false;
       updateBearingUi();
+      if (pendingBearingUpdate){
+        const pending = pendingBearingUpdate;
+        pendingBearingUpdate = null;
+        requestAnimationFrame(() => setMapBearingWithoutReload(pending.bearing, pending.options));
+      }
     }
   });
 }
@@ -6924,6 +6951,7 @@ boot().finally(async () => {
     window.parent.postMessage({
       type:'pixelmap:ready',
       mapId:MAP_ID,
+      bearing:mapBearing,
       layers:layerSnapshot(),
     }, MESSAGE_ORIGIN);
   }

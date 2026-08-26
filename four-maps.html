@@ -24,7 +24,7 @@
 <body>
 <iframe
   id="fourMapFrame"
-  src="variants/height-stack-four-map.html?v=20260824-production-1"
+  src="variants/height-stack-four-map.html?v=20260826-bearing-production-1"
   title="PixelMap 4地点同時表示"
   allow="geolocation"
 ></iframe>
@@ -39,6 +39,11 @@ const fourMapFrame = document.getElementById('fourMapFrame');
 const targetOrigin = location.origin === 'null' ? '*' : location.origin;
 const normalizedRenderMode = value => value === 'cell3' ? 'cell3' : 'cell2';
 const renderModeFromLocation = () => normalizedRenderMode(new URLSearchParams(location.search).get('render'));
+const normalizeBearing = value => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? ((numeric % 360) + 360) % 360 : 0;
+};
+const bearingFromLocation = () => normalizeBearing(new URLSearchParams(location.search).get('bearing'));
 
 function updateTopRenderUrl(mode){
   const normalized = normalizedRenderMode(mode);
@@ -52,23 +57,37 @@ function setInitialFrameRenderMode(){
   document.documentElement.dataset.renderMode = mode;
   const url = new URL(fourMapFrame.src, location.href);
   const frameMode = normalizedRenderMode(url.searchParams.get('render'));
-  if (frameMode === mode) return;
-  url.searchParams.set('render', mode);
-  fourMapFrame.src = url.href;
+  const frameBearing = normalizeBearing(url.searchParams.get('bearing'));
+  const bearing = bearingFromLocation();
+  if (frameMode !== mode) url.searchParams.set('render', mode);
+  if (frameBearing !== bearing || new URLSearchParams(location.search).has('bearing'))
+    url.searchParams.set('bearing', String(bearing));
+  if (url.href !== fourMapFrame.src) fourMapFrame.src = url.href;
 }
 window.addEventListener('message', event => {
   if (event.source !== fourMapFrame.contentWindow) return;
   if (location.origin !== 'null' && event.origin !== location.origin) return;
-  if (event.data?.type !== 'pixelmap:render-mode') return;
-  const mode = normalizedRenderMode(event.data.renderMode);
-  if (mode !== renderModeFromLocation()) updateTopRenderUrl(mode);
+  if (event.data?.type === 'pixelmap:render-mode'){
+    const mode = normalizedRenderMode(event.data.renderMode);
+    if (mode !== renderModeFromLocation()) updateTopRenderUrl(mode);
+    return;
+  }
+  if (event.data?.type === 'pixelmap:bearing' && Number.isFinite(Number(event.data.bearing))){
+    const bearing = normalizeBearing(event.data.bearing);
+    const url = new URL(location.href);
+    url.searchParams.set('bearing', String(bearing));
+    history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    document.documentElement.dataset.mapBearing = String(bearing);
+  }
 });
 window.addEventListener('popstate', () => {
   const mode = renderModeFromLocation();
   document.documentElement.dataset.renderMode = mode;
   fourMapFrame.contentWindow?.postMessage({ type:'pixelmap:set-render-mode', renderMode:mode }, targetOrigin);
+  fourMapFrame.contentWindow?.postMessage({ type:'pixelmap:set-bearing', bearing:bearingFromLocation() }, targetOrigin);
 });
 setInitialFrameRenderMode();
+document.documentElement.dataset.mapBearing = String(bearingFromLocation());
 </script>
 </body>
 </html>

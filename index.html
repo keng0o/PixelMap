@@ -13,9 +13,42 @@
 </head>
 <body>
 <iframe
-  src="variants/map-02-refined.html?embedded=1&amp;pattern=07&amp;map=latest&amp;v=20260824-production-1"
+  id="mapFrame"
+  src="variants/map-02-refined.html?embedded=1&amp;pattern=07&amp;map=latest&amp;v=20260826-bearing-production-1"
   title="PixelMap 最新マップ"
   allow="geolocation"
 ></iframe>
+<script>
+'use strict';
+const mapFrame = document.getElementById('mapFrame');
+const targetOrigin = location.origin === 'null' ? '*' : location.origin;
+const normalizeBearing = value => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? ((numeric % 360) + 360) % 360 : 0;
+};
+const bearingFromLocation = () => normalizeBearing(new URLSearchParams(location.search).get('bearing'));
+function sendBearing(bearing){
+  mapFrame.contentWindow?.postMessage({ type:'pixelmap:set-bearing', bearing }, targetOrigin);
+}
+function updateTopBearingUrl(bearing){
+  const normalized = normalizeBearing(bearing);
+  const url = new URL(location.href);
+  url.searchParams.set('bearing', String(normalized));
+  history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  document.documentElement.dataset.mapBearing = String(normalized);
+}
+window.addEventListener('message', event => {
+  if (event.source !== mapFrame.contentWindow) return;
+  if (location.origin !== 'null' && event.origin !== location.origin) return;
+  if (event.data?.type === 'pixelmap:ready'){
+    sendBearing(bearingFromLocation());
+    return;
+  }
+  if (event.data?.type !== 'pixelmap:bearing' || !Number.isFinite(Number(event.data.bearing))) return;
+  updateTopBearingUrl(event.data.bearing);
+});
+window.addEventListener('popstate', () => sendBearing(bearingFromLocation()));
+document.documentElement.dataset.mapBearing = String(bearingFromLocation());
+</script>
 </body>
 </html>
