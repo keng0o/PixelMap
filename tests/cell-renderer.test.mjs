@@ -177,6 +177,7 @@ test('全Webマップの地区幹線道路は中央線を描かない', () => {
 test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで描く', () => {
   assert.match(html, /function drawCellPixelArtBuildingGrid\(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats\)/);
   assert.match(html, /const STANDALONE_HEIGHT_EXTRUSION = CELL_ONLY_MODE/);
+  assert.match(html, /const STANDALONE_BUILDING_LINE_CONTINUITY = !EMBEDDED && CELL_ONLY_MODE/);
   assert.match(html, /function drawCellHeightExtrudedBuildingGrid\(/);
   assert.match(html, /BUILDING_STYLES\.heightRiseLogicalPixels\(buildingDescs\[bi\]\?\.heightM \|\| 0\)/);
   assert.match(html, /shiftX:Math\.max\(0, Math\.round\(riseCells \* \.34\)\)/);
@@ -188,6 +189,16 @@ test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで�
   assert.match(html, /kind === 'convenience'/);
   assert.match(html, /kind === 'mixed'/);
   assert.match(html, /kind === 'poi' && desc\?\.glyph/);
+});
+
+test('testの建物は構造輪郭を連続させ素材模様と窓のリズムを保つ', () => {
+  assert.match(html, /sideEdge && \(STANDALONE_BUILDING_LINE_CONTINUITY \|\| outlinePhase !== 1\)/);
+  assert.match(html, /STANDALONE_BUILDING_LINE_CONTINUITY && outlinePhase === 1 \? pal\[1\] : P\.outline/);
+  assert.match(html, /const structuralOutline = west && !south/);
+  assert.match(html, /\(!STANDALONE_BUILDING_LINE_CONTINUITY \|\| !structuralOutline\)/);
+  assert.match(html, /positiveModulo\(wx \* 3 \+ wy \* 5 \+ buildingIndex, 17\) === 0/);
+  assert.match(html, /positiveModulo\(wx \+ step, 3\) === 1/);
+  assert.match(html, /buildingLineContinuity:STANDALONE_BUILDING_LINE_CONTINUITY/);
 });
 
 test('POIは既存スプライトを原子セルテンプレートへ変換しクリック領域を維持する', () => {

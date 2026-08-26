@@ -1161,6 +1161,9 @@ function updateBearingUi(){
 updateBearingUi();
 // 高さ連動の2.5D押し出しと固定消失点を、全Webマップのcell2／cell3で使う。
 const STANDALONE_HEIGHT_EXTRUSION = CELL_ONLY_MODE;
+// 建物の構造輪郭だけをtestのcell2／cell3で連続させる。
+// embedded本番では従来の輪郭リズムを保ち、屋根の素材模様や窓も変更しない。
+const STANDALONE_BUILDING_LINE_CONTINUITY = !EMBEDDED && CELL_ONLY_MODE;
 // 単体標準ページでは、建物の意味輪郭だけを出力と同じ1論理pxで確定する。
 // cell2／cell3は指定サイズの原子セル、embeddedは既存ページの外観を維持する。
 const STANDALONE_PRECISE_BUILDINGS = !EMBEDDED && !CELL_ONLY_MODE &&
@@ -2617,12 +2620,15 @@ function drawCellFlatPixelArtBuildingGrid(
       const same = (nx, ny) => isCell(nx, ny) && bldGrid[ny * RG + nx] === buildingIndex;
       const above = same(x, y-1), below = same(x, y+1), left = same(x-1,y), right = same(x+1,y);
       const [wx, wy] = worldFineCell(x, y);
+      const sideEdge = !left || !right;
+      const outlinePhase = positiveModulo(wy, 3);
       let color = pal[0];
       if (!below){
         color = above ? P.wall : pal[1];
         if (above && positiveModulo(wx, 4) === 1) color = P.win;
       } else if (!above) color = pal[2];
-      else if ((!left || !right) && positiveModulo(wy, 3) !== 1) color = P.outline;
+      else if (sideEdge && (STANDALONE_BUILDING_LINE_CONTINUITY || outlinePhase !== 1))
+        color = STANDALONE_BUILDING_LINE_CONTINUITY && outlinePhase === 1 ? pal[1] : P.outline;
       else if (positiveModulo(wx * 3 + wy * 5 + buildingIndex, 17) === 0) color = pal[1];
       paintSolidMapCell(x, y, color, layer, stats);
       if (color !== pal[0]) stats.buildingDetailCells++;
@@ -2768,10 +2774,12 @@ function drawCellHeightExtrudedBuildingGrid(
         const south = !owns(group, x, y + 1);
         const east = !owns(group, x + 1, y);
         const west = !owns(group, x - 1, y);
+        const structuralOutline = west && !south;
         let color = east ? P.wallDk : P.wall;
-        if (west && !south) color = P.outline;
+        if (structuralOutline) color = P.outline;
         const [wx] = worldFineCell(x, y);
-        if ((south || east) && step > 0 && step % 2 === 0 && positiveModulo(wx + step, 3) === 1)
+        if ((!STANDALONE_BUILDING_LINE_CONTINUITY || !structuralOutline) &&
+            (south || east) && step > 0 && step % 2 === 0 && positiveModulo(wx + step, 3) === 1)
           color = P.win;
         paintProjected(group, x, y, offsetX, offsetY, color, `${layer}:height-wall`);
       }
@@ -5931,6 +5939,7 @@ function render(){
       railTieCells:CELL_ONLY_MODE ? cellRenderingStats.railTieCells : 0,
       buildingDetailCells:CELL_ONLY_MODE ? cellRenderingStats.buildingDetailCells : 0,
       heightExtrusionEnabled:STANDALONE_HEIGHT_EXTRUSION,
+      buildingLineContinuity:STANDALONE_BUILDING_LINE_CONTINUITY,
       extrudedBuildings:CELL_ONLY_MODE ? cellRenderingStats.extrudedBuildings : 0,
       maxBuildingRiseCells:CELL_ONLY_MODE ? cellRenderingStats.maxBuildingRiseCells : 0,
       maxBuildingRiseLogicalPixels:CELL_ONLY_MODE ? cellRenderingStats.maxBuildingRiseLogicalPixels : 0,
