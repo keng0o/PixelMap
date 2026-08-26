@@ -32,3 +32,13 @@
 - Generate the QR code from the active Metro URL for that exact revision. Do not reuse a QR code from an earlier Metro session.
 - Keep the Metro server running for the handoff and share both the QR code and its `exp://` URL. Use LAN by default; if the user's device cannot reach the LAN server, restart with an Expo tunnel and regenerate the QR code.
 - A mobile feature change is incomplete until its fresh Expo Go QR code has been generated and shared after validation.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in this repository's GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+This is a single-context repository. See `docs/agents/domain.md`.
