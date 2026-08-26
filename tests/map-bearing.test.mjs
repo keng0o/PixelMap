@@ -33,11 +33,38 @@ test('converts a screen-up extrusion back into world space', () => {
   closeTo(screenVector[1], -12);
 });
 
+test('projects building height away from one fixed vanishing point', () => {
+  const vanishingPoint = [0, 10];
+  const referencePoint = [5, 5];
+  const atReference = bearing.fixedVanishingProjection(
+    referencePoint, vanishingPoint, 4, referencePoint
+  );
+  closeTo(Math.hypot(...atReference), 4);
+  closeTo(atReference[0] / atReference[1], -1);
+
+  const fartherOnSameRay = bearing.fixedVanishingProjection(
+    [10, 0], vanishingPoint, 4, referencePoint
+  );
+  closeTo(fartherOnSameRay[0] / fartherOnSameRay[1], -1);
+  assert.ok(Math.hypot(...fartherOnSameRay) > Math.hypot(...atReference));
+});
+
+test('caps fixed-vanishing projection and collapses at the vanishing point', () => {
+  assert.deepEqual(
+    [...bearing.fixedVanishingProjection([0, 10], [0, 10], 8, [5, 5])],
+    [0, 0]
+  );
+  const capped = bearing.fixedVanishingProjection([100, -90], [0, 10], 8, [5, 5], 1.25);
+  closeTo(Math.hypot(...capped), 10);
+});
+
 test('standalone test page exposes bearing study without production embedding', () => {
   const html = fs.readFileSync(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
   assert.match(html, /map-bearing\.js\?v=1/);
   assert.match(html, /const BEARING_STUDY_MODE = !EMBEDDED/);
   assert.match(html, /PAGE_PARAMS\.has\('bearing'\)/);
   assert.match(html, /screenVectorToWorld/);
+  assert.match(html, /FIXED_VANISHING_POINT/);
+  assert.match(html, /fixedVanishingPointHeightExtrusion/);
   assert.match(html, /mapBearing:/);
 });

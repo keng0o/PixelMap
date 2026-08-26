@@ -1088,6 +1088,20 @@ const screenCellVectorToSource = (dx, dy) => {
   const vector = window.PixelMapBearing.screenVectorToWorld([dx, dy], mapBearing);
   return [Math.round(vector[0]), Math.round(vector[1])];
 };
+// 北上時の既存投影（右へ0.34・上へ1）と画面中央で接するよう、
+// 消失点を画面左下側の画面外へ固定する。地図方位では回転させない。
+const FIXED_VANISHING_POINT = Object.freeze([W * .18, H * 1.45]);
+const FIXED_VANISHING_REFERENCE_POINT = Object.freeze([W / 2, H / 2]);
+function fixedVanishingScreenCellVector(scenePoint, riseCells, shiftX){
+  if (!BEARING_STUDY_MODE) return [shiftX, -riseCells];
+  return window.PixelMapBearing.fixedVanishingProjection(
+    [scenePoint[0] / CPX, scenePoint[1] / CPX],
+    [FIXED_VANISHING_POINT[0] / CPX, FIXED_VANISHING_POINT[1] / CPX],
+    Math.hypot(riseCells, shiftX),
+    [FIXED_VANISHING_REFERENCE_POINT[0] / CPX, FIXED_VANISHING_REFERENCE_POINT[1] / CPX],
+    1.35
+  );
+}
 function rotateWorldHitAreas(areas){
   if (!BEARING_STUDY_MODE) return;
   for (const area of areas){
@@ -2633,13 +2647,15 @@ function drawCellHeightExtrudedBuildingGrid(
       group = {
         bi, cells:[], owned:new Set(), riseLogical, riseCells,
         shiftX:Math.max(0, Math.round(riseCells * .34)), maxY:-Infinity,
-        maxScreenY:-Infinity,
+        maxScreenY:-Infinity, sumX:0, sumY:0, projectionScreen:[0, 0],
       };
       groups.set(bi, group);
     }
     group.cells.push([x, y]);
     group.owned.add(index);
     group.maxY = Math.max(group.maxY, y);
+    group.sumX += x;
+    group.sumY += y;
     const screenDepth = BEARING_STUDY_MODE
       ? window.PixelMapBearing.worldVectorToScreen([x, y], mapBearing)[1]
       : y;
@@ -2691,11 +2707,25 @@ function drawCellHeightExtrudedBuildingGrid(
     const kind = buildingKinds[group.bi] || 'normal';
     const anchor = buildingAnchors?.[group.bi] || null;
 
-    // 元のfootprintから屋根位置まで連続した壁体を作る。水平移動は高さの約1/3で、
-    // 南面と東面の両方が読める控えめな右上方向の投影にする。
+    const groupScenePoint = rotateScenePoint([
+      gridShiftX + (group.sumX / group.cells.length + .5) * CPX,
+      gridShiftY + (group.sumY / group.cells.length + .5) * CPX,
+    ]);
+    group.projectionScreen = fixedVanishingScreenCellVector(
+      groupScenePoint, group.riseCells, group.shiftX
+    );
+
+    // 元のfootprintから屋根位置まで連続した壁体を作る。回転検証時は
+    // すべての高さ線を画面左下側の固定消失点へ収束させる。
     for (let step = 0; step < group.riseCells; step++){
-      const screenOffsetX = Math.round(group.shiftX * step / group.riseCells);
-      const [offsetX, offsetY] = screenCellVectorToSource(screenOffsetX, -step);
+      const progress = step / group.riseCells;
+      const screenOffsetX = BEARING_STUDY_MODE
+        ? group.projectionScreen[0] * progress
+        : Math.round(group.shiftX * progress);
+      const screenOffsetY = BEARING_STUDY_MODE
+        ? group.projectionScreen[1] * progress
+        : -step;
+      const [offsetX, offsetY] = screenCellVectorToSource(screenOffsetX, screenOffsetY);
       for (const [x, y] of group.cells){
         const south = !owns(group, x, y + 1);
         const east = !owns(group, x + 1, y);
@@ -2709,7 +2739,9 @@ function drawCellHeightExtrudedBuildingGrid(
       }
     }
 
-    const [roofOffsetX, roofOffsetY] = screenCellVectorToSource(group.shiftX, -group.riseCells);
+    const [roofOffsetX, roofOffsetY] = screenCellVectorToSource(
+      group.projectionScreen[0], group.projectionScreen[1]
+    );
     for (const [x, y] of group.cells){
       const north = owns(group, x, y - 1), south = owns(group, x, y + 1);
       const west = owns(group, x - 1, y), east = owns(group, x + 1, y);
@@ -5692,7 +5724,11 @@ function render(){
       degrees:mapBearing,
       source:BEARING_STUDY_MODE ? 'query-study' : 'north-up',
       worldRerasterizedToLogicalPixelGrid:BEARING_STUDY_MODE && CELL_ONLY_MODE,
-      uprightHeightExtrusion:BEARING_STUDY_MODE && STANDALONE_HEIGHT_EXTRUSION,
+      uprightHeightExtrusion:false,
+      fixedVanishingPointHeightExtrusion:BEARING_STUDY_MODE && STANDALONE_HEIGHT_EXTRUSION,
+      fixedVanishingPoint:BEARING_STUDY_MODE
+        ? { x:FIXED_VANISHING_POINT[0], y:FIXED_VANISHING_POINT[1], coordinateSpace:'scene' }
+        : null,
       uprightLabels:BEARING_STUDY_MODE,
       uprightUi:true,
     },
