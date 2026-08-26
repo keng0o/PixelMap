@@ -60,7 +60,7 @@ test('caps fixed-vanishing projection and collapses at the vanishing point', () 
 
 test('standalone test page exposes bearing study without production embedding', () => {
   const html = fs.readFileSync(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
-  assert.match(html, /map-bearing\.js\?v=1/);
+  assert.match(html, /map-bearing\.js\?v=2/);
   assert.match(html, /const BEARING_STUDY_MODE = !EMBEDDED/);
   assert.match(html, /PAGE_PARAMS\.has\('bearing'\)/);
   assert.match(html, /screenVectorToWorld/);
