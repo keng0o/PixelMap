@@ -58,14 +58,17 @@ test('caps fixed-vanishing projection and collapses at the vanishing point', () 
   closeTo(Math.hypot(...capped), 10);
 });
 
-test('standaloneとembedded本番が同じ連続表示方位と固定消失点を使う', () => {
+test('standalone testは画面垂直、本番embeddedは固定消失点を使う', () => {
   const html = fs.readFileSync(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
   assert.match(html, /map-bearing\.js\?v=2/);
   assert.match(html, /const BEARING_STUDY_MODE = PAGE_PARAMS\.get\('capture'\) !== '1'/);
   assert.match(html, /PAGE_PARAMS\.has\('bearing'\)/);
   assert.match(html, /screenVectorToWorld/);
+  assert.match(html, /const STANDALONE_SCREEN_VERTICAL_EXTRUSION = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /if \(STANDALONE_SCREEN_VERTICAL_EXTRUSION\) return \[0, -riseCells\]/);
   assert.match(html, /FIXED_VANISHING_POINT/);
-  assert.match(html, /fixedVanishingPointHeightExtrusion/);
+  assert.match(html, /fixedVanishingPointHeightExtrusion:[\s\S]*?!STANDALONE_SCREEN_VERTICAL_EXTRUSION/);
+  assert.match(html, /screenVerticalHeightExtrusion:STANDALONE_SCREEN_VERTICAL_EXTRUSION/);
   assert.match(html, /mapBearing:/);
 });
 

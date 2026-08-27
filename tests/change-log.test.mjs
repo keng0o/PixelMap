@@ -92,6 +92,12 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /構造輪郭の連続化はtest専用guard/);
   assert.match(log, /全自動テスト156件/);
   assert.match(log, /黒い太帯化や立体感の消失がない/);
+  assert.match(log, /建物の高さ表現を画面垂直押し出しへ変更/);
+  assert.match(log, /接地位置から画面上方向だけへ持ち上げる/);
+  assert.match(log, /standalone testのcell2／cell3建物描画/);
+  assert.match(log, /本番1・2・4マップは固定消失点/);
+  assert.match(log, /全自動テスト157件/);
+  assert.match(log, /独立視覚レビューで4枚すべてPASS/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {
