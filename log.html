@@ -124,7 +124,7 @@
     <section class="panel" aria-labelledby="difference-title">
       <div class="section-heading">
         <h2 id="difference-title">現行の差分</h2>
-        <small>2026-08-26 / cell2 default</small>
+        <small>2026-08-27 / cell2 default</small>
       </div>
       <div class="table-wrap">
         <table>
@@ -154,7 +154,7 @@
             <tr>
               <th scope="row">表示方位の実装検証</th>
               <td>コンパスの<code>−／＋</code>で表示方位を15度ずつ変更し、ページ遷移や再読込なしで地理を論理ピクセルグリッドへ再描画する。角度はURLへ履歴置換で保存。建物の高さ線は画面上方向へ垂直に伸ばし、名称・方位表示・施設記号も画面へ正立する。</td>
-              <td>testと同じコンパス・再ラスタライズ・正立要素を使用するが、建物は従来の固定消失点投影を維持。1マップは単独、2マップは位置と方位、4マップは各地点を保ったまま方位だけを同期し、外側URLへ履歴置換で保存する。</td>
+              <td>testと同じコンパス・再ラスタライズ・正立要素・画面垂直の建物高さ線を使用。1マップは単独、2マップは位置と方位、4マップは各地点を保ったまま方位だけを同期し、外側URLへ履歴置換で保存する。</td>
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
@@ -174,7 +174,7 @@
             <tr>
               <th scope="row">建物とcorridorの重なり</th>
               <td>建物を棟単位で原子セル化し、高さがある棟は実高を平方根スケールで最大18論理pxへ圧縮する。屋根は接地位置から画面上方向へ垂直に持ち上げ、正面壁・暗い側面・窓を表示方位に対する画面方向から判定する。影は南東へ最大2セルとし、高さ不明の棟は従来の平面描画を維持。側面の構造輪郭、素材模様、窓のリズムも維持する。</td>
-              <td>高さ連動2.5Dと固定消失点を引き続き使用。画面垂直押し出し、画面方向の壁面判定、短い影、構造輪郭の連続化はtest専用guardのため、1・2・4マップの既存建物描画は変更しない。</td>
+              <td>testと同じ画面垂直押し出し、画面方向の壁面判定、最大2セルの影、連続した構造輪郭を使用する。屋根色、素材模様、高さ、施設記号、入口と外側UI・同期方式は維持する。</td>
             </tr>
             <tr>
               <th scope="row">POI</th>
@@ -201,6 +201,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>画面垂直の建物高さ表現をWeb本番へリリース</h3>
+          <time datetime="2026-08-27">2026-08-27 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>standalone testで確認した建物表現をWeb本番へ昇格。固定消失点と高さ比例の横移動を外し、接地位置から屋根を画面上方向だけへ持ち上げる。壁の正面・暗い側面・窓を画面方向から判定し、影を最大2セルへ短縮するとともに、平面・高さ建物の構造輪郭を連続させる。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>全てに反映</strong>。standalone test（<code>variants/map-02-refined.html</code>）、1マップ（<code>index.html</code>）、2マップ（<code>compare.html</code>）、4マップ（<code>four-maps.html</code>／<code>variants/height-stack-four-map.html</code>）。cell2／cell3の両方へ反映。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップの建物高さ線、壁面、影、構造輪郭がtestと同じ描画になる。屋根色、素材模様、高さ、施設記号、入口、地理座標、ページ構成、位置・方位・レイヤー同期は変更しない。各iframeの版指定を更新し、旧描画キャッシュを避ける。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト157件と<code>node build.mjs</code>が成功。本番1マップをcell2の0°・45°、2マップをcell2の45°、4マップをcell3の45°で撮影した。独立視覚レビューで本番用4枚すべてPASSとなり、画面垂直の高さ線、連続輪郭、壁・窓・短い影・屋根・重なり順、2マップの方位同期、4マップの方位・cell3同期、外側UIに回帰がないことを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>建物の高さ表現を画面垂直押し出しへ変更</h3>

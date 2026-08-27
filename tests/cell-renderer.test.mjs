@@ -61,10 +61,10 @@ test('2マップは左右別、4マップは共通チェックでcell2とcell3�
   assert.match(fourMapShellHtml, /function updateTopRenderUrl\(mode\)/);
   assert.match(fourMapShellHtml, /pixelmap:render-mode/);
   assert.match(fourMapShellHtml, /pixelmap:set-render-mode/);
-  assert.match(oneMapHtml, /v=20260826-bearing-production-1/);
-  assert.equal((twoMapHtml.match(/v=20260826-bearing-production-1/g) || []).length, 2);
-  assert.equal((fourMapHtml.match(/v=20260826-bearing-production-1/g) || []).length, 4);
-  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260826-bearing-production-1/);
+  assert.match(oneMapHtml, /v=20260827-building-vertical-production-1/);
+  assert.equal((twoMapHtml.match(/v=20260827-building-vertical-production-1/g) || []).length, 2);
+  assert.equal((fourMapHtml.match(/v=20260827-building-vertical-production-1/g) || []).length, 4);
+  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260827-building-vertical-production-1/);
 });
 
 test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {
@@ -176,11 +176,11 @@ test('全Webマップの地区幹線道路は中央線を描かない', () => {
 
 test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで描く', () => {
   assert.match(html, /function drawCellPixelArtBuildingGrid\(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats\)/);
-  assert.match(html, /const STANDALONE_HEIGHT_EXTRUSION = CELL_ONLY_MODE/);
-  assert.match(html, /const STANDALONE_BUILDING_LINE_CONTINUITY = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /const CELL_HEIGHT_EXTRUSION = CELL_ONLY_MODE/);
+  assert.match(html, /const CONTINUOUS_BUILDING_STRUCTURE_OUTLINE = CELL_ONLY_MODE/);
   assert.match(html, /function drawCellHeightExtrudedBuildingGrid\(/);
   assert.match(html, /BUILDING_STYLES\.heightRiseLogicalPixels\(buildingDescs\[bi\]\?\.heightM \|\| 0\)/);
-  assert.match(html, /shiftX:STANDALONE_SCREEN_VERTICAL_EXTRUSION[\s\S]*?Math\.max\(0, Math\.round\(riseCells \* \.34\)\)/);
+  assert.match(html, /shiftX:SCREEN_VERTICAL_BUILDING_EXTRUSION[\s\S]*?Math\.max\(0, Math\.round\(riseCells \* \.34\)\)/);
   assert.match(html, /paintProjected\(group, x, y, roofOffsetX, roofOffsetY, color, `\$\{layer\}:height-roof`\)/);
   assert.match(html, /paintProjected\(group, anchor\.ex, anchor\.ey, 0, 0, P\.door/);
   assert.match(html, /paintDarkenedMapCell\(x, y, \.68/);
@@ -191,26 +191,28 @@ test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで�
   assert.match(html, /kind === 'poi' && desc\?\.glyph/);
 });
 
-test('testの建物は構造輪郭を連続させ素材模様と窓のリズムを保つ', () => {
-  assert.match(html, /sideEdge && \(STANDALONE_BUILDING_LINE_CONTINUITY \|\| outlinePhase !== 1\)/);
-  assert.match(html, /STANDALONE_BUILDING_LINE_CONTINUITY && outlinePhase === 1 \? pal\[1\] : P\.outline/);
-  assert.match(html, /const structuralOutline = STANDALONE_SCREEN_VERTICAL_EXTRUSION[\s\S]*?: west && !south/);
-  assert.match(html, /\(!STANDALONE_BUILDING_LINE_CONTINUITY \|\| !structuralOutline\)/);
+test('全Webマップの建物は構造輪郭を連続させ素材模様と窓のリズムを保つ', () => {
+  assert.match(html, /sideEdge && \(CONTINUOUS_BUILDING_STRUCTURE_OUTLINE \|\| outlinePhase !== 1\)/);
+  assert.match(html, /CONTINUOUS_BUILDING_STRUCTURE_OUTLINE && outlinePhase === 1 \? pal\[1\] : P\.outline/);
+  assert.match(html, /const structuralOutline = SCREEN_VERTICAL_BUILDING_EXTRUSION[\s\S]*?: west && !south/);
+  assert.match(html, /\(!CONTINUOUS_BUILDING_STRUCTURE_OUTLINE \|\| !structuralOutline\)/);
   assert.match(html, /positiveModulo\(wx \* 3 \+ wy \* 5 \+ buildingIndex, 17\) === 0/);
   assert.match(html, /positiveModulo\(wx \+ step, 3\) === 1/);
-  assert.match(html, /buildingLineContinuity:STANDALONE_BUILDING_LINE_CONTINUITY/);
+  assert.match(html, /buildingLineContinuity:CONTINUOUS_BUILDING_STRUCTURE_OUTLINE/);
 });
 
-test('testの高さ建物は画面垂直に押し出し壁面と影を投影方向へ合わせる', () => {
-  assert.match(html, /const STANDALONE_SCREEN_VERTICAL_EXTRUSION = !EMBEDDED && CELL_ONLY_MODE/);
+test('全Webマップの高さ建物は画面垂直に押し出し壁面と影を投影方向へ合わせる', () => {
+  assert.match(html, /const SCREEN_VERTICAL_BUILDING_EXTRUSION = CELL_ONLY_MODE/);
   assert.match(html, /function buildingProjectionScreenCellVector\([\s\S]*?return \[0, -riseCells\]/);
   assert.match(html, /const screenDirectionToSource = \(dx, dy\) => BEARING_STUDY_MODE/);
   assert.match(html, /const exposedToward = \(group, x, y, direction\)/);
-  assert.match(html, /const frontFace = STANDALONE_SCREEN_VERTICAL_EXTRUSION/);
+  assert.match(html, /const frontFace = SCREEN_VERTICAL_BUILDING_EXTRUSION/);
   assert.match(html, /Math\.min\(2, Math\.max\(1, Math\.ceil\(group\.riseCells \/ 4\)\)\)/);
-  assert.match(html, /buildingProjectionMode:STANDALONE_SCREEN_VERTICAL_EXTRUSION[\s\S]*?'screen-vertical'/);
-  assert.match(html, /heightProportionalHorizontalOffset:!STANDALONE_SCREEN_VERTICAL_EXTRUSION/);
-  assert.match(html, /heightShadowMaxCells:STANDALONE_SCREEN_VERTICAL_EXTRUSION \? 2 : 3/);
+  assert.match(html, /buildingProjectionMode:SCREEN_VERTICAL_BUILDING_EXTRUSION[\s\S]*?'screen-vertical'/);
+  assert.match(html, /heightProportionalHorizontalOffset:!SCREEN_VERTICAL_BUILDING_EXTRUSION/);
+  assert.match(html, /heightShadowMaxCells:SCREEN_VERTICAL_BUILDING_EXTRUSION \? 2 : 3/);
+  assert.doesNotMatch(html, /const SCREEN_VERTICAL_BUILDING_EXTRUSION = !EMBEDDED/);
+  assert.doesNotMatch(html, /const CONTINUOUS_BUILDING_STRUCTURE_OUTLINE = !EMBEDDED/);
 });
 
 test('POIは既存スプライトを原子セルテンプレートへ変換しクリック領域を維持する', () => {

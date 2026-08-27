@@ -58,18 +58,23 @@ test('caps fixed-vanishing projection and collapses at the vanishing point', () 
   closeTo(Math.hypot(...capped), 10);
 });
 
-test('standalone testは画面垂直、本番embeddedは固定消失点を使う', () => {
+test('standalone testと本番embeddedは画面垂直押し出しを使う', () => {
   const html = fs.readFileSync(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+  const previousDecision = fs.readFileSync(new URL('../docs/adr/0002-keep-building-vanishing-point-fixed.md', import.meta.url), 'utf8');
+  const currentDecision = fs.readFileSync(new URL('../docs/adr/0003-use-screen-vertical-building-extrusion.md', import.meta.url), 'utf8');
   assert.match(html, /map-bearing\.js\?v=2/);
   assert.match(html, /const BEARING_STUDY_MODE = PAGE_PARAMS\.get\('capture'\) !== '1'/);
   assert.match(html, /PAGE_PARAMS\.has\('bearing'\)/);
   assert.match(html, /screenVectorToWorld/);
-  assert.match(html, /const STANDALONE_SCREEN_VERTICAL_EXTRUSION = !EMBEDDED && CELL_ONLY_MODE/);
-  assert.match(html, /if \(STANDALONE_SCREEN_VERTICAL_EXTRUSION\) return \[0, -riseCells\]/);
+  assert.match(html, /const SCREEN_VERTICAL_BUILDING_EXTRUSION = CELL_ONLY_MODE/);
+  assert.match(html, /if \(SCREEN_VERTICAL_BUILDING_EXTRUSION\) return \[0, -riseCells\]/);
   assert.match(html, /FIXED_VANISHING_POINT/);
-  assert.match(html, /fixedVanishingPointHeightExtrusion:[\s\S]*?!STANDALONE_SCREEN_VERTICAL_EXTRUSION/);
-  assert.match(html, /screenVerticalHeightExtrusion:STANDALONE_SCREEN_VERTICAL_EXTRUSION/);
+  assert.match(html, /fixedVanishingPointHeightExtrusion:[\s\S]*?!SCREEN_VERTICAL_BUILDING_EXTRUSION/);
+  assert.match(html, /screenVerticalHeightExtrusion:SCREEN_VERTICAL_BUILDING_EXTRUSION/);
+  assert.doesNotMatch(html, /SCREEN_VERTICAL_BUILDING_EXTRUSION = !EMBEDDED/);
   assert.match(html, /mapBearing:/);
+  assert.match(previousDecision, /status: superseded by ADR-0003/);
+  assert.match(currentDecision, /固定消失点投影の遠近感よりも、任意の表示方位で高さ線が連続して読めることを優先/);
 });
 
 test('全Webマップのコンパスボタンは15度ずつリロードなしで再描画する', () => {
@@ -106,4 +111,6 @@ test('1・2・4マップは表示方位だけをpostMessageで同期する', () 
   assert.match(fourMapHtml, /updateParentBearingUrl/);
   assert.match(fourMapShellHtml, /pixelmap:set-bearing/);
   assert.match(fourMapShellHtml, /pixelmap:bearing/);
+  for (const page of [oneMapHtml, twoMapHtml, fourMapHtml, fourMapShellHtml])
+    assert.match(page, /20260827-building-vertical-production-1/);
 });

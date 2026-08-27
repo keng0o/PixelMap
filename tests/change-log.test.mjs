@@ -89,7 +89,7 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /建物の構造輪郭を素材感を保ったまま連続化/);
   assert.match(log, /平面建物の側面輪郭で3行に1行空けていた箇所/);
   assert.match(log, /standalone testのcell2／cell3建物描画/);
-  assert.match(log, /構造輪郭の連続化はtest専用guard/);
+  assert.match(log, /平面・高さ建物の構造輪郭を連続させる/);
   assert.match(log, /全自動テスト156件/);
   assert.match(log, /黒い太帯化や立体感の消失がない/);
   assert.match(log, /建物の高さ表現を画面垂直押し出しへ変更/);
@@ -98,6 +98,17 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /本番1・2・4マップは固定消失点/);
   assert.match(log, /全自動テスト157件/);
   assert.match(log, /独立視覚レビューで4枚すべてPASS/);
+  assert.match(log, /画面垂直の建物高さ表現をWeb本番へリリース/);
+  assert.match(log, /固定消失点と高さ比例の横移動を外し/);
+  assert.match(log, /standalone test（<code>variants\/map-02-refined\.html<\/code>）/);
+  assert.match(log, /1マップ（<code>index\.html<\/code>）/);
+  assert.match(log, /2マップ（<code>compare\.html<\/code>）/);
+  assert.match(log, /4マップ（<code>four-maps\.html<\/code>／<code>variants\/height-stack-four-map\.html<\/code>）/);
+  assert.match(log, /本番1・2・4マップの建物高さ線、壁面、影、構造輪郭がtestと同じ描画/);
+  assert.match(log, /各iframeの版指定を更新/);
+  assert.match(log, /本番1マップをcell2の0°・45°、2マップをcell2の45°、4マップをcell3の45°で撮影/);
+  assert.match(log, /独立視覚レビューで本番用4枚すべてPASS/);
+  assert.match(log, /4マップの方位・cell3同期、外側UIに回帰がない/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

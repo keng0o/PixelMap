@@ -1119,11 +1119,11 @@ const screenCellVectorToSource = (dx, dy) => {
   const vector = window.PixelMapBearing.screenVectorToWorld([dx, dy], mapBearing);
   return [Math.round(vector[0]), Math.round(vector[1])];
 };
-// standalone testでは、高さに比例する横ずれを使わず、屋根を画面上方向へ
-// 垂直に持ち上げる。本番embeddedは固定消失点の既存投影を維持する。
-const STANDALONE_SCREEN_VERTICAL_EXTRUSION = !EMBEDDED && CELL_ONLY_MODE;
-// 北上時の既存投影（右へ0.34・上へ1）と画面中央で接するよう、
-// 消失点を画面左下側の画面外へ固定する。地図方位では回転させない。
+// standalone testと本番1・2・4マップの全cell描画で、高さに比例する
+// 横ずれを使わず、屋根を画面上方向へ垂直に持ち上げる。
+const SCREEN_VERTICAL_BUILDING_EXTRUSION = CELL_ONLY_MODE;
+// 到達不能な非cell互換経路では、北上時の旧投影（右へ0.34・上へ1）と
+// 画面中央で接する固定消失点を保持する。現行cell2／cell3では使わない。
 const FIXED_VANISHING_POINT = Object.freeze([W * .18, H * 1.45]);
 const FIXED_VANISHING_REFERENCE_POINT = Object.freeze([W / 2, H / 2]);
 function fixedVanishingScreenCellVector(scenePoint, riseCells, shiftX){
@@ -1137,7 +1137,7 @@ function fixedVanishingScreenCellVector(scenePoint, riseCells, shiftX){
   );
 }
 function buildingProjectionScreenCellVector(scenePoint, riseCells, shiftX){
-  if (STANDALONE_SCREEN_VERTICAL_EXTRUSION) return [0, -riseCells];
+  if (SCREEN_VERTICAL_BUILDING_EXTRUSION) return [0, -riseCells];
   return fixedVanishingScreenCellVector(scenePoint, riseCells, shiftX);
 }
 function rotateWorldHitAreas(areas){
@@ -1166,11 +1166,10 @@ function updateBearingUi(){
   bearingPlusBtn.disabled = controlsDisabled;
 }
 updateBearingUi();
-// 高さ連動の2.5D押し出しと固定消失点を、全Webマップのcell2／cell3で使う。
-const STANDALONE_HEIGHT_EXTRUSION = CELL_ONLY_MODE;
-// 建物の構造輪郭だけをtestのcell2／cell3で連続させる。
-// embedded本番では従来の輪郭リズムを保ち、屋根の素材模様や窓も変更しない。
-const STANDALONE_BUILDING_LINE_CONTINUITY = !EMBEDDED && CELL_ONLY_MODE;
+// 高さ連動の2.5D押し出しを、全Webマップのcell2／cell3で使う。
+const CELL_HEIGHT_EXTRUSION = CELL_ONLY_MODE;
+// 建物の構造輪郭を、standalone testと本番1・2・4マップで連続させる。
+const CONTINUOUS_BUILDING_STRUCTURE_OUTLINE = CELL_ONLY_MODE;
 // 単体標準ページでは、建物の意味輪郭だけを出力と同じ1論理pxで確定する。
 // cell2／cell3は指定サイズの原子セル、embeddedは既存ページの外観を維持する。
 const STANDALONE_PRECISE_BUILDINGS = !EMBEDDED && !CELL_ONLY_MODE &&
@@ -2634,8 +2633,8 @@ function drawCellFlatPixelArtBuildingGrid(
         color = above ? P.wall : pal[1];
         if (above && positiveModulo(wx, 4) === 1) color = P.win;
       } else if (!above) color = pal[2];
-      else if (sideEdge && (STANDALONE_BUILDING_LINE_CONTINUITY || outlinePhase !== 1))
-        color = STANDALONE_BUILDING_LINE_CONTINUITY && outlinePhase === 1 ? pal[1] : P.outline;
+      else if (sideEdge && (CONTINUOUS_BUILDING_STRUCTURE_OUTLINE || outlinePhase !== 1))
+        color = CONTINUOUS_BUILDING_STRUCTURE_OUTLINE && outlinePhase === 1 ? pal[1] : P.outline;
       else if (positiveModulo(wx * 3 + wy * 5 + buildingIndex, 17) === 0) color = pal[1];
       paintSolidMapCell(x, y, color, layer, stats);
       if (color !== pal[0]) stats.buildingDetailCells++;
@@ -2697,7 +2696,7 @@ function drawCellHeightExtrudedBuildingGrid(
       const riseCells = Math.max(1, Math.round(riseLogical / MAP_CELL_LOGICAL_SIZE));
       group = {
         bi, cells:[], owned:new Set(), riseLogical, riseCells,
-        shiftX:STANDALONE_SCREEN_VERTICAL_EXTRUSION
+        shiftX:SCREEN_VERTICAL_BUILDING_EXTRUSION
           ? 0
           : Math.max(0, Math.round(riseCells * .34)),
         maxY:-Infinity,
@@ -2751,7 +2750,7 @@ function drawCellHeightExtrudedBuildingGrid(
   // 影は立体より先に地表へ置く。垂直押し出しでは最大2セルへ短縮し、
   // 高さ線と混同しない小さな接地手掛かりとして残す。
   for (const group of groups.values()){
-    const shadowSteps = STANDALONE_SCREEN_VERTICAL_EXTRUSION
+    const shadowSteps = SCREEN_VERTICAL_BUILDING_EXTRUSION
       ? Math.min(2, Math.max(1, Math.ceil(group.riseCells / 4)))
       : Math.min(3, Math.max(1, Math.ceil(group.riseCells / 3)));
     for (const [x, y] of group.cells){
@@ -2784,11 +2783,11 @@ function drawCellHeightExtrudedBuildingGrid(
       groupScenePoint, group.riseCells, group.shiftX
     );
 
-    // 元のfootprintから屋根位置まで連続した壁体を作る。standalone testでは
-    // 画面上方向へ垂直に積み、本番embeddedだけ固定消失点へ収束させる。
+    // 元のfootprintから屋根位置まで連続した壁体を作る。全Webマップの
+    // cell2／cell3では、表示方位にかかわらず画面上方向へ垂直に積む。
     for (let step = 0; step < group.riseCells; step++){
       const progress = step / group.riseCells;
-      const useProjectionVector = STANDALONE_SCREEN_VERTICAL_EXTRUSION || BEARING_STUDY_MODE;
+      const useProjectionVector = SCREEN_VERTICAL_BUILDING_EXTRUSION || BEARING_STUDY_MODE;
       const screenOffsetX = useProjectionVector
         ? group.projectionScreen[0] * progress
         : Math.round(group.shiftX * progress);
@@ -2800,19 +2799,19 @@ function drawCellHeightExtrudedBuildingGrid(
         const south = !owns(group, x, y + 1);
         const east = !owns(group, x + 1, y);
         const west = !owns(group, x - 1, y);
-        const frontFace = STANDALONE_SCREEN_VERTICAL_EXTRUSION
+        const frontFace = SCREEN_VERTICAL_BUILDING_EXTRUSION
           ? exposedToward(group, x, y, screenDownSource)
           : south || east;
-        const shadedSide = STANDALONE_SCREEN_VERTICAL_EXTRUSION
+        const shadedSide = SCREEN_VERTICAL_BUILDING_EXTRUSION
           ? exposedToward(group, x, y, screenRightSource) && !frontFace
           : east;
-        const structuralOutline = STANDALONE_SCREEN_VERTICAL_EXTRUSION
+        const structuralOutline = SCREEN_VERTICAL_BUILDING_EXTRUSION
           ? exposedToward(group, x, y, screenLeftSource) && !frontFace
           : west && !south;
         let color = shadedSide ? P.wallDk : P.wall;
         if (structuralOutline) color = P.outline;
         const [wx] = worldFineCell(x, y);
-        if ((!STANDALONE_BUILDING_LINE_CONTINUITY || !structuralOutline) &&
+        if ((!CONTINUOUS_BUILDING_STRUCTURE_OUTLINE || !structuralOutline) &&
             frontFace && step > 0 && step % 2 === 0 && positiveModulo(wx + step, 3) === 1)
           color = P.win;
         paintProjected(group, x, y, offsetX, offsetY, color, `${layer}:height-wall`);
@@ -2827,11 +2826,11 @@ function drawCellHeightExtrudedBuildingGrid(
       const west = owns(group, x - 1, y), east = owns(group, x + 1, y);
       const [wx, wy] = worldFineCell(x, y);
       let color = pal[0];
-      if (STANDALONE_SCREEN_VERTICAL_EXTRUSION &&
+      if (SCREEN_VERTICAL_BUILDING_EXTRUSION &&
           exposedToward(group, x, y, screenDownSource)) color = pal[1];
-      else if (STANDALONE_SCREEN_VERTICAL_EXTRUSION &&
+      else if (SCREEN_VERTICAL_BUILDING_EXTRUSION &&
           exposedToward(group, x, y, screenUpSource)) color = pal[2];
-      else if (STANDALONE_SCREEN_VERTICAL_EXTRUSION &&
+      else if (SCREEN_VERTICAL_BUILDING_EXTRUSION &&
           (exposedToward(group, x, y, screenLeftSource) ||
            exposedToward(group, x, y, screenRightSource))) color = P.outline;
       else if (!south) color = pal[1];
@@ -2873,7 +2872,7 @@ function drawCellHeightExtrudedBuildingGrid(
 }
 
 function drawCellPixelArtBuildingGrid(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats){
-  if (STANDALONE_HEIGHT_EXTRUSION){
+  if (CELL_HEIGHT_EXTRUSION){
     drawCellHeightExtrudedBuildingGrid(
       grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats
     );
@@ -5814,11 +5813,11 @@ function render(){
       stepDegrees:BEARING_STUDY_MODE ? BEARING_STEP_DEGREES : null,
       reloadOnChange:false,
       worldRerasterizedToLogicalPixelGrid:BEARING_STUDY_MODE && CELL_ONLY_MODE,
-      uprightHeightExtrusion:STANDALONE_SCREEN_VERTICAL_EXTRUSION && STANDALONE_HEIGHT_EXTRUSION,
-      screenVerticalHeightExtrusion:STANDALONE_SCREEN_VERTICAL_EXTRUSION && STANDALONE_HEIGHT_EXTRUSION,
-      fixedVanishingPointHeightExtrusion:BEARING_STUDY_MODE && STANDALONE_HEIGHT_EXTRUSION &&
-        !STANDALONE_SCREEN_VERTICAL_EXTRUSION,
-      fixedVanishingPoint:BEARING_STUDY_MODE && !STANDALONE_SCREEN_VERTICAL_EXTRUSION
+      uprightHeightExtrusion:SCREEN_VERTICAL_BUILDING_EXTRUSION && CELL_HEIGHT_EXTRUSION,
+      screenVerticalHeightExtrusion:SCREEN_VERTICAL_BUILDING_EXTRUSION && CELL_HEIGHT_EXTRUSION,
+      fixedVanishingPointHeightExtrusion:BEARING_STUDY_MODE && CELL_HEIGHT_EXTRUSION &&
+        !SCREEN_VERTICAL_BUILDING_EXTRUSION,
+      fixedVanishingPoint:BEARING_STUDY_MODE && !SCREEN_VERTICAL_BUILDING_EXTRUSION
         ? { x:FIXED_VANISHING_POINT[0], y:FIXED_VANISHING_POINT[1], coordinateSpace:'scene' }
         : null,
       uprightLabels:BEARING_STUDY_MODE,
@@ -5981,13 +5980,13 @@ function render(){
       roadCenterCells:CELL_ONLY_MODE ? cellRenderingStats.roadCenterCells : 0,
       railTieCells:CELL_ONLY_MODE ? cellRenderingStats.railTieCells : 0,
       buildingDetailCells:CELL_ONLY_MODE ? cellRenderingStats.buildingDetailCells : 0,
-      heightExtrusionEnabled:STANDALONE_HEIGHT_EXTRUSION,
-      buildingLineContinuity:STANDALONE_BUILDING_LINE_CONTINUITY,
-      buildingProjectionMode:STANDALONE_SCREEN_VERTICAL_EXTRUSION
+      heightExtrusionEnabled:CELL_HEIGHT_EXTRUSION,
+      buildingLineContinuity:CONTINUOUS_BUILDING_STRUCTURE_OUTLINE,
+      buildingProjectionMode:SCREEN_VERTICAL_BUILDING_EXTRUSION
         ? 'screen-vertical'
         : BEARING_STUDY_MODE ? 'fixed-vanishing-point' : 'north-up-diagonal',
-      heightProportionalHorizontalOffset:!STANDALONE_SCREEN_VERTICAL_EXTRUSION,
-      heightShadowMaxCells:STANDALONE_SCREEN_VERTICAL_EXTRUSION ? 2 : 3,
+      heightProportionalHorizontalOffset:!SCREEN_VERTICAL_BUILDING_EXTRUSION,
+      heightShadowMaxCells:SCREEN_VERTICAL_BUILDING_EXTRUSION ? 2 : 3,
       extrudedBuildings:CELL_ONLY_MODE ? cellRenderingStats.extrudedBuildings : 0,
       maxBuildingRiseCells:CELL_ONLY_MODE ? cellRenderingStats.maxBuildingRiseCells : 0,
       maxBuildingRiseLogicalPixels:CELL_ONLY_MODE ? cellRenderingStats.maxBuildingRiseLogicalPixels : 0,
