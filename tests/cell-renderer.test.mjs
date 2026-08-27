@@ -110,7 +110,7 @@ test('細分化しても公園・建物の意味分類は96セル基準を維持
 
 test('セルモードの地形・交通・建物は専用ピクセルアート経路を使う', () => {
   assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtSurfaceGrid\(grid, option, cellRenderingStats/);
-  assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtTransportGrid\(grid, option, cellRenderingStats, transportCenters\.get\(option\)\)/);
+  assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtTransportGrid\(\s*grid, option, cellRenderingStats, transportCenters\.get\(option\)/);
   assert.match(html, /if \(CELL_ONLY_MODE\)\{[\s\S]*?drawCellPixelArtBuildingGrid\(normalBuildingGrid/);
   assert.match(html, /else if \(SMOOTH_ROAD_OPTIONS\.has\(option\)\) drawSmoothRoadLayer\(option\)/);
   assert.match(html, /else if \(tunnelOptions\.has\(option\)\) drawTunnelLayer\(option\)/);
@@ -134,7 +134,8 @@ test('地下交通もセルモード用グリッドへ分類する', () => {
 });
 
 test('交通線は4連結を保ち、原子セルモードでは細街路だけ最小1セル・他は従来幅へ展開する', () => {
-  assert.match(html, /function traverse\(x0, y0, x1, y1, visit\)/);
+  assert.match(html, /function walkFourConnectedGridLine\(size, x0, y0, x1, y1, visit\)/);
+  assert.match(html, /walkFourConnectedGridLine\(RG, x0, y0, x1, y1, visit\)/);
   assert.match(html, /const transportCenters = new Map\(\)/);
   assert.match(html, /setCell\(center, cx, cy, 1\)/);
   assert.match(html, /minimumMinorRoute \? 1 : detailCellSpan\(thick \? 2 : 1\)/);
@@ -142,13 +143,12 @@ test('交通線は4連結を保ち、原子セルモードでは細街路だけ�
 });
 
 test('交通線のセル走査はセル角の終点を越えて架空の線を延長しない', () => {
-  const source = html.match(/  function traverse\(x0, y0, x1, y1, visit\)\{[\s\S]*?\n  \}\n  function lineStamp/)?.[0]
-    .replace(/\n  function lineStamp[\s\S]*$/u, '');
-  assert.ok(source, 'traverse実装を取得できる');
-  const traverse = Function('RG', `'use strict';\n${source}\nreturn traverse;`)(258);
+  const source = html.match(/function walkFourConnectedGridLine\(size, x0, y0, x1, y1, visit\)\{[\s\S]*?\n\}/)?.[0];
+  assert.ok(source, '4連結走査を取得できる');
+  const traverse = Function(`'use strict';\n${source}\nreturn walkFourConnectedGridLine;`)();
   const cells = [];
   // 川崎駅南西の線路で架空線を発生させていた、セル角が終点になる実座標。
-  traverse(2.875, 218.125, 5, 215, (x, y) => cells.push([x, y]));
+  traverse(258, 2.875, 218.125, 5, 215, (x, y) => cells.push([x, y]));
   assert.deepEqual(cells.at(-1), [5, 215]);
   assert.ok(cells.every(([x, y]) => x >= 2 && x <= 5 && y >= 215 && y <= 218));
   assert.ok(cells.slice(1).every(([x, y], index) =>
@@ -159,13 +159,69 @@ test('交通線のセル走査はセル角の終点を越えて架空の線を�
 });
 
 test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分ける', () => {
-  assert.match(html, /function drawCellPixelArtTransportGrid\(grid, option, stats, centerGrid = null, bridge = false\)/);
+  assert.match(html, /function drawCellPixelArtTransportGrid\([\s\S]*?continuousRailSkin = null/);
   assert.match(html, /const color = minimumMinorRoute[\s\S]*?: boundary \? edge : fill/);
   assert.match(html, /paintSolidMapCell\(x, y, color, option, stats\)/);
   assert.match(html, /paintSolidMapCell\(x, y, roadStyle\.center/);
   assert.match(html, /for \(const offset of \[-1,1\]\)/);
   assert.match(html, /paintSolidMapCell\(tx, ty, P\.tie/);
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
+});
+
+test('standalone testの地上鉄道は線路単位の左右レールを4連結で生成し枕木の後へ描く', () => {
+  const source = html.match(/function walkFourConnectedGridLine[\s\S]*?\nconst isRoad/)?.[0]
+    .replace(/\nconst isRoad[\s\S]*$/u, '');
+  assert.ok(source, '連続レール生成器を取得できる');
+  const { createContinuousRailSkin, appendContinuousRailSkinPath, finalizeContinuousRailSkin } = Function(
+    `'use strict';\n${source}\nreturn {createContinuousRailSkin,appendContinuousRailSkinPath,finalizeContinuousRailSkin};`
+  )();
+  const skin = createContinuousRailSkin(24);
+  const diagonal = [[4,4],[5,4],[5,5],[6,5],[6,6],[7,6],[7,7],[8,7],[8,8],[9,8],[9,9]];
+  appendContinuousRailSkinPath(diagonal, skin, { phaseAt:() => 0 });
+  const componentCount = mask => {
+    const visited = new Uint8Array(mask.length);
+    let components = 0;
+    for (let start = 0; start < mask.length; start++){
+      if (!mask[start] || visited[start]) continue;
+      components++;
+      const stack = [start]; visited[start] = 1;
+      while (stack.length){
+        const index = stack.pop(), x = index % skin.size, y = Math.floor(index / skin.size);
+        for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= skin.size || ny >= skin.size) continue;
+          const next = ny * skin.size + nx;
+          if (mask[next] && !visited[next]){ visited[next] = 1; stack.push(next); }
+        }
+      }
+    }
+    return components;
+  };
+  assert.equal(componentCount(skin.leftRail), 1);
+  assert.equal(componentCount(skin.rightRail), 1);
+  assert.equal(skin.pathCount, 1);
+  assert.ok(skin.tieCount > 0);
+
+  const lodSkin = createContinuousRailSkin(24);
+  lodSkin.sourcePaths.push(
+    Array.from({length:11}, (_, index) => [2 + index, 4]),
+    Array.from({length:11}, (_, index) => [2 + index, 5]),
+    Array.from({length:10}, (_, index) => [7, 1 + index]),
+  );
+  finalizeContinuousRailSkin(lodSkin, { phaseAt:() => 0, lodDistanceCells:2 });
+  assert.equal(lodSkin.sourcePathCount, 3);
+  assert.equal(lodSkin.pathCount, 2, '並走線だけをLOD代表へまとめ、交差線を残す');
+  assert.equal(lodSkin.lodSuppressedPathCount, 1);
+
+  assert.match(html, /const STANDALONE_CONTINUOUS_RAIL_SKIN = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /routeOption === 'rail'[\s\S]*?continuousRailSkinGrid\(layer\)/);
+  assert.match(html, /continuousRailSkin\.sourcePaths\.push\(railPath\)/);
+  assert.match(html, /finalizeContinuousRailSkin\(continuousRailSkin/);
+  assert.match(html, /for \(let index = 0; index < continuousRailSkin\.ties\.length; index\+\+\)[\s\S]*?for \(const mask of \[continuousRailSkin\.leftRail, continuousRailSkin\.rightRail\]\)/);
+  assert.match(html, /railTopologyPaths \+= continuousRailSkin\.pathCount/);
+  assert.match(html, /railLodSuppressedPaths \+= continuousRailSkin\.lodSuppressedPathCount/);
+  assert.match(html, /railRenderer:STANDALONE_CONTINUOUS_RAIL_SKIN[\s\S]*?'source-track-connected-masks'/);
+  assert.match(html, /railPassOrder:STANDALONE_CONTINUOUS_RAIL_SKIN[\s\S]*?\['bed','ties','left-rail','right-rail'\]/);
 });
 
 test('全Webマップの地区幹線道路は中央線を描かない', () => {

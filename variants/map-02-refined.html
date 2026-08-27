@@ -898,6 +898,10 @@ const REQUESTED_RENDER_MODE = PAGE_PARAMS.get('render');
 const RENDER_MODE = REQUESTED_RENDER_MODE === 'cell3' ? 'cell3' : 'cell2';
 const CELL_RENDER_LOGICAL_SIZE = Number(RENDER_MODE.slice(4));
 const CELL_ONLY_MODE = ['cell2','cell3'].includes(RENDER_MODE);
+// standalone testの地上鉄道だけは、中心セルごとの縦横推定ではなく
+// 線路単位の接線から左右レールと枕木を別マスクへ生成する。
+// embedded本番は検証完了まで従来描画を維持する。
+const STANDALONE_CONTINUOUS_RAIL_SKIN = !EMBEDDED && CELL_ONLY_MODE;
 // standalone標準表示では、地物を移動させず「不変の地理形状＋共通スキン＋
 // 固定サイズのシンボル」で描く旧経路を保持するが、現行URL契約からは到達しない。
 const STANDALONE_UNIFIED_STYLE = !EMBEDDED && !CELL_ONLY_MODE;
@@ -1600,6 +1604,145 @@ const ID = { GRASS:0, FOREST:1, PARK:2, DIRT:3, PAVE:4, GRAVEL:5, FARM:6, SAND:7
              WATER:9, PATH:10, ROAD:11, RAIL:12, BLD:13, ROAD_MAJOR:14, HIGHWAY:15,
              ROCK:16, WETLAND:17, ICE:18, MEADOW:19, TERRAIN_OTHER:20, WOODS:21,
              PARK_MEDIUM:22, PARK_LARGE:23, PARK_RESERVE:24 };
+
+// 線路中心・左右レール・枕木は同じ4連結走査を使う。完成したレールを
+// セル集合から推測し直さず、元の線路ごとに連続経路として確定する。
+function walkFourConnectedGridLine(size, x0, y0, x1, y1, visit){
+  let cx = Math.floor(x0), cy = Math.floor(y0);
+  const ex = Math.floor(x1), ey = Math.floor(y1);
+  const dx = x1 - x0, dy = y1 - y0;
+  const stepX = dx > 0 ? 1 : -1, stepY = dy > 0 ? 1 : -1;
+  const tDX = dx !== 0 ? Math.abs(1 / dx) : Infinity;
+  const tDY = dy !== 0 ? Math.abs(1 / dy) : Infinity;
+  let tMX = dx !== 0 ? (dx > 0 ? (cx + 1 - x0) : (x0 - cx)) * tDX : Infinity;
+  let tMY = dy !== 0 ? (dy > 0 ? (cy + 1 - y0) : (y0 - cy)) * tDY : Infinity;
+  visit(cx, cy);
+  let guard = 0;
+  while ((cx !== ex || cy !== ey) && guard++ < size * 4){
+    if (cx === ex){ cy += stepY; tMY += tDY; }
+    else if (cy === ey){ cx += stepX; tMX += tDX; }
+    else if (tMX < tMY){ cx += stepX; tMX += tDX; }
+    else               { cy += stepY; tMY += tDY; }
+    visit(cx, cy);
+  }
+}
+
+function createContinuousRailSkin(size){
+  return {
+    size,
+    leftRail:new Uint8Array(size * size),
+    rightRail:new Uint8Array(size * size),
+    ties:new Uint8Array(size * size),
+    sourcePaths:[],
+    sourcePathCount:0,
+    pathCount:0,
+    lodSuppressedPathCount:0,
+    tieCount:0,
+  };
+}
+
+function appendContinuousRailSkinPath(path, skin, {
+  offsetCells = 1,
+  tiePeriodCells = 3,
+  tieHalfSpanCells = 2,
+  tangentRadius = 4,
+  phaseAt = () => 0,
+} = {}){
+  if (!skin || !Array.isArray(path) || path.length < 2) return;
+  const size = skin.size;
+  const setMaskCell = (mask, x, y) => {
+    if (x >= 0 && y >= 0 && x < size && y < size) mask[y * size + x] = 1;
+  };
+  const connect = (mask, from, to) => {
+    walkFourConnectedGridLine(size, from[0], from[1], to[0], to[1],
+      (x, y) => setMaskCell(mask, x, y));
+  };
+  const tangents = path.map((point, index) => {
+    const before = path[Math.max(0, index - tangentRadius)];
+    const after = path[Math.min(path.length - 1, index + tangentRadius)];
+    const dx = after[0] - before[0], dy = after[1] - before[1];
+    const length = Math.hypot(dx, dy) || 1;
+    return [dx / length, dy / length];
+  });
+  const offsetPoint = (point, tangent, side, amount = offsetCells) => [
+    point[0] + .5 - tangent[1] * amount * side,
+    point[1] + .5 + tangent[0] * amount * side,
+  ];
+
+  for (const [side, mask] of [[-1, skin.leftRail], [1, skin.rightRail]]){
+    let previous = offsetPoint(path[0], tangents[0], side);
+    setMaskCell(mask, Math.floor(previous[0]), Math.floor(previous[1]));
+    for (let index = 1; index < path.length; index++){
+      const current = offsetPoint(path[index], tangents[index], side);
+      connect(mask, previous, current);
+      previous = current;
+    }
+  }
+
+  const period = Math.max(2, Math.round(tiePeriodCells));
+  const phase = Math.round(phaseAt(path[0], tangents[0]));
+  for (let index = 0; index < path.length; index++){
+    if (((phase + index) % period + period) % period !== 0) continue;
+    const start = offsetPoint(path[index], tangents[index], -1, tieHalfSpanCells);
+    const end = offsetPoint(path[index], tangents[index], 1, tieHalfSpanCells);
+    connect(skin.ties, start, end);
+    skin.tieCount++;
+  }
+  skin.pathCount++;
+}
+
+function finalizeContinuousRailSkin(skin, options = {}){
+  if (!skin || !skin.sourcePaths.length) return;
+  const lodDistanceCells = Math.max(1, Math.round(options.lodDistanceCells || 2));
+  const overlapThreshold = Math.max(.5, Math.min(1, options.overlapThreshold || .6));
+  const keyFor = (x, y) => `${x},${y}`;
+  const pathIndex = path => new Set(path.map(([x, y]) => keyFor(x, y)));
+  const pointNear = (point, index) => {
+    for (let dy = -lodDistanceCells; dy <= lodDistanceCells; dy++){
+      for (let dx = -lodDistanceCells; dx <= lodDistanceCells; dx++){
+        if (dx * dx + dy * dy > lodDistanceCells * lodDistanceCells) continue;
+        if (index.has(keyFor(point[0] + dx, point[1] + dy))) return true;
+      }
+    }
+    return false;
+  };
+  const overallTangent = path => {
+    const first = path[0], last = path[path.length - 1];
+    const dx = last[0] - first[0], dy = last[1] - first[1];
+    const length = Math.hypot(dx, dy) || 1;
+    return [dx / length, dy / length];
+  };
+  const pathsAreLodCoincident = (path, tangent, representative) => {
+    const alignment = Math.abs(tangent[0] * representative.tangent[0] +
+      tangent[1] * representative.tangent[1]);
+    if (alignment < .8) return false;
+    if (!pointNear(path[0], representative.index) ||
+        !pointNear(path[path.length - 1], representative.index)) return false;
+    const step = Math.max(1, Math.floor(path.length / 64));
+    let samples = 0, overlaps = 0;
+    for (let index = 0; index < path.length; index += step){
+      samples++;
+      if (pointNear(path[index], representative.index)) overlaps++;
+    }
+    return samples > 0 && overlaps / samples >= overlapThreshold;
+  };
+  const ordered = [...skin.sourcePaths].sort((first, second) =>
+    second.length - first.length ||
+    first[0][1] - second[0][1] || first[0][0] - second[0][0]
+  );
+  const representatives = [];
+  for (const path of ordered){
+    const tangent = overallTangent(path);
+    if (representatives.some(item => pathsAreLodCoincident(path, tangent, item))){
+      skin.lodSuppressedPathCount++;
+      continue;
+    }
+    representatives.push({path, tangent, index:pathIndex(path)});
+  }
+  skin.sourcePathCount = ordered.length;
+  for (const {path} of representatives) appendContinuousRailSkinPath(path, skin, options);
+}
+
 const isRoad = id => id === ID.ROAD || id === ID.ROAD_MAJOR || id === ID.HIGHWAY;
 const isPark = id => id === ID.PARK || id === ID.PARK_MEDIUM || id === ID.PARK_LARGE || id === ID.PARK_RESERVE;
 const isBld = id => id === ID.BLD;
@@ -1696,9 +1839,10 @@ function rasterizeGrid(layers, options){
   // レイヤーごとに独立したグリッドを持ち、チェック順に合成できるようにする。
   // 0 = GRASS は未描画セルも兼ねるため、grass 以外は drawGrid の transparent で読み分ける。
   const grids = new Map();
-  // cell2では塗り幅とは別に交通の中心線を保持し、縁取り・中央線・
-  // レール・枕木を原子セルの多層として再構成する。
+  // 原子セルでは塗り幅とは別に交通の中心線を保持する。standalone testの
+  // 地上鉄道はさらに元線路ごとの左右レール・枕木マスクを保持する。
   const transportCenters = new Map();
+  const transportRailSkins = new Map();
   const featureCountsByOption = Object.create(null);
   const countFeatures = (option, count) => {
     featureCountsByOption[option] = (featureCountsByOption[option] || 0) + count;
@@ -1710,6 +1854,10 @@ function rasterizeGrid(layers, options){
   const centerGrid = option => {
     if (!transportCenters.has(option)) transportCenters.set(option, new Uint8Array(RG * RG));
     return transportCenters.get(option);
+  };
+  const continuousRailSkinGrid = option => {
+    if (!transportRailSkins.has(option)) transportRailSkins.set(option, createContinuousRailSkin(RG));
+    return transportRailSkins.get(option);
   };
   const oc = document.createElement('canvas');
   oc.width = oc.height = RG;
@@ -2121,38 +2269,30 @@ function rasterizeGrid(layers, options){
   // Amanatides–Woo のボクセル走査。1ステップで進むのは必ず1軸だけなので
   // 斜め線も自動的に「ギザギザの階段」になり、経路セルが途切れない。
   function traverse(x0, y0, x1, y1, visit){
-    let cx = Math.floor(x0), cy = Math.floor(y0);
-    const ex = Math.floor(x1), ey = Math.floor(y1);
-    const dx = x1 - x0, dy = y1 - y0;
-    const stepX = dx > 0 ? 1 : -1, stepY = dy > 0 ? 1 : -1;
-    const tDX = dx !== 0 ? Math.abs(1 / dx) : Infinity;
-    const tDY = dy !== 0 ? Math.abs(1 / dy) : Infinity;
-    let tMX = dx !== 0 ? (dx > 0 ? (cx + 1 - x0) : (x0 - cx)) * tDX : Infinity;
-    let tMY = dy !== 0 ? (dy > 0 ? (cy + 1 - y0) : (y0 - cy)) * tDY : Infinity;
-    visit(cx, cy);
-    let guard = 0;
-    while ((cx !== ex || cy !== ey) && guard++ < RG * 4){
-      // 片方の軸が終点セルへ着いた後は、その軸をそれ以上進めない。
-      // セル角で tMX === tMY になる線分を片軸だけ進めると終点を通り越し、
-      // guardまで架空の長い直線を延ばしてしまうため、終点セルを不変条件にする。
-      if (cx === ex){ cy += stepY; tMY += tDY; }
-      else if (cy === ey){ cx += stepX; tMX += tDX; }
-      else if (tMX < tMY){ cx += stepX; tMX += tDX; }
-      else               { cy += stepY; tMY += tDY; }
-      visit(cx, cy);
-    }
+    walkFourConnectedGridLine(RG, x0, y0, x1, y1, visit);
   }
   function lineStamp(layer, fs, id, thick, routeOption = layer){
     const grid = layerGrid(layer);
     const center = CELL_ONLY_MODE ? centerGrid(layer) : null;
+    const continuousRailSkin = STANDALONE_CONTINUOUS_RAIL_SKIN && routeOption === 'rail'
+      ? continuousRailSkinGrid(layer) : null;
     const minimumMinorRoute = STANDALONE_MINIMUM_MINOR_ROUTES &&
       ['localRoads','paths'].includes(routeOption);
     for (const f of fs){
       for (const ln of f.geom){
+        const railPath = continuousRailSkin ? [] : null;
+        let previousRailIndex = -1;
         for (let i = 0; i + 1 < ln.length; i++){
           traverse(gx(ln[i][0]), gy(ln[i][1]), gx(ln[i+1][0]), gy(ln[i+1][1]), (cx, cy) => {
             if (CELL_ONLY_MODE){
               setCell(center, cx, cy, 1);
+              if (railPath && cx >= 0 && cy >= 0 && cx < RG && cy < RG){
+                const railIndex = cy * RG + cx;
+                if (railIndex !== previousRailIndex){
+                  railPath.push([cx, cy]);
+                  previousRailIndex = railIndex;
+                }
+              }
               setCellBrush(grid, cx, cy, id,
                 minimumMinorRoute ? 1 : detailCellSpan(thick ? 2 : 1));
             } else {
@@ -2161,7 +2301,21 @@ function rasterizeGrid(layers, options){
             }
           });
         }
+        if (railPath?.length > 1) continuousRailSkin.sourcePaths.push(railPath);
       }
+    }
+    if (continuousRailSkin){
+      finalizeContinuousRailSkin(continuousRailSkin, {
+        offsetCells:Math.max(1, Math.round(2 / MAP_CELL_LOGICAL_SIZE)),
+        tiePeriodCells:Math.max(2, Math.round(6 / MAP_CELL_LOGICAL_SIZE)),
+        tieHalfSpanCells:Math.max(2, Math.ceil(detailCellSpan(1) / 2)),
+        lodDistanceCells:Math.max(2, Math.round(4 / MAP_CELL_LOGICAL_SIZE)),
+        overlapThreshold:.6,
+        phaseAt:([cx, cy], [tx, ty]) => {
+          const [wx, wy] = worldFineCell(cx, cy);
+          return wx * tx + wy * ty;
+        },
+      });
     }
   }
   // 線路: 別の線路のセルと辺で隣接するなら砂利にして、レール面同士が接しないように配置
@@ -2231,7 +2385,7 @@ function rasterizeGrid(layers, options){
     feature => paintGeometry(feature, 1.5, 1.25)
   );
   return {
-    grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea,
+    grids, transportCenters, transportRailSkins, bldGrid, bldUnits, unitByRingKey, bldArea,
     facilitySites, featureCountsByOption, size:RG,
   };
 }
@@ -2513,7 +2667,9 @@ function paintDarkenedMapCell(gx, gy, factor, layer, stats){
   paintSolidMapCell(gx, gy, color, layer, stats);
 }
 
-function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, bridge = false){
+function drawCellPixelArtTransportGrid(
+  grid, option, stats, centerGrid = null, bridge = false, continuousRailSkin = null
+){
   const RG = RASTER_GRID_SIZE;
   const has = (x, y) => x >= 0 && y >= 0 && x < RG && y < RG && grid[y * RG + x] !== ID.GRASS;
   const centered = (x, y) => centerGrid && x >= 0 && y >= 0 && x < RG && y < RG && centerGrid[y * RG + x];
@@ -2554,6 +2710,25 @@ function drawCellPixelArtTransportGrid(grid, option, stats, centerGrid = null, b
   }
 
   if (rail){
+    if (STANDALONE_CONTINUOUS_RAIL_SKIN && option === 'rail' && continuousRailSkin){
+      for (let index = 0; index < continuousRailSkin.ties.length; index++){
+        if (!continuousRailSkin.ties[index]) continue;
+        const x = index % RG, y = Math.floor(index / RG);
+        if (has(x, y)) paintSolidMapCell(x, y, P.tie, option, stats);
+      }
+      stats.railTieCells += continuousRailSkin.tieCount;
+      stats.railSourcePaths += continuousRailSkin.sourcePathCount;
+      stats.railTopologyPaths += continuousRailSkin.pathCount;
+      stats.railLodSuppressedPaths += continuousRailSkin.lodSuppressedPathCount;
+      for (const mask of [continuousRailSkin.leftRail, continuousRailSkin.rightRail]){
+        for (let index = 0; index < mask.length; index++){
+          if (!mask[index]) continue;
+          const x = index % RG, y = Math.floor(index / RG);
+          if (has(x, y)) paintSolidMapCell(x, y, P.rail, option, stats);
+        }
+      }
+      return;
+    }
     for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
       if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
       const horizontal = centered(x-1,y) || centered(x+1,y);
@@ -4639,7 +4814,7 @@ function render(){
   /* --- 地形のマップグリッド + 建物情報 --- */
   const rasterized = getRasterizedGrid(tileLayers, o);
   const {
-    grids, transportCenters, bldGrid, bldUnits, unitByRingKey, bldArea,
+    grids, transportCenters, transportRailSkins, bldGrid, bldUnits, unitByRingKey, bldArea,
     facilitySites, featureCountsByOption,
   } = rasterized;
   const RG = RASTER_GRID_SIZE;
@@ -4667,6 +4842,9 @@ function render(){
     roadCasingCells:0,
     roadCenterCells:0,
     railTieCells:0,
+    railSourcePaths:0,
+    railTopologyPaths:0,
+    railLodSuppressedPaths:0,
     buildingDetailCells:0,
     extrudedBuildings:0,
     maxBuildingRiseCells:0,
@@ -5602,7 +5780,10 @@ function render(){
     if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option]) continue;
     if (CELL_ONLY_MODE){
       const grid = grids.get(option);
-      if (grid) drawCellPixelArtTransportGrid(grid, option, cellRenderingStats, transportCenters.get(option));
+      if (grid) drawCellPixelArtTransportGrid(
+        grid, option, cellRenderingStats, transportCenters.get(option), false,
+        transportRailSkins.get(option)
+      );
       countCellFeatures(option);
     }
     else if (SMOOTH_ROAD_OPTIONS.has(option)) drawSmoothRoadLayer(option);
@@ -5662,7 +5843,10 @@ function render(){
     const bridgeOption = `bridge:${option}`;
     if (CELL_ONLY_MODE){
       const grid = grids.get(bridgeOption);
-      if (grid) drawCellPixelArtTransportGrid(grid, option, cellRenderingStats, transportCenters.get(bridgeOption), true);
+      if (grid) drawCellPixelArtTransportGrid(
+        grid, option, cellRenderingStats, transportCenters.get(bridgeOption), true,
+        transportRailSkins.get(bridgeOption)
+      );
       countCellFeatures(bridgeOption);
     }
     else if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option])
@@ -5886,6 +6070,11 @@ function render(){
       corridorRendererVersion:STANDALONE_UNIFIED_STYLE ? CORRIDOR_RENDERER.version : null,
       corridorContractVersion:STANDALONE_UNIFIED_STYLE ? LAYER_ASSET_CATALOG.corridorContractVersion : null,
       corridorPhase:STANDALONE_UNIFIED_STYLE ? 'source-line-distance' : 'legacy-screen-phase',
+      railRenderer:STANDALONE_CONTINUOUS_RAIL_SKIN
+        ? 'source-track-connected-masks' : 'legacy-local-axis-stamps',
+      railScope:STANDALONE_CONTINUOUS_RAIL_SKIN ? 'standalone-ground-rail' : 'all-legacy-rail-like',
+      railPassOrder:STANDALONE_CONTINUOUS_RAIL_SKIN
+        ? ['bed','ties','left-rail','right-rail'] : ['bed','per-center-tie-and-rail'],
       compositor:STANDALONE_UNIFIED_STYLE
         ? [...WORLD_STYLE.compositor]
         : ['legacy-z-order'],
@@ -5979,6 +6168,9 @@ function render(){
       roadCasingCells:CELL_ONLY_MODE ? cellRenderingStats.roadCasingCells : 0,
       roadCenterCells:CELL_ONLY_MODE ? cellRenderingStats.roadCenterCells : 0,
       railTieCells:CELL_ONLY_MODE ? cellRenderingStats.railTieCells : 0,
+      railSourcePaths:CELL_ONLY_MODE ? cellRenderingStats.railSourcePaths : 0,
+      railTopologyPaths:CELL_ONLY_MODE ? cellRenderingStats.railTopologyPaths : 0,
+      railLodSuppressedPaths:CELL_ONLY_MODE ? cellRenderingStats.railLodSuppressedPaths : 0,
       buildingDetailCells:CELL_ONLY_MODE ? cellRenderingStats.buildingDetailCells : 0,
       heightExtrusionEnabled:CELL_HEIGHT_EXTRUSION,
       buildingLineContinuity:CONTINUOUS_BUILDING_STRUCTURE_OUTLINE,

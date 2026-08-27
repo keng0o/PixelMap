@@ -109,6 +109,15 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /本番1マップをcell2の0°・45°、2マップをcell2の45°、4マップをcell3の45°で撮影/);
   assert.match(log, /独立視覚レビューで本番用4枚すべてPASS/);
   assert.match(log, /4マップの方位・cell3同期、外側UIに回帰がない/);
+  assert.match(log, /線路単位の連続レール描画をstandalone testへ導入/);
+  assert.match(log, /左右別々の4連結経路を生成/);
+  assert.match(log, /全体が並走し両端も近い線路だけは鉄道表示代表へ間引く/);
+  assert.match(log, /交差・分岐と元の線路データは統合・削除しない/);
+  assert.match(log, /standalone testのcell2／cell3における地上鉄道/);
+  assert.match(log, /本番1・2・4マップは従来の中心セルごとの縦横判定/);
+  assert.match(log, /全自動テスト158件/);
+  assert.match(log, /独立視覚レビューは3枚すべてPASS/);
+  assert.match(log, /黒い太帯・過密化・分岐消失/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {
