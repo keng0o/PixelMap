@@ -4259,6 +4259,17 @@ const locationCanvasPoint = () => currentLocation ? rotateScenePoint([
   (currentLocation.tileY - TILE.y) * H - viewOffset.y,
 ]) : null;
 
+// standalone testでは主要道路から細街路へ読める順に設定項目を並べる。
+// embedded本番の設定UIは既存順を維持する。
+if (!EMBEDDED){
+  const roadControls = ['tglMajorRoads','tglRegionalRoads','tglLocalRoads','tglPaths']
+    .map(id => document.getElementById(id)?.closest('label'))
+    .filter(Boolean);
+  const transportItems = document.getElementById('tglLocalRoads')?.closest('.category-items');
+  if (transportItems && roadControls.length === 4)
+    transportItems.prepend(...roadControls);
+}
+
 const layerInputs = [...document.querySelectorAll('[data-category-item]')];
 const optionForInput = input => input.id.slice(3).replace(/^./, c => c.toLowerCase());
 const STUDY_LAYER_OPTIONS = new Set([
@@ -4273,7 +4284,12 @@ const STUDY_LAYER_OPTIONS = new Set([
   'poi',
 ]);
 if (STUDY_MODE){
-  for (const input of layerInputs) input.checked = STUDY_LAYER_OPTIONS.has(optionForInput(input));
+  const standaloneMinorRoadDefaults = new Set(['localRoads','paths']);
+  for (const input of layerInputs){
+    const option = optionForInput(input);
+    input.checked = STUDY_LAYER_OPTIONS.has(option) ||
+      (!EMBEDDED && standaloneMinorRoadDefaults.has(option));
+  }
 } else if (WORLD_STYLE_MODE){
   const defaults = new Set(WORLD_STYLE.defaultLayers);
   for (const input of layerInputs) input.checked = defaults.has(optionForInput(input));
@@ -4287,6 +4303,15 @@ function updateLayerOrder(input){
   document.getElementById('toolbar').dataset.layerOrder = layerOrder.join(',');
 }
 document.getElementById('toolbar').dataset.layerOrder = layerOrder.join(',');
+// 同じZ階層では後描画ほど手前。指定4種が占める位置だけを入れ替え、
+// 歩道・小径→生活道路→地区幹線道路→主要道路の順で重ねる。
+const standaloneRoadStackOrder = options => {
+  if (EMBEDDED) return options;
+  const ranked = ['paths','localRoads','regionalRoads','majorRoads'];
+  const activeRanked = ranked.filter(option => options.includes(option));
+  let rankIndex = 0;
+  return options.map(option => ranked.includes(option) ? activeRanked[rankIndex++] : option);
+};
 const featureName = p => p['name:ja'] || p.name || null;
 const geometryAnchor = feature => {
   const points = feature.geom.flat();
@@ -5778,7 +5803,7 @@ function render(){
   // Z0〜Z4を固定し、同じZ階層内だけチェック順（後にチェックしたものほど前面）にする。
   drawRasterGroup('Z0', z0Ground);
   drawRasterGroup('Z1', z1Water);
-  for (const option of layerOrder){
+  for (const option of standaloneRoadStackOrder(layerOrder)){
     if (!o[option] || !z2Routes.has(option)) continue;
     // standalone標準のcorridorは地表areaの後へ一括して合成する。
     if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option]) continue;
@@ -5842,7 +5867,7 @@ function render(){
     }
     renderOrder.push('Z3:surface-roads:conflict-fallback');
   }
-  for (const option of layerOrder){
+  for (const option of standaloneRoadStackOrder(layerOrder)){
     if (!o[option] || !bridgeOptions.has(option)) continue;
     const bridgeOption = `bridge:${option}`;
     if (CELL_ONLY_MODE){

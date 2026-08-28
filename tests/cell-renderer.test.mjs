@@ -231,6 +231,15 @@ test('全Webマップの地区幹線道路は中央線を描かない', () => {
   assert.doesNotMatch(html, /function boundaryAlignedRoadCenter/);
 });
 
+test('standalone testは細街路を既定表示し主要道路を手前へ重ねる', () => {
+  assert.match(html, /const standaloneMinorRoadDefaults = new Set\(\['localRoads','paths'\]\)/);
+  assert.match(html, /!EMBEDDED && standaloneMinorRoadDefaults\.has\(option\)/);
+  assert.match(html, /\['tglMajorRoads','tglRegionalRoads','tglLocalRoads','tglPaths'\]/);
+  assert.match(html, /const ranked = \['paths','localRoads','regionalRoads','majorRoads'\]/);
+  assert.match(html, /for \(const option of standaloneRoadStackOrder\(layerOrder\)\)/);
+  assert.match(html, /if \(EMBEDDED\) return options/);
+});
+
 test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで描く', () => {
   assert.match(html, /function drawCellPixelArtBuildingGrid\(grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, layer, stats\)/);
   assert.match(html, /const CELL_HEIGHT_EXTRUSION = CELL_ONLY_MODE/);
