@@ -112,5 +112,5 @@ test('1・2・4マップは表示方位だけをpostMessageで同期する', () 
   assert.match(fourMapShellHtml, /pixelmap:set-bearing/);
   assert.match(fourMapShellHtml, /pixelmap:bearing/);
   for (const page of [oneMapHtml, twoMapHtml, fourMapHtml, fourMapShellHtml])
-    assert.match(page, /20260827-building-vertical-production-1/);
+    assert.match(page, /20260828-settings-default-collapsed-production-1/);
 });

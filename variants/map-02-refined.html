@@ -924,7 +924,9 @@ const ACTIVE_PATTERN = ICON_PATTERNS.find(pattern => pattern.id === requestedPat
 };
 const CAPTURE_MODE = PAGE_PARAMS.get('capture') === '1';
 const SETTINGS_COLLAPSIBLE = !SHARED_CONTROLS && !CAPTURE_MODE;
-const SETTINGS_DEFAULT_COLLAPSED = SETTINGS_COLLAPSIBLE && !EMBEDDED;
+// 個別設定を持つstandalone・本番1マップ・本番2マップは初期最小化。
+// shared-controlsを使う本番4マップは外側の共通設定を維持する。
+const SETTINGS_DEFAULT_COLLAPSED = SETTINGS_COLLAPSIBLE;
 // cell2/cell3の既定は地図内容を評価できるstudyレイヤーとし、
 // ?layers=manualだけで手動選択へ戻す。到達不能なstandalone標準の条件は保持する。
 const STUDY_MODE = EMBEDDED

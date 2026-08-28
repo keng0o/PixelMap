@@ -34,7 +34,7 @@ test('standaloneと1・2マップは設定を閉じて地図を全画面表示�
   assert.match(html, /\.settings-toggle\{[\s\S]*?position:fixed;[\s\S]*?top:max\(14px,[\s\S]*?right:max\(14px,[\s\S]*?width:44px;[\s\S]*?height:44px/);
   assert.match(html, /function setStandaloneSettingsCollapsed\(collapsed\)/);
   assert.match(html, /const SETTINGS_COLLAPSIBLE = !SHARED_CONTROLS && !CAPTURE_MODE/);
-  assert.match(html, /const SETTINGS_DEFAULT_COLLAPSED = SETTINGS_COLLAPSIBLE && !EMBEDDED/);
+  assert.match(html, /const SETTINGS_DEFAULT_COLLAPSED = SETTINGS_COLLAPSIBLE/);
   assert.match(html, /if \(!SETTINGS_COLLAPSIBLE\) return/);
   assert.match(html, /if \(SETTINGS_COLLAPSIBLE\)/);
   assert.match(html, /classList\.toggle\('settings-collapsed', collapsed\)/);
@@ -63,10 +63,10 @@ test('2マップは左右別、4マップは共通チェックでcell2とcell3�
   assert.match(fourMapShellHtml, /function updateTopRenderUrl\(mode\)/);
   assert.match(fourMapShellHtml, /pixelmap:render-mode/);
   assert.match(fourMapShellHtml, /pixelmap:set-render-mode/);
-  assert.match(oneMapHtml, /v=20260827-building-vertical-production-1/);
-  assert.equal((twoMapHtml.match(/v=20260827-building-vertical-production-1/g) || []).length, 2);
-  assert.equal((fourMapHtml.match(/v=20260827-building-vertical-production-1/g) || []).length, 4);
-  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260827-building-vertical-production-1/);
+  assert.match(oneMapHtml, /v=20260828-settings-default-collapsed-production-1/);
+  assert.equal((twoMapHtml.match(/v=20260828-settings-default-collapsed-production-1/g) || []).length, 2);
+  assert.equal((fourMapHtml.match(/v=20260828-settings-default-collapsed-production-1/g) || []).length, 4);
+  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260828-settings-default-collapsed-production-1/);
 });
 
 test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {

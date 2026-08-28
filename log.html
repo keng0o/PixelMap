@@ -188,8 +188,8 @@
             </tr>
             <tr>
               <th scope="row">外側UIと同期</th>
-              <td>単独チェックでcell2/cell3を切替。URLの他条件とhashを保持して再読み込み。設定パネルは右上固定の「－」で閉じ、閉じた間は地図を全画面表示。右上の「＋」で再表示。</td>
-              <td>1マップは単独切替、2マップは位置同期を保ったまま左右別切替し、それぞれ「＋／－」で設定を開閉。コンパスの方位は2・4マップ内で同期し、操作時にiframeを再読込しない。4マップはcell3・全レイヤー・commercialも共通チェックで同期。</td>
+              <td>単独チェックでcell2/cell3を切替。URLの他条件とhashを保持して再読み込み。設定パネルは初期状態で最小化し、右上の「＋／－」で開閉する。</td>
+              <td>1マップと2マップ内の個別設定は初期状態で最小化し、右上の「＋／－」で開閉。2マップは位置同期、2・4マップは方位同期を保ち、操作時にiframeを再読込しない。4マップは外側の共通設定パネルを維持し、cell3・全レイヤー・commercialを4地点へ同期する。</td>
             </tr>
           </tbody>
         </table>
@@ -201,6 +201,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>設定パネルの初期最小化をWeb本番へリリース</h3>
+          <time datetime="2026-08-28">2026-08-28 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>standalone testで検証した設定パネルの初期最小化を、個別設定を持つ本番1マップと2マップへ反映。初期表示は全画面地図と右上の「＋」にし、従来どおり開閉可能。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>全てに反映</strong>。1マップ（<code>index.html</code>）、2マップ（<code>compare.html</code>）、4マップ（<code>four-maps.html</code>／<code>variants/height-stack-four-map.html</code>）の版指定を更新。4マップは外側の共通設定パネルを維持。</dd></div>
+          <div><dt>本番への影響</dt><dd>1・2マップの個別設定だけを初期最小化。4マップの共通設定、地図描画、位置・方位・cell3・レイヤー同期は変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト、ビルド、本番1・2・4マップの実画面スクリーンショット、独立視覚レビュー、GitHub Pages公開を確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>設定パネルをデフォルトで最小化</h3>
