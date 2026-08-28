@@ -904,6 +904,9 @@ const CELL_ONLY_MODE = ['cell2','cell3'].includes(RENDER_MODE);
 const STANDALONE_CONTINUOUS_RAIL_SKIN = !EMBEDDED && CELL_ONLY_MODE;
 // standalone testでは路盤と左右レールだけを表示し、枕木は描画しない。
 const STANDALONE_RAIL_TIES = false;
+// standalone testでは窓を原子セル1個の黒い点として描かない。
+// embedded本番は今回の検証対象外なので従来の窓表現を維持する。
+const BUILDING_WINDOW_CELLS = EMBEDDED;
 // standalone標準表示では、地物を移動させず「不変の地理形状＋共通スキン＋
 // 固定サイズのシンボル」で描く旧経路を保持するが、現行URL契約からは到達しない。
 const STANDALONE_UNIFIED_STYLE = !EMBEDDED && !CELL_ONLY_MODE;
@@ -2814,7 +2817,7 @@ function drawCellFlatPixelArtBuildingGrid(
       let color = pal[0];
       if (!below){
         color = above ? P.wall : pal[1];
-        if (above && positiveModulo(wx, 4) === 1) color = P.win;
+        if (BUILDING_WINDOW_CELLS && above && positiveModulo(wx, 4) === 1) color = P.win;
       } else if (!above) color = pal[2];
       else if (sideEdge && (CONTINUOUS_BUILDING_STRUCTURE_OUTLINE || outlinePhase !== 1))
         color = CONTINUOUS_BUILDING_STRUCTURE_OUTLINE && outlinePhase === 1 ? pal[1] : P.outline;
@@ -2994,7 +2997,8 @@ function drawCellHeightExtrudedBuildingGrid(
         let color = shadedSide ? P.wallDk : P.wall;
         if (structuralOutline) color = P.outline;
         const [wx] = worldFineCell(x, y);
-        if ((!CONTINUOUS_BUILDING_STRUCTURE_OUTLINE || !structuralOutline) &&
+        if (BUILDING_WINDOW_CELLS &&
+            (!CONTINUOUS_BUILDING_STRUCTURE_OUTLINE || !structuralOutline) &&
             frontFace && step > 0 && step % 2 === 0 && positiveModulo(wx + step, 3) === 1)
           color = P.win;
         paintProjected(group, x, y, offsetX, offsetY, color, `${layer}:height-wall`);

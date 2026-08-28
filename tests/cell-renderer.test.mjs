@@ -259,10 +259,13 @@ test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで�
   assert.match(html, /kind === 'poi' && desc\?\.glyph/);
 });
 
-test('全Webマップの建物は構造輪郭を連続させ素材模様と窓のリズムを保つ', () => {
+test('建物は構造輪郭を連続させ、standalone testだけ窓の黒い点を除く', () => {
+  assert.match(html, /const BUILDING_WINDOW_CELLS = EMBEDDED/);
   assert.match(html, /sideEdge && \(CONTINUOUS_BUILDING_STRUCTURE_OUTLINE \|\| outlinePhase !== 1\)/);
   assert.match(html, /CONTINUOUS_BUILDING_STRUCTURE_OUTLINE && outlinePhase === 1 \? pal\[1\] : P\.outline/);
   assert.match(html, /const structuralOutline = SCREEN_VERTICAL_BUILDING_EXTRUSION[\s\S]*?: west && !south/);
+  assert.match(html, /BUILDING_WINDOW_CELLS && above && positiveModulo\(wx, 4\) === 1/);
+  assert.match(html, /if \(BUILDING_WINDOW_CELLS &&\s*\(!CONTINUOUS_BUILDING_STRUCTURE_OUTLINE \|\| !structuralOutline\)/);
   assert.match(html, /\(!CONTINUOUS_BUILDING_STRUCTURE_OUTLINE \|\| !structuralOutline\)/);
   assert.match(html, /positiveModulo\(wx \* 3 \+ wy \* 5 \+ buildingIndex, 17\) === 0/);
   assert.match(html, /positiveModulo\(wx \+ step, 3\) === 1/);

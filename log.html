@@ -203,6 +203,18 @@
       </div>
       <article class="entry">
         <div class="entry-header">
+          <h3>建物の窓に見える黒い点を削除</h3>
+          <time datetime="2026-08-28">2026-08-28 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>建物の正面壁へ窓として配置していた原子セル1個の暗色点を、standalone testでは描画しないように変更。平面建物と高さ連動2.5D建物の両方を対象とし、壁色、構造輪郭、屋根、入口、影は維持する。</dd></div>
+          <div><dt>対象モード</dt><dd>standalone testのcell2／cell3（testのみ）。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップの窓表現は従来どおり。</dd></div>
+          <div><dt>確認内容</dt><dd>自動テストとビルド、実画面スクリーンショット、独立視覚レビューで確認。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>設定パネルの初期最小化をWeb本番へリリース</h3>
           <time datetime="2026-08-28">2026-08-28 JST</time>
         </div>
