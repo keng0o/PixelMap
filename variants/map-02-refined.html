@@ -5252,7 +5252,13 @@ function render(){
       return { ...f, pt, visualRadius:f.collisionRadius };
     })
     .filter(p => p.pt[0] >= -rotationVisibilityMargin && p.pt[1] >= -rotationVisibilityMargin &&
-      p.pt[0] <= W + rotationVisibilityMargin && p.pt[1] <= H + rotationVisibilityMargin);
+      p.pt[0] <= W + rotationVisibilityMargin && p.pt[1] <= H + rotationVisibilityMargin)
+    // 神社仏閣は「施設アイコン」の表示対象。OFF時は「小さな施設(点)」や
+    // 施設名、当たり判定へ回さず、別表現で再表示されないよう入口で除外する。
+    .filter(p => o.poi || !(
+      p.collectionGroup === 'religious' || p.assetFamily === 'worship' ||
+      facilityPropTypes(p.props).has('place_of_worship')
+    ));
   // standalone testの「施設」は、収集ランドマークと敷地所有施設を
   // 実建物として表示する。敷地がない駅・学校は従来の1棟fallbackを維持する。
   const facilityBuildingTargets = STANDALONE_LANDMARK_MODE

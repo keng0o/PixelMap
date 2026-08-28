@@ -224,6 +224,9 @@ test('ランドマーク処理はstandaloneと1・2・4マップの全Webペー�
   assert.match(mapHtml, /renderer:facility\.landmarkDisplay === 'symbol' \? 'solid-facility-marker'/);
   assert.match(mapHtml, /geometrySource:facility\.collectionGroup === 'facility'[\s\S]*'precollected-facility-footprint'/);
   assert.match(mapHtml, /drawnIcons\.filter\(item => item\.landmarkDisplay === 'symbol'\)/);
+  assert.match(mapHtml, /\.filter\(p => o\.poi \|\| !\([\s\S]*p\.collectionGroup === 'religious'/);
+  assert.match(mapHtml, /p\.assetFamily === 'worship'/);
+  assert.match(mapHtml, /facilityPropTypes\(p\.props\)\.has\('place_of_worship'\)/);
 });
 
 test('施設はランドマークと汎用施設敷地の全棟を既存建物と同じ見た目で描く', () => {

@@ -203,6 +203,18 @@
       </div>
       <article class="entry">
         <div class="entry-header">
+          <h3>神社仏閣の表示を施設アイコンへ限定</h3>
+          <time datetime="2026-08-28">2026-08-28 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>神社仏閣を「施設アイコン」がONのときだけ表示するよう統一。OFF時は「小さな施設(点)」がONでも点へ切り替えず、施設名と当たり判定も表示しない。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testのcell2／cell3。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップのファイルおよび表示条件は変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>自動テスト、ビルド、施設アイコンON／OFFと小さな施設(点)を組み合わせた実画面スクリーンショット、独立視覚レビューで確認。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>左右レールの描画区間を40pxへ変更</h3>
           <time datetime="2026-08-28">2026-08-28 JST</time>
         </div>
