@@ -15,7 +15,8 @@ test('線路スタディはstandalone cell2と同じ正本・マスク・描画�
   assert.match(html, /boundary\?railRule\.bedDark:railRule\.bed/);
   assert.match(html, /skin\.ties[\s\S]*?\[skin\.leftRail,skin\.rightRail\]/);
   assert.doesNotMatch(html, /ctx\.stroke\(|lineJoin|offsetRoute/);
-  assert.match(map, /\['bed','ties','left-rail','right-rail'\]/);
+  assert.match(map, /const STANDALONE_RAIL_TIES = false/);
+  assert.match(map, /\['bed','left-rail','right-rail'\]/);
 });
 
 test('共有線路マスクは斜め区間を4連結の左右レールへ変換する', async () => {

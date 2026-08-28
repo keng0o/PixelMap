@@ -168,7 +168,7 @@ test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分�
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
 });
 
-test('standalone testの地上鉄道は線路単位の左右レールを4連結で生成し枕木の後へ描く', () => {
+test('standalone testの地上鉄道は枕木を描かず線路単位の左右レールを4連結で描く', () => {
   const source = html.match(/function walkFourConnectedGridLine[\s\S]*?\nconst isRoad/)?.[0]
     .replace(/\nconst isRoad[\s\S]*$/u, '');
   assert.ok(source, '連続レール生成器を取得できる');
@@ -214,14 +214,15 @@ test('standalone testの地上鉄道は線路単位の左右レールを4連結�
   assert.equal(lodSkin.lodSuppressedPathCount, 1);
 
   assert.match(html, /const STANDALONE_CONTINUOUS_RAIL_SKIN = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /const STANDALONE_RAIL_TIES = false/);
   assert.match(html, /routeOption === 'rail'[\s\S]*?continuousRailSkinGrid\(layer\)/);
   assert.match(html, /continuousRailSkin\.sourcePaths\.push\(railPath\)/);
   assert.match(html, /finalizeContinuousRailSkin\(continuousRailSkin/);
-  assert.match(html, /for \(let index = 0; index < continuousRailSkin\.ties\.length; index\+\+\)[\s\S]*?for \(const mask of \[continuousRailSkin\.leftRail, continuousRailSkin\.rightRail\]\)/);
+  assert.match(html, /if \(STANDALONE_RAIL_TIES\)\{[\s\S]*?continuousRailSkin\.ties[\s\S]*?for \(const mask of \[continuousRailSkin\.leftRail, continuousRailSkin\.rightRail\]\)/);
   assert.match(html, /railTopologyPaths \+= continuousRailSkin\.pathCount/);
   assert.match(html, /railLodSuppressedPaths \+= continuousRailSkin\.lodSuppressedPathCount/);
   assert.match(html, /railRenderer:STANDALONE_CONTINUOUS_RAIL_SKIN[\s\S]*?'source-track-connected-masks'/);
-  assert.match(html, /railPassOrder:STANDALONE_CONTINUOUS_RAIL_SKIN[\s\S]*?\['bed','ties','left-rail','right-rail'\]/);
+  assert.match(html, /railPassOrder:STANDALONE_CONTINUOUS_RAIL_SKIN[\s\S]*?\['bed','left-rail','right-rail'\]/);
 });
 
 test('全Webマップの地区幹線道路は中央線を描かない', () => {

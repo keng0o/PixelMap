@@ -902,6 +902,8 @@ const CELL_ONLY_MODE = ['cell2','cell3'].includes(RENDER_MODE);
 // 線路単位の接線から左右レールと枕木を別マスクへ生成する。
 // embedded本番は検証完了まで従来描画を維持する。
 const STANDALONE_CONTINUOUS_RAIL_SKIN = !EMBEDDED && CELL_ONLY_MODE;
+// standalone testでは路盤と左右レールだけを表示し、枕木は描画しない。
+const STANDALONE_RAIL_TIES = false;
 // standalone標準表示では、地物を移動させず「不変の地理形状＋共通スキン＋
 // 固定サイズのシンボル」で描く旧経路を保持するが、現行URL契約からは到達しない。
 const STANDALONE_UNIFIED_STYLE = !EMBEDDED && !CELL_ONLY_MODE;
@@ -2711,12 +2713,14 @@ function drawCellPixelArtTransportGrid(
 
   if (rail){
     if (STANDALONE_CONTINUOUS_RAIL_SKIN && option === 'rail' && continuousRailSkin){
-      for (let index = 0; index < continuousRailSkin.ties.length; index++){
-        if (!continuousRailSkin.ties[index]) continue;
-        const x = index % RG, y = Math.floor(index / RG);
-        if (has(x, y)) paintSolidMapCell(x, y, P.tie, option, stats);
+      if (STANDALONE_RAIL_TIES){
+        for (let index = 0; index < continuousRailSkin.ties.length; index++){
+          if (!continuousRailSkin.ties[index]) continue;
+          const x = index % RG, y = Math.floor(index / RG);
+          if (has(x, y)) paintSolidMapCell(x, y, P.tie, option, stats);
+        }
+        stats.railTieCells += continuousRailSkin.tieCount;
       }
-      stats.railTieCells += continuousRailSkin.tieCount;
       stats.railSourcePaths += continuousRailSkin.sourcePathCount;
       stats.railTopologyPaths += continuousRailSkin.pathCount;
       stats.railLodSuppressedPaths += continuousRailSkin.lodSuppressedPathCount;
@@ -6074,7 +6078,7 @@ function render(){
         ? 'source-track-connected-masks' : 'legacy-local-axis-stamps',
       railScope:STANDALONE_CONTINUOUS_RAIL_SKIN ? 'standalone-ground-rail' : 'all-legacy-rail-like',
       railPassOrder:STANDALONE_CONTINUOUS_RAIL_SKIN
-        ? ['bed','ties','left-rail','right-rail'] : ['bed','per-center-tie-and-rail'],
+        ? ['bed','left-rail','right-rail'] : ['bed','per-center-tie-and-rail'],
       compositor:STANDALONE_UNIFIED_STYLE
         ? [...WORLD_STYLE.compositor]
         : ['legacy-z-order'],

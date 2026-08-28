@@ -124,7 +124,7 @@
     <section class="panel" aria-labelledby="difference-title">
       <div class="section-heading">
         <h2 id="difference-title">現行の差分</h2>
-        <small>2026-08-27 / cell2 default</small>
+        <small>2026-08-28 / cell2 default</small>
       </div>
       <div class="table-wrap">
         <table>
@@ -163,7 +163,7 @@
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
-              <td>交通中心線をcell2/cell3の原子セルへ直接分類。地上鉄道は元の線路単位で接線と距離位相を保持し、左右レールを別々の4連結経路として生成して、路盤→枕木→レールの順に合成する。表示解像度内で全体が並走し両端も近い線路だけを見た目の代表へ間引き、交差・分岐と元データは維持。地区幹線道路の中央線非表示と斜線終点固定も維持する。</td>
+              <td>交通中心線をcell2/cell3の原子セルへ直接分類。地上鉄道は元の線路単位で接線を保持し、左右レールを別々の4連結経路として生成して、路盤→左右レールの順に合成する。枕木は描画しない。表示解像度内で全体が並走し両端も近い線路だけを見た目の代表へ間引き、交差・分岐と元データは維持。地区幹線道路の中央線非表示と斜線終点固定も維持する。</td>
               <td>道路・水路、細街路の最小幅、地区幹線道路の中央線非表示、斜線終点固定はtestと共通。地上鉄道は検証完了まで従来の中心セルごとの縦横判定・路盤・レール・枕木を維持し、pattern 07と各本番ページのレイヤー設定・同期も変更しない。</td>
             </tr>
             <tr>
@@ -201,6 +201,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>standalone testの鉄道から枕木だけを削除</h3>
+          <time datetime="2026-08-28">2026-08-28 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>地上鉄道の枕木マスクを描画対象から外し、砂利路盤と連続する左右レールは維持。</dd></div>
+          <div><dt>対象モード</dt><dd>standalone testのcell2／cell3（testのみ）。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップの従来の路盤・レール・枕木は変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューで枕木の消失と路盤・左右レールの維持を確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>線路スタディのcell2描画コードへ実装コメントを追加</h3>
