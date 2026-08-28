@@ -34,6 +34,7 @@ test('standaloneと1・2マップは設定を閉じて地図を全画面表示�
   assert.match(html, /\.settings-toggle\{[\s\S]*?position:fixed;[\s\S]*?top:max\(14px,[\s\S]*?right:max\(14px,[\s\S]*?width:44px;[\s\S]*?height:44px/);
   assert.match(html, /function setStandaloneSettingsCollapsed\(collapsed\)/);
   assert.match(html, /const SETTINGS_COLLAPSIBLE = !SHARED_CONTROLS && !CAPTURE_MODE/);
+  assert.match(html, /const SETTINGS_DEFAULT_COLLAPSED = SETTINGS_COLLAPSIBLE && !EMBEDDED/);
   assert.match(html, /if \(!SETTINGS_COLLAPSIBLE\) return/);
   assert.match(html, /if \(SETTINGS_COLLAPSIBLE\)/);
   assert.match(html, /classList\.toggle\('settings-collapsed', collapsed\)/);
@@ -41,6 +42,7 @@ test('standaloneと1・2マップは設定を閉じて地図を全画面表示�
   assert.match(html, /body\.settings-collapsed \.map-frame\{[\s\S]*?position:fixed;[\s\S]*?width:100vw;[\s\S]*?height:100dvh/);
   assert.match(html, /body\.settings-collapsed canvas\{[\s\S]*?width:max\(100dvw, 100dvh\)/);
   assert.match(html, /body\.settings-collapsed #settingsOpenBtn\{ display:block; \}/);
+  assert.match(html, /if \(SETTINGS_DEFAULT_COLLAPSED\) setStandaloneSettingsCollapsed\(true\)/);
   assert.match(html, /!document\.body\.classList\.contains\('settings-collapsed'\)/);
 });
 
