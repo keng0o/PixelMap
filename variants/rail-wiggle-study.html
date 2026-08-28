@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="上下左右と斜めへくねくね進む線路のピクセル描画スタディ">
+<title>PixelMap｜くねくね線路スタディ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&amp;display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--ink:#f8f0d8;--panel:#101018;--muted:#b8b09c;--accent:#f8d038}*{box-sizing:border-box}html{background:#181820}
+body{min-width:320px;min-height:100vh;margin:0;padding:26px 14px 42px;display:grid;place-items:center;color:var(--ink);font-family:'DotGothic16',monospace;background:linear-gradient(90deg,#ffffff05 1px,transparent 1px),linear-gradient(#ffffff05 1px,transparent 1px),#181820;background-size:16px 16px}
+main{width:min(960px,100%)}header{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:14px}.eyebrow{margin:0 0 4px;color:var(--accent);font-size:11px;letter-spacing:.18em}h1{margin:0;font-size:clamp(22px,4vw,36px);font-weight:400;letter-spacing:.05em}.legend{display:flex;gap:14px;color:var(--muted);font-size:11px;white-space:nowrap}.legend span::before{content:'';display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:#f0e0a8}.legend span:last-child::before{background:#5c4430}
+.frame{position:relative;padding:8px;border:2px solid var(--ink);outline:2px solid var(--panel);background:var(--panel);box-shadow:0 0 0 4px var(--ink),10px 10px 0 #101018a8}canvas{display:block;width:100%;aspect-ratio:16/10;background:#78a85c;image-rendering:pixelated}.badge{position:absolute;top:24px;left:24px;padding:7px 10px;border:2px solid var(--ink);background:#101018e8;color:var(--ink);font-size:11px;letter-spacing:.08em;box-shadow:4px 4px 0 #10101888}
+footer{display:flex;justify-content:space-between;gap:18px;margin-top:18px;color:var(--muted);font-size:12px;line-height:1.75}footer p{margin:0}footer strong{color:var(--ink);font-weight:400}@media(max-width:640px){body{padding:20px 10px 34px}header,footer{align-items:flex-start;flex-direction:column;gap:8px}.legend{white-space:normal}.badge{top:17px;left:17px;font-size:9px}}
+</style></head><body><main>
+<header><div><p class="eyebrow">RAIL / DIRECTION STUDY 01</p><h1>くねくね線路</h1></div><div class="legend" aria-label="凡例"><span>レール</span><span>枕木</span></div></header>
+<section class="frame" aria-label="上下左右と斜めに進む線路の描画"><canvas id="railCanvas" width="960" height="600" role="img" aria-label="街の中を上下左右と斜め方向へくねくね走る線路"></canvas><div class="badge">上下・左右・斜め / CONTINUOUS TRACK</div></section>
+<footer><p><strong>方向を切り替えても、2本のレールと枕木が連続。</strong><br>直角・斜め・折り返しを一筆書きで確認するためのページです。</p><p>PixelMap / standalone study</p></footer>
+</main><script>
+(()=>{const canvas=document.getElementById('railCanvas'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+const route=[[74,520],[74,438],[150,438],[210,378],[210,280],[296,280],[350,226],[440,316],[540,216],[660,216],[716,272],[716,390],[808,482],[890,400],[890,92]];
+function line(points,width,color){ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.lineWidth=width;ctx.strokeStyle=color;ctx.lineCap='square';ctx.lineJoin='bevel';ctx.stroke()}
+function offsetRoute(distance){return route.map((p,i)=>{const a=route[Math.max(0,i-1)],b=route[Math.min(route.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1;return[p[0]-dy/len*distance,p[1]+dx/len*distance]})}
+function sample(points,spacing){const out=[];let carry=0;for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);for(let d=spacing-carry;d<=len;d+=spacing)out.push({x:a[0]+dx*d/len,y:a[1]+dy*d/len,nx:-dy/len,ny:dx/len});carry=(carry+len)%spacing}return out}
+function ground(){ctx.fillStyle='#78a85c';ctx.fillRect(0,0,W,H);for(let y=0;y<H;y+=16)for(let x=0;x<W;x+=16){const n=((x/16)*7+(y/16)*13)%11;ctx.fillStyle=n<3?'#70a054':n===7?'#88b868':'#78a85c';ctx.fillRect(x,y,16,16)}ctx.fillStyle='#b8a878';ctx.fillRect(248,0,64,190);ctx.fillRect(0,316,156,54);ctx.fillRect(520,420,200,58);ctx.fillStyle='#8898a0';ctx.fillRect(0,332,W,10);ctx.fillRect(472,0,12,H);ctx.fillStyle='#d8c8a0';[[116,74,104,62],[340,58,92,110],[530,70,116,84],[742,78,92,116],[322,410,114,94],[752,504,96,62]].forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h));ctx.fillStyle='#786858';[[124,82,88,46],[348,66,76,94],[538,78,100,68],[750,86,76,100],[330,418,98,78],[760,512,80,46]].forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h));ctx.fillStyle='#c05048';[[132,88,72,10],[356,72,60,12],[546,84,84,10],[758,92,60,12],[338,424,82,10],[768,518,64,10]].forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h))}
+function track(){line(route,46,'#5a5042');line(route,34,'#a08c68');for(const p of sample(route,22)){ctx.strokeStyle='#5c4430';ctx.lineWidth=8;ctx.lineCap='square';ctx.beginPath();ctx.moveTo(p.x-p.nx*21,p.y-p.ny*21);ctx.lineTo(p.x+p.nx*21,p.y+p.ny*21);ctx.stroke()}const left=offsetRoute(-10),right=offsetRoute(10);line(left,9,'#4a4038');line(right,9,'#4a4038');line(left,4,'#f0e0a8');line(right,4,'#f0e0a8');line(left,1,'#fff4c8');line(right,1,'#fff4c8')}
+ground();track()})();
+</script></body></html>
