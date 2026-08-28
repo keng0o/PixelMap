@@ -740,7 +740,7 @@
 <script src="../assets/facility-resolver.js?v=7"></script>
 <script src="../assets/landmark-entities.js?v=20260824-generic-facilities-1000"></script>
 <script src="../assets/poi-sprites.js?v=5"></script>
-<script src="../assets/building-styles.js?v=3"></script>
+<script src="../assets/building-styles.js?v=4"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=5"></script>
 <script src="../assets/world-style.js?v=5"></script>
@@ -4515,6 +4515,19 @@ function landmarkGeometryPolygons(geometry){
   return [];
 }
 
+function isRacecourseLandmarkProps(props = {}){
+  const typeValues = [
+    props.class,
+    props.subclass,
+    props.leisure,
+    props.sport,
+    props.facility_tag_value,
+  ].map(value => String(value || '').toLowerCase());
+  if (typeValues.some(value => value === 'horse_racing' || value === 'racetrack')) return true;
+  const name = String(props['name:ja'] || props.name || '');
+  return name.includes('競馬場') || /\brace\s*course\b/i.test(name);
+}
+
 function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSize){
   const grid = new Uint8Array(gridSize * gridSize);
   const bldGrid = new Uint16Array(gridSize * gridSize);
@@ -4551,7 +4564,8 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
       ...buildingAppearanceForActiveProfile({
         heightM:Number(props.height_m || 0),
         areaCells:landmarkAreaCells(props.area_m2, latitude),
-        kind:'normal',
+        // 競馬場の専用色はstandalone testだけで検証し、embedded本番は従来色を保つ。
+        kind:!EMBEDDED && isRacecourseLandmarkProps(props) ? 'racecourse' : 'normal',
         category:null,
         seed:lodSeed,
       }),

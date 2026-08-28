@@ -9,7 +9,7 @@
      カテゴリ色は icon-patterns.js のパターン07パレットと同一。
      ===================================================== */
 
-  const VERSION = 'building-styles/3';
+  const VERSION = 'building-styles/4';
 
   // 高さバンド: 1=切妻住宅(<10m) 2=低層陸屋根(10-30m) 3=中層(31-59m) 4=高層(60m+)
   const HEIGHT_BANDS = { gableMax:10, lowMax:31, midMax:60 };
@@ -43,6 +43,10 @@
     ['#b8ac94','#948a74','#d4c8ac'],
     ['#8c98a8','#6c7888','#aab6c4'],
   ];
+
+  /* 競馬場の広い施設敷地用 [基本色, 暗部, ハイライト]。
+     芝面と区別できる暗い緑を基準に、輪郭と明部も同じ色相へ揃える。 */
+  const RACECOURSE_PALETTE = ['#315c3b','#1f3f29','#4f7d58'];
 
   // 棟リングキーなどの文字列から決定的なシードを得る（FNV-1a）
   function seedFromKey(key){
@@ -124,7 +128,10 @@
     const accent = facility && category ? (CATEGORY_ACCENTS[category] || CATEGORY_ACCENTS.generic) : null;
 
     let band, roofKey, pal, wallKey, motif, styleIndex;
-    if (kind === 'hospital'){
+    if (kind === 'racecourse'){
+      band = 2; roofKey = 'roofCampus'; pal = RACECOURSE_PALETTE; styleIndex = 8;
+      wallKey = 'low'; motif = null;
+    } else if (kind === 'hospital'){
       band = 2; roofKey = 'roofBigBox'; pal = LEGACY_ROOFPAL[8]; styleIndex = 8;
       wallKey = 'low'; motif = 'hvac';
     } else if (kind === 'convenience'){
@@ -178,6 +185,7 @@
     LEGACY_ROOFPAL,
     HOUSE_PALETTES,
     FLAT_PALETTES,
+    RACECOURSE_PALETTE,
     seedFromKey,
     heightRiseLogicalPixels,
     selectDenseBuildings,

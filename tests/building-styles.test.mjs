@@ -51,7 +51,13 @@ test('低層陸屋根と切妻住宅の分岐', () => {
   assert.equal(house.isHouse, true);
 });
 
-test('kind強制: 病院・コンビニ・雑居ビル', () => {
+test('kind強制: 競馬場・病院・コンビニ・雑居ビル', () => {
+  const racecourse = appearance({ heightM:0, areaCells:100, kind:'racecourse' });
+  assert.equal(racecourse.roofKey, 'roofCampus');
+  assert.deepEqual(racecourse.pal, STYLES.RACECOURSE_PALETTE);
+  assert.deepEqual(STYLES.RACECOURSE_PALETTE, ['#315c3b','#1f3f29','#4f7d58']);
+  assert.equal(racecourse.wallKey, 'low');
+  assert.equal(racecourse.motif, null);
   const hospital = appearance({ heightM:5, areaCells:10, kind:'hospital', category:'health' });
   assert.equal(hospital.roofKey, 'roofBigBox');
   assert.equal(hospital.accent, '#ef4444');
