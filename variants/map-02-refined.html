@@ -1652,6 +1652,8 @@ function createContinuousRailSkin(size){
 
 function appendContinuousRailSkinPath(path, skin, {
   offsetCells = 1,
+  railOnCells = 10,
+  railGapCells = 3,
   tiePeriodCells = 3,
   tieHalfSpanCells = 2,
   tangentRadius = 4,
@@ -1677,19 +1679,28 @@ function appendContinuousRailSkinPath(path, skin, {
     point[0] + .5 - tangent[1] * amount * side,
     point[1] + .5 + tangent[0] * amount * side,
   ];
+  const phase = Math.round(phaseAt(path[0], tangents[0]));
+  const railCycle = Math.max(2, Math.round(railOnCells) + Math.round(railGapCells));
+  const railVisible = index =>
+    ((phase + index) % railCycle + railCycle) % railCycle < Math.round(railOnCells);
 
   for (const [side, mask] of [[-1, skin.leftRail], [1, skin.rightRail]]){
     let previous = offsetPoint(path[0], tangents[0], side);
-    setMaskCell(mask, Math.floor(previous[0]), Math.floor(previous[1]));
+    let previousVisible = railVisible(0);
+    if (previousVisible) setMaskCell(mask, Math.floor(previous[0]), Math.floor(previous[1]));
     for (let index = 1; index < path.length; index++){
       const current = offsetPoint(path[index], tangents[index], side);
-      connect(mask, previous, current);
+      const currentVisible = railVisible(index);
+      if (currentVisible){
+        if (previousVisible) connect(mask, previous, current);
+        else setMaskCell(mask, Math.floor(current[0]), Math.floor(current[1]));
+      }
       previous = current;
+      previousVisible = currentVisible;
     }
   }
 
   const period = Math.max(2, Math.round(tiePeriodCells));
-  const phase = Math.round(phaseAt(path[0], tangents[0]));
   for (let index = 0; index < path.length; index++){
     if (((phase + index) % period + period) % period !== 0) continue;
     const start = offsetPoint(path[index], tangents[index], -1, tieHalfSpanCells);
@@ -2316,6 +2327,8 @@ function rasterizeGrid(layers, options){
     if (continuousRailSkin){
       finalizeContinuousRailSkin(continuousRailSkin, {
         offsetCells:Math.max(1, Math.round(2 / MAP_CELL_LOGICAL_SIZE)),
+        railOnCells:Math.max(1, Math.round(20 / MAP_CELL_LOGICAL_SIZE)),
+        railGapCells:Math.max(1, Math.round(5 / MAP_CELL_LOGICAL_SIZE)),
         tiePeriodCells:Math.max(2, Math.round(6 / MAP_CELL_LOGICAL_SIZE)),
         tieHalfSpanCells:Math.max(2, Math.ceil(detailCellSpan(1) / 2)),
         lodDistanceCells:Math.max(2, Math.round(4 / MAP_CELL_LOGICAL_SIZE)),

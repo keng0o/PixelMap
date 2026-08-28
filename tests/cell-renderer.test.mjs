@@ -170,7 +170,7 @@ test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分�
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
 });
 
-test('standalone testの地上鉄道は枕木を描かず線路単位の左右レールを4連結で描く', () => {
+test('standalone testの地上鉄道は枕木を描かず左右レールを20px描画・5px空白にする', () => {
   const source = html.match(/function walkFourConnectedGridLine[\s\S]*?\nconst isRoad/)?.[0]
     .replace(/\nconst isRoad[\s\S]*$/u, '');
   assert.ok(source, '連続レール生成器を取得できる');
@@ -180,7 +180,7 @@ test('standalone testの地上鉄道は枕木を描かず線路単位の左右�
   const skin = createContinuousRailSkin(24);
   const diagonal = [[4,4],[5,4],[5,5],[6,5],[6,6],[7,6],[7,7],[8,7],[8,8],[9,8],[9,9]];
   appendContinuousRailSkinPath(diagonal, skin, { phaseAt:() => 0 });
-  const componentCount = mask => {
+  const componentCount = (mask, size = skin.size) => {
     const visited = new Uint8Array(mask.length);
     let components = 0;
     for (let start = 0; start < mask.length; start++){
@@ -188,11 +188,11 @@ test('standalone testの地上鉄道は枕木を描かず線路単位の左右�
       components++;
       const stack = [start]; visited[start] = 1;
       while (stack.length){
-        const index = stack.pop(), x = index % skin.size, y = Math.floor(index / skin.size);
+        const index = stack.pop(), x = index % size, y = Math.floor(index / size);
         for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
           const nx = x + dx, ny = y + dy;
-          if (nx < 0 || ny < 0 || nx >= skin.size || ny >= skin.size) continue;
-          const next = ny * skin.size + nx;
+          if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+          const next = ny * size + nx;
           if (mask[next] && !visited[next]){ visited[next] = 1; stack.push(next); }
         }
       }
@@ -203,6 +203,14 @@ test('standalone testの地上鉄道は枕木を描かず線路単位の左右�
   assert.equal(componentCount(skin.rightRail), 1);
   assert.equal(skin.pathCount, 1);
   assert.ok(skin.tieCount > 0);
+
+  const dashedSkin = createContinuousRailSkin(48);
+  appendContinuousRailSkinPath(
+    Array.from({length:36}, (_, index) => [4 + index, 20]), dashedSkin,
+    { railOnCells:10, railGapCells:3, phaseAt:() => 0 }
+  );
+  assert.ok(componentCount(dashedSkin.leftRail, dashedSkin.size) >= 3);
+  assert.ok(componentCount(dashedSkin.rightRail, dashedSkin.size) >= 3);
 
   const lodSkin = createContinuousRailSkin(24);
   lodSkin.sourcePaths.push(
@@ -217,6 +225,8 @@ test('standalone testの地上鉄道は枕木を描かず線路単位の左右�
 
   assert.match(html, /const STANDALONE_CONTINUOUS_RAIL_SKIN = !EMBEDDED && CELL_ONLY_MODE/);
   assert.match(html, /const STANDALONE_RAIL_TIES = false/);
+  assert.match(html, /railOnCells:Math\.max\(1, Math\.round\(20 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
+  assert.match(html, /railGapCells:Math\.max\(1, Math\.round\(5 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
   assert.match(html, /routeOption === 'rail'[\s\S]*?continuousRailSkinGrid\(layer\)/);
   assert.match(html, /continuousRailSkin\.sourcePaths\.push\(railPath\)/);
   assert.match(html, /finalizeContinuousRailSkin\(continuousRailSkin/);
