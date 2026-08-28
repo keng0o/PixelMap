@@ -203,6 +203,18 @@
       </div>
       <article class="entry">
         <div class="entry-header">
+          <h3>線路スタディへstandalone cell2の描画処理を完全移植</h3>
+          <time datetime="2026-08-28">2026-08-28 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>線路スタディのCanvasストロークを廃止し、standalone testと同じ4連結セル走査、4セル路盤、境界判定、枕木・左右レールマスク、cell2最近傍合成へ変更。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>variants/rail-wiggle-study.html</code>の独立スタディと共有線路マスク正本。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップとstandalone test map本体の描画は変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>共有正本とcell2パラメータの自動テスト、全Nodeテスト、ビルド、PC・モバイル表示、拡大比較、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>線路スタディをstandalone testと同じデザインへ統一</h3>
           <time datetime="2026-08-28">2026-08-28 JST</time>
         </div>
