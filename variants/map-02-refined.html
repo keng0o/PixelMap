@@ -2327,7 +2327,7 @@ function rasterizeGrid(layers, options){
     if (continuousRailSkin){
       finalizeContinuousRailSkin(continuousRailSkin, {
         offsetCells:Math.max(1, Math.round(2 / MAP_CELL_LOGICAL_SIZE)),
-        railOnCells:Math.max(1, Math.round(20 / MAP_CELL_LOGICAL_SIZE)),
+        railOnCells:Math.max(1, Math.round(40 / MAP_CELL_LOGICAL_SIZE)),
         railGapCells:Math.max(1, Math.round(5 / MAP_CELL_LOGICAL_SIZE)),
         tiePeriodCells:Math.max(2, Math.round(6 / MAP_CELL_LOGICAL_SIZE)),
         tieHalfSpanCells:Math.max(2, Math.ceil(detailCellSpan(1) / 2)),

@@ -203,6 +203,18 @@
       </div>
       <article class="entry">
         <div class="entry-header">
+          <h3>左右レールの描画区間を40pxへ変更</h3>
+          <time datetime="2026-08-28">2026-08-28 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>左右レールの周期を40論理px描画・5論理px空白へ変更。砂利路盤の連続、左右同位相、枕木なしを維持。</dd></div>
+          <div><dt>対象モード</dt><dd>standalone testのcell2／cell3地上鉄道（testのみ）。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップは従来の連続路盤・レール・枕木を維持。</dd></div>
+          <div><dt>確認内容</dt><dd>自動テスト、ビルド、実画面スクリーンショット、独立視覚レビューで40px描画・5px空白の周期を確認。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>左右レールを20px描画・5px空白の反復へ変更</h3>
           <time datetime="2026-08-28">2026-08-28 JST</time>
         </div>

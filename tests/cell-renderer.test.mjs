@@ -170,7 +170,7 @@ test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分�
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
 });
 
-test('standalone testの地上鉄道は枕木を描かず左右レールを20px描画・5px空白にする', () => {
+test('standalone testの地上鉄道は枕木を描かず左右レールを40px描画・5px空白にする', () => {
   const source = html.match(/function walkFourConnectedGridLine[\s\S]*?\nconst isRoad/)?.[0]
     .replace(/\nconst isRoad[\s\S]*$/u, '');
   assert.ok(source, '連続レール生成器を取得できる');
@@ -204,10 +204,10 @@ test('standalone testの地上鉄道は枕木を描かず左右レールを20px�
   assert.equal(skin.pathCount, 1);
   assert.ok(skin.tieCount > 0);
 
-  const dashedSkin = createContinuousRailSkin(48);
+  const dashedSkin = createContinuousRailSkin(72);
   appendContinuousRailSkinPath(
-    Array.from({length:36}, (_, index) => [4 + index, 20]), dashedSkin,
-    { railOnCells:10, railGapCells:3, phaseAt:() => 0 }
+    Array.from({length:60}, (_, index) => [4 + index, 20]), dashedSkin,
+    { railOnCells:20, railGapCells:3, phaseAt:() => 0 }
   );
   assert.ok(componentCount(dashedSkin.leftRail, dashedSkin.size) >= 3);
   assert.ok(componentCount(dashedSkin.rightRail, dashedSkin.size) >= 3);
@@ -225,7 +225,7 @@ test('standalone testの地上鉄道は枕木を描かず左右レールを20px�
 
   assert.match(html, /const STANDALONE_CONTINUOUS_RAIL_SKIN = !EMBEDDED && CELL_ONLY_MODE/);
   assert.match(html, /const STANDALONE_RAIL_TIES = false/);
-  assert.match(html, /railOnCells:Math\.max\(1, Math\.round\(20 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
+  assert.match(html, /railOnCells:Math\.max\(1, Math\.round\(40 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
   assert.match(html, /railGapCells:Math\.max\(1, Math\.round\(5 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
   assert.match(html, /routeOption === 'rail'[\s\S]*?continuousRailSkinGrid\(layer\)/);
   assert.match(html, /continuousRailSkin\.sourcePaths\.push\(railPath\)/);
