@@ -191,6 +191,11 @@
               <td>単独チェックでcell2/cell3を切替。URLの他条件とhashを保持して再読み込み。設定パネルは初期状態で最小化し、右上の「＋／－」で開閉する。</td>
               <td>1マップと2マップ内の個別設定は初期状態で最小化し、右上の「＋／－」で開閉。2マップは位置同期、2・4マップは方位同期を保ち、操作時にiframeを再読込しない。4マップは外側の共通設定パネルを維持し、cell3・全レイヤー・commercialを4地点へ同期する。</td>
             </tr>
+            <tr>
+              <th scope="row">素材模様の表示切替</th>
+              <td>設定の「素材模様」で、土の粒、舗装継ぎ目、砂粒、道路の舗装粒、小径の踏み跡粒、屋根模様、砂利模様を個別にON／OFFできる。OFFでも地物の形状・基本色・輪郭・意味記号は維持する。</td>
+              <td>素材模様の個別チェックは表示せず、7種類とも従来どおり常時ON相当で描画する。</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -201,6 +206,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>7種類の素材模様を個別チェックで表示切替</h3>
+          <time datetime="2026-08-28">2026-08-28 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>設定へ「素材模様」を追加し、土の粒、舗装継ぎ目、砂粒、道路の舗装粒、小径の踏み跡粒、屋根模様、砂利模様を1項目ずつON／OFF可能にした。全項目は初期ONで、OFF時も地物の基本色、形状、輪郭、屋根設備、道路中央線、レール、枕木、施設記号を維持する。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testのcell2／cell3。素材チェックはレイヤー一括操作と描画順から独立。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。<code>EMBEDDED</code> guardにより本番1・2・4マップでは設定を表示せず、全素材模様を常時ON相当で維持する。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト168件と<code>node build.mjs</code>が成功。7項目の初期ON・個別OFF・再描画、全OFFの実画面スクリーンショットを確認し、独立視覚レビューでUIの読みやすさとレイアウト回帰なしがPASS。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>神社仏閣の表示を施設アイコンへ限定</h3>

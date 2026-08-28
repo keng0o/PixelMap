@@ -211,6 +211,8 @@
     background:#181820;
   }
   #toolbar .landuse-category{ grid-column:1 / -1; }
+  #toolbar .material-pattern-category{ grid-column:1 / -1; }
+  #toolbar #materialPatternCategory[hidden]{ display:none; }
   #toolbar .category-header{
     display:flex;
     justify-content:space-between;
@@ -721,6 +723,21 @@
       <label><input type="checkbox" id="tglTerrainNames" data-category-item>山・地形</label>
     </div>
   </section>
+
+  <section id="materialPatternCategory" class="layer-category material-pattern-category" role="group" aria-labelledby="materialPatternCategoryTitle" hidden>
+    <div class="category-header">
+      <h2 id="materialPatternCategoryTitle" class="category-title">素材模様</h2>
+    </div>
+    <div class="category-items">
+      <label><input type="checkbox" id="tglMaterialDirtGrain" data-material-pattern="dirtGrain" checked>土地：土の粒</label>
+      <label><input type="checkbox" id="tglMaterialPavingJoints" data-material-pattern="pavingJoints" checked>舗装：タイル・舗装継ぎ目</label>
+      <label><input type="checkbox" id="tglMaterialSandGrain" data-material-pattern="sandGrain" checked>砂地：短い砂粒</label>
+      <label><input type="checkbox" id="tglMaterialRoadGrain" data-material-pattern="roadGrain" checked>道路：舗装面の小さな粒</label>
+      <label><input type="checkbox" id="tglMaterialPathGrain" data-material-pattern="pathGrain" checked>小径：踏み跡の粒</label>
+      <label><input type="checkbox" id="tglMaterialRoofTexture" data-material-pattern="roofTexture" checked>屋根の素材模様</label>
+      <label><input type="checkbox" id="tglMaterialGravelTexture" data-material-pattern="gravelTexture" checked>砂利模様</label>
+    </div>
+  </section>
 </div>
 
 <button id="settingsOpenBtn" class="settings-toggle" type="button" aria-label="設定を開く" title="設定を開く" aria-controls="toolbar" aria-expanded="false" aria-hidden="true">＋</button>
@@ -742,7 +759,7 @@
 <script src="../assets/poi-sprites.js?v=5"></script>
 <script src="../assets/building-styles.js?v=4"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
-<script src="../assets/layer-assets.js?v=5"></script>
+<script src="../assets/layer-assets.js?v=6"></script>
 <script src="../assets/world-style.js?v=5"></script>
 <script src="../assets/map-bearing.js?v=2"></script>
 <script>
@@ -1452,15 +1469,19 @@ function buildTiles(){
     q(6,0,5,16,'#b89f68'); q(7,0,3,16,P.parkPath); q(4,3,2,1,P.treeDk); q(10,12,2,1,P.treeDk); });
   TILES.dirt = T((g,q)=>{ q(0,0,16,16,P.dirt);
     q(2,3,2,1,P.dirtDk); q(9,6,3,1,P.dirtDk); q(4,11,2,1,P.dirtDk); q(12,13,2,1,P.dirtDk); q(13,2,1,1,'#e0c898'); });
+  TILES.dirtPlain = T((g,q)=>{ q(0,0,16,16,P.dirt); });
   TILES.pave = T((g,q)=>{ q(0,0,16,16,P.pave);
     q(0,7,16,1,P.paveDk); q(7,0,1,8,P.paveDk); q(3,8,1,8,P.paveDk); q(11,8,1,8,P.paveDk); q(0,15,16,1,P.paveDk); });
+  TILES.pavePlain = T((g,q)=>{ q(0,0,16,16,P.pave); });
   TILES.gravel = T((g,q)=>{ q(0,0,16,16,P.gravel);
     q(3,4,2,2,P.gravelDk); q(10,9,2,2,P.gravelDk); q(6,13,2,2,P.gravelDk); q(12,2,2,2,P.gravelLt); q(1,10,2,1,P.gravelLt); });
+  TILES.gravelPlain = T((g,q)=>{ q(0,0,16,16,P.gravel); });
   TILES.farm = T((g,q)=>{ q(0,0,16,16,P.farm);
     q(0,2,16,1,P.farmDk); q(0,6,16,1,P.farmDk); q(0,10,16,1,P.farmDk); q(0,14,16,1,P.farmDk);
     q(3,4,1,1,'#88b048'); q(9,8,1,1,'#88b048'); q(6,12,1,1,'#88b048'); });
   TILES.sand = T((g,q)=>{ q(0,0,16,16,P.sand);
     q(3,4,2,1,P.sandDk); q(10,8,2,1,P.sandDk); q(6,12,2,1,P.sandDk); });
+  TILES.sandPlain = T((g,q)=>{ q(0,0,16,16,P.sand); });
   TILES.rock = T((g,q)=>{ q(0,0,16,16,P.rock);
     q(1,11,6,4,P.rockDk); q(3,8,4,3,P.rockLt); q(9,4,6,5,P.rockDk); q(11,2,3,3,P.rockLt); });
   TILES.wetland = T((g,q)=>{ q(0,0,16,16,P.wetland);
@@ -1479,13 +1500,18 @@ function buildTiles(){
     q(9,3,4,1,P.waterLt); q(10,4,2,1,P.waterLt); q(2,9,4,1,P.waterLt); q(12,13,3,1,P.waterDk); q(4,1,3,1,P.waterDk); });
   TILES.road = T((g,q)=>{ q(0,0,16,16,P.road);           // コンクリート舗装
     q(3,4,2,1,P.roadDot); q(10,10,2,1,P.roadDot); q(6,13,1,1,'#d4d4ce'); });
+  TILES.roadPlain = T((g,q)=>{ q(0,0,16,16,P.road); });
   TILES.roadMajor = T((g,q)=>{ q(0,0,16,16,'#d0d0ca');   // 県道級: 明るい舗装＋白い中央線
     q(2,3,2,1,P.roadDot); q(11,12,2,1,P.roadDot); });
+  TILES.roadMajorPlain = T((g,q)=>{ q(0,0,16,16,'#d0d0ca'); });
   TILES.highway = T((g,q)=>{ q(0,0,16,16,'#d8c890');     // 国道級: 黄みのある広い舗装
     q(1,2,2,1,'#c0ac70'); q(12,12,2,1,'#c0ac70'); });
+  TILES.highwayPlain = T((g,q)=>{ q(0,0,16,16,'#d8c890'); });
   TILES.path = T((g,q)=>{ grassBase(g,q,P.g1);           // 踏み分け道
     q(4,0,8,16,P.trail); q(2,3,2,4,P.trail); q(12,8,2,5,P.trail);
     q(6,4,2,1,P.trailDot); q(8,10,2,1,P.trailDot); });
+  TILES.pathPlain = T((g,q)=>{ grassBase(g,q,P.g1);
+    q(4,0,8,16,P.trail); q(2,3,2,4,P.trail); q(12,8,2,5,P.trail); });
   // 屋根10種 + 住宅正面 + ビル用の壁
   ROOFPAL.forEach((pal, i) => {
     TILES['roof' + i] = T((g,q)=>{
@@ -2632,11 +2658,11 @@ function surfaceChipName(id, gx, gy){
     return positiveModulo(wx, 13) === 0 ? 'parkPromenadeV' : positiveModulo(wy, 11) === 0 ? 'parkPromenadeH'
       : h < 56 ? 'parkMeadow' : h < 76 ? 'parkGrove' : h < 86 ? 'parkGrandGarden' : 'lawn';
   }
-  if (id === ID.DIRT) return 'dirt';
-  if (id === ID.PAVE) return 'pave';
-  if (id === ID.GRAVEL) return 'gravel';
+  if (id === ID.DIRT) return materialPatternEnabled('dirtGrain') ? 'dirt' : 'dirtPlain';
+  if (id === ID.PAVE) return materialPatternEnabled('pavingJoints') ? 'pave' : 'pavePlain';
+  if (id === ID.GRAVEL) return materialPatternEnabled('gravelTexture') ? 'gravel' : 'gravelPlain';
   if (id === ID.FARM) return 'farm';
-  if (id === ID.SAND) return 'sand';
+  if (id === ID.SAND) return materialPatternEnabled('sandGrain') ? 'sand' : 'sandPlain';
   if (id === ID.ROCK) return 'rock';
   if (id === ID.WETLAND) return 'wetland';
   if (id === ID.ICE) return 'ice';
@@ -2834,7 +2860,8 @@ function drawCellFlatPixelArtBuildingGrid(
       } else if (!above) color = pal[2];
       else if (sideEdge && (CONTINUOUS_BUILDING_STRUCTURE_OUTLINE || outlinePhase !== 1))
         color = CONTINUOUS_BUILDING_STRUCTURE_OUTLINE && outlinePhase === 1 ? pal[1] : P.outline;
-      else if (positiveModulo(wx * 3 + wy * 5 + buildingIndex, 17) === 0) color = pal[1];
+      else if (materialPatternEnabled('roofTexture') &&
+          positiveModulo(wx * 3 + wy * 5 + buildingIndex, 17) === 0) color = pal[1];
       paintSolidMapCell(x, y, color, layer, stats);
       if (color !== pal[0]) stats.buildingDetailCells++;
       if (!below){
@@ -3036,7 +3063,8 @@ function drawCellHeightExtrudedBuildingGrid(
       else if (!south) color = pal[1];
       else if (!north) color = pal[2];
       else if (!west || !east) color = P.outline;
-      else if (positiveModulo(wx * 3 + wy * 5 + group.bi, 17) === 0) color = pal[1];
+      else if (materialPatternEnabled('roofTexture') &&
+          positiveModulo(wx * 3 + wy * 5 + group.bi, 17) === 0) color = pal[1];
       paintProjected(group, x, y, roofOffsetX, roofOffsetY, color, `${layer}:height-roof`);
     }
 
@@ -3150,7 +3178,11 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false, drawCon
     return LAYER_ASSET_CATALOG.drawStandardTransportCell(
       ctx,option,gridShiftX+x*CPX,gridShiftY+y*CPX,
       {L:same(x-1,y),R:same(x+1,y),U:same(x,y-1),D:same(x,y+1)},
-      {scale:SCENE_PIXELS_PER_LOGICAL_PIXEL,dashOff:rule.dashed && cellHash(x,y)%3===0},
+      {
+        scale:SCENE_PIXELS_PER_LOGICAL_PIXEL,
+        dashOff:rule.dashed && cellHash(x,y)%3===0,
+        materialTexture:materialPatternEnabled('gravelTexture'),
+      },
     );
   };
 
@@ -3187,11 +3219,11 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false, drawCon
           }
           break;
         }
-        case ID.DIRT: put('dirt', x, y); break;
-        case ID.PAVE: put('pave', x, y); break;
-        case ID.GRAVEL: put('gravel', x, y); break;
+        case ID.DIRT: put(materialPatternEnabled('dirtGrain') ? 'dirt' : 'dirtPlain', x, y); break;
+        case ID.PAVE: put(materialPatternEnabled('pavingJoints') ? 'pave' : 'pavePlain', x, y); break;
+        case ID.GRAVEL: put(materialPatternEnabled('gravelTexture') ? 'gravel' : 'gravelPlain', x, y); break;
         case ID.FARM: put('farm', x, y); break;
-        case ID.SAND: put('sand', x, y); break;
+        case ID.SAND: put(materialPatternEnabled('sandGrain') ? 'sand' : 'sandPlain', x, y); break;
         case ID.ROCK: put('rock', x, y); break;
         case ID.WETLAND: put('wetland', x, y); break;
         case ID.ICE: put('ice', x, y); break;
@@ -3207,13 +3239,18 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false, drawCon
         case ID.PATH:
           if (drawCanonicalTransportCell(x,y,id)) break;
           if (options.routeOption === 'paths') drawJaggedPath(x, y);
-          else put('path', x, y);
+          else put(materialPatternEnabled('pathGrain') ? 'path' : 'pathPlain', x, y);
           break;
         case ID.ROAD:
         case ID.ROAD_MAJOR:
         case ID.HIGHWAY: {
           if (drawCanonicalTransportCell(x,y,id)) break;
-          put(id === ID.HIGHWAY ? 'highway' : id === ID.ROAD_MAJOR ? 'roadMajor' : 'road', x, y);
+          const roadTile = id === ID.HIGHWAY
+            ? (materialPatternEnabled('roadGrain') ? 'highway' : 'highwayPlain')
+            : id === ID.ROAD_MAJOR
+              ? (materialPatternEnabled('roadGrain') ? 'roadMajor' : 'roadMajorPlain')
+              : (materialPatternEnabled('roadGrain') ? 'road' : 'roadPlain');
+          put(roadTile, x, y);
           if (id !== ID.ROAD){
             const bx = gridShiftX + x * CPX, by = gridShiftY + y * CPX;
             const lineCol = id === ID.HIGHWAY ? '#e8b840' : '#f8f0d8';
@@ -3289,9 +3326,11 @@ function drawGrid(grid, bldGrid, bldStyle, options, transparent = false, drawCon
             const motif = desc ? desc.motif : (isHouse ? 'gable' : st === 7 ? 'aviation' : 'ac');
             if (motif === 'gable'){
               const parity = (((gridOriginX + x + gridOriginY + y) % 2) + 2) % 2;
-              ctx.fillStyle = pal[1];                        // 瓦の継ぎ目（半セルずらし）
-              ctx.fillRect(bx + (parity ? 4 : 10), by + 5, 1, 3);
-              ctx.fillRect(bx + (parity ? 11 : 5), by + 10, 1, 3);
+              if (materialPatternEnabled('roofTexture')){
+                ctx.fillStyle = pal[1];                      // 瓦の継ぎ目（半セルずらし）
+                ctx.fillRect(bx + (parity ? 4 : 10), by + 5, 1, 3);
+                ctx.fillRect(bx + (parity ? 11 : 5), by + 10, 1, 3);
+              }
               if (hh < 6){                                   // テレビアンテナ
                 ctx.fillStyle = P.outline;
                 ctx.fillRect(bx + 11, by + 4, 1, 5);
@@ -3449,7 +3488,10 @@ function corridorModifierStyle(style,modifier){
 
 function renderUnifiedCorridor(features, style, bridge = false, preparedMasks = null){
   if (!features.length) return null;
-  const bridgeStyle = bridge ? corridorModifierStyle(style,'bridge') : style;
+  const materialStyle = style.pattern === 'rail' && !materialPatternEnabled('gravelTexture')
+    ? { ...style, bedTexture:null }
+    : style;
+  const bridgeStyle = bridge ? corridorModifierStyle(materialStyle,'bridge') : materialStyle;
   const masks=CORRIDOR_RENDERER.render(unifiedCorridorContext,{
     width:PRESENTATION_SIZE,
     height:PRESENTATION_SIZE,
@@ -4293,6 +4335,24 @@ if (!EMBEDDED){
 
 const layerInputs = [...document.querySelectorAll('[data-category-item]')];
 const optionForInput = input => input.id.slice(3).replace(/^./, c => c.toLowerCase());
+const materialPatternCategory = document.getElementById('materialPatternCategory');
+const materialPatternInputs = [...document.querySelectorAll('[data-material-pattern]')];
+materialPatternCategory.hidden = EMBEDDED;
+function materialPatternEnabled(pattern){
+  const input = materialPatternInputs.find(item => item.dataset.materialPattern === pattern);
+  return EMBEDDED || input?.checked !== false;
+}
+function materialPatternState(){
+  return Object.fromEntries(materialPatternInputs.map(input => [
+    input.dataset.materialPattern,
+    materialPatternEnabled(input.dataset.materialPattern),
+  ]));
+}
+function syncMaterialPatternState(){
+  for (const input of materialPatternInputs)
+    document.documentElement.dataset[`material${input.dataset.materialPattern[0].toUpperCase()}${input.dataset.materialPattern.slice(1)}`] =
+      materialPatternEnabled(input.dataset.materialPattern) ? 'on' : 'off';
+}
 const STUDY_LAYER_OPTIONS = new Set([
   'grass','forest','woods','farmland','landcoverGrass','sand','rock','wetland','ice','landcoverOther',
   'parks','waterAreas','rivers','streams',
@@ -6190,6 +6250,7 @@ function render(){
       marker:ACTIVE_PATTERN.marker,
       drawOrder:ACTIVE_PATTERN.drawOrder,
     },
+    materialPatterns:materialPatternState(),
     tileZoom:TILE.z,
     pixel:{
       requestedScale:REQUESTED_DISPLAY_SCALE,
@@ -7090,6 +7151,7 @@ cv.addEventListener('keydown', ev => {
 });
 function syncCategoryMaster(panel){
   const master = panel.querySelector('[data-category-toggle]');
+  if (!master) return;
   const items = [...panel.querySelectorAll('[data-category-item]')];
   const checkedCount = items.filter(item => item.checked).length;
   master.checked = checkedCount === items.length;
@@ -7106,6 +7168,7 @@ function syncCommercialLandmarkState(){
 }
 for (const panel of document.querySelectorAll('.layer-category')){
   const master = panel.querySelector('[data-category-toggle]');
+  if (!master) continue;
   const items = [...panel.querySelectorAll('[data-category-item]')];
   master.addEventListener('change', () => {
     for (const item of items){
@@ -7141,8 +7204,13 @@ allLayersToggle.addEventListener('change', () => {
   render();
   publishLayerState();
 });
+for (const input of materialPatternInputs) input.addEventListener('change', () => {
+  syncMaterialPatternState();
+  render();
+});
 syncAllLayersToggle();
 syncCommercialLandmarkState();
+syncMaterialPatternState();
 locateBtn.addEventListener('click', locateMe);
 
 function bearingUrl(degrees, source = location.href){

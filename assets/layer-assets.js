@@ -316,8 +316,10 @@
     }
     if(rule.renderer==='rail-cell'){
       r(0,0,size,size,rule.bed);
-      r(1,2,1,1,rule.bedDark);r(5,4,1,1,rule.bedDark);r(3,6,1,1,rule.bedDark);
-      r(6,1,1,1,rule.bedLight);r(0,5,1,1,rule.bedLight);
+      if(settings.materialTexture !== false){
+        r(1,2,1,1,rule.bedDark);r(5,4,1,1,rule.bedDark);r(3,6,1,1,rule.bedDark);
+        r(6,1,1,1,rule.bedLight);r(0,5,1,1,rule.bedLight);
+      }
       if(con.L) r(1,1,1,6,rule.tie);
       if(con.R) r(6,1,1,6,rule.tie);
       if(con.U) r(1,1,6,1,rule.tie);

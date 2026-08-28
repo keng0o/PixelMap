@@ -66,7 +66,7 @@ test('交通レイヤーの寸法・色・描画方式はアセットカタロ�
   assert.equal(catalog.corridorRules.rail.pattern,'rail');
   assert.equal(catalog.corridorRules.rivers.source,'waterway');
   assert.equal(catalog.corridorRules.localRoads.source,'transportation');
-  assert.match(html, /<script src="\.\.\/assets\/layer-assets\.js\?v=5"><\/script>/);
+  assert.match(html, /<script src="\.\.\/assets\/layer-assets\.js\?v=6"><\/script>/);
   assert.match(assetsHtml, /<script src="assets\/layer-assets\.js\?v=68"><\/script>/);
   assert.match(html, /<script src="\.\.\/assets\/corridor-renderer\.js\?v=3"><\/script>/);
   assert.match(assetsHtml, /<script src="assets\/asset-family-registry\.js\?v=7"><\/script>/);
