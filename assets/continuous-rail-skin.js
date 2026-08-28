@@ -2,6 +2,7 @@
   'use strict';
 
   // map-02-refined.html のstandalone cell2線路と同じ4連結マスク生成器。
+  // 斜め区間でも一度に片方の軸だけを進め、上下左右で必ず連続する階段状の経路を作る。
   function walkFourConnectedGridLine(size, x0, y0, x1, y1, visit){
     let cx = Math.floor(x0), cy = Math.floor(y0);
     const ex = Math.floor(x1), ey = Math.floor(y1);
@@ -23,6 +24,8 @@
   }
 
   function createContinuousRailSkin(size){
+    // 左右レールと枕木を別マスクに分け、描画側で正しい重ね順を選べるようにする。
+    // sourcePaths は LOD 判定前の元経路、後続の数値は比較・診断用。
     return {
       size,
       leftRail:new Uint8Array(size * size),
@@ -44,6 +47,7 @@
       walkFourConnectedGridLine(size, from[0], from[1], to[0], to[1],
         (x, y) => setMaskCell(mask, x, y));
     };
+    // 前後の点から接線を平滑化し、その法線方向をレールと枕木の向きに使う。
     const tangents = path.map((point, index) => {
       const before = path[Math.max(0, index - tangentRadius)];
       const after = path[Math.min(path.length - 1, index + tangentRadius)];
@@ -55,6 +59,7 @@
       point[0] + .5 - tangent[1] * amount * side,
       point[1] + .5 + tangent[0] * amount * side,
     ];
+    // 中心経路から左右へ offsetCells ずつ離した2本のレールを、4連結で描く。
     for (const [side, mask] of [[-1, skin.leftRail], [1, skin.rightRail]]){
       let previous = offsetPoint(path[0], tangents[0], side);
       setMaskCell(mask, Math.floor(previous[0]), Math.floor(previous[1]));
@@ -63,6 +68,7 @@
         connect(mask, previous, current);previous = current;
       }
     }
+    // 経路の先頭を基準に位相を固定し、曲線でも枕木を一定周期に並べる。
     const period = Math.max(2, Math.round(tiePeriodCells));
     const phase = Math.round(phaseAt(path[0], tangents[0]));
     for (let index = 0; index < path.length; index++){
@@ -99,6 +105,8 @@
       for (let index = 0; index < path.length; index += step){ samples++;if (pointNear(path[index], representative.index)) overlaps++; }
       return samples > 0 && overlaps / samples >= overlapThreshold;
     };
+    // LODでは近接して平行な重複線路だけを代表経路へ統合する。
+    // 交差・分岐は方向が異なるため、それぞれのレール画素を残す。
     const ordered = [...skin.sourcePaths].sort((first, second) => second.length - first.length || first[0][1] - second[0][1] || first[0][0] - second[0][0]);
     const representatives = [];
     for (const path of ordered){
@@ -110,6 +118,7 @@
     for (const {path} of representatives) appendContinuousRailSkinPath(path, skin, options);
   }
 
+  // スタディページと map-02-refined.html が共有する cell2 線路描画API。
   global.PixelMapContinuousRailSkin = Object.freeze({
     version:'pixelmap-continuous-rail-skin/1',walkFourConnectedGridLine,createContinuousRailSkin,
     appendContinuousRailSkinPath,finalizeContinuousRailSkin,

@@ -17,12 +17,16 @@ footer{display:flex;justify-content:space-between;gap:18px;margin-top:18px;color
 <footer><p><strong>方向を切り替えても、2本のレールと枕木が連続。</strong><br>直角・斜め・折り返しを一筆書きで確認するためのページです。</p><p>PixelMap / standalone study</p></footer>
 </main><script src="../assets/asset-family-registry.js?v=7"></script><script src="../assets/corridor-renderer.js?v=3"></script><script src="../assets/layer-assets.js?v=5"></script><script src="../assets/continuous-rail-skin.js?v=1"></script><script>
 (()=>{const canvas=document.getElementById('railCanvas'),ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+// テストページと同じ正規の線路色・太さ、および同じマスク生成処理を使う。
 const railRule=window.PixelMapLayerAssets.transportRules.rail;
 const railSkinApi=window.PixelMapContinuousRailSkin;
+// cell2は論理セル1個を2×2pxで描く。4セル幅の線路床はテストページと同じ8px幅になる。
 const outputCellSize=2,gridSize=W/outputCellSize,detailCellSpan=4;
+// 形は出力ピクセル座標で定義し、track()内で論理セル座標へ変換する。
 const route=[[74,520],[74,438],[150,438],[210,378],[210,280],[296,280],[350,226],[440,316],[540,216],[660,216],[716,272],[716,390],[808,482],[890,400],[890,92]];
 function ground(){ctx.fillStyle='#78a85c';ctx.fillRect(0,0,W,H);for(let y=0;y<H;y+=16)for(let x=0;x<W;x+=16){const n=((x/16)*7+(y/16)*13)%11;ctx.fillStyle=n<3?'#70a054':n===7?'#88b868':'#78a85c';ctx.fillRect(x,y,16,16)}ctx.fillStyle='#b8a878';ctx.fillRect(248,0,64,190);ctx.fillRect(0,316,156,54);ctx.fillRect(520,420,200,58);ctx.fillStyle='#8898a0';ctx.fillRect(0,332,W,10);ctx.fillRect(472,0,12,H);ctx.fillStyle='#d8c8a0';[[116,74,104,62],[340,58,92,110],[530,70,116,84],[742,78,92,116],[322,410,114,94],[752,504,96,62]].forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h));ctx.fillStyle='#786858';[[124,82,88,46],[348,66,76,94],[538,78,100,68],[750,86,76,100],[330,418,98,78],[760,512,80,46]].forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h));ctx.fillStyle='#c05048';[[132,88,72,10],[356,72,60,12],[546,84,84,10],[758,92,60,12],[338,424,82,10],[768,518,64,10]].forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h))}
 function track(){
+  // 各区間を4連結で結び、上下左右・斜めのどこでも途切れない中心経路を作る。
   const path=[];
   for(let segment=1;segment<route.length;segment++){
     const [x0,y0]=route[segment-1].map(value=>value/outputCellSize),[x1,y1]=route[segment].map(value=>value/outputCellSize);
@@ -30,16 +34,21 @@ function track(){
       if(!path.length||path.at(-1)[0]!==x||path.at(-1)[1]!==y)path.push([x,y]);
     });
   }
+  // 中心経路から線路床を作り、左右レールと枕木は独立マスクへ蓄積する。
   const bed=new Uint8Array(gridSize*gridSize),skin=railSkinApi.createContinuousRailSkin(gridSize);
   const setBed=(x,y)=>{if(x>=0&&y>=0&&x<gridSize&&y<gridSize)bed[y*gridSize+x]=1};
   for(const [cx,cy] of path){const start=-Math.floor(detailCellSpan/2);for(let dy=0;dy<detailCellSpan;dy++)for(let dx=0;dx<detailCellSpan;dx++)setBed(cx+start+dx,cy+start+dy)}
   skin.sourcePaths.push(path);
+  // map-02-refined.htmlのcell2描画と同じ値で、近接する重複線路だけをLOD整理する。
   railSkinApi.finalizeContinuousRailSkin(skin,{offsetCells:1,tiePeriodCells:3,tieHalfSpanCells:2,lodDistanceCells:2,overlapThreshold:.6,phaseAt:([x,y],[tx,ty])=>x*tx+y*ty});
+  // 論理セルのマスクを、出力キャンバス上の2×2px矩形として塗る。
   const paint=(index,color)=>{ctx.fillStyle=color;ctx.fillRect((index%gridSize)*outputCellSize,Math.floor(index/gridSize)*outputCellSize,outputCellSize,outputCellSize)};
   const has=(x,y)=>x>=0&&y>=0&&x<gridSize&&y<gridSize&&bed[y*gridSize+x];
+  // 描画順もテストページと同じ床→枕木→レール。レールを最後にして枕木の上書きを防ぐ。
   for(let y=0;y<gridSize;y++)for(let x=0;x<gridSize;x++){const index=y*gridSize+x;if(!bed[index])continue;const boundary=!has(x-1,y)||!has(x+1,y)||!has(x,y-1)||!has(x,y+1);paint(index,boundary?railRule.bedDark:railRule.bed)}
   for(let index=0;index<skin.ties.length;index++)if(skin.ties[index]&&bed[index])paint(index,railRule.tie);
   for(const mask of [skin.leftRail,skin.rightRail])for(let index=0;index<mask.length;index++)if(mask[index]&&bed[index])paint(index,railRule.fill);
+  // 自動テストや比較時に、使用した描画方式をDOMから確認できるようにする。
   document.documentElement.dataset.renderMode='cell2';document.documentElement.dataset.railRenderer='source-track-connected-masks';
 }
 ground();track()})();
