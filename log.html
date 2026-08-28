@@ -203,6 +203,18 @@
       </div>
       <article class="entry">
         <div class="entry-header">
+          <h3>線路スタディをstandalone testと同じデザインへ統一</h3>
+          <time datetime="2026-08-28">2026-08-28 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>線路スタディの路盤・境界・枕木・左右レールを、standalone testの共有WorldStyleと同じ色・寸法比・描画順へ変更。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>variants/rail-wiggle-study.html</code>の独立スタディ。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップとstandalone test map本体の描画は変更なし。</dd></div>
+          <div><dt>確認内容</dt><dd>共有WorldStyle参照、ビルド、PC・モバイル幅の表示、線路の色・太さ・連続性を確認。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>上下左右・斜めへ進む線路描画スタディを追加</h3>
           <time datetime="2026-08-28">2026-08-28 JST</time>
         </div>
