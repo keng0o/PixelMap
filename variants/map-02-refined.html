@@ -2480,9 +2480,22 @@ function solidCellRgba(color){
   return rgba;
 }
 
-function paintSolidMapCell(gx, gy, color, layer, stats){
-  if (!color || !stats?.pixelData || gx < 0 || gy < 0 || gx >= stats.gridSize || gy >= stats.gridSize) return;
+function mapCellScreenDepth(gx, gy){
+  if (!BEARING_STUDY_MODE) return gy;
+  return window.PixelMapBearing.worldVectorToScreen([gx, gy], mapBearing)[1];
+}
+
+function paintSolidMapCell(gx, gy, color, layer, stats, worldDepth = null, depthTest = false){
+  if (!color || !stats?.pixelData || gx < 0 || gy < 0 || gx >= stats.gridSize || gy >= stats.gridSize) return false;
   const index = gy * stats.gridSize + gx;
+  if (Number.isFinite(worldDepth) && stats.worldStructureDepth){
+    const existingDepth = stats.worldStructureDepth[index];
+    if (depthTest && existingDepth > worldDepth){
+      stats.depthRejectedCells++;
+      return false;
+    }
+    stats.worldStructureDepth[index] = Math.max(existingDepth, worldDepth);
+  }
   const pixelIndex = index * 4;
   const rgba = solidCellRgba(color);
   stats.pixelData[pixelIndex] = rgba[0];
@@ -2495,6 +2508,7 @@ function paintSolidMapCell(gx, gy, color, layer, stats){
     stats.occupiedCells++;
   }
   stats.layerCells[layer] = (stats.layerCells[layer] || 0) + 1;
+  return true;
 }
 
 function paintLegacyCellBlock(gx, gy, color, layer, stats){
@@ -2862,7 +2876,10 @@ function drawCellFlatPixelArtBuildingGrid(
         color = CONTINUOUS_BUILDING_STRUCTURE_OUTLINE && outlinePhase === 1 ? pal[1] : P.outline;
       else if (materialPatternEnabled('roofTexture') &&
           positiveModulo(wx * 3 + wy * 5 + buildingIndex, 17) === 0) color = pal[1];
-      paintSolidMapCell(x, y, color, layer, stats);
+      paintSolidMapCell(
+        x, y, color, layer, stats,
+        stats.worldStructureDepth ? mapCellScreenDepth(x, y) : null
+      );
       if (color !== pal[0]) stats.buildingDetailCells++;
       if (!below){
         const edge = southEdges.get(buildingIndex);
@@ -2874,7 +2891,10 @@ function drawCellFlatPixelArtBuildingGrid(
 
   const paintIfBuilding = (bi, x, y, color) => {
     if (x < 0 || y < 0 || x >= RG || y >= RG || bldGrid[y * RG + x] !== bi || grid[y * RG + x] !== ID.BLD) return;
-    paintSolidMapCell(x, y, color, `${layer}:details`, stats);
+    paintSolidMapCell(
+      x, y, color, `${layer}:details`, stats,
+      stats.worldStructureDepth ? mapCellScreenDepth(x, y) : null
+    );
     stats.buildingDetailCells++;
   };
   for (let bi = 1; bi < buildingKinds.length; bi++){
@@ -2969,7 +2989,10 @@ function drawCellHeightExtrudedBuildingGrid(
     !owns(group, x + dx, y + dy) && dx * direction[0] + dy * direction[1] > .35);
   const paintProjected = (group, sourceX, sourceY, offsetX, offsetY, color, detailLayer) => {
     if (!owns(group, sourceX, sourceY)) return;
-    paintSolidMapCell(sourceX + offsetX, sourceY + offsetY, color, detailLayer, stats);
+    paintSolidMapCell(
+      sourceX + offsetX, sourceY + offsetY, color, detailLayer, stats,
+      stats.worldStructureDepth ? mapCellScreenDepth(sourceX, sourceY) : null
+    );
     stats.buildingDetailCells++;
   };
 
@@ -4978,6 +5001,11 @@ function render(){
     gridSize:RG,
     pixelData:CELL_ONLY_MODE ? new Uint8ClampedArray(RG * RG * 4) : null,
     occupiedMask:CELL_ONLY_MODE ? new Uint8Array(RG * RG) : null,
+    // 建物と点登録神社仏閣だけが共有する画面奥行き。地表や通常記号は対象外。
+    worldStructureDepth:CELL_ONLY_MODE && !EMBEDDED
+      ? new Float32Array(RG * RG).fill(Number.NEGATIVE_INFINITY) : null,
+    depthRejectedCells:0,
+    religiousDepthRejectedCells:0,
     paintedCells:0,
     occupiedCells:0,
     layerCells:Object.create(null),
@@ -5591,10 +5619,14 @@ function render(){
     const shinto = item.props.religion === 'shinto';
     if (CELL_ONLY_MODE){
       const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
+      const structureDepth = mapCellScreenDepth(gx, gy);
       const paint = (dx, dy, color) => {
         const [sourceDx, sourceDy] = screenCellVectorToSource(dx, dy);
-        paintSolidMapCell(gx + sourceDx, gy + sourceDy, color, 'religiousStructures', cellRenderingStats);
-        cellRenderingStats.spriteCells++;
+        if (paintSolidMapCell(
+          gx + sourceDx, gy + sourceDy, color,
+          'religiousStructures', cellRenderingStats, structureDepth, true
+        )) cellRenderingStats.spriteCells++;
+        else cellRenderingStats.religiousDepthRejectedCells++;
       };
       const rect = (x, y, width, height, color) => {
         for (let dy = 0; dy < height; dy++)
@@ -6380,6 +6412,10 @@ function render(){
       railTopologyPaths:CELL_ONLY_MODE ? cellRenderingStats.railTopologyPaths : 0,
       railLodSuppressedPaths:CELL_ONLY_MODE ? cellRenderingStats.railLodSuppressedPaths : 0,
       buildingDetailCells:CELL_ONLY_MODE ? cellRenderingStats.buildingDetailCells : 0,
+      worldStructureDepth:!!cellRenderingStats.worldStructureDepth,
+      depthRejectedCells:CELL_ONLY_MODE ? cellRenderingStats.depthRejectedCells : 0,
+      religiousDepthRejectedCells:CELL_ONLY_MODE
+        ? cellRenderingStats.religiousDepthRejectedCells : 0,
       heightExtrusionEnabled:CELL_HEIGHT_EXTRUSION,
       buildingLineContinuity:CONTINUOUS_BUILDING_STRUCTURE_OUTLINE,
       buildingProjectionMode:SCREEN_VERTICAL_BUILDING_EXTRUSION

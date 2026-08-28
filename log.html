@@ -158,7 +158,7 @@
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>神奈川県の生成GeoJSONは、施設を表す意味タグを持つ閉じた敷地を1,000㎡以上で汎用収集。建物本体はMVTの全buildingを維持し、行政界・道路・河川・自然地形は補助収集しない。加えて、面積制限なしで<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集。汎用施設は収集した敷地面をラベルなしで必ず描き、その上へMVT建物を重ねる。公園・面登録の神社仏閣は単色マーカーで表示し、敷地のない名前付き神社仏閣はOSM点を接地位置に使う神社／寺院別の専用建物絵で表示。commercialは別チェックで表示。</td>
+              <td>神奈川県の生成GeoJSONは、施設を表す意味タグを持つ閉じた敷地を1,000㎡以上で汎用収集。建物本体はMVTの全buildingを維持し、行政界・道路・河川・自然地形は補助収集しない。加えて、面積制限なしで<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集。汎用施設は収集した敷地面をラベルなしで必ず描き、その上へMVT建物を重ねる。公園・面登録の神社仏閣は単色マーカーで表示し、敷地のない名前付き神社仏閣はOSM点を接地位置に使う神社／寺院別の専用建物絵で表示。専用建物絵と通常建物は接地点の画面奥行きをセルごとに比較し、手前側だけを残す。commercialは別チェックで表示。</td>
               <td>testと同じ生成GeoJSON、汎用施設敷地、高層建物、公園・面登録の神社仏閣、commercial別チェックを使用。点登録神社仏閣の専用建物絵は<code>standalone_only</code>として除外する。</td>
             </tr>
             <tr>
@@ -206,6 +206,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>点登録神社仏閣と通常建物の前後関係を修正</h3>
+          <time datetime="2026-08-29">2026-08-29 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>神社仏閣の専用建物絵を全建物の前へ無条件に重ねる方式を廃止。通常建物の屋根・壁を生成した元セルと、神社仏閣のOSM接地点を同じ画面奥行きへ変換し、重なるセルでは手前側だけを描画する。これにより奥の神社仏閣は手前の建物に隠れ、手前の神社仏閣は奥の建物を隠す。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testのcell2／cell3で表示する点登録神社仏閣。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。点登録神社仏閣は引き続き<code>standalone_only</code>で、本番1・2・4マップには表示しない。本番ページファイルも変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>深度バッファ・建物セル・神社仏閣接地点の連携を自動テストし、稲毛神社周辺のcell2／cell3で手前の屋根による遮蔽と、施設アイコン・クリック動作を実画面確認。独立視覚レビューも実施。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>点登録の神社仏閣を宗派別の専用建物絵で表示</h3>

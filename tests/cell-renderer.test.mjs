@@ -80,7 +80,7 @@ test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () =
 });
 
 test('意味セルバッファを不透明色で合成し最近傍でセル全面へ展開する', () => {
-  assert.match(html, /function paintSolidMapCell\(gx, gy, color, layer, stats\)/);
+  assert.match(html, /function paintSolidMapCell\(gx, gy, color, layer, stats(?:, worldDepth = null, depthTest = false)?\)/);
   assert.match(html, /stats\.pixelData\[pixelIndex \+ 3\] = rgba\[3\]/);
   assert.match(html, /\[0, 0, 0, 255\]/);
   assert.match(html, /function flushSolidCellBuffer\(stats\)/);
@@ -267,6 +267,17 @@ test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで�
   assert.match(html, /kind === 'convenience'/);
   assert.match(html, /kind === 'mixed'/);
   assert.match(html, /kind === 'poi' && desc\?\.glyph/);
+});
+
+test('点登録の神社仏閣は接地点の奥行きで手前の建物に遮蔽される', () => {
+  assert.match(html, /worldStructureDepth:CELL_ONLY_MODE && !EMBEDDED/);
+  assert.match(html, /function mapCellScreenDepth\(gx, gy\)/);
+  assert.match(html, /function paintSolidMapCell\(gx, gy, color, layer, stats, worldDepth = null, depthTest = false\)/);
+  assert.match(html, /depthTest && existingDepth > worldDepth[\s\S]*?depthRejectedCells\+\+/);
+  assert.match(html, /paintSolidMapCell\([\s\S]*?sourceX \+ offsetX, sourceY \+ offsetY,[\s\S]*?mapCellScreenDepth\(sourceX, sourceY\)/);
+  assert.match(html, /const structureDepth = mapCellScreenDepth\(gx, gy\)/);
+  assert.match(html, /'religiousStructures', cellRenderingStats, structureDepth, true/);
+  assert.match(html, /religiousDepthRejectedCells\+\+/);
 });
 
 test('建物は構造輪郭を連続させ、standalone testだけ窓の黒い点を除く', () => {
