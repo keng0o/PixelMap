@@ -98,6 +98,7 @@ test('1,000㎡以上の施設敷地と面積制限なしの高層建物を収集
   assert.ok(collection.features
     .filter(feature => feature.properties.role === 'complex')
     .filter(feature => feature.properties.collection_group !== 'highrise')
+    .filter(feature => feature.properties.class !== 'religious_point_fallback')
     .every(feature => feature.properties.area_m2 >= 1000));
   assert.deepEqual(collection.properties.highrise_thresholds, {
     min_height_m:30,
@@ -128,6 +129,28 @@ test('1,000㎡以上の施設敷地と面積制限なしの高層建物を収集
   assert.match(builderSource, /if \(first\[0\] !== last\[0\] \|\| first\[1\] !== last\[1\]\) return null/);
   assert.match(builderSource, /isFacilityParent/);
   assert.match(builderSource, /facility_tag_key/);
+});
+
+test('敷地のない名前付き神社仏閣は宗派別の専用建物絵fallbackとして収集する', () => {
+  const pointFallbacks = collection.features.filter(feature =>
+    feature.properties.class === 'religious_point_fallback');
+  const inageShrine = pointFallbacks.find(feature => feature.properties.id === 'node/1971580260');
+  assert.ok(inageShrine);
+  assert.equal(inageShrine.geometry.type, 'Point');
+  assert.equal(inageShrine.properties.name, '稲毛神社');
+  assert.equal(inageShrine.properties.religion, 'shinto');
+  assert.equal(inageShrine.properties.render_class, 'shrine_structure');
+  assert.equal(inageShrine.properties.display_mode, 'religious_structure');
+  assert.equal(inageShrine.properties.standalone_only, true);
+  assert.ok(pointFallbacks.some(feature => feature.properties.religion === 'buddhist' &&
+    feature.properties.render_class === 'temple_structure'));
+
+  const collectedReligiousAreas = collection.features.filter(feature =>
+    feature.properties.role === 'complex' && feature.properties.collection_group === 'religious' &&
+    ['Polygon','MultiPolygon'].includes(feature.geometry.type));
+  for (const fallback of pointFallbacks)
+    assert.equal(collectedReligiousAreas.some(area =>
+      API.geometryContains(area.geometry, fallback.geometry.coordinates)), false, fallback.properties.name);
 });
 
 test('高層建物は高さに応じて表示開始ズームを分ける', () => {
@@ -217,16 +240,23 @@ test('ランドマーク処理はstandaloneと1・2・4マップの全Webペー�
   assert.match(mapHtml, /commercialLandmarkControl\.hidden = !STANDALONE_LANDMARK_MODE/);
   assert.match(mapHtml, /feature\.properties\.collection_group !== 'commercial' \|\| commercialEnabled/);
   assert.match(mapHtml, /dataset\.commercialLandmarks = commercialLandmarkToggle\.checked \? 'on' : 'off'/);
-  assert.match(mapHtml, /feature\.properties\?\.display_mode !== 'symbol'/);
+  assert.match(mapHtml, /\(feature\.properties\?\.display_mode \|\| 'building'\) === 'building'/);
   assert.match(mapHtml, /landmarkDisplay:props\.display_mode \|\| 'building'/);
   assert.match(mapHtml, /labelEnabled:props\.label_enabled !== false/);
   assert.match(mapHtml, /p\.labelEnabled !== false && featureName\(p\.props\)/);
   assert.match(mapHtml, /renderer:facility\.landmarkDisplay === 'symbol' \? 'solid-facility-marker'/);
-  assert.match(mapHtml, /geometrySource:facility\.collectionGroup === 'facility'[\s\S]*'precollected-facility-footprint'/);
+  assert.match(mapHtml, /facility\.collectionGroup === 'facility'[\s\S]*'precollected-facility-footprint'/);
   assert.match(mapHtml, /drawnIcons\.filter\(item => item\.landmarkDisplay === 'symbol'\)/);
   assert.match(mapHtml, /\.filter\(p => o\.poi \|\| !\([\s\S]*p\.collectionGroup === 'religious'/);
   assert.match(mapHtml, /p\.assetFamily === 'worship'/);
   assert.match(mapHtml, /facilityPropTypes\(p\.props\)\.has\('place_of_worship'\)/);
+  assert.match(mapHtml, /props\.standalone_only && EMBEDDED/);
+  assert.match(mapHtml, /function drawStandaloneReligiousStructure\(item\)/);
+  assert.match(mapHtml, /item\.props\.religion === 'shinto'/);
+  assert.match(mapHtml, /item\.landmarkDisplay === 'religious_structure'/);
+  assert.match(mapHtml, /'pixel-religious-structure'/);
+  assert.match(mapHtml, /'osm-point-anchor'/);
+  assert.match(mapHtml, /religiousPointLandmarksByName/);
 });
 
 test('施設はランドマークと汎用施設敷地の全棟を既存建物と同じ見た目で描く', () => {

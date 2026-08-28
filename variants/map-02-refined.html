@@ -897,7 +897,7 @@ const WORLD_STYLE = window.PixelMapWorldStyles[WORLD_STYLE_PROFILE];
 // 検証済みのランドマーク補助データと施設描画を、standalone testと
 // 1・2・4マップの全Web本番で共通利用する。
 const STANDALONE_LANDMARK_MODE = true;
-const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260824-generic-facilities-1000';
+const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260829-religious-point-structures';
 const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820-2';
 let landmarkFeatureCollection = null;
 let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
@@ -4436,6 +4436,8 @@ function makeLandmarkFacility(feature, coordinate){
     class:renderClass,
     subclass:renderClass,
     landmark_class:props.class,
+    religion:props.religion,
+    source_geometry_type:props.source_geometry_type,
     osm_type:props.osm_type,
     osm_id:props.osm_id,
   };
@@ -4510,6 +4512,7 @@ function applyStandaloneLandmarks(resolvedView){
     ...landmarkFeatureCollection,
     features:landmarkFeatureCollection.features.filter(feature => {
       const props = feature.properties || {};
+      if (props.standalone_only && EMBEDDED) return false;
       if (props.role === 'complex') return eligibleParentIds.has(LANDMARK_ENTITY_API.featureId(feature));
       if (props.collection_group === 'commercial') return commercialEnabled;
       return !props.parent_id || eligibleParentIds.has(props.parent_id);
@@ -4555,10 +4558,27 @@ function applyStandaloneLandmarks(resolvedView){
     const coordinate = LANDMARK_ENTITY_API.anchorOf(feature);
     return coordinate ? makeLandmarkFacility(feature, coordinate) : null;
   }).filter(Boolean);
+  const religiousPointLandmarksByName = new Map();
+  for (const facility of landmarkFacilities.filter(item =>
+    item.landmarkDisplay === 'religious_structure' && item.name)){
+    if (!religiousPointLandmarksByName.has(facility.name))
+      religiousPointLandmarksByName.set(facility.name, []);
+    religiousPointLandmarksByName.get(facility.name).push(facility);
+  }
+  // 同じOSM点が通常MVT POIにも入る場合がある。専用建物絵の近傍にある
+  // 同名place_of_worshipだけを除き、「小さな施設(点)」との二重表示を防ぐ。
+  const sourceFacilities = resolvedView.facilities.filter(facility => {
+    const worship = facility.assetFamily === 'worship' ||
+      facilityPropTypes(facility.props).has('place_of_worship');
+    if (!worship) return true;
+    const fallbacks = religiousPointLandmarksByName.get(featureName(facility.props));
+    return !fallbacks?.some(fallback =>
+      Math.hypot(facility.worldX - fallback.worldX, facility.worldY - fallback.worldY) <= 8);
+  });
 
   return {
     ...resolvedView,
-    facilities:[...resolvedView.facilities, ...landmarkFacilities],
+    facilities:[...sourceFacilities, ...landmarkFacilities],
     landmarkFeatures:selectedFeatures,
     landmarks:{
       enabled:true,
@@ -4571,10 +4591,14 @@ function applyStandaloneLandmarks(resolvedView){
         id:facility.landmarkEntityId,
         name:facility.name,
         role:facility.facilityRole,
-        renderer:facility.landmarkDisplay === 'symbol' ? 'solid-facility-marker' : 'building-footprint',
-        representation:facility.landmarkDisplay === 'symbol' ? 'symbol' : 'building',
-        geometrySource:facility.collectionGroup === 'facility'
-          ? 'precollected-facility-footprint' : 'matched-or-collected-building',
+        renderer:facility.landmarkDisplay === 'symbol' ? 'solid-facility-marker'
+          : facility.landmarkDisplay === 'religious_structure'
+            ? 'pixel-religious-structure' : 'building-footprint',
+        representation:facility.landmarkDisplay === 'symbol' ? 'symbol'
+          : facility.landmarkDisplay === 'religious_structure' ? 'structure' : 'building',
+        geometrySource:facility.props.source_geometry_type === 'point' ? 'osm-point-anchor'
+          : facility.collectionGroup === 'facility'
+            ? 'precollected-facility-footprint' : 'matched-or-collected-building',
         anchor:facility.anchorCoordinate,
       })),
       suppressed:0,
@@ -5326,7 +5350,7 @@ function render(){
     : [];
   const collectedLandmarkRaster = STANDALONE_LANDMARK_MODE && o.poi
     ? rasterizeStandaloneLandmarkBuildings(resolvedView.landmarkFeatures.filter(feature =>
-      feature.properties?.display_mode !== 'symbol'), worldToGridPoint, RG)
+      (feature.properties?.display_mode || 'building') === 'building'), worldToGridPoint, RG)
     : null;
   const landmarkBuildingRaster = collectedLandmarkRaster
     ? matchStandaloneLandmarksToSourceBuildings(
@@ -5563,6 +5587,55 @@ function render(){
     ctx.restore();
     return item.pt;
   }
+  function drawStandaloneReligiousStructure(item){
+    const shinto = item.props.religion === 'shinto';
+    if (CELL_ONLY_MODE){
+      const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
+      const paint = (dx, dy, color) => {
+        const [sourceDx, sourceDy] = screenCellVectorToSource(dx, dy);
+        paintSolidMapCell(gx + sourceDx, gy + sourceDy, color, 'religiousStructures', cellRenderingStats);
+        cellRenderingStats.spriteCells++;
+      };
+      const rect = (x, y, width, height, color) => {
+        for (let dy = 0; dy < height; dy++)
+          for (let dx = 0; dx < width; dx++) paint(x + dx, y + dy, color);
+      };
+      // 点の位置は接地中心として保ち、建物絵だけを画面へ正立させる。
+      if (shinto){
+        // 奥の社殿。
+        rect(-3,-9,7,1,OUT); rect(-4,-8,9,1,OUT);
+        rect(-3,-8,7,1,'#a83828'); rect(-3,-7,7,1,'#e05838');
+        rect(-2,-6,5,5,OUT); rect(-1,-6,3,4,'#f0dfb8');
+        rect(0,-5,1,4,'#705040');
+        // 手前の鳥居。横木と二本柱を社殿より鮮やかな朱色で区別する。
+        rect(-6,-7,13,1,OUT); rect(-5,-6,11,1,'#f06040');
+        rect(-4,-5,9,1,OUT); rect(-3,-4,7,1,'#d84830');
+        rect(-4,-4,2,5,OUT); rect(-3,-4,1,5,'#f06040');
+        rect(3,-4,2,5,OUT); rect(3,-4,1,5,'#f06040');
+      } else {
+        // 山門の大屋根と、その奥に見える本堂。
+        rect(-5,-9,11,1,OUT); rect(-6,-8,13,1,OUT);
+        rect(-5,-8,11,1,'#686878'); rect(-4,-7,9,1,'#9898a0');
+        rect(-4,-6,9,1,OUT); rect(-3,-5,7,4,'#e8d8b0');
+        rect(-3,-5,1,4,'#9a5038'); rect(3,-5,1,4,'#9a5038');
+        rect(-1,-5,3,4,'#604838'); rect(0,-5,1,3,'#f0c840');
+        rect(-4,-1,9,1,OUT); rect(-3,0,7,1,'#a88860');
+      }
+      item.cellPt = solidMapCellCenter(gx, gy);
+      item.visualRadius = 7 * CPX;
+      cellRenderingStats.facilitySymbols++;
+      return item.cellPt;
+    }
+    const [x0, y0] = item.pt;
+    const x = Math.round(x0), y = Math.round(y0);
+    ctx.save();
+    ctx.fillStyle = OUT; ctx.fillRect(x - 22, y - 34, 44, 34);
+    ctx.fillStyle = shinto ? '#f06040' : '#9898a0'; ctx.fillRect(x - 18, y - 30, 36, 8);
+    ctx.fillStyle = '#e8d8b0'; ctx.fillRect(x - 12, y - 22, 24, 22);
+    ctx.restore();
+    item.visualRadius = 28;
+    return item.pt;
+  }
   const categoryIndex = p => {
     const index = ACTIVE_PATTERN.priority.indexOf(p.category);
     return index < 0 ? ACTIVE_PATTERN.priority.length : index;
@@ -5613,39 +5686,43 @@ function render(){
     }
   }
   function drawStandaloneLandmarkBuildings(){
-    if (!landmarkBuildingRaster) return;
     const landmark = landmarkBuildingRaster;
-    for (const layer of landmark.layers){
-      if (CELL_ONLY_MODE){
-        drawCellPixelArtBuildingGrid(
-          layer.grid, layer.bldGrid, layer.buildingKinds,
-          layer.buildingDescs, layer.buildingAnchors,
-          'landmarkBuildings', cellRenderingStats
-        );
-      } else {
-        drawGrid(
-          layer.grid, layer.bldGrid, layer.bldStyle,
-          {
-            grass:false,
-            buildingKinds:layer.buildingKinds,
-            buildingDescs:layer.buildingDescs,
-            buildingAnchors:layer.buildingAnchors,
-          },
-          true
-        );
+    if (landmark){
+      for (const layer of landmark.layers){
+        if (CELL_ONLY_MODE){
+          drawCellPixelArtBuildingGrid(
+            layer.grid, layer.bldGrid, layer.buildingKinds,
+            layer.buildingDescs, layer.buildingAnchors,
+            'landmarkBuildings', cellRenderingStats
+          );
+        } else {
+          drawGrid(
+            layer.grid, layer.bldGrid, layer.bldStyle,
+            {
+              grass:false,
+              buildingKinds:layer.buildingKinds,
+              buildingDescs:layer.buildingDescs,
+              buildingAnchors:layer.buildingAnchors,
+            },
+            true
+          );
+        }
       }
-    }
-    if (CELL_ONLY_MODE){
-      cellRenderingStats.facilitySymbols += landmark.visibleFeatures;
-      cellRenderingStats.cellizedFeatures += landmark.visibleFeatures;
+      if (CELL_ONLY_MODE){
+        cellRenderingStats.facilitySymbols += landmark.visibleFeatures;
+        cellRenderingStats.cellizedFeatures += landmark.visibleFeatures;
+      }
     }
     for (const p of drawnIcons.filter(item => item.landmarkDisplay === 'symbol'))
       drawStandaloneFacilityMarker(p);
+    for (const p of drawnIcons.filter(item => item.landmarkDisplay === 'religious_structure'))
+      drawStandaloneReligiousStructure(p);
     for (const item of drawnIcons){
       const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
       item.cellPt = solidMapCellCenter(gx, gy);
       const [x, y] = CELL_ONLY_MODE ? item.cellPt : item.pt;
-      hitAreas.push({ x:x - 18, y:y - 18, w:36, h:36, p:item.props, kind:'poi' });
+      const radius = item.landmarkDisplay === 'religious_structure' ? 28 : 18;
+      hitAreas.push({ x:x - radius, y:y - radius, w:radius * 2, h:radius * 2, p:item.props, kind:'poi' });
     }
   }
 

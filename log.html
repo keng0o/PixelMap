@@ -158,8 +158,8 @@
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>神奈川県の生成GeoJSONは、施設を表す意味タグを持つ閉じた敷地を1,000㎡以上で汎用収集。建物本体はMVTの全buildingを維持し、行政界・道路・河川・自然地形は補助収集しない。加えて、面積制限なしで<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集。汎用施設は収集した敷地面をラベルなしで必ず描き、その上へMVT建物を重ねる。公園・神社仏閣は単色マーカーで表示し、commercialは別チェックで表示。</td>
-              <td>testと同じ生成GeoJSON、汎用施設敷地、高層建物、公園・神社仏閣、commercial別チェックを使用。</td>
+              <td>神奈川県の生成GeoJSONは、施設を表す意味タグを持つ閉じた敷地を1,000㎡以上で汎用収集。建物本体はMVTの全buildingを維持し、行政界・道路・河川・自然地形は補助収集しない。加えて、面積制限なしで<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集。汎用施設は収集した敷地面をラベルなしで必ず描き、その上へMVT建物を重ねる。公園・面登録の神社仏閣は単色マーカーで表示し、敷地のない名前付き神社仏閣はOSM点を接地位置に使う神社／寺院別の専用建物絵で表示。commercialは別チェックで表示。</td>
+              <td>testと同じ生成GeoJSON、汎用施設敷地、高層建物、公園・面登録の神社仏閣、commercial別チェックを使用。点登録神社仏閣の専用建物絵は<code>standalone_only</code>として除外する。</td>
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
@@ -206,6 +206,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>点登録の神社仏閣を宗派別の専用建物絵で表示</h3>
+          <time datetime="2026-08-29">2026-08-29 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>名前付きの<code>amenity=place_of_worship</code>かつ<code>religion=shinto|buddhist</code>のOSM点を収集し、1,000㎡以上の収集済み宗教敷地内にある点を除外。敷地のない1,000施設（神道546・仏教454）を、座標を移動せず、神社は鳥居＋社殿、寺院は山門＋本堂の正立ピクセル建物絵で表示する。通常MVTの同名・同位置POIは除外して点との二重表示を防ぐ。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testのcell2／cell3で「施設アイコン」がONの場合。稲毛神社を含む。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。追加施設は<code>standalone_only</code>とし、<code>EMBEDDED</code> guardで本番1・2・4マップから除外。既存の面登録神社仏閣と本番ページファイルは変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>収集条件・面施設との重複排除・宗派別描画・通常POIとの重複排除・test限定guardの自動テスト、ビルド、稲毛神社と幸福寺の実画面スクリーンショット、施設アイコンOFF時の非表示、独立視覚レビューを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>7種類の素材模様を個別チェックで表示切替</h3>

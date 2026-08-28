@@ -17,6 +17,11 @@ if (areaId != null && (!Number.isInteger(areaId) || areaId <= 0))
 const output = resolve(String(args.output || 'data/landmarks/region.generated.geojson'));
 const baseGeneratedPath = typeof args['base-generated'] === 'string'
   ? resolve(args['base-generated']) : null;
+const refreshReligiousPoints = args['refresh-religious-points'] === true;
+if (refreshReligiousPoints && !baseGeneratedPath)
+  throw new Error('--refresh-religious-points には --base-generated が必要です');
+const baseGenerated = baseGeneratedPath
+  ? JSON.parse(await readFile(baseGeneratedPath, 'utf8')) : null;
 const minParentArea = Number(args['min-parent-area'] || 1000);
 const minHighriseHeight = Number(args['min-highrise-height'] || 30);
 const minHighriseLevels = Number(args['min-highrise-levels'] || 8);
@@ -103,7 +108,11 @@ const highriseQuery = `[out:json][timeout:180];${scopePrefix}
     (is_number(t["building:levels"]) && number(t["building:levels"]) >= ${minHighriseLevels})
   );
 out body center geom;`;
-const queries = baseGeneratedPath ? [highriseQuery] : [...standardQueries, highriseQuery];
+const religiousPointQuery = collectionQuery(`
+  node["name"]["amenity"="place_of_worship"]["religion"~"^(buddhist|shinto)$"]${scope};
+  `);
+const queries = refreshReligiousPoints ? [religiousPointQuery]
+  : baseGeneratedPath ? [highriseQuery] : [...standardQueries, highriseQuery];
 const wait = milliseconds => new Promise(resolveWait => setTimeout(resolveWait, milliseconds));
 async function fetchOverpass(query){
   for (let attempt = 0; attempt < 4; attempt++){
@@ -296,6 +305,9 @@ const isReligiousParent = record => record.geometry.type !== 'Point' && (
   (record.tags.amenity === 'place_of_worship' && ['buddhist','shinto'].includes(record.tags.religion)) ||
   ['temple','shrine'].includes(record.tags.building)
 );
+const isReligiousPoint = record => record.geometry.type === 'Point' && record.tags.name &&
+  record.tags.amenity === 'place_of_worship' &&
+  ['buddhist','shinto'].includes(record.tags.religion);
 const isHighriseParent = record => record.geometry.type !== 'Point' && record.tags.name &&
   Boolean(record.tags.building) && (
     Number(record.heightM) >= minHighriseHeight || Number(record.levels) >= minHighriseLevels
@@ -431,15 +443,41 @@ for (const parent of parents){
   }
 }
 
-const baseGenerated = baseGeneratedPath
-  ? JSON.parse(await readFile(baseGeneratedPath, 'utf8')) : null;
+// OSMで敷地面が登録されていない神社仏閣は、位置を変えず専用建物絵へ渡す。
+// 収集済みの宗教敷地内にある代表点は既存表示と重複するため追加しない。
+const religiousAreaGeometries = [
+  ...parents.filter(parent => parent.collectionGroup === 'religious').map(parent => parent.geometry),
+  ...(baseGenerated?.features || [])
+    .filter(feature => feature.properties?.role === 'complex' &&
+      feature.properties?.collection_group === 'religious' && polygons(feature.geometry).length)
+    .map(feature => feature.geometry),
+];
+const religiousPointFeatures = records.filter(isReligiousPoint)
+  .filter(record => !religiousAreaGeometries.some(geometry =>
+    contains(geometry, record.geometry.coordinates)))
+  .map(record => ({
+    type:'Feature', id:elementId(record.element), geometry:record.geometry,
+    properties:{
+      id:elementId(record.element), osm_type:record.element.type, osm_id:record.element.id,
+      name:record.tags.name, 'name:ja':record.tags['name:ja'] || record.tags.name,
+      'name:en':record.tags['name:en'], role:'complex', collection_group:'religious',
+      class:'religious_point_fallback',
+      render_class:record.tags.religion === 'shinto' ? 'shrine_structure' : 'temple_structure',
+      category:'landmark', display_mode:'religious_structure', source_geometry_type:'point',
+      standalone_only:true, area_m2:0, minzoom:14, detail_zoom:16,
+      max_signature_children:0, icon_size:'M', icon_anchor:record.geometry.coordinates,
+      amenity:record.tags.amenity, religion:record.tags.religion,
+    },
+  }));
+features.push(...religiousPointFeatures);
 const refreshedIds = new Set([
   ...features.map(feature => feature.properties.id),
   ...(baseGenerated ? collectedParentIds : []),
 ]);
 const outputFeatures = baseGenerated
   ? [
-      ...baseGenerated.features.filter(feature => !refreshedIds.has(feature.properties.id)),
+      ...baseGenerated.features.filter(feature => !refreshedIds.has(feature.properties.id) &&
+        !(refreshReligiousPoints && feature.properties.class === 'religious_point_fallback')),
       ...features,
     ]
   : features;
