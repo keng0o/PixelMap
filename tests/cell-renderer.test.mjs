@@ -63,10 +63,10 @@ test('2マップは左右別、4マップは共通チェックでcell2とcell3�
   assert.match(fourMapShellHtml, /function updateTopRenderUrl\(mode\)/);
   assert.match(fourMapShellHtml, /pixelmap:render-mode/);
   assert.match(fourMapShellHtml, /pixelmap:set-render-mode/);
-  assert.match(oneMapHtml, /v=20260828-settings-default-collapsed-production-1/);
-  assert.equal((twoMapHtml.match(/v=20260828-settings-default-collapsed-production-1/g) || []).length, 2);
-  assert.equal((fourMapHtml.match(/v=20260828-settings-default-collapsed-production-1/g) || []).length, 4);
-  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260828-settings-default-collapsed-production-1/);
+  assert.match(oneMapHtml, /v=20260829-current-test-production-1/);
+  assert.equal((twoMapHtml.match(/v=20260829-current-test-production-1/g) || []).length, 2);
+  assert.equal((fourMapHtml.match(/v=20260829-current-test-production-1/g) || []).length, 4);
+  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260829-current-test-production-1/);
 });
 
 test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {
@@ -170,7 +170,7 @@ test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分�
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
 });
 
-test('standalone testの地上鉄道は枕木を描かず左右レールを40px描画・5px空白にする', () => {
+test('全Webマップの地上鉄道は枕木を描かず左右レールを40px描画・5px空白にする', () => {
   const source = html.match(/function walkFourConnectedGridLine[\s\S]*?\nconst isRoad/)?.[0]
     .replace(/\nconst isRoad[\s\S]*$/u, '');
   assert.ok(source, '連続レール生成器を取得できる');
@@ -223,18 +223,18 @@ test('standalone testの地上鉄道は枕木を描かず左右レールを40px�
   assert.equal(lodSkin.pathCount, 2, '並走線だけをLOD代表へまとめ、交差線を残す');
   assert.equal(lodSkin.lodSuppressedPathCount, 1);
 
-  assert.match(html, /const STANDALONE_CONTINUOUS_RAIL_SKIN = !EMBEDDED && CELL_ONLY_MODE/);
-  assert.match(html, /const STANDALONE_RAIL_TIES = false/);
+  assert.match(html, /const CONTINUOUS_RAIL_SKIN = CELL_ONLY_MODE/);
+  assert.match(html, /const RAIL_TIES = false/);
   assert.match(html, /railOnCells:Math\.max\(1, Math\.round\(40 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
   assert.match(html, /railGapCells:Math\.max\(1, Math\.round\(5 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
   assert.match(html, /routeOption === 'rail'[\s\S]*?continuousRailSkinGrid\(layer\)/);
   assert.match(html, /continuousRailSkin\.sourcePaths\.push\(railPath\)/);
   assert.match(html, /finalizeContinuousRailSkin\(continuousRailSkin/);
-  assert.match(html, /if \(STANDALONE_RAIL_TIES\)\{[\s\S]*?continuousRailSkin\.ties[\s\S]*?for \(const mask of \[continuousRailSkin\.leftRail, continuousRailSkin\.rightRail\]\)/);
+  assert.match(html, /if \(RAIL_TIES\)\{[\s\S]*?continuousRailSkin\.ties[\s\S]*?for \(const mask of \[continuousRailSkin\.leftRail, continuousRailSkin\.rightRail\]\)/);
   assert.match(html, /railTopologyPaths \+= continuousRailSkin\.pathCount/);
   assert.match(html, /railLodSuppressedPaths \+= continuousRailSkin\.lodSuppressedPathCount/);
-  assert.match(html, /railRenderer:STANDALONE_CONTINUOUS_RAIL_SKIN[\s\S]*?'source-track-connected-masks'/);
-  assert.match(html, /railPassOrder:STANDALONE_CONTINUOUS_RAIL_SKIN[\s\S]*?\['bed','left-rail','right-rail'\]/);
+  assert.match(html, /railRenderer:CONTINUOUS_RAIL_SKIN[\s\S]*?'source-track-connected-masks'/);
+  assert.match(html, /railPassOrder:CONTINUOUS_RAIL_SKIN[\s\S]*?\['bed','left-rail','right-rail'\]/);
 });
 
 test('全Webマップの地区幹線道路は中央線を描かない', () => {
@@ -243,13 +243,13 @@ test('全Webマップの地区幹線道路は中央線を描かない', () => {
   assert.doesNotMatch(html, /function boundaryAlignedRoadCenter/);
 });
 
-test('standalone testは細街路を既定表示し主要道路を手前へ重ねる', () => {
-  assert.match(html, /const standaloneMinorRoadDefaults = new Set\(\['localRoads','paths'\]\)/);
-  assert.match(html, /!EMBEDDED && standaloneMinorRoadDefaults\.has\(option\)/);
+test('全Webマップは細街路を既定表示し主要道路を手前へ重ねる', () => {
+  assert.match(html, /const minorRoadDefaults = new Set\(\['localRoads','paths'\]\)/);
+  assert.match(html, /STUDY_LAYER_OPTIONS\.has\(option\) \|\| minorRoadDefaults\.has\(option\)/);
   assert.match(html, /\['tglMajorRoads','tglRegionalRoads','tglLocalRoads','tglPaths'\]/);
   assert.match(html, /const ranked = \['paths','localRoads','regionalRoads','majorRoads'\]/);
-  assert.match(html, /for \(const option of standaloneRoadStackOrder\(layerOrder\)\)/);
-  assert.match(html, /if \(EMBEDDED\) return options/);
+  assert.match(html, /for \(const option of roadStackOrder\(layerOrder\)\)/);
+  assert.doesNotMatch(html, /if \(EMBEDDED\) return options/);
 });
 
 test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで描く', () => {
@@ -270,7 +270,7 @@ test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで�
 });
 
 test('点登録の神社仏閣は実建物のセル奥行きで手前の建物に遮蔽される', () => {
-  assert.match(html, /worldStructureDepth:CELL_ONLY_MODE && !EMBEDDED/);
+  assert.match(html, /worldStructureDepth:CELL_ONLY_MODE/);
   assert.match(html, /function mapCellScreenDepth\(gx, gy\)/);
   assert.match(html, /function paintSolidMapCell\(gx, gy, color, layer, stats, worldDepth = null, depthTest = false\)/);
   assert.match(html, /depthTest && existingDepth > worldDepth[\s\S]*?depthRejectedCells\+\+/);
@@ -302,8 +302,8 @@ test('点登録の神社仏閣は実建物の輪郭・軸・道路側正面を�
   assert.match(html, /religiousFallbackSymbols/);
 });
 
-test('建物は構造輪郭を連続させ、standalone testだけ窓の黒い点を除く', () => {
-  assert.match(html, /const BUILDING_WINDOW_CELLS = EMBEDDED/);
+test('全Webマップの建物は構造輪郭を連続させ、窓に見える黒い点を除く', () => {
+  assert.match(html, /const BUILDING_WINDOW_CELLS = false/);
   assert.match(html, /sideEdge && \(CONTINUOUS_BUILDING_STRUCTURE_OUTLINE \|\| outlinePhase !== 1\)/);
   assert.match(html, /CONTINUOUS_BUILDING_STRUCTURE_OUTLINE && outlinePhase === 1 \? pal\[1\] : P\.outline/);
   assert.match(html, /const structuralOutline = SCREEN_VERTICAL_BUILDING_EXTRUSION[\s\S]*?: west && !south/);

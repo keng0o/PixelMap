@@ -81,6 +81,8 @@
   .all-row-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
   .all-row output{ color:var(--muted); font-size:10px; }
   #layerGroups{ display:grid; gap:9px; padding:10px; }
+  #materialPatternGroup{ margin:0 10px 10px; }
+  #materialPatternGroup[hidden]{ display:none; }
   .layer-group{ margin:0; padding:0; border:1px solid #484840; background:#181820; }
   .group-header{
     display:flex;
@@ -186,28 +188,34 @@
     <output id="activeCount">読込中</output>
   </div>
   <div id="layerGroups" aria-label="共通レイヤー"></div>
+  <section id="materialPatternGroup" class="layer-group" aria-labelledby="materialPatternTitle" hidden>
+    <div class="group-header">
+      <h2 id="materialPatternTitle">素材模様</h2>
+    </div>
+    <div id="materialPatternControls" class="group-items"></div>
+  </section>
 </aside>
 
 <main class="map-grid" aria-label="高さスタックによる4地点比較">
   <section class="map-card">
     <h2>川崎駅<small>35.5314, 139.6969</small></h2>
     <iframe data-map-id="kawasaki" title="高さスタック・川崎駅" loading="eager"
-      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kawasaki&amp;lat=35.5314&amp;lon=139.6969&amp;place=%E5%B7%9D%E5%B4%8E%E9%A7%85&amp;v=20260828-settings-default-collapsed-production-1"></iframe>
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kawasaki&amp;lat=35.5314&amp;lon=139.6969&amp;place=%E5%B7%9D%E5%B4%8E%E9%A7%85&amp;v=20260829-current-test-production-1"></iframe>
   </section>
   <section class="map-card">
     <h2>北鎌倉<small>北鎌倉駅</small></h2>
     <iframe data-map-id="kita-kamakura" title="高さスタック・北鎌倉" loading="eager"
-      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kita-kamakura&amp;lat=35.3372&amp;lon=139.5451&amp;place=%E5%8C%97%E9%8E%8C%E5%80%89%E9%A7%85&amp;v=20260828-settings-default-collapsed-production-1"></iframe>
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=kita-kamakura&amp;lat=35.3372&amp;lon=139.5451&amp;place=%E5%8C%97%E9%8E%8C%E5%80%89%E9%A7%85&amp;v=20260829-current-test-production-1"></iframe>
   </section>
   <section class="map-card">
     <h2>箱根<small>箱根湯本駅</small></h2>
     <iframe data-map-id="hakone" title="高さスタック・箱根" loading="eager"
-      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=hakone&amp;lat=35.2333&amp;lon=139.1069&amp;place=%E7%AE%B1%E6%A0%B9%E6%B9%AF%E6%9C%AC%E9%A7%85&amp;v=20260828-settings-default-collapsed-production-1"></iframe>
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=hakone&amp;lat=35.2333&amp;lon=139.1069&amp;place=%E7%AE%B1%E6%A0%B9%E6%B9%AF%E6%9C%AC%E9%A7%85&amp;v=20260829-current-test-production-1"></iframe>
   </section>
   <section class="map-card">
     <h2>石垣島<small>石垣港離島ターミナル</small></h2>
     <iframe data-map-id="ishigaki" title="高さスタック・石垣島" loading="eager"
-      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=ishigaki&amp;lat=24.3367&amp;lon=124.1557&amp;place=%E7%9F%B3%E5%9E%A3%E6%B8%AF%E9%9B%A2%E5%B3%B6%E3%82%BF%E3%83%BC%E3%83%9F%E3%83%8A%E3%83%AB&amp;v=20260828-settings-default-collapsed-production-1"></iframe>
+      src="map-02-refined.html?embedded=1&amp;shared-controls=1&amp;pattern=07&amp;map=ishigaki&amp;lat=24.3367&amp;lon=124.1557&amp;place=%E7%9F%B3%E5%9E%A3%E6%B8%AF%E9%9B%A2%E5%B3%B6%E3%82%BF%E3%83%BC%E3%83%9F%E3%83%8A%E3%83%AB&amp;v=20260829-current-test-production-1"></iframe>
   </section>
 </main>
 
@@ -219,6 +227,8 @@ const targetOrigin = location.origin === 'null' ? '*' : location.origin;
 const readyMaps = new Set();
 const layerAcks = new Map();
 const groupsRoot = document.getElementById('layerGroups');
+const materialPatternGroup = document.getElementById('materialPatternGroup');
+const materialPatternControls = document.getElementById('materialPatternControls');
 const allLayers = document.getElementById('allLayers');
 const cell3Mode = document.getElementById('cell3Mode');
 const activeCount = document.getElementById('activeCount');
@@ -235,18 +245,26 @@ let activeOptions = new Set();
 let layerOrder = [];
 let defaultOptions = [];
 let defaultOrder = [];
+let materialPatternCatalog = [];
+let activeMaterialPatterns = new Set();
+let defaultMaterialPatterns = [];
 
 function frameForSource(source){
   return frames.find(frame => frame.contentWindow === source) || null;
 }
-function stateSignature(state = { activeOptions:[...activeOptions], layerOrder }){
+function stateSignature(state = currentLayerState()){
   return JSON.stringify({
     active:[...(state.activeOptions || [])].sort(),
     order:[...(state.layerOrder || [])],
+    materials:[...(state.materialPatterns || [])].sort(),
   });
 }
 function currentLayerState(){
-  return { activeOptions:[...activeOptions], layerOrder:[...layerOrder] };
+  return {
+    activeOptions:[...activeOptions],
+    layerOrder:[...layerOrder],
+    materialPatterns:[...activeMaterialPatterns],
+  };
 }
 function sendLayers(frame){
   frame.contentWindow?.postMessage({ type:'pixelmap:set-layers', layers:currentLayerState() }, targetOrigin);
@@ -317,6 +335,7 @@ function updateStatus(){
     : `読込 ${readyMaps.size}/4・同期 ${synced}/4・方位${latestBearing}°・${document.documentElement.dataset.renderMode}`;
   document.documentElement.dataset.fourMapReady = ready ? '1' : '0';
   document.documentElement.dataset.commonLayerCount = String(activeOptions.size);
+  document.documentElement.dataset.commonMaterialPatternCount = String(activeMaterialPatterns.size);
 }
 function syncControls(){
   const inputs = [...groupsRoot.querySelectorAll('[data-option]')];
@@ -331,6 +350,8 @@ function syncControls(){
   allLayers.checked = activeOptions.size === inputs.length;
   allLayers.indeterminate = activeOptions.size > 0 && activeOptions.size < inputs.length;
   activeCount.textContent = `${activeOptions.size} / ${inputs.length}`;
+  for (const input of materialPatternControls.querySelectorAll('[data-material-pattern]'))
+    input.checked = activeMaterialPatterns.has(input.dataset.materialPattern);
 }
 function setOption(option, checked){
   activeOptions.delete(option);
@@ -340,12 +361,34 @@ function setOption(option, checked){
     layerOrder.push(option);
   }
 }
+function buildMaterialPatternControls(patterns){
+  materialPatternCatalog = Array.isArray(patterns) ? patterns : [];
+  materialPatternControls.replaceChildren();
+  materialPatternGroup.hidden = materialPatternCatalog.length === 0;
+  for (const item of materialPatternCatalog){
+    const label = document.createElement('label');
+    label.className = 'layer-label';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.dataset.materialPattern = item.pattern;
+    input.addEventListener('change', () => {
+      if (input.checked) activeMaterialPatterns.add(item.pattern);
+      else activeMaterialPatterns.delete(item.pattern);
+      syncControls();
+      broadcastLayers();
+    });
+    label.append(input, document.createTextNode(item.label));
+    materialPatternControls.append(label);
+  }
+}
 function buildControls(layers){
   catalog = layers.catalog;
   activeOptions = new Set(layers.activeOptions || []);
   layerOrder = [...(layers.layerOrder || [])];
   defaultOptions = [...activeOptions];
   defaultOrder = [...layerOrder];
+  activeMaterialPatterns = new Set(layers.materialPatterns || []);
+  defaultMaterialPatterns = [...activeMaterialPatterns];
   groupsRoot.replaceChildren();
 
   for (const groupData of catalog){
@@ -387,6 +430,7 @@ function buildControls(layers){
     group.append(header, itemsRoot);
     groupsRoot.append(group);
   }
+  buildMaterialPatternControls(layers.materialPatternCatalog);
   syncControls();
 }
 
@@ -404,6 +448,7 @@ allLayers.addEventListener('change', () => {
 document.getElementById('resetLayers').addEventListener('click', () => {
   activeOptions = new Set(defaultOptions);
   layerOrder = [...defaultOrder];
+  activeMaterialPatterns = new Set(defaultMaterialPatterns);
   syncControls();
   broadcastLayers();
 });

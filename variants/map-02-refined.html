@@ -897,7 +897,7 @@ const WORLD_STYLE = window.PixelMapWorldStyles[WORLD_STYLE_PROFILE];
 // 検証済みのランドマーク補助データと施設描画を、standalone testと
 // 1・2・4マップの全Web本番で共通利用する。
 const STANDALONE_LANDMARK_MODE = true;
-const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260829-religious-point-structures';
+const LANDMARK_GENERATED_DATA_URL = '../data/landmarks/kanagawa.generated.geojson?v=20260829-current-test-production';
 const LANDMARK_OVERRIDE_DATA_URL = '../data/landmarks/kanagawa.overrides.json?v=20260820-2';
 let landmarkFeatureCollection = null;
 let landmarkLoadState = STANDALONE_LANDMARK_MODE ? 'pending' : 'disabled';
@@ -915,15 +915,12 @@ const REQUESTED_RENDER_MODE = PAGE_PARAMS.get('render');
 const RENDER_MODE = REQUESTED_RENDER_MODE === 'cell3' ? 'cell3' : 'cell2';
 const CELL_RENDER_LOGICAL_SIZE = Number(RENDER_MODE.slice(4));
 const CELL_ONLY_MODE = ['cell2','cell3'].includes(RENDER_MODE);
-// standalone testの地上鉄道だけは、中心セルごとの縦横推定ではなく
-// 線路単位の接線から左右レールと枕木を別マスクへ生成する。
-// embedded本番は検証完了まで従来描画を維持する。
-const STANDALONE_CONTINUOUS_RAIL_SKIN = !EMBEDDED && CELL_ONLY_MODE;
-// standalone testでは路盤と左右レールだけを表示し、枕木は描画しない。
-const STANDALONE_RAIL_TIES = false;
-// standalone testでは窓を原子セル1個の黒い点として描かない。
-// embedded本番は今回の検証対象外なので従来の窓表現を維持する。
-const BUILDING_WINDOW_CELLS = EMBEDDED;
+// 全Webマップの地上鉄道は、線路単位の接線から左右レールを別マスクへ生成する。
+// 路盤と左右レールだけを表示し、枕木は描画しない。
+const CONTINUOUS_RAIL_SKIN = CELL_ONLY_MODE;
+const RAIL_TIES = false;
+// 窓に見える原子セル1個の黒い点は全Webマップで描画しない。
+const BUILDING_WINDOW_CELLS = false;
 // standalone標準表示では、地物を移動させず「不変の地理形状＋共通スキン＋
 // 固定サイズのシンボル」で描く旧経路を保持するが、現行URL契約からは到達しない。
 const STANDALONE_UNIFIED_STYLE = !EMBEDDED && !CELL_ONLY_MODE;
@@ -2326,7 +2323,7 @@ function rasterizeGrid(layers, options){
   function lineStamp(layer, fs, id, thick, routeOption = layer){
     const grid = layerGrid(layer);
     const center = CELL_ONLY_MODE ? centerGrid(layer) : null;
-    const continuousRailSkin = STANDALONE_CONTINUOUS_RAIL_SKIN && routeOption === 'rail'
+    const continuousRailSkin = CONTINUOUS_RAIL_SKIN && routeOption === 'rail'
       ? continuousRailSkinGrid(layer) : null;
     const minimumMinorRoute = STANDALONE_MINIMUM_MINOR_ROUTES &&
       ['localRoads','paths'].includes(routeOption);
@@ -2778,8 +2775,8 @@ function drawCellPixelArtTransportGrid(
   }
 
   if (rail){
-    if (STANDALONE_CONTINUOUS_RAIL_SKIN && option === 'rail' && continuousRailSkin){
-      if (STANDALONE_RAIL_TIES){
+    if (CONTINUOUS_RAIL_SKIN && option === 'rail' && continuousRailSkin){
+      if (RAIL_TIES){
         for (let index = 0; index < continuousRailSkin.ties.length; index++){
           if (!continuousRailSkin.ties[index]) continue;
           const x = index % RG, y = Math.floor(index / RG);
@@ -4401,25 +4398,23 @@ const locationCanvasPoint = () => currentLocation ? rotateScenePoint([
   (currentLocation.tileY - TILE.y) * H - viewOffset.y,
 ]) : null;
 
-// standalone testでは主要道路から細街路へ読める順に設定項目を並べる。
-// embedded本番の設定UIは既存順を維持する。
-if (!EMBEDDED){
-  const roadControls = ['tglMajorRoads','tglRegionalRoads','tglLocalRoads','tglPaths']
-    .map(id => document.getElementById(id)?.closest('label'))
-    .filter(Boolean);
-  const transportItems = document.getElementById('tglLocalRoads')?.closest('.category-items');
-  if (transportItems && roadControls.length === 4)
-    transportItems.prepend(...roadControls);
-}
+// 全Webマップで、主要道路から細街路へ読める順に設定項目を並べる。
+const roadControls = ['tglMajorRoads','tglRegionalRoads','tglLocalRoads','tglPaths']
+  .map(id => document.getElementById(id)?.closest('label'))
+  .filter(Boolean);
+const transportItems = document.getElementById('tglLocalRoads')?.closest('.category-items');
+if (transportItems && roadControls.length === 4)
+  transportItems.prepend(...roadControls);
 
 const layerInputs = [...document.querySelectorAll('[data-category-item]')];
 const optionForInput = input => input.id.slice(3).replace(/^./, c => c.toLowerCase());
 const materialPatternCategory = document.getElementById('materialPatternCategory');
 const materialPatternInputs = [...document.querySelectorAll('[data-material-pattern]')];
-materialPatternCategory.hidden = EMBEDDED;
+// 1・2マップは個別設定に表示し、shared-controlsの4マップだけ外側UIへ委譲する。
+materialPatternCategory.hidden = SHARED_CONTROLS;
 function materialPatternEnabled(pattern){
   const input = materialPatternInputs.find(item => item.dataset.materialPattern === pattern);
-  return EMBEDDED || input?.checked !== false;
+  return input?.checked !== false;
 }
 function materialPatternState(){
   return Object.fromEntries(materialPatternInputs.map(input => [
@@ -4444,11 +4439,10 @@ const STUDY_LAYER_OPTIONS = new Set([
   'poi',
 ]);
 if (STUDY_MODE){
-  const standaloneMinorRoadDefaults = new Set(['localRoads','paths']);
+  const minorRoadDefaults = new Set(['localRoads','paths']);
   for (const input of layerInputs){
     const option = optionForInput(input);
-    input.checked = STUDY_LAYER_OPTIONS.has(option) ||
-      (!EMBEDDED && standaloneMinorRoadDefaults.has(option));
+    input.checked = STUDY_LAYER_OPTIONS.has(option) || minorRoadDefaults.has(option);
   }
 } else if (WORLD_STYLE_MODE){
   const defaults = new Set(WORLD_STYLE.defaultLayers);
@@ -4465,8 +4459,7 @@ function updateLayerOrder(input){
 document.getElementById('toolbar').dataset.layerOrder = layerOrder.join(',');
 // 同じZ階層では後描画ほど手前。指定4種が占める位置だけを入れ替え、
 // 歩道・小径→生活道路→地区幹線道路→主要道路の順で重ねる。
-const standaloneRoadStackOrder = options => {
-  if (EMBEDDED) return options;
+const roadStackOrder = options => {
   const ranked = ['paths','localRoads','regionalRoads','majorRoads'];
   const activeRanked = ranked.filter(option => options.includes(option));
   let rankIndex = 0;
@@ -4591,7 +4584,6 @@ function applyStandaloneLandmarks(resolvedView){
     ...landmarkFeatureCollection,
     features:landmarkFeatureCollection.features.filter(feature => {
       const props = feature.properties || {};
-      if (props.standalone_only && EMBEDDED) return false;
       if (props.role === 'complex') return eligibleParentIds.has(LANDMARK_ENTITY_API.featureId(feature));
       if (props.collection_group === 'commercial') return commercialEnabled;
       return !props.parent_id || eligibleParentIds.has(props.parent_id);
@@ -4740,8 +4732,7 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
       ...buildingAppearanceForActiveProfile({
         heightM:Number(props.height_m || 0),
         areaCells:landmarkAreaCells(props.area_m2, latitude),
-        // 競馬場の専用色はstandalone testだけで検証し、embedded本番は従来色を保つ。
-        kind:!EMBEDDED && isRacecourseLandmarkProps(props) ? 'racecourse' : 'normal',
+        kind:isRacecourseLandmarkProps(props) ? 'racecourse' : 'normal',
         category:null,
         seed:lodSeed,
       }),
@@ -5232,7 +5223,7 @@ function render(){
     pixelData:CELL_ONLY_MODE ? new Uint8ClampedArray(RG * RG * 4) : null,
     occupiedMask:CELL_ONLY_MODE ? new Uint8Array(RG * RG) : null,
     // 通常建物・実建物化した神社仏閣・小型fallbackが共有する画面奥行き。
-    worldStructureDepth:CELL_ONLY_MODE && !EMBEDDED
+    worldStructureDepth:CELL_ONLY_MODE
       ? new Float32Array(RG * RG).fill(Number.NEGATIVE_INFINITY) : null,
     depthRejectedCells:0,
     religiousDepthRejectedCells:0,
@@ -6298,7 +6289,7 @@ function render(){
   // Z0〜Z4を固定し、同じZ階層内だけチェック順（後にチェックしたものほど前面）にする。
   drawRasterGroup('Z0', z0Ground);
   drawRasterGroup('Z1', z1Water);
-  for (const option of standaloneRoadStackOrder(layerOrder)){
+  for (const option of roadStackOrder(layerOrder)){
     if (!o[option] || !z2Routes.has(option)) continue;
     // standalone標準のcorridorは地表areaの後へ一括して合成する。
     if (STANDALONE_UNIFIED_STYLE && STANDALONE_STYLE_SPEC.corridor[option]) continue;
@@ -6369,7 +6360,7 @@ function render(){
     }
     renderOrder.push('Z3:surface-roads:conflict-fallback');
   }
-  for (const option of standaloneRoadStackOrder(layerOrder)){
+  for (const option of roadStackOrder(layerOrder)){
     if (!o[option] || !bridgeOptions.has(option)) continue;
     const bridgeOption = `bridge:${option}`;
     if (CELL_ONLY_MODE){
@@ -6601,10 +6592,10 @@ function render(){
       corridorRendererVersion:STANDALONE_UNIFIED_STYLE ? CORRIDOR_RENDERER.version : null,
       corridorContractVersion:STANDALONE_UNIFIED_STYLE ? LAYER_ASSET_CATALOG.corridorContractVersion : null,
       corridorPhase:STANDALONE_UNIFIED_STYLE ? 'source-line-distance' : 'legacy-screen-phase',
-      railRenderer:STANDALONE_CONTINUOUS_RAIL_SKIN
+      railRenderer:CONTINUOUS_RAIL_SKIN
         ? 'source-track-connected-masks' : 'legacy-local-axis-stamps',
-      railScope:STANDALONE_CONTINUOUS_RAIL_SKIN ? 'standalone-ground-rail' : 'all-legacy-rail-like',
-      railPassOrder:STANDALONE_CONTINUOUS_RAIL_SKIN
+      railScope:CONTINUOUS_RAIL_SKIN ? 'all-web-ground-rail' : 'all-legacy-rail-like',
+      railPassOrder:CONTINUOUS_RAIL_SKIN
         ? ['bed','left-rail','right-rail'] : ['bed','per-center-tie-and-rail'],
       compositor:STANDALONE_UNIFIED_STYLE
         ? [...WORLD_STYLE.compositor]
@@ -7385,7 +7376,13 @@ function layerSnapshot(){
   return {
     activeOptions:layerInputs.filter(input => input.checked).map(optionForInput),
     layerOrder:[...layerOrder],
-    catalog:[...document.querySelectorAll('.layer-category')].map(panel => ({
+    materialPatterns:materialPatternInputs.filter(input => input.checked)
+      .map(input => input.dataset.materialPattern),
+    materialPatternCatalog:materialPatternInputs.map(input => ({
+      pattern:input.dataset.materialPattern,
+      label:input.parentElement?.textContent?.trim() || input.dataset.materialPattern,
+    })),
+    catalog:[...document.querySelectorAll('.layer-category:not(.material-pattern-category)')].map(panel => ({
       title:panel.querySelector('.category-title')?.textContent?.trim() || '',
       items:[...panel.querySelectorAll('[data-category-item]')].map(input => ({
         option:optionForInput(input),
@@ -7409,6 +7406,13 @@ function applySharedLayers(state){
   const active = new Set(state.activeOptions.filter(option => allowed.has(option)));
   for (const input of layerInputs) input.checked = active.has(optionForInput(input));
 
+  if (Array.isArray(state.materialPatterns)){
+    const allowedPatterns = new Set(materialPatternInputs.map(input => input.dataset.materialPattern));
+    const activePatterns = new Set(state.materialPatterns.filter(pattern => allowedPatterns.has(pattern)));
+    for (const input of materialPatternInputs)
+      input.checked = activePatterns.has(input.dataset.materialPattern);
+  }
+
   const requestedOrder = Array.isArray(state.layerOrder) ? state.layerOrder : [];
   const seen = new Set();
   layerOrder = requestedOrder.filter(option => active.has(option) && !seen.has(option) && seen.add(option));
@@ -7423,6 +7427,7 @@ function applySharedLayers(state){
   for (const panel of document.querySelectorAll('.layer-category')) syncCategoryMaster(panel);
   syncAllLayersToggle();
   syncCommercialLandmarkState();
+  syncMaterialPatternState();
   render();
   publishLayerState();
 }
@@ -7636,6 +7641,7 @@ allLayersToggle.addEventListener('change', () => {
 for (const input of materialPatternInputs) input.addEventListener('change', () => {
   syncMaterialPatternState();
   render();
+  publishLayerState();
 });
 syncAllLayersToggle();
 syncCommercialLandmarkState();

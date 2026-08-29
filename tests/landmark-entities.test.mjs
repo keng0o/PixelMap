@@ -141,7 +141,7 @@ test('敷地のない名前付き神社仏閣は宗派別の専用建物絵fallb
   assert.equal(inageShrine.properties.religion, 'shinto');
   assert.equal(inageShrine.properties.render_class, 'shrine_structure');
   assert.equal(inageShrine.properties.display_mode, 'religious_structure');
-  assert.equal(inageShrine.properties.standalone_only, true);
+  assert.equal('standalone_only' in inageShrine.properties, false);
   assert.ok(pointFallbacks.some(feature => feature.properties.religion === 'buddhist' &&
     feature.properties.render_class === 'temple_structure'));
 
@@ -250,7 +250,7 @@ test('ランドマーク処理はstandaloneと1・2・4マップの全Webペー�
   assert.match(mapHtml, /\.filter\(p => o\.poi \|\| !\([\s\S]*p\.collectionGroup === 'religious'/);
   assert.match(mapHtml, /p\.assetFamily === 'worship'/);
   assert.match(mapHtml, /facilityPropTypes\(p\.props\)\.has\('place_of_worship'\)/);
-  assert.match(mapHtml, /props\.standalone_only && EMBEDDED/);
+  assert.doesNotMatch(mapHtml, /props\.standalone_only && EMBEDDED/);
   assert.match(mapHtml, /function drawStandaloneReligiousStructure\(item\)/);
   assert.match(mapHtml, /item\.props\.religion === 'shinto'/);
   assert.match(mapHtml, /item\.landmarkDisplay === 'religious_structure'/);

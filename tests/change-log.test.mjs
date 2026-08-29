@@ -118,6 +118,13 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /全自動テスト158件/);
   assert.match(log, /独立視覚レビューは3枚すべてPASS/);
   assert.match(log, /黒い太帯・過密化・分岐消失/);
+  assert.match(log, /現在のtest差分をWeb本番1・2・4マップへ全面リリース/);
+  assert.match(log, /線路単位4連結レール・40論理px描画と5論理px空白・枕木なし/);
+  assert.match(log, /宗教点データの<code>standalone_only<\/code>指定も生成スクリプトと生成GeoJSONから撤去/);
+  assert.match(log, /4マップは外側の共通設定から7種類を4地点へ同期/);
+  assert.match(log, /本番1・2・4マップの地図描画と施設データを2026-08-29時点のtest既定状態へ統一/);
+  assert.match(log, /全自動テスト172件とビルドが成功/);
+  assert.match(log, /最新スクリーンショット5枚は独立視覚レビューですべてPASS/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

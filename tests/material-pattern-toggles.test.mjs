@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+const fourMapHtml = await readFile(new URL('../variants/height-stack-four-map.html', import.meta.url), 'utf8');
 
-test('standalone testは7種類の素材模様を初期ONの独立チェックとして表示する', () => {
+test('standaloneと本番1・2マップは7種類の素材模様を初期ONの独立チェックとして表示する', () => {
   const expected = [
     ['dirtGrain','土地：土の粒'],
     ['pavingJoints','舗装：タイル・舗装継ぎ目'],
@@ -22,15 +23,27 @@ test('standalone testは7種類の素材模様を初期ONの独立チェック�
       `${label} の独立チェック`,
     );
   }
-  assert.match(html, /materialPatternCategory\.hidden = EMBEDDED/);
-  assert.match(html, /return EMBEDDED \|\| input\?\.checked !== false/);
+  assert.match(html, /materialPatternCategory\.hidden = SHARED_CONTROLS/);
+  assert.match(html, /return input\?\.checked !== false/);
 });
 
-test('素材チェックはレイヤー順を変えず再描画だけを行う', () => {
+test('素材チェックはレイヤー順を変えず再描画し、共有設定では状態を通知する', () => {
   assert.match(html, /const materialPatternInputs = \[\.\.\.document\.querySelectorAll\('\[data-material-pattern\]'\)\]/);
-  assert.match(html, /for \(const input of materialPatternInputs\)[\s\S]*?input\.addEventListener\('change',[\s\S]*?render\(\)/);
+  assert.match(html, /for \(const input of materialPatternInputs\)[\s\S]*?input\.addEventListener\('change',[\s\S]*?render\(\)[\s\S]*?publishLayerState\(\)/);
   assert.doesNotMatch(html, /data-material-pattern[^>]*data-category-item/);
   assert.match(html, /const master = panel\.querySelector\('\[data-category-toggle\]'\);\s*if \(!master\) continue;/);
+});
+
+test('4マップは素材模様を外側の共通パネルから4地点へ同期する', () => {
+  assert.match(html, /materialPatterns:materialPatternInputs\.filter\(input => input\.checked\)/);
+  assert.match(html, /materialPatternCatalog:materialPatternInputs\.map\(input => \(\{/);
+  assert.match(html, /if \(Array\.isArray\(state\.materialPatterns\)\)/);
+  assert.match(fourMapHtml, /id="materialPatternGroup"/);
+  assert.match(fourMapHtml, /id="materialPatternControls"/);
+  assert.match(fourMapHtml, /materialPatterns:\[\.\.\.activeMaterialPatterns\]/);
+  assert.match(fourMapHtml, /function buildMaterialPatternControls\(patterns\)/);
+  assert.match(fourMapHtml, /input\.dataset\.materialPattern = item\.pattern/);
+  assert.match(fourMapHtml, /broadcastLayers\(\)/);
 });
 
 test('土・舗装・砂・道路・小径・砂利は基本色を残す無地チップへ個別に切り替わる', () => {
@@ -46,7 +59,7 @@ test('屋根の素材チェックは輪郭や設備とは独立して疎な粒�
   assert.match(html, /if \(materialPatternEnabled\('roofTexture'\)\)\{[\s\S]*?瓦の継ぎ目/);
 });
 
-test('砂利チェックはstandaloneの鉄道路盤粒だけを消しレールと枕木を維持する', async () => {
+test('砂利チェックは全Webマップの鉄道路盤粒だけを消しレールを維持する', async () => {
   assert.match(html, /bedTexture:null/);
   assert.match(html, /materialTexture:materialPatternEnabled\('gravelTexture'\)/);
 

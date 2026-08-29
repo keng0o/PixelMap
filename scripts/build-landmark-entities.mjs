@@ -464,7 +464,7 @@ const religiousPointFeatures = records.filter(isReligiousPoint)
       class:'religious_point_fallback',
       render_class:record.tags.religion === 'shinto' ? 'shrine_structure' : 'temple_structure',
       category:'landmark', display_mode:'religious_structure', source_geometry_type:'point',
-      standalone_only:true, area_m2:0, minzoom:14, detail_zoom:16,
+      area_m2:0, minzoom:14, detail_zoom:16,
       max_signature_children:0, icon_size:'M', icon_anchor:record.geometry.coordinates,
       amenity:record.tags.amenity, religion:record.tags.religion,
     },
