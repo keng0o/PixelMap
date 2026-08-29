@@ -9,7 +9,7 @@
      カテゴリ色は icon-patterns.js のパターン07パレットと同一。
      ===================================================== */
 
-  const VERSION = 'building-styles/4';
+  const VERSION = 'building-styles/5';
 
   // 高さバンド: 1=切妻住宅(<10m) 2=低層陸屋根(10-30m) 3=中層(31-59m) 4=高層(60m+)
   const HEIGHT_BANDS = { gableMax:10, lowMax:31, midMax:60 };
@@ -118,7 +118,38 @@
        seed      … 棟リングキー由来の整数（配色バリアント選択に使用）
      優先順: kind強制 → 高さバンド → 面積上書き。
      カテゴリは直交（accent/glyphのみ変え、シルエットは変えない）。 */
-  function buildingAppearance({ heightM = 0, areaCells = 0, kind = 'normal', category = null, seed = 0 } = {}){
+  function shapeDescriptorFor({ band, areaClass, kind, seed }, shapeGrammar, profileId){
+    if (!shapeGrammar) return null;
+    const v = ((Number(seed) || 0) % 0x7fffffff + 0x7fffffff) % 0x7fffffff;
+    const protectedKinds = new Set(shapeGrammar.protectedKinds || []);
+    const enabled = !protectedKinds.has(kind);
+    const roofForms = shapeGrammar.roofForms?.[`band${band}`] || ['preserved-roof'];
+    const equipment = shapeGrammar.equipment || [];
+    const equipmentCount = enabled
+      ? Math.max(0, Number(shapeGrammar.equipmentByBand?.[band]) || 0)
+      : 0;
+    return {
+      profileId:profileId || 'custom-shape-grammar',
+      enabled,
+      semantic:Boolean(shapeGrammar.decorationsSemantic),
+      sourceFootprintImmutable:shapeGrammar.sourceFootprintImmutable !== false,
+      roofForm:enabled ? roofForms[v % roofForms.length] : 'preserved-roof',
+      equipmentCount,
+      equipment:Array.from({length:equipmentCount}, (_, index) =>
+        equipment[(v + index * 7) % Math.max(1, equipment.length)] || 'vent'),
+      raisedDeck:enabled && band >= 2 && areaClass !== 'S',
+      deckInset:enabled && band >= 2 ? 1 + (v % 2) : 0,
+      stackHeight:enabled && band >= 4 ? 2 : enabled && band >= 3 ? 1 : 0,
+      serviceSide:['left','right','front','back'][v % 4],
+      patchPhase:v % 19,
+      seed:v,
+    };
+  }
+
+  function buildingAppearance(
+    { heightM = 0, areaCells = 0, kind = 'normal', category = null, seed = 0 } = {},
+    { skin = null, shapeGrammar = null, profileId = null } = {}
+  ){
     const h = Number(heightM) || 0;
     const area = Number(areaCells) || 0;
     const v = ((Number(seed) || 0) % 0x7fffffff + 0x7fffffff) % 0x7fffffff;
@@ -162,7 +193,7 @@
       wallKey = 'house'; motif = 'gable';
     }
 
-    return {
+    const appearance = {
       heightM:h,
       band,
       areaClass,
@@ -175,6 +206,18 @@
       glyph:accent ? category : null,
       motif,
     };
+    if (skin){
+      const flatIndex = roofKey.startsWith('roofFlat:') ? Number(roofKey.split(':')[1]) : -1;
+      const skinnedPalette = flatIndex >= 0
+        ? skin.flatPalettes?.[flatIndex]
+        : skin.legacyRoofPalettes?.[styleIndex];
+      if (skinnedPalette) appearance.pal = [...skinnedPalette];
+      if (appearance.glyph)
+        appearance.accent = skin.categoryAccents?.[category] || skin.categoryAccents?.generic || appearance.accent;
+    }
+    const shape = shapeDescriptorFor({band,areaClass,kind,seed:v}, shapeGrammar, profileId);
+    if (shape) appearance.shape = shape;
+    return appearance;
   }
 
   const api = {
@@ -189,6 +232,7 @@
     seedFromKey,
     heightRiseLogicalPixels,
     selectDenseBuildings,
+    shapeDescriptorFor,
     buildingAppearance,
   };
   global.PixelMapBuildingStyles = api;

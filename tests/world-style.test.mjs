@@ -8,10 +8,11 @@ await import('../assets/world-style.js');
 const STYLE = globalThis.PixelMapWorldStyles.retroJrpgZ14;
 const BASELINE = globalThis.PixelMapWorldStyles.productionComparisonZ14;
 const SNAPSHOT = globalThis.PixelMapWorldStyles.productionZ14Snapshot;
+const INDUSTRIAL = globalThis.PixelMapWorldStyles.weatheredIndustrialDayZ14;
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
 
 test('WorldStyleはz14 POCの見た目だけを一つの契約へ集約する', () => {
-  assert.equal(STYLE.version, 'pixelmap-world-style/5');
+  assert.equal(STYLE.version, 'pixelmap-world-style/6');
   assert.equal(STYLE.id, 'retro-jrpg-z14');
   assert.equal(STYLE.assetPack, 'retro-jrpg-reference-v1');
   assert.equal(STYLE.tileZoom, 14);
@@ -79,7 +80,7 @@ test('POI密度は施設ごとの例外ではなくrole・categoryの共通予�
 });
 
 test('map-02はWorldStyleをstandalone game profileだけへ適用する', () => {
-  assert.match(html, /<script src="\.\.\/assets\/world-style\.js\?v=5"><\/script>/);
+  assert.match(html, /<script src="\.\.\/assets\/world-style\.js\?v=6"><\/script>/);
   assert.match(html, /const WORLD_STYLE_PROFILE = PAGE_PARAMS\.get\('profile'\) === 'reference'[\s\S]*'retroJrpgZ14' : 'productionComparisonZ14'/);
   assert.match(html, /const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE/);
   assert.match(html, /else if \(WORLD_STYLE_MODE\)\{[\s\S]*new Set\(WORLD_STYLE\.defaultLayers\)/);
@@ -90,7 +91,27 @@ test('map-02はWorldStyleをstandalone game profileだけへ適用する', () =>
     3,
     'dataset・diagnostics・captureは同じtest-only assetPack guardを使う',
   );
-  assert.match(html, /WORLD_STYLE_MODE \? WORLD_STYLE\.palette\.roadLocal : CANONICAL_TRANSPORT_RULES\.localRoads\.fill/);
+  assert.match(html, /WORLD_STYLE_MODE \? WORLD_STYLE\.palette\.roadLocal : TEST_SKIN_PALETTE\?\.roadLocal \|\| CANONICAL_TRANSPORT_RULES\.localRoads\.fill/);
+});
+
+test('曇天の生活工業都市skinはstandalone cell専用の配色と形状文法を持つ', () => {
+  assert.equal(INDUSTRIAL.id, 'weathered-industrial-day-z14');
+  assert.equal(INDUSTRIAL.profileKind, 'standalone-test-skin');
+  assert.equal(INDUSTRIAL.sourceGeometryImmutable, true);
+  assert.equal(INDUSTRIAL.tileZoom, 14);
+  assert.equal(INDUSTRIAL.building.mode, 'weathered-industrial-shape-grammar');
+  assert.equal(INDUSTRIAL.building.shapeGrammar.version, 'weathered-industrial-shape/1');
+  assert.equal(INDUSTRIAL.building.shapeGrammar.sourceFootprintImmutable, true);
+  assert.equal(INDUSTRIAL.building.shapeGrammar.decorationsSemantic, false);
+  assert.deepEqual(INDUSTRIAL.building.shapeGrammar.roofForms.band1, ['patched-gable','lean-to']);
+  assert.deepEqual(INDUSTRIAL.building.shapeGrammar.roofForms.band4, ['stacked-service-deck','antenna-deck']);
+  assert.equal(INDUSTRIAL.palette.grass, '#78816b');
+  assert.equal(INDUSTRIAL.palette.rust, '#a45136');
+  assert.equal(INDUSTRIAL.corridor.rail.rail, '#30383a');
+  assert.equal(Object.isFrozen(INDUSTRIAL), true);
+  assert.match(html, /const STANDALONE_WEATHERED_INDUSTRIAL_SKIN = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /const ACTIVE_MAP_SKIN = STANDALONE_WEATHERED_INDUSTRIAL_SKIN/);
+  assert.match(html, /dataset\.mapSkin = ACTIVE_MAP_SKIN \? ACTIVE_MAP_SKIN\.id : 'legacy'/);
 });
 
 test('production比較profileは本番値を独立copyし、reference profileと分離する',()=>{

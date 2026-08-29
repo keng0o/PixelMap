@@ -12,5 +12,5 @@ test('競馬場専用色はstandaloneと本番1・2・4マップへ適用する'
 });
 
 test('全Webマップは競馬場パレットを含む建物スタイル最新版を読む', () => {
-  assert.match(html, /assets\/building-styles\.js\?v=4/);
+  assert.match(html, /assets\/building-styles\.js\?v=5/);
 });

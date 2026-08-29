@@ -125,6 +125,13 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /本番1・2・4マップの地図描画と施設データを2026-08-29時点のtest既定状態へ統一/);
   assert.match(log, /全自動テスト172件とビルドが成功/);
   assert.match(log, /最新スクリーンショット5枚は独立視覚レビューですべてPASS/);
+  assert.match(log, /曇天の生活工業都市スキンをstandalone testへ追加/);
+  assert.match(log, /weathered-industrial-day-z14/);
+  assert.match(log, /サービスデッキ、タンク、煙突、ダクト/);
+  assert.match(log, /元の道路中心線・建物footprint・水域境界を変更しない/);
+  assert.match(log, /<strong>testのみ<\/strong>。URLを直接開いた<code>variants\/map-02-refined\.html<\/code>のcell2／cell3/);
+  assert.match(log, /本番1・2・4マップは従来の<code>standard-pixel-art<\/code>/);
+  assert.match(log, /最新スクリーンショット3枚は独立視覚レビューですべてPASS/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

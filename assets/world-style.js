@@ -2,12 +2,12 @@
   'use strict';
 
   /*
-    PixelMap World Style v5
+    PixelMap World Style v6
     -----------------------
     productionの描画値を直接共有せず、z14比較用snapshotへ値コピーして保持する。
     production-copyは見た目の基準、retroJrpgZ14は意図的な実験用profileとして分離する。
   */
-  const VERSION = 'pixelmap-world-style/5';
+  const VERSION = 'pixelmap-world-style/6';
   const PRODUCTION_SNAPSHOT_VERSION = 'pixelmap-production-visual-snapshot/1';
 
   function frozenCopy(value){
@@ -200,7 +200,105 @@
     }),
   });
 
+  /*
+    standalone cell2/cell3だけで使う、曇天の生活工業都市skin。
+    元の道路中心線・建物footprint・水域境界は変えず、色、表面模様、
+    屋根上の非意味設備だけを差し替える。production embeddedからは選択しない。
+  */
+  const weatheredIndustrialDayZ14 = Object.freeze({
+    version:VERSION,id:'weathered-industrial-day-z14',label:'曇天の生活工業都市 z14',
+    profileKind:'standalone-test-skin',assetPack:'weathered-industrial-day-v1',
+    tileZoom:14,sourceGeometryImmutable:true,
+    palette:frozenCopy({
+      outline:'#292d2e',
+      grass:'#78816b',grassDark:'#606a57',grassLight:'#929a7c',
+      treeDark:'#405342',tree:'#536b4e',treeLight:'#748663',trunk:'#654b39',
+      forestFloor:'#4b5b49',forestDeep:'#33463a',forestMid:'#50674e',
+      forestLight:'#718064',forestMoss:'#7f8662',
+      woodsFloor:'#6f795f',woodsDeep:'#485b48',woodsMid:'#5d7155',woodsLight:'#879173',
+      parkSmall:'#7e8968',parkMedium:'#788363',parkLarge:'#6e7b5d',parkPath:'#a69770',
+      residential:'#9b9078',residentialDark:'#756b58',
+      commercial:'#8d918c',commercialDark:'#686d6b',
+      roadLocal:'#aaa48e',roadRegional:'#b4ad98',roadMajor:'#bda879',motorway:'#c0aa75',
+      roadEdge:'#6e6b61',roadPatch:'#827b67',roadDrain:'#50585a',
+      trail:'#a5936c',trailDark:'#70624d',
+      gravel:'#79776e',gravelDark:'#595a56',gravelLight:'#99978c',
+      farm:'#9b8f63',farmDark:'#746a48',sand:'#b7a77b',sandDark:'#8f7e59',
+      rock:'#77777a',rockDark:'#53575a',rockLight:'#99999a',
+      wetland:'#61786c',wetlandDark:'#405c55',wetlandWater:'#5a7779',
+      ice:'#c4d0cd',iceDark:'#879b9b',iceLight:'#dde3de',
+      field:'#687b58',fieldAlt:'#5b6d4e',
+      water:'#55747a',waterLight:'#789297',waterDark:'#3d5c63',waterEdge:'#a5b0a8',
+      roofA:'#9d513b',roofADark:'#6f392f',roofALight:'#bc7050',roofAEdge:'#512b28',
+      roofB:'#586d75',roofBDark:'#3e5058',roofBLight:'#7e8d91',roofBEdge:'#293a40',
+      wall:'#aaa58f',wallDark:'#716e66',window:'#405a61',door:'#6f4b36',
+      railBed:'#79776e',railBedDark:'#595a56',railBedLight:'#99978c',
+      rail:'#30383a',railTie:'#5e4a3c',
+      rust:'#a45136',rustDark:'#69372e',metal:'#747c79',metalDark:'#4e5757',
+      pipe:'#3e5559',warning:'#c39a4b',conduit:'#596668',
+    }),
+    poiPalette:frozenCopy({
+      transit:'#536f86',health:'#a94e43',civic:'#6f617f',food:'#a87a43',
+      commerce:'#965d69',landmark:'#b08c48',nature:'#55765b',stay:'#6e647e',
+      service:'#56656a',generic:'#68706c',
+    }),
+    building:frozenCopy({
+      mode:'weathered-industrial-shape-grammar',sourceGeometryImmutable:true,
+      skin:{
+        version:'pixelmap-building-skin-weathered-industrial/1',
+        legacyRoofPalettes:[
+          ['#9d513b','#6f392f','#bc7050'],['#586d75','#3e5058','#7e8d91'],
+          ['#61725d','#455444','#819079'],['#a06f43','#704d36','#be8c59'],
+          ['#777c7a','#565d5c','#979b94'],['#80634d','#5b473a','#9c7e61'],
+          ['#626b6d','#444d50','#828b89'],['#414a50','#2d353a','#616b70'],
+          ['#898983','#646661','#aaa89e'],['#95866b','#6e634f','#b1a184'],
+        ],
+        flatPalettes:[
+          ['#777c7a','#565d5c','#979b94'],['#918671','#6c6253','#aaa18b'],
+          ['#68767a','#4b585c','#899296'],
+        ],
+        categoryAccents:{
+          transit:'#536f86',health:'#a94e43',civic:'#6f617f',food:'#a87a43',
+          commerce:'#965d69',landmark:'#b08c48',nature:'#55765b',stay:'#6e647e',
+          service:'#56656a',generic:'#68706c',
+        },
+      },
+      shapeGrammar:{
+        version:'weathered-industrial-shape/1',sourceFootprintImmutable:true,
+        decorationsSemantic:false,protectedKinds:['religious_shinto','religious_buddhist','racecourse'],
+        roofForms:{
+          band1:['patched-gable','lean-to'],
+          band2:['service-deck','sawtooth-deck'],
+          band3:['stepped-service-deck','duct-deck'],
+          band4:['stacked-service-deck','antenna-deck'],
+        },
+        equipmentByBand:{1:1,2:2,3:3,4:4},
+        equipment:['vent','tank','chimney','duct'],
+        raisedDeckMinimumCells:6,
+      },
+    }),
+    corridor:frozenCopy({
+      rivers:{fill:'#55747a',edge:'#a5b0a8'},streams:{fill:'#66848a'},
+      canals:{fill:'#55747a'},drains:{fill:'#668084'},waterwayOther:{fill:'#55747a'},
+      localRoads:{fill:'#aaa48e'},regionalRoads:{fill:'#b4ad98',edge:'#6e6b61',center:'#d5d0bb'},
+      majorRoads:{fill:'#bda879',edge:'#786b50',center:'#d6b85e'},
+      motorways:{fill:'#c0aa75',edge:'#6a604a',center:'#dec676'},
+      paths:{fill:'#a5936c'},tracks:{fill:'#8b8067',center:'#5f5c55'},
+      raceways:{fill:'#98745b',edge:'#604d42'},ferries:{fill:'#a5b0a8'},piers:{fill:'#9b9078'},
+      rail:{fill:'#79776e',edge:'#595a56',rail:'#30383a',tie:'#5e4a3c'},
+      subway:{fill:'#394144'},aerialways:{fill:'#747c79',rail:'#30383a',tie:'#5e4a3c'},
+      transportationOther:{fill:'#a5936c',center:'#75694f'},
+      roadTunnels:{fill:'#394144'},pathTunnels:{fill:'#394144'},railTunnels:{fill:'#394144'},
+    }),
+    surfaceFamilies:frozenCopy({
+      waterSurface:{primitive:'area',assets:['waterAreas'],skin:'industrial-water-sheen',fill:'#55747a',light:'#789297',dark:'#3d5c63',edge:'#a5b0a8'},
+      parkSurface:{primitive:'area',assets:['parks','landusePlayground'],skin:'weathered-park',small:'#7e8968',medium:'#788363',large:'#6e7b5d',edge:'#405342'},
+      sportsSurface:{primitive:'area',assets:['landuseStadium','landusePitchTrack'],skin:'faded-field',fill:'#687b58',alternate:'#5b6d4e',edge:'#4b5945'},
+    }),
+  });
+
   global.PixelMapWorldStyles = Object.freeze({
     version:VERSION,productionZ14Snapshot,productionComparisonZ14,retroJrpgZ14,
+    weatheredIndustrialDayZ14,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

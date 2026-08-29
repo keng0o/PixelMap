@@ -6,7 +6,7 @@
 <title>PixelMap｜テスト用1マップ</title>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <style>
-  :root{ --ink:#181820; --pattern-accent:#2f6fed; --pattern-muted:#78828a; }
+  :root{ --ink:#181820; --pattern-accent:#2f6fed; --pattern-muted:#78828a; --map-ground:#78b850; }
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{
     background:#181820;
@@ -119,7 +119,7 @@
     aspect-ratio:1/1;
     image-rendering:pixelated;
     cursor:grab;
-    background:#78b850;
+    background:var(--map-ground);
     touch-action:none;
     user-select:none;
   }
@@ -298,7 +298,7 @@
       min-height:100vh;
       min-height:100dvh;
       padding:0;
-      background:#78b850;
+      background:var(--map-ground);
     }
     #stats, #attrib{ display:none; }
     #patternBar{
@@ -337,7 +337,7 @@
       scrollbar-width:none;
       border:0;
       box-shadow:none;
-      background:#78b850;
+      background:var(--map-ground);
     }
     .map-frame::-webkit-scrollbar, #toolbar::-webkit-scrollbar{ display:none; }
     canvas{
@@ -440,7 +440,7 @@
     min-height:100dvh;
     padding:0;
     overflow:hidden;
-    background:#78b850;
+    background:var(--map-ground);
   }
   body.settings-collapsed #patternBar,
   body.settings-collapsed #toolbar,
@@ -459,7 +459,7 @@
     scrollbar-width:none;
     border:0;
     box-shadow:none;
-    background:#78b850;
+    background:var(--map-ground);
   }
   body.settings-collapsed .map-frame::-webkit-scrollbar{ display:none; }
   body.settings-collapsed canvas{
@@ -502,7 +502,7 @@
     min-height:100dvh;
     padding:0;
     overflow:hidden;
-    background:#78b850;
+    background:var(--map-ground);
   }
   body.shared-controls #patternBar,
   body.shared-controls #toolbar,
@@ -527,7 +527,7 @@
     scrollbar-width:none;
     border:0;
     box-shadow:none;
-    background:#78b850;
+    background:var(--map-ground);
   }
   body.shared-controls .map-frame::-webkit-scrollbar{ display:none; }
   body.shared-controls canvas{
@@ -561,7 +561,7 @@
     overflow:hidden;
     border:2px solid #f8f0d8;
     box-shadow:0 0 0 2px #101018, 0 0 0 4px #f8f0d8, 0 0 0 6px #101018;
-    background:#78b850;
+    background:var(--map-ground);
   }
   body.capture-mode canvas{
     display:block;
@@ -757,10 +757,10 @@
 <script src="../assets/facility-resolver.js?v=7"></script>
 <script src="../assets/landmark-entities.js?v=20260824-generic-facilities-1000"></script>
 <script src="../assets/poi-sprites.js?v=5"></script>
-<script src="../assets/building-styles.js?v=4"></script>
+<script src="../assets/building-styles.js?v=5"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=6"></script>
-<script src="../assets/world-style.js?v=5"></script>
+<script src="../assets/world-style.js?v=6"></script>
 <script src="../assets/map-bearing.js?v=2"></script>
 <script>
 'use strict';
@@ -915,6 +915,12 @@ const REQUESTED_RENDER_MODE = PAGE_PARAMS.get('render');
 const RENDER_MODE = REQUESTED_RENDER_MODE === 'cell3' ? 'cell3' : 'cell2';
 const CELL_RENDER_LOGICAL_SIZE = Number(RENDER_MODE.slice(4));
 const CELL_ONLY_MODE = ['cell2','cell3'].includes(RENDER_MODE);
+// 承認済みの「曇天の生活工業都市」はstandalone testのcell描画だけで使う。
+// 同じHTMLを読む本番iframe（embedded=1）は必ず従来skinのままにする。
+const STANDALONE_WEATHERED_INDUSTRIAL_SKIN = !EMBEDDED && CELL_ONLY_MODE;
+const ACTIVE_MAP_SKIN = STANDALONE_WEATHERED_INDUSTRIAL_SKIN
+  ? window.PixelMapWorldStyles.weatheredIndustrialDayZ14
+  : null;
 // 全Webマップの地上鉄道は、線路単位の接線から左右レールを別マスクへ生成する。
 // 路盤と左右レールだけを表示し、枕木は描画しない。
 const CONTINUOUS_RAIL_SKIN = CELL_ONLY_MODE;
@@ -981,6 +987,7 @@ document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
   ? 'geometry-skin-symbol-v1'
   : 'legacy';
 document.documentElement.dataset.worldStyle = WORLD_STYLE_MODE ? WORLD_STYLE.id : 'none';
+document.documentElement.dataset.mapSkin = ACTIVE_MAP_SKIN ? ACTIVE_MAP_SKIN.id : 'legacy';
 document.documentElement.dataset.tileZoom = String(TILE_ZOOM);
 document.documentElement.dataset.mapBearing = mapBearing.toFixed(1);
 document.documentElement.dataset.bearingSource = mapBearingSource;
@@ -988,6 +995,7 @@ document.documentElement.dataset.pixelRequestedScale = String(REQUESTED_DISPLAY_
 document.documentElement.dataset.pixelScale = String(REQUESTED_DISPLAY_SCALE);
 document.documentElement.dataset.assetPixelSize = '1';
 document.documentElement.style.setProperty('--map-display-scale', REQUESTED_DISPLAY_SCALE);
+document.documentElement.style.setProperty('--map-ground', ACTIVE_MAP_SKIN?.palette.grass || '#78b850');
 document.title = CELL_ONLY_MODE
   ? `PixelMap｜z${TILE_ZOOM}・${CELL_RENDER_LOGICAL_SIZE}×${CELL_RENDER_LOGICAL_SIZE}ピクセルアート検証`
   : `PixelMap｜z${TILE_ZOOM}マップ`;
@@ -1247,45 +1255,70 @@ const CANONICAL_CORRIDOR_RULES = LAYER_ASSET_CATALOG.corridorRules;
 /* =====================================================
    3. 標準描画用16シーンpx（8論理px）マップチップ（GB風パレット）
    ===================================================== */
+const TEST_SKIN_PALETTE = ACTIVE_MAP_SKIN?.palette || null;
 const P = {
-  outline:WORLD_STYLE_MODE ? WORLD_STYLE.palette.outline : '#302838',
-  g1:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grass : '#7cbc54',
-  g2:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grass : '#7cbc54',
-  gDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grassDark : '#619c42',
-  gLt:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grassLight : '#98d470',
-  treeDk:'#2c6030', treeMd:'#3e8840', treeLt:'#5cb050', trunk:'#785030',
-  forestFloor:'#355d38', forestDeep:'#1f4628', forestMid:'#2f7038',
-  forestLight:'#57954a', forestMoss:'#83a657',
-  woodsFloor:'#80b564', woodsDeep:'#477a46', woodsMid:'#62a052', woodsLight:'#a0cf7a',
-  parkSmall:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.parkSurface.small : '#92ce69',
-  parkMedium:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.parkSurface.medium : '#88c764',
-  parkLarge:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.parkSurface.large : '#7fbb61', parkPath:'#d8bd78',
-  road:WORLD_STYLE_MODE ? WORLD_STYLE.palette.roadLocal : CANONICAL_TRANSPORT_RULES.localRoads.fill,
-  roadDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.roadEdge : CANONICAL_TRANSPORT_RULES.localRoads.edge,
-  roadDot:WORLD_STYLE_MODE ? '#b9a878' : '#b4b4ae',
-  trail:CANONICAL_TRANSPORT_RULES.paths.fill,
-  trailDot:CANONICAL_TRANSPORT_RULES.paths.detail,
-  dirt:WORLD_STYLE_MODE ? WORLD_STYLE.palette.residential : '#d0b078',
-  dirtDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.residentialDark : '#b09058',
-  pave:WORLD_STYLE_MODE ? WORLD_STYLE.palette.commercial : '#c0c0c8',
-  paveDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.commercialDark : '#989ca8',
-  gravel:'#a8a098', gravelDk:'#888078', gravelLt:'#c0b8b0',
-  farm:'#d8c078', farmDk:'#b09850',
-  sand:'#e8d8a0', sandDk:'#c8b478',
-  rock:'#8d8790', rockDk:'#625f69', rockLt:'#b7b1b8',
-  wetland:'#669c68', wetlandDk:'#39775c', wetlandWater:'#5fa7b2',
-  ice:'#dcecf0', iceDk:'#a8cad8', iceLt:'#f7ffff',
-  field:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.sportsSurface.fill : '#68b058',
-  fieldAlt:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.sportsSurface.alternate : '#5ca050',
-  water:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.fill : '#4890e0',
-  waterLt:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.light : '#88c0f0',
-  waterDk:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.dark : '#3068b8',
-  foam:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.edge : '#c8e8f8',
-  roofA:'#e05038', roofADk:'#b03828', roofALt:'#f87858', roofAEdge:'#781810',
-  roofB:'#5078d8', roofBDk:'#3858b0', roofBLt:'#88a0f0', roofBEdge:'#203070',
-  wall:'#f0e4c8', wallDk:'#c8b490', win:'#3868a0', door:'#805028',
-  rail:WORLD_STYLE_MODE ? WORLD_STYLE.palette.rail : CANONICAL_TRANSPORT_RULES.rail.fill,
-  tie:WORLD_STYLE_MODE ? WORLD_STYLE.palette.railTie : CANONICAL_TRANSPORT_RULES.rail.tie,
+  outline:WORLD_STYLE_MODE ? WORLD_STYLE.palette.outline : TEST_SKIN_PALETTE?.outline || '#302838',
+  g1:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grass : TEST_SKIN_PALETTE?.grass || '#7cbc54',
+  g2:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grass : TEST_SKIN_PALETTE?.grass || '#7cbc54',
+  gDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grassDark : TEST_SKIN_PALETTE?.grassDark || '#619c42',
+  gLt:WORLD_STYLE_MODE ? WORLD_STYLE.palette.grassLight : TEST_SKIN_PALETTE?.grassLight || '#98d470',
+  treeDk:TEST_SKIN_PALETTE?.treeDark || '#2c6030',
+  treeMd:TEST_SKIN_PALETTE?.tree || '#3e8840',
+  treeLt:TEST_SKIN_PALETTE?.treeLight || '#5cb050',
+  trunk:TEST_SKIN_PALETTE?.trunk || '#785030',
+  forestFloor:TEST_SKIN_PALETTE?.forestFloor || '#355d38',
+  forestDeep:TEST_SKIN_PALETTE?.forestDeep || '#1f4628',
+  forestMid:TEST_SKIN_PALETTE?.forestMid || '#2f7038',
+  forestLight:TEST_SKIN_PALETTE?.forestLight || '#57954a',
+  forestMoss:TEST_SKIN_PALETTE?.forestMoss || '#83a657',
+  woodsFloor:TEST_SKIN_PALETTE?.woodsFloor || '#80b564',
+  woodsDeep:TEST_SKIN_PALETTE?.woodsDeep || '#477a46',
+  woodsMid:TEST_SKIN_PALETTE?.woodsMid || '#62a052',
+  woodsLight:TEST_SKIN_PALETTE?.woodsLight || '#a0cf7a',
+  parkSmall:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.parkSurface.small : TEST_SKIN_PALETTE?.parkSmall || '#92ce69',
+  parkMedium:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.parkSurface.medium : TEST_SKIN_PALETTE?.parkMedium || '#88c764',
+  parkLarge:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.parkSurface.large : TEST_SKIN_PALETTE?.parkLarge || '#7fbb61',
+  parkPath:TEST_SKIN_PALETTE?.parkPath || '#d8bd78',
+  road:WORLD_STYLE_MODE ? WORLD_STYLE.palette.roadLocal : TEST_SKIN_PALETTE?.roadLocal || CANONICAL_TRANSPORT_RULES.localRoads.fill,
+  roadRegional:TEST_SKIN_PALETTE?.roadRegional || '#d0d0ca',
+  roadMajor:TEST_SKIN_PALETTE?.roadMajor || '#d8c890',
+  motorway:TEST_SKIN_PALETTE?.motorway || '#d8c890',
+  roadDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.roadEdge : TEST_SKIN_PALETTE?.roadEdge || CANONICAL_TRANSPORT_RULES.localRoads.edge,
+  roadDot:WORLD_STYLE_MODE ? '#b9a878' : TEST_SKIN_PALETTE?.roadPatch || '#b4b4ae',
+  roadPatch:TEST_SKIN_PALETTE?.roadPatch || '#9a9078',
+  roadDrain:TEST_SKIN_PALETTE?.roadDrain || '#707078',
+  trail:TEST_SKIN_PALETTE?.trail || CANONICAL_TRANSPORT_RULES.paths.fill,
+  trailDot:TEST_SKIN_PALETTE?.trailDark || CANONICAL_TRANSPORT_RULES.paths.detail,
+  dirt:WORLD_STYLE_MODE ? WORLD_STYLE.palette.residential : TEST_SKIN_PALETTE?.residential || '#d0b078',
+  dirtDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.residentialDark : TEST_SKIN_PALETTE?.residentialDark || '#b09058',
+  pave:WORLD_STYLE_MODE ? WORLD_STYLE.palette.commercial : TEST_SKIN_PALETTE?.commercial || '#c0c0c8',
+  paveDk:WORLD_STYLE_MODE ? WORLD_STYLE.palette.commercialDark : TEST_SKIN_PALETTE?.commercialDark || '#989ca8',
+  gravel:TEST_SKIN_PALETTE?.gravel || '#a8a098',
+  gravelDk:TEST_SKIN_PALETTE?.gravelDark || '#888078',
+  gravelLt:TEST_SKIN_PALETTE?.gravelLight || '#c0b8b0',
+  farm:TEST_SKIN_PALETTE?.farm || '#d8c078',farmDk:TEST_SKIN_PALETTE?.farmDark || '#b09850',
+  sand:TEST_SKIN_PALETTE?.sand || '#e8d8a0',sandDk:TEST_SKIN_PALETTE?.sandDark || '#c8b478',
+  rock:TEST_SKIN_PALETTE?.rock || '#8d8790',rockDk:TEST_SKIN_PALETTE?.rockDark || '#625f69',rockLt:TEST_SKIN_PALETTE?.rockLight || '#b7b1b8',
+  wetland:TEST_SKIN_PALETTE?.wetland || '#669c68',wetlandDk:TEST_SKIN_PALETTE?.wetlandDark || '#39775c',wetlandWater:TEST_SKIN_PALETTE?.wetlandWater || '#5fa7b2',
+  ice:TEST_SKIN_PALETTE?.ice || '#dcecf0',iceDk:TEST_SKIN_PALETTE?.iceDark || '#a8cad8',iceLt:TEST_SKIN_PALETTE?.iceLight || '#f7ffff',
+  field:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.sportsSurface.fill : TEST_SKIN_PALETTE?.field || '#68b058',
+  fieldAlt:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.sportsSurface.alternate : TEST_SKIN_PALETTE?.fieldAlt || '#5ca050',
+  water:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.fill : TEST_SKIN_PALETTE?.water || '#4890e0',
+  waterLt:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.light : TEST_SKIN_PALETTE?.waterLight || '#88c0f0',
+  waterDk:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.dark : TEST_SKIN_PALETTE?.waterDark || '#3068b8',
+  foam:WORLD_STYLE_MODE ? WORLD_STYLE.surfaceFamilies.waterSurface.edge : TEST_SKIN_PALETTE?.waterEdge || '#c8e8f8',
+  roofA:TEST_SKIN_PALETTE?.roofA || '#e05038',roofADk:TEST_SKIN_PALETTE?.roofADark || '#b03828',
+  roofALt:TEST_SKIN_PALETTE?.roofALight || '#f87858',roofAEdge:TEST_SKIN_PALETTE?.roofAEdge || '#781810',
+  roofB:TEST_SKIN_PALETTE?.roofB || '#5078d8',roofBDk:TEST_SKIN_PALETTE?.roofBDark || '#3858b0',
+  roofBLt:TEST_SKIN_PALETTE?.roofBLight || '#88a0f0',roofBEdge:TEST_SKIN_PALETTE?.roofBEdge || '#203070',
+  wall:TEST_SKIN_PALETTE?.wall || '#f0e4c8',wallDk:TEST_SKIN_PALETTE?.wallDark || '#c8b490',
+  win:TEST_SKIN_PALETTE?.window || '#3868a0',door:TEST_SKIN_PALETTE?.door || '#805028',
+  rail:WORLD_STYLE_MODE ? WORLD_STYLE.palette.rail : TEST_SKIN_PALETTE?.rail || CANONICAL_TRANSPORT_RULES.rail.fill,
+  tie:WORLD_STYLE_MODE ? WORLD_STYLE.palette.railTie : TEST_SKIN_PALETTE?.railTie || CANONICAL_TRANSPORT_RULES.rail.tie,
+  rust:TEST_SKIN_PALETTE?.rust || '#a45136',rustDk:TEST_SKIN_PALETTE?.rustDark || '#69372e',
+  metal:TEST_SKIN_PALETTE?.metal || '#747c79',metalDk:TEST_SKIN_PALETTE?.metalDark || '#4e5757',
+  pipe:TEST_SKIN_PALETTE?.pipe || '#3e5559',warning:TEST_SKIN_PALETTE?.warning || '#c39a4b',
+  conduit:TEST_SKIN_PALETTE?.conduit || '#596668',
 };
 
 // 共通corridor rendererは維持し、z14 POCの世界観差はskin overrideだけで表す。
@@ -1413,14 +1446,14 @@ function buildTiles(){
   TILES.forestPine = T((g,q)=>{ forestGround(q);
     forestPine(q,-1,-1); forestPine(q,8,2); forestPine(q,3,8); });
   TILES.forestClearing = T((g,q)=>{ q(0,0,16,16,P.forestFloor);
-    q(1,1,14,14,P.forestMoss); q(3,3,10,10,'#6f994d');
+    q(1,1,14,14,P.forestMoss); q(3,3,10,10,P.forestLight);
     q(7,6,4,3,OUT); q(8,6,2,2,'#9b7241'); q(8,8,2,3,P.trunk);
     q(3,5,1,4,P.forestDeep); q(4,7,1,2,P.forestLight);
     q(12,9,1,4,P.forestDeep); q(11,11,1,2,P.forestLight); });
   // 林は樹冠の間に明るい地面が見える、疎らで歩けそうな木立として森と描き分ける。
   const woodsGround = q => {
     q(0,0,16,16,P.woodsFloor); q(3,13,2,1,P.woodsLight); q(11,4,2,1,P.woodsDeep);
-    q(1,7,1,2,'#72a857'); q(14,11,1,2,'#72a857');
+    q(1,7,1,2,P.woodsMid); q(14,11,1,2,P.woodsMid);
   };
   const woodsTree = (q,x,y) => {
     q(x+2,y,3,1,OUT); q(x+1,y+1,5,1,OUT); q(x,y+2,7,3,OUT); q(x+1,y+5,5,1,OUT);
@@ -1433,43 +1466,43 @@ function buildTiles(){
     q(4,5,1,3,P.woodsDeep); q(6,4,1,4,P.woodsMid); q(10,10,1,2,P.woodsDeep); q(12,9,1,3,P.woodsMid);
     q(7,13,3,1,P.woodsLight); });
   TILES.woodsLane = T((g,q)=>{ woodsGround(q);
-    q(6,0,5,16,'#a5b56c'); q(7,0,3,16,'#c6c07b');
+    q(6,0,5,16,P.parkLarge); q(7,0,3,16,P.parkPath);
     woodsTree(q,-2,1); woodsTree(q,11,7); });
-  TILES.parkTree = T((g,q)=>treeArt(q, '#8cc864', '#78b452'));
-  TILES.lawn = T((g,q)=>{ q(0,0,16,16,'#8cc864');       // 公園の芝生
-    q(3,5,1,2,'#78b452'); q(5,4,1,3,'#78b452'); q(10,9,1,2,'#78b452'); q(13,3,1,1,'#a4dc7c'); });
-  TILES.parkFlower = T((g,q)=>{ q(0,0,16,16,'#8cc864'); // 花だん
+  TILES.parkTree = T((g,q)=>treeArt(q, P.parkMedium, P.gDk));
+  TILES.lawn = T((g,q)=>{ q(0,0,16,16,P.parkMedium);       // 公園の芝生
+    q(3,5,1,2,P.gDk); q(5,4,1,3,P.gDk); q(10,9,1,2,P.gDk); q(13,3,1,1,P.gLt); });
+  TILES.parkFlower = T((g,q)=>{ q(0,0,16,16,P.parkMedium); // 花だん
     q(4,3,1,1,'#f87890'); q(3,4,3,1,'#f87890'); q(4,5,1,1,'#f87890'); q(4,4,1,1,'#f8d038');
     q(11,6,1,1,'#f8f8f8'); q(10,7,3,1,'#f8f8f8'); q(11,8,1,1,'#f8f8f8'); q(11,7,1,1,'#f8d038');
     q(6,11,1,1,'#f8a040'); q(5,12,3,1,'#f8a040'); q(6,13,1,1,'#f8a040'); q(6,12,1,1,'#f8d038');
-    q(12,12,1,2,'#78b452'); });
-  TILES.bench = T((g,q)=>{ q(0,0,16,16,'#8cc864');      // ベンチ
+    q(12,12,1,2,P.gDk); });
+  TILES.bench = T((g,q)=>{ q(0,0,16,16,P.parkMedium);      // ベンチ
     q(4,6,8,2,'#a87848'); q(4,9,8,1,'#a87848');
     q(4,8,1,4,'#805828'); q(11,8,1,4,'#805828'); q(4,5,8,1,'#c09058'); });
   // 小公園は一画に遊具・植栽がまとまる。大公園は芝生・木立・園路を広いリズムでつなぐ。
   TILES.parkPocket0 = T((g,q)=>{ q(0,0,16,16,P.parkSmall);
-    q(1,1,14,14,'#9bd874'); q(1,1,14,2,P.treeMd); q(1,13,14,2,P.treeMd);
+    q(1,1,14,14,P.gLt); q(1,1,14,2,P.treeMd); q(1,13,14,2,P.treeMd);
     q(3,5,4,1,OUT); q(2,6,6,4,OUT); q(3,10,4,1,OUT);
     q(3,6,4,4,P.treeMd); q(4,5,2,2,P.treeLt); q(4,11,2,3,P.trunk);
     q(9,8,5,1,'#c09058'); q(9,9,1,3,'#805828'); q(13,9,1,3,'#805828'); });
   TILES.parkPocket1 = T((g,q)=>{ q(0,0,16,16,P.parkSmall);
-    q(1,1,14,14,'#9bd874'); q(3,3,10,10,'#85c45f');
+    q(1,1,14,14,P.gLt); q(3,3,10,10,P.parkMedium);
     q(5,5,1,1,'#f87890'); q(4,6,3,1,'#f87890'); q(5,7,1,1,'#f8d038');
     q(10,8,1,1,'#f8f8f8'); q(9,9,3,1,'#f8f8f8'); q(10,10,1,1,'#f8d038');
     q(3,12,10,1,P.parkPath); q(7,11,2,3,'#a87848'); });
   TILES.parkMeadow = T((g,q)=>{ q(0,0,16,16,P.parkMedium);
-    q(2,4,1,3,'#69a94d'); q(4,3,1,4,'#69a94d'); q(10,10,1,3,'#69a94d'); q(12,9,1,4,'#69a94d');
-    q(7,5,2,1,'#a4dc7c'); q(3,12,2,1,'#78b452'); });
+    q(2,4,1,3,P.gDk); q(4,3,1,4,P.gDk); q(10,10,1,3,P.gDk); q(12,9,1,4,P.gDk);
+    q(7,5,2,1,P.gLt); q(3,12,2,1,P.gDk); });
   TILES.parkGrove = T((g,q)=>{ q(0,0,16,16,P.parkLarge);
     q(1,2,5,1,OUT); q(0,3,7,4,OUT); q(1,7,5,1,OUT); q(2,3,3,4,P.treeMd); q(3,2,2,2,P.treeLt); q(3,8,1,4,P.trunk);
     q(10,7,4,1,OUT); q(9,8,6,4,OUT); q(10,12,4,1,OUT); q(11,8,3,4,P.treeMd); q(12,7,1,2,P.treeLt); q(12,13,1,2,P.trunk); });
   TILES.parkGrandGarden = T((g,q)=>{ q(0,0,16,16,P.parkLarge);
-    q(1,6,14,4,'#6fae54'); q(3,7,1,1,'#f87890'); q(6,8,1,1,'#f8d038'); q(9,7,1,1,'#f8f8f8'); q(12,8,1,1,'#f8a040');
+    q(1,6,14,4,P.treeMd); q(3,7,1,1,'#f87890'); q(6,8,1,1,'#f8d038'); q(9,7,1,1,'#f8f8f8'); q(12,8,1,1,'#f8a040');
     q(0,5,16,1,P.treeMd); q(0,10,16,1,P.treeMd); });
   TILES.parkPromenadeH = T((g,q)=>{ q(0,0,16,16,P.parkLarge);
-    q(0,6,16,5,'#b89f68'); q(0,7,16,3,P.parkPath); q(3,4,1,2,P.treeDk); q(12,10,1,2,P.treeDk); });
+    q(0,6,16,5,P.dirtDk); q(0,7,16,3,P.parkPath); q(3,4,1,2,P.treeDk); q(12,10,1,2,P.treeDk); });
   TILES.parkPromenadeV = T((g,q)=>{ q(0,0,16,16,P.parkLarge);
-    q(6,0,5,16,'#b89f68'); q(7,0,3,16,P.parkPath); q(4,3,2,1,P.treeDk); q(10,12,2,1,P.treeDk); });
+    q(6,0,5,16,P.dirtDk); q(7,0,3,16,P.parkPath); q(4,3,2,1,P.treeDk); q(10,12,2,1,P.treeDk); });
   TILES.dirt = T((g,q)=>{ q(0,0,16,16,P.dirt);
     q(2,3,2,1,P.dirtDk); q(9,6,3,1,P.dirtDk); q(4,11,2,1,P.dirtDk); q(12,13,2,1,P.dirtDk); q(13,2,1,1,'#e0c898'); });
   TILES.dirtPlain = T((g,q)=>{ q(0,0,16,16,P.dirt); });
@@ -1492,10 +1525,10 @@ function buildTiles(){
     q(3,1,1,5,P.wetlandDk); q(5,7,1,6,P.wetlandDk); q(11,2,1,5,P.wetlandDk); q(13,9,1,5,P.wetlandDk); });
   TILES.ice = T((g,q)=>{ q(0,0,16,16,P.ice);
     q(1,2,7,1,P.iceLt); q(3,3,1,5,P.iceDk); q(8,9,7,1,P.iceDk); q(11,10,1,4,P.iceLt); });
-  TILES.meadow = T((g,q)=>{ q(0,0,16,16,'#8ecb62');
-    q(2,5,1,3,'#69a94d'); q(4,4,1,4,'#69a94d'); q(9,10,1,3,'#69a94d'); q(11,9,1,4,'#69a94d'); });
-  TILES.terrainOther = T((g,q)=>{ q(0,0,16,16,'#b3aa78');
-    q(0,0,8,8,'#9dac70'); q(8,8,8,8,'#9dac70'); q(3,11,2,1,'#756f55'); q(11,3,2,1,'#756f55'); });
+  TILES.meadow = T((g,q)=>{ q(0,0,16,16,P.gLt);
+    q(2,5,1,3,P.gDk); q(4,4,1,4,P.gDk); q(9,10,1,3,P.gDk); q(11,9,1,4,P.gDk); });
+  TILES.terrainOther = T((g,q)=>{ q(0,0,16,16,P.dirt);
+    q(0,0,8,8,P.parkPath); q(8,8,8,8,P.parkPath); q(3,11,2,1,P.dirtDk); q(11,3,2,1,P.dirtDk); });
   TILES.field = T((g,q)=>{ q(0,0,16,16,P.field); q(0,0,8,16,P.fieldAlt); });
   TILES.water0 = T((g,q)=>{ q(0,0,16,16,P.water);
     q(2,4,4,1,P.waterLt); q(3,5,2,1,P.waterLt); q(10,10,4,1,P.waterLt); q(6,13,3,1,P.waterDk); q(12,2,3,1,P.waterDk); });
@@ -1504,12 +1537,12 @@ function buildTiles(){
   TILES.road = T((g,q)=>{ q(0,0,16,16,P.road);           // コンクリート舗装
     q(3,4,2,1,P.roadDot); q(10,10,2,1,P.roadDot); q(6,13,1,1,'#d4d4ce'); });
   TILES.roadPlain = T((g,q)=>{ q(0,0,16,16,P.road); });
-  TILES.roadMajor = T((g,q)=>{ q(0,0,16,16,'#d0d0ca');   // 県道級: 明るい舗装＋白い中央線
+  TILES.roadMajor = T((g,q)=>{ q(0,0,16,16,P.roadRegional);   // 県道級: 明るい舗装＋白い中央線
     q(2,3,2,1,P.roadDot); q(11,12,2,1,P.roadDot); });
-  TILES.roadMajorPlain = T((g,q)=>{ q(0,0,16,16,'#d0d0ca'); });
-  TILES.highway = T((g,q)=>{ q(0,0,16,16,'#d8c890');     // 国道級: 黄みのある広い舗装
-    q(1,2,2,1,'#c0ac70'); q(12,12,2,1,'#c0ac70'); });
-  TILES.highwayPlain = T((g,q)=>{ q(0,0,16,16,'#d8c890'); });
+  TILES.roadMajorPlain = T((g,q)=>{ q(0,0,16,16,P.roadRegional); });
+  TILES.highway = T((g,q)=>{ q(0,0,16,16,P.roadMajor);     // 国道級: 黄みのある広い舗装
+    q(1,2,2,1,P.roadPatch); q(12,12,2,1,P.roadPatch); });
+  TILES.highwayPlain = T((g,q)=>{ q(0,0,16,16,P.roadMajor); });
   TILES.path = T((g,q)=>{ grassBase(g,q,P.g1);           // 踏み分け道
     q(4,0,8,16,P.trail); q(2,3,2,4,P.trail); q(12,8,2,5,P.trail);
     q(6,4,2,1,P.trailDot); q(8,10,2,1,P.trailDot); });
@@ -1801,22 +1834,22 @@ const CELL_COLOR_BY_ID = new Map([
   [ID.PARK_RESERVE,P.treeDk], [ID.DIRT,P.dirt], [ID.PAVE,P.pave],
   [ID.GRAVEL,P.gravel], [ID.FARM,P.farm], [ID.SAND,P.sand], [ID.FIELD,P.field],
   [ID.WATER,P.water], [ID.PATH,P.trail], [ID.ROAD,P.road], [ID.RAIL,P.rail],
-  [ID.BLD,P.roofA], [ID.ROAD_MAJOR,'#d0d0ca'], [ID.HIGHWAY,'#d8c890'],
+  [ID.BLD,P.roofA], [ID.ROAD_MAJOR,P.roadRegional], [ID.HIGHWAY,P.roadMajor],
   [ID.ROCK,P.rock], [ID.WETLAND,P.wetland], [ID.ICE,P.ice], [ID.MEADOW,P.gLt],
-  [ID.TERRAIN_OTHER,'#b3aa78'],
+  [ID.TERRAIN_OTHER,P.dirt],
 ]);
 const CELL_COLOR_BY_OPTION = Object.freeze({
-  paths:CANONICAL_TRANSPORT_RULES.paths.fill,
-  tracks:CANONICAL_TRANSPORT_RULES.tracks.fill,
-  ferries:CANONICAL_TRANSPORT_RULES.ferries.fill,
-  piers:CANONICAL_TRANSPORT_RULES.piers.fill,
-  rail:CANONICAL_TRANSPORT_RULES.rail.fill,
-  subway:CANONICAL_TRANSPORT_RULES.subway.fill,
-  aerialways:CANONICAL_TRANSPORT_RULES.aerialways.fill,
-  transportationOther:CANONICAL_TRANSPORT_RULES.transportationOther.fill,
-  roadTunnels:CANONICAL_TRANSPORT_RULES.roadTunnels.fill,
-  pathTunnels:CANONICAL_TRANSPORT_RULES.pathTunnels.fill,
-  railTunnels:CANONICAL_TRANSPORT_RULES.railTunnels.fill,
+  paths:ACTIVE_MAP_SKIN?.corridor.paths?.fill || CANONICAL_TRANSPORT_RULES.paths.fill,
+  tracks:ACTIVE_MAP_SKIN?.corridor.tracks?.fill || CANONICAL_TRANSPORT_RULES.tracks.fill,
+  ferries:ACTIVE_MAP_SKIN?.corridor.ferries?.fill || CANONICAL_TRANSPORT_RULES.ferries.fill,
+  piers:ACTIVE_MAP_SKIN?.corridor.piers?.fill || CANONICAL_TRANSPORT_RULES.piers.fill,
+  rail:ACTIVE_MAP_SKIN?.corridor.rail?.fill || CANONICAL_TRANSPORT_RULES.rail.fill,
+  subway:ACTIVE_MAP_SKIN?.corridor.subway?.fill || CANONICAL_TRANSPORT_RULES.subway.fill,
+  aerialways:ACTIVE_MAP_SKIN?.corridor.aerialways?.fill || CANONICAL_TRANSPORT_RULES.aerialways.fill,
+  transportationOther:ACTIVE_MAP_SKIN?.corridor.transportationOther?.fill || CANONICAL_TRANSPORT_RULES.transportationOther.fill,
+  roadTunnels:ACTIVE_MAP_SKIN?.corridor.roadTunnels?.fill || CANONICAL_TRANSPORT_RULES.roadTunnels.fill,
+  pathTunnels:ACTIVE_MAP_SKIN?.corridor.pathTunnels?.fill || CANONICAL_TRANSPORT_RULES.pathTunnels.fill,
+  railTunnels:ACTIVE_MAP_SKIN?.corridor.railTunnels?.fill || CANONICAL_TRANSPORT_RULES.railTunnels.fill,
 });
 const corridorBindingCache = new WeakMap();
 function corridorBinding(feature){
@@ -1861,7 +1894,15 @@ const SMOOTH_ROAD_STYLE = Object.freeze(Object.fromEntries(
       centerWidth:(rule.centerWidth || 1) * SCENE_PIXELS_PER_LOGICAL_PIXEL,
       dash:(rule.dash || []).map(value => value * SCENE_PIXELS_PER_LOGICAL_PIXEL),
     };
-    return [option,Object.freeze(canonical)];
+    return [option,Object.freeze({
+      ...canonical,
+      ...(ACTIVE_MAP_SKIN?.corridor?.[option] || {}),
+      // skinは中心線と太さを変更せず、corridor内部の見た目だけを差し替える。
+      width:canonical.width,
+      casing:canonical.casing,
+      centerWidth:canonical.centerWidth,
+      dash:canonical.dash,
+    })];
   }),
 ));
 /* 建物の分類・配色は building-styles.js が唯一の正典。
@@ -1869,18 +1910,13 @@ const SMOOTH_ROAD_STYLE = Object.freeze(Object.fromEntries(
 const BUILDING_STYLES = window.PixelMapBuildingStyles;
 const ROOFPAL = BUILDING_STYLES.LEGACY_ROOFPAL;
 function buildingAppearanceForActiveProfile(input){
-  const appearance = BUILDING_STYLES.buildingAppearance(input);
-  const skin = WORLD_STYLE_MODE ? WORLD_STYLE.building?.skin : null;
-  if (!skin) return appearance;
-  const flatIndex = appearance.roofKey.startsWith('roofFlat:')
-    ? Number(appearance.roofKey.split(':')[1]) : -1;
-  const pal = flatIndex >= 0
-    ? skin.flatPalettes[flatIndex] || appearance.pal
-    : skin.legacyRoofPalettes[appearance.styleIndex] || appearance.pal;
-  const accent = appearance.glyph
-    ? skin.categoryAccents[input.category] || skin.categoryAccents.generic
-    : appearance.accent;
-  return { ...appearance, pal:[...pal], accent };
+  const activeBuildingProfile = ACTIVE_MAP_SKIN?.building ||
+    (WORLD_STYLE_MODE ? WORLD_STYLE.building : null);
+  return BUILDING_STYLES.buildingAppearance(input, {
+    profileId:ACTIVE_MAP_SKIN?.id || (WORLD_STYLE_MODE ? WORLD_STYLE.id : null),
+    skin:activeBuildingProfile?.skin || null,
+    shapeGrammar:activeBuildingProfile?.shapeGrammar || null,
+  });
 }
 
 function rasterizeGrid(layers, options){
@@ -2732,6 +2768,18 @@ function paintDarkenedMapCell(gx, gy, factor, layer, stats){
   paintSolidMapCell(gx, gy, color, layer, stats);
 }
 
+function weatheredIndustrialRoadColor(option, gx, gy, baseColor, boundary){
+  if (!STANDALONE_WEATHERED_INDUSTRIAL_SKIN) return baseColor;
+  const [wx, wy] = worldFineCell(gx, gy);
+  const phase = positiveModulo(wx * 11 + wy * 7, 43);
+  if (boundary && ['regionalRoads','majorRoads','motorways','tracks'].includes(option) && phase === 0)
+    return P.roadDrain;
+  if (!boundary && ['regionalRoads','majorRoads','motorways'].includes(option) && phase <= 2)
+    return P.roadPatch;
+  if (option === 'paths' && phase === 0) return P.trailDot;
+  return baseColor;
+}
+
 function drawCellPixelArtTransportGrid(
   grid, option, stats, centerGrid = null, bridge = false, continuousRailSkin = null
 ){
@@ -2763,10 +2811,12 @@ function drawCellPixelArtTransportGrid(
     for (let x = 0; x < RG; x++){
       if (!has(x, y) || (tunnel && !dashOn(x, y))) continue;
       const boundary = !has(x-1,y) || !has(x+1,y) || !has(x,y-1) || !has(x,y+1);
-      const color = minimumMinorRoute
+      const baseColor = minimumMinorRoute
         ? (option === 'paths' ? P.trail : roadStyle.fill)
         : boundary ? edge : fill;
+      const color = weatheredIndustrialRoadColor(option, x, y, baseColor, boundary);
       paintSolidMapCell(x, y, color, option, stats);
+      if (color !== baseColor) stats.industrialRoadDetailCells++;
       if (boundary && !minimumMinorRoute){
         if (rail) stats.boundaryCells++;
         else stats.roadCasingCells++;
@@ -2865,6 +2915,7 @@ function drawCellFlatPixelArtBuildingGrid(
       const desc = buildingDescs[buildingIndex];
       const kind = buildingKinds[buildingIndex] || 'normal';
       const pal = desc?.pal || ROOFPAL[0];
+      const shape = desc?.shape;
       const same = (nx, ny) => isCell(nx, ny) && bldGrid[ny * RG + nx] === buildingIndex;
       const above = same(x, y-1), below = same(x, y+1), left = same(x-1,y), right = same(x+1,y);
       const [wx, wy] = worldFineCell(x, y);
@@ -2877,6 +2928,10 @@ function drawCellFlatPixelArtBuildingGrid(
       } else if (!above) color = pal[2];
       else if (sideEdge && (CONTINUOUS_BUILDING_STRUCTURE_OUTLINE || outlinePhase !== 1))
         color = CONTINUOUS_BUILDING_STRUCTURE_OUTLINE && outlinePhase === 1 ? pal[1] : P.outline;
+      else if (shape?.enabled && shape.sourceFootprintImmutable &&
+          materialPatternEnabled('roofTexture') &&
+          positiveModulo(wx * 7 + wy * 11 + shape.patchPhase, 23) === 0)
+        color = shape.roofForm.includes('patched') ? P.rust : P.metal;
       else if (materialPatternEnabled('roofTexture') &&
           positiveModulo(wx * 3 + wy * 5 + buildingIndex, 17) === 0) color = pal[1];
       paintSolidMapCell(
@@ -2893,24 +2948,59 @@ function drawCellFlatPixelArtBuildingGrid(
   }
 
   const paintIfBuilding = (bi, x, y, color) => {
-    if (x < 0 || y < 0 || x >= RG || y >= RG || bldGrid[y * RG + x] !== bi || grid[y * RG + x] !== ID.BLD) return;
+    if (x < 0 || y < 0 || x >= RG || y >= RG || bldGrid[y * RG + x] !== bi || grid[y * RG + x] !== ID.BLD) return false;
     paintSolidMapCell(
       x, y, color, `${layer}:details`, stats,
       stats.worldStructureDepth ? mapCellScreenDepth(x, y) : null
     );
     stats.buildingDetailCells++;
+    return true;
   };
   for (let bi = 1; bi < buildingKinds.length; bi++){
     if (skippedBuildingIds?.has(bi)) continue;
     const anchor = buildingAnchors?.[bi];
     const desc = buildingDescs[bi];
     const kind = buildingKinds[bi] || 'normal';
-    if (!anchor){
+    let detailAnchor = anchor;
+    if (!detailAnchor){
       const edge = southEdges.get(bi);
-      if (edge) paintIfBuilding(bi, Math.round((edge.minX + edge.maxX) / 2), edge.y, P.door);
-      continue;
+      if (!edge) continue;
+      const ax = Math.round((edge.minX + edge.maxX) / 2);
+      let ay = edge.y;
+      while (ay > 0 && bldGrid[(ay - 1) * RG + ax] === bi && grid[(ay - 1) * RG + ax] === ID.BLD) ay--;
+      detailAnchor = { gx:ax, gy:ay, ex:ax, ey:edge.y };
     }
     const accent = desc?.accent || desc?.pal?.[0] || P.roofA;
+    const shape = desc?.shape;
+    if (shape?.enabled && shape.sourceFootprintImmutable){
+      const baseX = detailAnchor.gx;
+      const baseY = detailAnchor.gy;
+      const paintWeatheredRoofCell = (dx, dy, color) => {
+        if (paintIfBuilding(bi, baseX + dx, baseY + dy, color))
+          stats.industrialRoofDetailCells++;
+      };
+      if (shape.raisedDeck){
+        for (const [dx,dy] of [[-1,0],[0,0],[1,0],[0,1]])
+          paintWeatheredRoofCell(dx, dy, dy ? P.metalDk : P.metal);
+      }
+      shape.equipment.forEach((equipment, index) => {
+        const side = index % 2 ? -1 : 1;
+        const dx = side * (1 + Math.floor(index / 2));
+        const dy = Math.min(2, index);
+        if (equipment === 'tank'){
+          paintWeatheredRoofCell(dx, dy, P.outline);
+          paintWeatheredRoofCell(dx + side, dy, P.metal);
+        } else if (equipment === 'chimney'){
+          paintWeatheredRoofCell(dx, dy, P.rustDk);
+          paintWeatheredRoofCell(dx, dy + 1, P.rust);
+        } else if (equipment === 'duct'){
+          paintWeatheredRoofCell(dx, dy, P.pipe);
+          paintWeatheredRoofCell(dx + side, dy, P.conduit);
+        } else {
+          paintWeatheredRoofCell(dx, dy, P.metalDk);
+        }
+      });
+    }
     if (kind === 'hospital'){
       for (const [dx,dy] of [[0,-2],[0,-1],[-2,0],[-1,0],[0,0],[1,0],[2,0],[0,1],[0,2]])
         paintIfBuilding(bi, anchor.gx + dx, anchor.gy + dy, dx === 0 && dy === 0 ? GLYPH_WHITE : '#48a050');
@@ -2925,8 +3015,62 @@ function drawCellFlatPixelArtBuildingGrid(
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
         paintIfBuilding(bi, anchor.gx + dx, anchor.gy + dy, dx === 0 || dy === 0 ? GLYPH_WHITE : accent);
     }
-    paintIfBuilding(bi, anchor.ex, anchor.ey, P.door);
+    paintIfBuilding(bi, detailAnchor.ex, detailAnchor.ey, P.door);
   }
+}
+
+function drawWeatheredIndustrialRoofDetails(group, desc, roofOffsetX, roofOffsetY, layer, stats){
+  if (!STANDALONE_WEATHERED_INDUSTRIAL_SKIN || !desc?.shape?.enabled) return;
+  const shape = desc.shape;
+  if (!shape.sourceFootprintImmutable || shape.semantic) return;
+  const owns = (x, y) => x >= 0 && y >= 0 && x < RASTER_GRID_SIZE && y < RASTER_GRID_SIZE &&
+    group.owned.has(y * RASTER_GRID_SIZE + x);
+  const interior = group.cells.filter(([x,y]) =>
+    owns(x,y - 1) && owns(x,y + 1) && owns(x - 1,y) && owns(x + 1,y));
+  const candidates = interior.length ? interior : group.cells;
+  if (!candidates.length) return;
+  const baseFor = index => candidates[positiveModulo(shape.seed + index * 17, candidates.length)];
+  const paintWeatheredRoofCell = (base, screenDx, screenDy, color) => {
+    const [sourceDx, sourceDy] = screenCellVectorToSource(screenDx, screenDy);
+    const painted = paintSolidMapCell(
+      base[0] + roofOffsetX + sourceDx,
+      base[1] + roofOffsetY + sourceDy,
+      color,
+      `${layer}:industrial-roof-detail`,
+      stats,
+      stats.worldStructureDepth ? mapCellScreenDepth(base[0], base[1]) : null
+    );
+    if (painted) stats.industrialRoofDetailCells++;
+  };
+
+  if (shape.raisedDeck){
+    const base = baseFor(0);
+    for (const dx of [-1,0,1]){
+      paintWeatheredRoofCell(base, dx, 0, P.metalDk);
+      paintWeatheredRoofCell(base, dx, -1, dx === 0 ? P.warning : P.metal);
+    }
+  }
+
+  shape.equipment.forEach((equipment, index) => {
+    const base = baseFor(index + 1);
+    const side = index % 2 ? -1 : 1;
+    if (equipment === 'tank'){
+      for (const dx of [0,side]) paintWeatheredRoofCell(base, dx, -1, P.outline);
+      for (const dx of [0,side]) paintWeatheredRoofCell(base, dx, -2, P.metal);
+      paintWeatheredRoofCell(base, side, -2, P.metalDk);
+    } else if (equipment === 'chimney'){
+      const height = 2 + shape.stackHeight;
+      for (let up = 1; up <= height; up++)
+        paintWeatheredRoofCell(base, 0, -up, up === height ? P.rust : P.rustDk);
+      paintWeatheredRoofCell(base, side, -height, P.outline);
+    } else if (equipment === 'duct'){
+      for (let dx = -1; dx <= 1; dx++) paintWeatheredRoofCell(base, dx, -1, P.pipe);
+      paintWeatheredRoofCell(base, side, -2, P.conduit);
+    } else {
+      paintWeatheredRoofCell(base, 0, -1, P.outline);
+      paintWeatheredRoofCell(base, 0, -2, P.metal);
+    }
+  });
 }
 
 function drawCellHeightExtrudedBuildingGrid(
@@ -3069,6 +3213,9 @@ function drawCellHeightExtrudedBuildingGrid(
         let color = shadedSide ? P.wallDk : P.wall;
         if (structuralOutline) color = P.outline;
         const [wx] = worldFineCell(x, y);
+        if (desc?.shape?.enabled && frontFace && step > 0 &&
+            positiveModulo(wx + desc.shape.seed, 13) === 0)
+          color = step % 4 === 0 ? P.rust : P.pipe;
         if (BUILDING_WINDOW_CELLS &&
             (!CONTINUOUS_BUILDING_STRUCTURE_OUTLINE || !structuralOutline) &&
             frontFace && step > 0 && step % 2 === 0 && positiveModulo(wx + step, 3) === 1)
@@ -3097,10 +3244,17 @@ function drawCellHeightExtrudedBuildingGrid(
       else if (!south) color = pal[1];
       else if (!north) color = pal[2];
       else if (!west || !east) color = P.outline;
+      else if (desc?.shape?.enabled && materialPatternEnabled('roofTexture') &&
+          positiveModulo(wx * 7 + wy * 11 + desc.shape.patchPhase, 23) === 0)
+        color = desc.shape.roofForm.includes('patched') ? P.rust : P.metal;
       else if (materialPatternEnabled('roofTexture') &&
           positiveModulo(wx * 3 + wy * 5 + group.bi, 17) === 0) color = pal[1];
       paintProjected(group, x, y, roofOffsetX, roofOffsetY, color, `${layer}:height-roof`);
     }
+
+    drawWeatheredIndustrialRoofDetails(
+      group, desc, roofOffsetX, roofOffsetY, layer, stats
+    );
 
     // 施設記号は持ち上げた屋根へ、入口は接地側の壁面へ残す。
     const accent = desc?.accent || pal[0];
@@ -5241,11 +5395,13 @@ function render(){
     boundaryCells:0,
     roadCasingCells:0,
     roadCenterCells:0,
+    industrialRoadDetailCells:0,
     railTieCells:0,
     railSourcePaths:0,
     railTopologyPaths:0,
     railLodSuppressedPaths:0,
     buildingDetailCells:0,
+    industrialRoofDetailCells:0,
     extrudedBuildings:0,
     maxBuildingRiseCells:0,
     maxBuildingRiseLogicalPixels:0,
@@ -6635,6 +6791,13 @@ function render(){
         categoryCounts:{...viewportIconSelection.categoryCounts},
       },
     },
+    mapSkin:ACTIVE_MAP_SKIN ? ACTIVE_MAP_SKIN.id : 'legacy',
+    mapSkinContract:ACTIVE_MAP_SKIN ? {
+      profileKind:ACTIVE_MAP_SKIN.profileKind,
+      sourceGeometryImmutable:ACTIVE_MAP_SKIN.sourceGeometryImmutable,
+      shapeGrammar:ACTIVE_MAP_SKIN.building.shapeGrammar.version,
+      decorationsSemantic:ACTIVE_MAP_SKIN.building.shapeGrammar.decorationsSemantic,
+    } : null,
     pattern:{
       id:ACTIVE_PATTERN.id,
       slug:ACTIVE_PATTERN.slug,
@@ -6675,7 +6838,7 @@ function render(){
     cellRendering:{
       enabled:CELL_ONLY_MODE,
       mode:RENDER_MODE,
-      styleProfile:CELL_ONLY_MODE ? 'standard-pixel-art' : 'standard',
+      styleProfile:CELL_ONLY_MODE ? (ACTIVE_MAP_SKIN?.id || 'standard-pixel-art') : 'standard',
       cellLogicalPixels:CELL_ONLY_MODE ? MAP_CELL_LOGICAL_SIZE : null,
       cellScenePixels:CELL_ONLY_MODE ? CPX : null,
       gridCellsPerSide:CELL_ONLY_MODE ? GRID : null,
@@ -6690,11 +6853,13 @@ function render(){
       boundaryCells:CELL_ONLY_MODE ? cellRenderingStats.boundaryCells : 0,
       roadCasingCells:CELL_ONLY_MODE ? cellRenderingStats.roadCasingCells : 0,
       roadCenterCells:CELL_ONLY_MODE ? cellRenderingStats.roadCenterCells : 0,
+      industrialRoadDetailCells:CELL_ONLY_MODE ? cellRenderingStats.industrialRoadDetailCells : 0,
       railTieCells:CELL_ONLY_MODE ? cellRenderingStats.railTieCells : 0,
       railSourcePaths:CELL_ONLY_MODE ? cellRenderingStats.railSourcePaths : 0,
       railTopologyPaths:CELL_ONLY_MODE ? cellRenderingStats.railTopologyPaths : 0,
       railLodSuppressedPaths:CELL_ONLY_MODE ? cellRenderingStats.railLodSuppressedPaths : 0,
       buildingDetailCells:CELL_ONLY_MODE ? cellRenderingStats.buildingDetailCells : 0,
+      industrialRoofDetailCells:CELL_ONLY_MODE ? cellRenderingStats.industrialRoofDetailCells : 0,
       worldStructureDepth:!!cellRenderingStats.worldStructureDepth,
       depthRejectedCells:CELL_ONLY_MODE ? cellRenderingStats.depthRejectedCells : 0,
       religiousDepthRejectedCells:CELL_ONLY_MODE

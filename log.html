@@ -152,6 +152,11 @@
               <td>1・2・4マップも既定は<code>cell2</code>。1マップは単独、2マップは左右別々、4マップは共通チェックで<code>cell3</code>へ切替。standard描画は使用しない。</td>
             </tr>
             <tr>
+              <th scope="row">地図の外観</th>
+              <td><code>weathered-industrial-day-z14</code>を使い、曇天の日中・生活感のある工業都市を灰緑、コンクリート、錆色で表現。元の道路中心線・建物footprint・水域境界を維持したまま、非意味装飾として屋根のサービスデッキ、タンク、煙突、ダクト、壁面配管、道路の補修・排水ディテールを加える。</td>
+              <td>従来の<code>standard-pixel-art</code>を維持。standalone test専用の配色・屋根設備・道路補修ディテールは描画せず、各ページの地図とUIも変更しない。</td>
+            </tr>
+            <tr>
               <th scope="row">表示方位の実装検証</th>
               <td>コンパスの<code>−／＋</code>で表示方位を15度ずつ変更し、ページ遷移や再読込なしで地理を論理ピクセルグリッドへ再描画する。角度はURLへ履歴置換で保存。建物の高さ線は画面上方向へ垂直に伸ばし、名称・方位表示・施設記号も画面へ正立する。</td>
               <td>testと同じコンパス・再ラスタライズ・正立要素・画面垂直の建物高さ線を使用。1マップは単独、2マップは位置と方位、4マップは各地点を保ったまま方位だけを同期し、外側URLへ履歴置換で保存する。</td>
@@ -206,6 +211,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>曇天の生活工業都市スキンをstandalone testへ追加</h3>
+          <time datetime="2026-08-29">2026-08-29 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>standalone test専用の<code>weathered-industrial-day-z14</code>を追加。灰緑の地表、鈍い水色、コンクリートと錆色の建物へ再配色し、建物の高さ帯と安定seedに応じてサービスデッキ、タンク、煙突、ダクト、換気設備、壁面配管を描画する。道路マスク内には舗装の補修・排水ディテールを加える。装飾は意味判定やクリック領域へ使わず、元の道路中心線・建物footprint・水域境界を変更しない。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。URLを直接開いた<code>variants/map-02-refined.html</code>のcell2／cell3。表示方位0°と45°の再ラスタライズにも同じ形状文法を適用する。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。専用スキンは<code>!EMBEDDED &amp;&amp; CELL_ONLY_MODE</code>で保護し、本番1・2・4マップは従来の<code>standard-pixel-art</code>、配色、UI、同期処理を維持する。実画面診断でも本番1マップは<code>mapSkin=legacy</code>、工業ディテール0件を確認した。</dd></div>
+          <div><dt>確認内容</dt><dd>全Web自動テスト176件とビルドが成功。standalone testのcell2・cell3・45°を実画面で撮影し、専用スキン、非意味装飾、屋根・道路ディテールの描画件数を確認。本番1マップの従来表示も比較確認した。最新スクリーンショット3枚は独立視覚レビューですべてPASS。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>現在のtest差分をWeb本番1・2・4マップへ全面リリース</h3>

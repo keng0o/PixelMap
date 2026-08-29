@@ -101,7 +101,7 @@ test('標準16シーンpxマップチップをcell2/cell3の世界座標固定�
   assert.match(html, /count >= CPX \* CPX \* \.25/);
   assert.match(html, /function cellMapChipColor\(name, gx, gy\)/);
   assert.match(html, /positiveModulo\(wx, template\.width\)/);
-  assert.match(html, /styleProfile:CELL_ONLY_MODE \? 'standard-pixel-art' : 'standard'/);
+  assert.match(html, /styleProfile:CELL_ONLY_MODE \? \(ACTIVE_MAP_SKIN\?\.id \|\| 'standard-pixel-art'\) : 'standard'/);
 });
 
 test('細分化しても公園・建物の意味分類は96セル基準を維持する', () => {
@@ -162,7 +162,8 @@ test('交通線のセル走査はセル角の終点を越えて架空の線を�
 
 test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分ける', () => {
   assert.match(html, /function drawCellPixelArtTransportGrid\([\s\S]*?continuousRailSkin = null/);
-  assert.match(html, /const color = minimumMinorRoute[\s\S]*?: boundary \? edge : fill/);
+  assert.match(html, /const baseColor = minimumMinorRoute[\s\S]*?: boundary \? edge : fill/);
+  assert.match(html, /const color = weatheredIndustrialRoadColor\(option, x, y, baseColor, boundary\)/);
   assert.match(html, /paintSolidMapCell\(x, y, color, option, stats\)/);
   assert.match(html, /paintSolidMapCell\(x, y, roadStyle\.center/);
   assert.match(html, /for \(const offset of \[-1,1\]\)/);
@@ -380,4 +381,16 @@ test('セル描画の件数を診断情報へ公開する', () => {
     assert.match(html, new RegExp(`${field}:`), field);
   assert.match(html, /cellLogicalPixels:CELL_ONLY_MODE \? MAP_CELL_LOGICAL_SIZE : null/);
   assert.match(html, /cellScenePixels:CELL_ONLY_MODE \? CPX : null/);
+});
+
+test('standalone cellだけが生活工業都市の形状文法と非意味装飾を描く', () => {
+  assert.match(html, /const STANDALONE_WEATHERED_INDUSTRIAL_SKIN = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /function drawWeatheredIndustrialRoofDetails\(/);
+  assert.match(html, /function weatheredIndustrialRoadColor\(/);
+  assert.match(html, /desc\?\.shape\?\.enabled/);
+  assert.match(html, /shape\.sourceFootprintImmutable/);
+  assert.match(html, /paintWeatheredRoofCell/);
+  assert.match(html, /industrialRoofDetailCells:/);
+  assert.match(html, /industrialRoadDetailCells:/);
+  assert.match(html, /mapSkin:ACTIVE_MAP_SKIN \? ACTIVE_MAP_SKIN\.id : 'legacy'/);
 });
