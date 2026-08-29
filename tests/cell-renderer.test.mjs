@@ -163,7 +163,7 @@ test('交通線のセル走査はセル角の終点を越えて架空の線を�
 test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分ける', () => {
   assert.match(html, /function drawCellPixelArtTransportGrid\([\s\S]*?continuousRailSkin = null/);
   assert.match(html, /const baseColor = minimumMinorRoute[\s\S]*?: boundary \? edge : fill/);
-  assert.match(html, /const color = weatheredIndustrialRoadColor\(option, x, y, baseColor, boundary\)/);
+  assert.match(html, /const color = steampunkMegacityRoadColor\(option, x, y, baseColor, boundary\)/);
   assert.match(html, /paintSolidMapCell\(x, y, color, option, stats\)/);
   assert.match(html, /paintSolidMapCell\(x, y, roadStyle\.center/);
   assert.match(html, /for \(const offset of \[-1,1\]\)/);
@@ -383,14 +383,23 @@ test('セル描画の件数を診断情報へ公開する', () => {
   assert.match(html, /cellScenePixels:CELL_ONLY_MODE \? CPX : null/);
 });
 
-test('standalone cellだけが生活工業都市の形状文法と非意味装飾を描く', () => {
-  assert.match(html, /const STANDALONE_WEATHERED_INDUSTRIAL_SKIN = !EMBEDDED && CELL_ONLY_MODE/);
-  assert.match(html, /function drawWeatheredIndustrialRoofDetails\(/);
-  assert.match(html, /function weatheredIndustrialRoadColor\(/);
+test('standalone cellだけが強度3の機械都市素材と非意味装飾を描く', () => {
+  assert.match(html, /const STANDALONE_STEAMPUNK_MEGACITY = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /const STEAMPUNK_ASSETS = window\.PixelMapSteampunkMapAssets/);
+  assert.match(html, /function drawSteampunkBuildingAssemblies\(/);
+  assert.match(html, /function drawSteampunkCorridorFixtures\(/);
+  assert.match(html, /function drawSteampunkSurfaceFixtures\(/);
+  assert.match(html, /function steampunkMegacityRoadColor\(/);
   assert.match(html, /desc\?\.shape\?\.enabled/);
   assert.match(html, /shape\.sourceFootprintImmutable/);
-  assert.match(html, /paintWeatheredRoofCell/);
-  assert.match(html, /industrialRoofDetailCells:/);
-  assert.match(html, /industrialRoadDetailCells:/);
+  assert.match(html, /STEAMPUNK_ASSETS\.compositionFor/);
+  assert.match(html, /const currentLayerCell = detailAnchor\.gy \* RG \+ detailAnchor\.gx/);
+  assert.match(html, /if \(grid\[currentLayerCell\] !== ID\.BLD \|\| bldGrid\[currentLayerCell\] !== bi\) continue/);
+  assert.match(html, /composition\.facade\.forEach\(\(assetId, index\) =>/);
+  assert.match(html, /steampunkAssetStamps:/);
+  assert.match(html, /steampunkSteamCells:/);
+  assert.match(html, /steampunkPipeCells:/);
+  assert.match(html, /steampunkGearCells:/);
+  assert.match(html, /steampunkGantryCells:/);
   assert.match(html, /mapSkin:ACTIVE_MAP_SKIN \? ACTIVE_MAP_SKIN\.id : 'legacy'/);
 });

@@ -132,6 +132,14 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /<strong>testのみ<\/strong>。URLを直接開いた<code>variants\/map-02-refined\.html<\/code>のcell2／cell3/);
   assert.match(log, /本番1・2・4マップは従来の<code>standard-pixel-art<\/code>/);
   assert.match(log, /最新スクリーンショット3枚は独立視覚レビューですべてPASS/);
+  assert.match(log, /強度3のスチームパンク機械都市と大型ピクセル素材をstandalone testへ追加/);
+  assert.match(log, /steampunk-megacity-day-z14/);
+  assert.match(log, /ボイラー煙突、ガスホルダー、歯車塔、給水塔、配管束/);
+  assert.match(log, /管橋、バルブ施設、鉄道ガントリー、冷却排出口/);
+  assert.match(log, /機械素材1,692基・機械セル114,629・蒸気8,759/);
+  assert.match(log, /宗教建物への誤蒸気は0件/);
+  assert.match(log, /元の道路中心線・鉄道・建物footprint・水域境界は変更せず/);
+  assert.match(log, /本番1・2・4マップは従来の<code>standard-pixel-art<\/code>とUI・同期処理を維持/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

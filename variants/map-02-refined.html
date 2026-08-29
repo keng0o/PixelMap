@@ -757,10 +757,11 @@
 <script src="../assets/facility-resolver.js?v=7"></script>
 <script src="../assets/landmark-entities.js?v=20260824-generic-facilities-1000"></script>
 <script src="../assets/poi-sprites.js?v=5"></script>
-<script src="../assets/building-styles.js?v=5"></script>
+<script src="../assets/steampunk-map-assets.js?v=1"></script>
+<script src="../assets/building-styles.js?v=6"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=6"></script>
-<script src="../assets/world-style.js?v=6"></script>
+<script src="../assets/world-style.js?v=7"></script>
 <script src="../assets/map-bearing.js?v=2"></script>
 <script>
 'use strict';
@@ -915,11 +916,12 @@ const REQUESTED_RENDER_MODE = PAGE_PARAMS.get('render');
 const RENDER_MODE = REQUESTED_RENDER_MODE === 'cell3' ? 'cell3' : 'cell2';
 const CELL_RENDER_LOGICAL_SIZE = Number(RENDER_MODE.slice(4));
 const CELL_ONLY_MODE = ['cell2','cell3'].includes(RENDER_MODE);
-// 承認済みの「曇天の生活工業都市」はstandalone testのcell描画だけで使う。
+// 強度3のスチームパンク機械都市はstandalone testのcell描画だけで使う。
 // 同じHTMLを読む本番iframe（embedded=1）は必ず従来skinのままにする。
-const STANDALONE_WEATHERED_INDUSTRIAL_SKIN = !EMBEDDED && CELL_ONLY_MODE;
-const ACTIVE_MAP_SKIN = STANDALONE_WEATHERED_INDUSTRIAL_SKIN
-  ? window.PixelMapWorldStyles.weatheredIndustrialDayZ14
+const STANDALONE_STEAMPUNK_MEGACITY = !EMBEDDED && CELL_ONLY_MODE;
+const STEAMPUNK_ASSETS = window.PixelMapSteampunkMapAssets;
+const ACTIVE_MAP_SKIN = STANDALONE_STEAMPUNK_MEGACITY
+  ? window.PixelMapWorldStyles.steampunkMegacityDayZ14
   : null;
 // 全Webマップの地上鉄道は、線路単位の接線から左右レールを別マスクへ生成する。
 // 路盤と左右レールだけを表示し、枕木は描画しない。
@@ -1231,8 +1233,14 @@ const DEFAULT_VIEW_OFFSET = {
   x:(DEFAULT_TILE_POINT.x - TILE.x) * W - W / 2,
   y:(DEFAULT_TILE_POINT.y - TILE.y) * H - H / 2,
 };
-const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
-const FALLBACK_TILE_URL = 'https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf';
+const TILE_PROXY_ORIGIN = !EMBEDDED && ['127.0.0.1','localhost'].includes(location.hostname)
+  ? new URLSearchParams(location.search).get('tileProxy')?.replace(/\/$/, '') || null
+  : null;
+const TILEJSON_URL = TILE_PROXY_ORIGIN
+  ? `${TILE_PROXY_ORIGIN}/planet` : 'https://tiles.openfreemap.org/planet';
+const FALLBACK_TILE_URL = TILE_PROXY_ORIGIN
+  ? `${TILE_PROXY_ORIGIN}/planet/20260802_080001_pt/{z}/{x}/{y}.pbf`
+  : 'https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf';
 
 function presentScene(){
   presentationCtx.clearRect(0, 0, PRESENTATION_SIZE, PRESENTATION_SIZE);
@@ -1319,7 +1327,17 @@ const P = {
   metal:TEST_SKIN_PALETTE?.metal || '#747c79',metalDk:TEST_SKIN_PALETTE?.metalDark || '#4e5757',
   pipe:TEST_SKIN_PALETTE?.pipe || '#3e5559',warning:TEST_SKIN_PALETTE?.warning || '#c39a4b',
   conduit:TEST_SKIN_PALETTE?.conduit || '#596668',
+  copper:TEST_SKIN_PALETTE?.copper || '#4f8176',copperLt:TEST_SKIN_PALETTE?.copperLight || '#76a092',
+  brass:TEST_SKIN_PALETTE?.brass || '#c39a4b',brick:TEST_SKIN_PALETTE?.brick || '#8f4737',
+  brickDk:TEST_SKIN_PALETTE?.brickDark || '#5c302d',steam:TEST_SKIN_PALETTE?.steam || '#d8d4c3',
+  steamShade:TEST_SKIN_PALETTE?.steamShade || '#aaa99f',glass:TEST_SKIN_PALETTE?.glass || '#79a5a5',
 };
+const STEAMPUNK_COLOR_BY_TOKEN = Object.freeze({
+  outline:P.outline,iron:P.metal,ironLight:P.metal,ironDark:P.metalDk,
+  rust:P.rust,rustDark:P.rustDk,copper:P.copper,copperLight:P.copperLt,
+  brass:P.brass,brick:P.brick,brickDark:P.brickDk,steam:P.steam,
+  steamShade:P.steamShade,glass:P.glass,warning:P.warning,
+});
 
 // 共通corridor rendererは維持し、z14 POCの世界観差はskin overrideだけで表す。
 const WORLD_CORRIDOR_RULES = Object.freeze(Object.fromEntries(
@@ -2758,6 +2776,7 @@ function drawCellPixelArtSurfaceGrid(grid, option, stats, transparent = true){
       if (chipColor && chipColor.toLowerCase() !== String(baseColor || '').toLowerCase()) stats.groundPatternCells++;
     }
   }
+  drawSteampunkSurfaceFixtures(grid, option, stats);
 }
 
 function paintDarkenedMapCell(gx, gy, factor, layer, stats){
@@ -2768,15 +2787,97 @@ function paintDarkenedMapCell(gx, gy, factor, layer, stats){
   paintSolidMapCell(gx, gy, color, layer, stats);
 }
 
-function weatheredIndustrialRoadColor(option, gx, gy, baseColor, boundary){
-  if (!STANDALONE_WEATHERED_INDUSTRIAL_SKIN) return baseColor;
+function countSteampunkAssetCell(stats, sprite, token){
+  stats.steampunkAssetCells++;
+  if (token === 'steam' || token === 'steamShade') stats.steampunkSteamCells++;
+  if (['copper','copperLight','rust','rustDark'].includes(token)) stats.steampunkPipeCells++;
+  if (sprite.id === 'gear-tower' || token === 'brass') stats.steampunkGearCells++;
+  if (sprite.id === 'rail-gantry' || sprite.id === 'pipe-bridge') stats.steampunkGantryCells++;
+}
+
+function stampSteampunkAsset(assetId, baseX, baseY, layer, stats, options = {}){
+  if (!STANDALONE_STEAMPUNK_MEGACITY || !STEAMPUNK_ASSETS) return 0;
+  const sprite = STEAMPUNK_ASSETS.sprites[assetId];
+  if (!sprite?.cells?.length || sprite.semantic) return 0;
+  const mirror = options.mirror ? -1 : 1;
+  const roofOffsetX = options.roofOffsetX || 0;
+  const roofOffsetY = options.roofOffsetY || 0;
+  const depth = Number.isFinite(options.depth) ? options.depth : mapCellScreenDepth(baseX, baseY);
+  let paintedCells = 0;
+  for (const [assetX, assetY, token] of sprite.cells){
+    const [sourceDx, sourceDy] = screenCellVectorToSource(assetX * mirror, assetY);
+    const gx = baseX + roofOffsetX + sourceDx;
+    const gy = baseY + roofOffsetY + sourceDy;
+    if (options.clip && !options.clip(gx, gy)) continue;
+    if (!paintSolidMapCell(
+      gx, gy, STEAMPUNK_COLOR_BY_TOKEN[token] || P.metal,
+      `${layer}:${sprite.id}`, stats, depth, Boolean(options.depthTest)
+    )) continue;
+    paintedCells++;
+    countSteampunkAssetCell(stats, sprite, token);
+  }
+  if (paintedCells) stats.steampunkAssetStamps++;
+  return paintedCells;
+}
+
+function drawSteampunkSurfaceFixtures(grid, option, stats){
+  if (!STANDALONE_STEAMPUNK_MEGACITY || !STEAMPUNK_ASSETS) return;
+  const water = option === 'waterAreas';
+  const industrial = option === 'landuseIndustrial';
+  if (!water && !industrial) return;
+  const RG = RASTER_GRID_SIZE;
+  const targetId = water ? ID.WATER : ID.GRAVEL;
+  const pool = water ? STEAMPUNK_ASSETS.surfacePools.water : STEAMPUNK_ASSETS.surfacePools.industrial;
+  const period = water ? 1201 : 1459;
+  const at = (x, y) => x >= 0 && y >= 0 && x < RG && y < RG ? grid[y * RG + x] : ID.GRASS;
+  for (let y = 3; y < RG - 3; y++) for (let x = 3; x < RG - 3; x++){
+    if (at(x,y) !== targetId) continue;
+    const edge = [at(x-1,y),at(x+1,y),at(x,y-1),at(x,y+1)]
+      .some(value => value !== targetId);
+    if (water && !edge) continue;
+    const [wx, wy] = worldFineCell(x, y);
+    const phase = positiveModulo(wx * 37 + wy * 61, period);
+    if (phase !== 0) continue;
+    const assetId = pool[positiveModulo(wx + wy, pool.length)];
+    stampSteampunkAsset(assetId, x, y, `steampunk-surface:${option}`, stats, {
+      mirror:positiveModulo(wx, 2) === 1,
+    });
+  }
+}
+
+function drawSteampunkCorridorFixtures(option, centerGrid, stats){
+  if (!STANDALONE_STEAMPUNK_MEGACITY || !STEAMPUNK_ASSETS || !centerGrid) return;
+  const poolKey = option === 'rail' ? 'rail' : option;
+  const pool = STEAMPUNK_ASSETS.corridorPools[poolKey];
+  if (!pool) return;
+  const RG = RASTER_GRID_SIZE;
+  const centered = (x, y) => x >= 0 && y >= 0 && x < RG && y < RG && centerGrid[y * RG + x];
+  const period = option === 'rail' ? 641 : option === 'localRoads' ? 1301 : option === 'paths' ? 1601 : 997;
+  for (let y = 8; y < RG - 8; y++) for (let x = 8; x < RG - 8; x++){
+    if (!centered(x,y)) continue;
+    const degree = Number(centered(x-1,y)) + Number(centered(x+1,y)) +
+      Number(centered(x,y-1)) + Number(centered(x,y+1));
+    if (degree < 2) continue;
+    const [wx, wy] = worldFineCell(x, y);
+    const phase = positiveModulo(wx * 43 + wy * 73, period);
+    if (phase !== 0) continue;
+    const assetId = pool[positiveModulo(wx * 3 + wy, pool.length)];
+    stampSteampunkAsset(assetId, x, y, `steampunk-corridor:${option}`, stats, {
+      mirror:positiveModulo(wy, 2) === 1,
+    });
+  }
+}
+
+function steampunkMegacityRoadColor(option, gx, gy, baseColor, boundary){
+  if (!STANDALONE_STEAMPUNK_MEGACITY) return baseColor;
   const [wx, wy] = worldFineCell(gx, gy);
-  const phase = positiveModulo(wx * 11 + wy * 7, 43);
-  if (boundary && ['regionalRoads','majorRoads','motorways','tracks'].includes(option) && phase === 0)
+  const phase = positiveModulo(wx * 11 + wy * 7, 37);
+  if (boundary && ['regionalRoads','majorRoads','motorways','tracks'].includes(option) && phase <= 1)
     return P.roadDrain;
-  if (!boundary && ['regionalRoads','majorRoads','motorways'].includes(option) && phase <= 2)
+  if (!boundary && ['regionalRoads','majorRoads','motorways'].includes(option) && phase <= 4)
     return P.roadPatch;
-  if (option === 'paths' && phase === 0) return P.trailDot;
+  if (option === 'paths' && phase <= 1) return P.trailDot;
+  if (option === 'localRoads' && phase === 0) return P.brass;
   return baseColor;
 }
 
@@ -2814,9 +2915,9 @@ function drawCellPixelArtTransportGrid(
       const baseColor = minimumMinorRoute
         ? (option === 'paths' ? P.trail : roadStyle.fill)
         : boundary ? edge : fill;
-      const color = weatheredIndustrialRoadColor(option, x, y, baseColor, boundary);
+      const color = steampunkMegacityRoadColor(option, x, y, baseColor, boundary);
       paintSolidMapCell(x, y, color, option, stats);
-      if (color !== baseColor) stats.industrialRoadDetailCells++;
+      if (color !== baseColor) stats.steampunkRoadDetailCells++;
       if (boundary && !minimumMinorRoute){
         if (rail) stats.boundaryCells++;
         else stats.roadCasingCells++;
@@ -2844,6 +2945,7 @@ function drawCellPixelArtTransportGrid(
           if (has(x, y)) paintSolidMapCell(x, y, P.rail, option, stats);
         }
       }
+      drawSteampunkCorridorFixtures(option, centerGrid, stats);
       return;
     }
     for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
@@ -2864,6 +2966,7 @@ function drawCellPixelArtTransportGrid(
         if (has(rx, ry)) paintSolidMapCell(rx, ry, P.rail, option, stats);
       }
     }
+    drawSteampunkCorridorFixtures(option, centerGrid, stats);
     return;
   }
 
@@ -2887,6 +2990,7 @@ function drawCellPixelArtTransportGrid(
       stats.roadCenterCells++;
     }
   }
+  drawSteampunkCorridorFixtures(option, centerGrid, stats);
 }
 
 function drawCellFlatPixelArtBuildingGrid(
@@ -2930,8 +3034,9 @@ function drawCellFlatPixelArtBuildingGrid(
         color = CONTINUOUS_BUILDING_STRUCTURE_OUTLINE && outlinePhase === 1 ? pal[1] : P.outline;
       else if (shape?.enabled && shape.sourceFootprintImmutable &&
           materialPatternEnabled('roofTexture') &&
-          positiveModulo(wx * 7 + wy * 11 + shape.patchPhase, 23) === 0)
-        color = shape.roofForm.includes('patched') ? P.rust : P.metal;
+          positiveModulo(wx * 7 + wy * 11 + shape.patchPhase, 11) <= 1)
+        color = shape.roofForm.includes('patched') ? P.rust
+          : positiveModulo(wx + wy, 3) ? P.copper : P.metal;
       else if (materialPatternEnabled('roofTexture') &&
           positiveModulo(wx * 3 + wy * 5 + buildingIndex, 17) === 0) color = pal[1];
       paintSolidMapCell(
@@ -2970,36 +3075,29 @@ function drawCellFlatPixelArtBuildingGrid(
       while (ay > 0 && bldGrid[(ay - 1) * RG + ax] === bi && grid[(ay - 1) * RG + ax] === ID.BLD) ay--;
       detailAnchor = { gx:ax, gy:ay, ex:ax, ey:edge.y };
     }
+    const currentLayerCell = detailAnchor.gy * RG + detailAnchor.gx;
+    if (grid[currentLayerCell] !== ID.BLD || bldGrid[currentLayerCell] !== bi) continue;
     const accent = desc?.accent || desc?.pal?.[0] || P.roofA;
     const shape = desc?.shape;
-    if (shape?.enabled && shape.sourceFootprintImmutable){
+    if (shape?.enabled && shape.sourceFootprintImmutable && STANDALONE_STEAMPUNK_MEGACITY){
       const baseX = detailAnchor.gx;
       const baseY = detailAnchor.gy;
-      const paintWeatheredRoofCell = (dx, dy, color) => {
-        if (paintIfBuilding(bi, baseX + dx, baseY + dy, color))
-          stats.industrialRoofDetailCells++;
-      };
-      if (shape.raisedDeck){
-        for (const [dx,dy] of [[-1,0],[0,0],[1,0],[0,1]])
-          paintWeatheredRoofCell(dx, dy, dy ? P.metalDk : P.metal);
-      }
-      shape.equipment.forEach((equipment, index) => {
-        const side = index % 2 ? -1 : 1;
-        const dx = side * (1 + Math.floor(index / 2));
-        const dy = Math.min(2, index);
-        if (equipment === 'tank'){
-          paintWeatheredRoofCell(dx, dy, P.outline);
-          paintWeatheredRoofCell(dx + side, dy, P.metal);
-        } else if (equipment === 'chimney'){
-          paintWeatheredRoofCell(dx, dy, P.rustDk);
-          paintWeatheredRoofCell(dx, dy + 1, P.rust);
-        } else if (equipment === 'duct'){
-          paintWeatheredRoofCell(dx, dy, P.pipe);
-          paintWeatheredRoofCell(dx + side, dy, P.conduit);
-        } else {
-          paintWeatheredRoofCell(dx, dy, P.metalDk);
-        }
+      const composition = STEAMPUNK_ASSETS.compositionFor({
+        seed:shape.seed,band:desc.band,areaClass:desc.areaClass,kind,
       });
+      const clip = (gx, gy) => gx >= 0 && gy >= 0 && gx < RG && gy < RG &&
+        bldGrid[gy * RG + gx] === bi && grid[gy * RG + gx] === ID.BLD;
+      composition.roof.slice(0, Math.max(1, Math.min(2, shape.assetBudget))).forEach((assetId, index) => {
+        const [offsetX, offsetY] = screenCellVectorToSource((index ? 4 : -2), 0);
+        stampSteampunkAsset(assetId, baseX + offsetX, baseY + offsetY,
+          `${layer}:flat-mechanical-roof`, stats, {
+            mirror:positiveModulo(shape.seed + index, 2) === 1,clip,
+          });
+      });
+      if (composition.steam.length &&
+          (desc.areaClass === 'L' || (desc.band >= 2 && positiveModulo(shape.seed, 4) === 0)))
+        stampSteampunkAsset('steam-plume', baseX, baseY,
+          `${layer}:flat-steam`, stats, { mirror:positiveModulo(shape.seed, 2) === 1 });
     }
     if (kind === 'hospital'){
       for (const [dx,dy] of [[0,-2],[0,-1],[-2,0],[-1,0],[0,0],[1,0],[2,0],[0,1],[0,2]])
@@ -3019,8 +3117,8 @@ function drawCellFlatPixelArtBuildingGrid(
   }
 }
 
-function drawWeatheredIndustrialRoofDetails(group, desc, roofOffsetX, roofOffsetY, layer, stats){
-  if (!STANDALONE_WEATHERED_INDUSTRIAL_SKIN || !desc?.shape?.enabled) return;
+function drawSteampunkBuildingAssemblies(group, desc, kind, roofOffsetX, roofOffsetY, layer, stats){
+  if (!STANDALONE_STEAMPUNK_MEGACITY || !STEAMPUNK_ASSETS || !desc?.shape?.enabled) return;
   const shape = desc.shape;
   if (!shape.sourceFootprintImmutable || shape.semantic) return;
   const owns = (x, y) => x >= 0 && y >= 0 && x < RASTER_GRID_SIZE && y < RASTER_GRID_SIZE &&
@@ -3030,46 +3128,40 @@ function drawWeatheredIndustrialRoofDetails(group, desc, roofOffsetX, roofOffset
   const candidates = interior.length ? interior : group.cells;
   if (!candidates.length) return;
   const baseFor = index => candidates[positiveModulo(shape.seed + index * 17, candidates.length)];
-  const paintWeatheredRoofCell = (base, screenDx, screenDy, color) => {
-    const [sourceDx, sourceDy] = screenCellVectorToSource(screenDx, screenDy);
-    const painted = paintSolidMapCell(
-      base[0] + roofOffsetX + sourceDx,
-      base[1] + roofOffsetY + sourceDy,
-      color,
-      `${layer}:industrial-roof-detail`,
-      stats,
-      stats.worldStructureDepth ? mapCellScreenDepth(base[0], base[1]) : null
-    );
-    if (painted) stats.industrialRoofDetailCells++;
-  };
+  const composition = STEAMPUNK_ASSETS.compositionFor({
+    seed:shape.seed,band:desc.band,areaClass:desc.areaClass,kind,
+  });
+  if (!composition.enabled) return;
 
-  if (shape.raisedDeck){
-    const base = baseFor(0);
-    for (const dx of [-1,0,1]){
-      paintWeatheredRoofCell(base, dx, 0, P.metalDk);
-      paintWeatheredRoofCell(base, dx, -1, dx === 0 ? P.warning : P.metal);
-    }
-  }
+  composition.roof.slice(0, Math.max(1, shape.assetBudget)).forEach((assetId, index) => {
+    const base = baseFor(index);
+    const spread = Math.round((index - (composition.roof.length - 1) / 2) * 3);
+    const [spreadX, spreadY] = screenCellVectorToSource(spread, index % 2 ? -1 : 0);
+    stampSteampunkAsset(assetId, base[0] + spreadX, base[1] + spreadY,
+      `${layer}:mechanical-roof`, stats, {
+        roofOffsetX,roofOffsetY,mirror:positiveModulo(shape.seed + index, 2) === 1,
+        depth:mapCellScreenDepth(base[0], base[1]),depthTest:true,
+      });
+  });
 
-  shape.equipment.forEach((equipment, index) => {
-    const base = baseFor(index + 1);
-    const side = index % 2 ? -1 : 1;
-    if (equipment === 'tank'){
-      for (const dx of [0,side]) paintWeatheredRoofCell(base, dx, -1, P.outline);
-      for (const dx of [0,side]) paintWeatheredRoofCell(base, dx, -2, P.metal);
-      paintWeatheredRoofCell(base, side, -2, P.metalDk);
-    } else if (equipment === 'chimney'){
-      const height = 2 + shape.stackHeight;
-      for (let up = 1; up <= height; up++)
-        paintWeatheredRoofCell(base, 0, -up, up === height ? P.rust : P.rustDk);
-      paintWeatheredRoofCell(base, side, -height, P.outline);
-    } else if (equipment === 'duct'){
-      for (let dx = -1; dx <= 1; dx++) paintWeatheredRoofCell(base, dx, -1, P.pipe);
-      paintWeatheredRoofCell(base, side, -2, P.conduit);
-    } else {
-      paintWeatheredRoofCell(base, 0, -1, P.outline);
-      paintWeatheredRoofCell(base, 0, -2, P.metal);
-    }
+  composition.facade.forEach((assetId, index) => {
+    const base = baseFor(index + composition.roof.length);
+    stampSteampunkAsset(assetId, base[0], base[1],
+      `${layer}:mechanical-facade`, stats, {
+        roofOffsetX:Math.round(roofOffsetX * .45),roofOffsetY:Math.round(roofOffsetY * .45),
+        mirror:positiveModulo(shape.seed + index + 5, 2) === 1,
+        depth:mapCellScreenDepth(base[0], base[1]),depthTest:true,
+      });
+  });
+
+  composition.steam.forEach((assetId, index) => {
+    if (desc.band === 1 && positiveModulo(shape.seed + index, 3) !== 0) return;
+    const base = baseFor(index + composition.roof.length + composition.facade.length);
+    stampSteampunkAsset(assetId, base[0], base[1],
+      `${layer}:steam-plume`, stats, {
+        roofOffsetX,roofOffsetY,mirror:positiveModulo(shape.seed + index, 2) === 1,
+        depth:mapCellScreenDepth(base[0], base[1]),depthTest:true,
+      });
   });
 }
 
@@ -3214,8 +3306,8 @@ function drawCellHeightExtrudedBuildingGrid(
         if (structuralOutline) color = P.outline;
         const [wx] = worldFineCell(x, y);
         if (desc?.shape?.enabled && frontFace && step > 0 &&
-            positiveModulo(wx + desc.shape.seed, 13) === 0)
-          color = step % 4 === 0 ? P.rust : P.pipe;
+            positiveModulo(wx + desc.shape.seed, 7) === 0)
+          color = step % 5 === 0 ? P.brass : step % 2 ? P.pipe : P.rust;
         if (BUILDING_WINDOW_CELLS &&
             (!CONTINUOUS_BUILDING_STRUCTURE_OUTLINE || !structuralOutline) &&
             frontFace && step > 0 && step % 2 === 0 && positiveModulo(wx + step, 3) === 1)
@@ -3245,15 +3337,16 @@ function drawCellHeightExtrudedBuildingGrid(
       else if (!north) color = pal[2];
       else if (!west || !east) color = P.outline;
       else if (desc?.shape?.enabled && materialPatternEnabled('roofTexture') &&
-          positiveModulo(wx * 7 + wy * 11 + desc.shape.patchPhase, 23) === 0)
-        color = desc.shape.roofForm.includes('patched') ? P.rust : P.metal;
+          positiveModulo(wx * 7 + wy * 11 + desc.shape.patchPhase, 11) <= 1)
+        color = desc.shape.roofForm.includes('patched') ? P.rust
+          : positiveModulo(wx + wy, 3) ? P.copper : P.metal;
       else if (materialPatternEnabled('roofTexture') &&
           positiveModulo(wx * 3 + wy * 5 + group.bi, 17) === 0) color = pal[1];
       paintProjected(group, x, y, roofOffsetX, roofOffsetY, color, `${layer}:height-roof`);
     }
 
-    drawWeatheredIndustrialRoofDetails(
-      group, desc, roofOffsetX, roofOffsetY, layer, stats
+    drawSteampunkBuildingAssemblies(
+      group, desc, kind, roofOffsetX, roofOffsetY, layer, stats
     );
 
     // 施設記号は持ち上げた屋根へ、入口は接地側の壁面へ残す。
@@ -5395,13 +5488,18 @@ function render(){
     boundaryCells:0,
     roadCasingCells:0,
     roadCenterCells:0,
-    industrialRoadDetailCells:0,
+    steampunkRoadDetailCells:0,
     railTieCells:0,
     railSourcePaths:0,
     railTopologyPaths:0,
     railLodSuppressedPaths:0,
     buildingDetailCells:0,
-    industrialRoofDetailCells:0,
+    steampunkAssetStamps:0,
+    steampunkAssetCells:0,
+    steampunkSteamCells:0,
+    steampunkPipeCells:0,
+    steampunkGearCells:0,
+    steampunkGantryCells:0,
     extrudedBuildings:0,
     maxBuildingRiseCells:0,
     maxBuildingRiseLogicalPixels:0,
@@ -6853,13 +6951,18 @@ function render(){
       boundaryCells:CELL_ONLY_MODE ? cellRenderingStats.boundaryCells : 0,
       roadCasingCells:CELL_ONLY_MODE ? cellRenderingStats.roadCasingCells : 0,
       roadCenterCells:CELL_ONLY_MODE ? cellRenderingStats.roadCenterCells : 0,
-      industrialRoadDetailCells:CELL_ONLY_MODE ? cellRenderingStats.industrialRoadDetailCells : 0,
+      steampunkRoadDetailCells:CELL_ONLY_MODE ? cellRenderingStats.steampunkRoadDetailCells : 0,
       railTieCells:CELL_ONLY_MODE ? cellRenderingStats.railTieCells : 0,
       railSourcePaths:CELL_ONLY_MODE ? cellRenderingStats.railSourcePaths : 0,
       railTopologyPaths:CELL_ONLY_MODE ? cellRenderingStats.railTopologyPaths : 0,
       railLodSuppressedPaths:CELL_ONLY_MODE ? cellRenderingStats.railLodSuppressedPaths : 0,
       buildingDetailCells:CELL_ONLY_MODE ? cellRenderingStats.buildingDetailCells : 0,
-      industrialRoofDetailCells:CELL_ONLY_MODE ? cellRenderingStats.industrialRoofDetailCells : 0,
+      steampunkAssetStamps:CELL_ONLY_MODE ? cellRenderingStats.steampunkAssetStamps : 0,
+      steampunkAssetCells:CELL_ONLY_MODE ? cellRenderingStats.steampunkAssetCells : 0,
+      steampunkSteamCells:CELL_ONLY_MODE ? cellRenderingStats.steampunkSteamCells : 0,
+      steampunkPipeCells:CELL_ONLY_MODE ? cellRenderingStats.steampunkPipeCells : 0,
+      steampunkGearCells:CELL_ONLY_MODE ? cellRenderingStats.steampunkGearCells : 0,
+      steampunkGantryCells:CELL_ONLY_MODE ? cellRenderingStats.steampunkGantryCells : 0,
       worldStructureDepth:!!cellRenderingStats.worldStructureDepth,
       depthRejectedCells:CELL_ONLY_MODE ? cellRenderingStats.depthRejectedCells : 0,
       religiousDepthRejectedCells:CELL_ONLY_MODE

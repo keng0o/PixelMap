@@ -9,7 +9,7 @@
      カテゴリ色は icon-patterns.js のパターン07パレットと同一。
      ===================================================== */
 
-  const VERSION = 'building-styles/5';
+  const VERSION = 'building-styles/6';
 
   // 高さバンド: 1=切妻住宅(<10m) 2=低層陸屋根(10-30m) 3=中層(31-59m) 4=高層(60m+)
   const HEIGHT_BANDS = { gableMax:10, lowMax:31, midMax:60 };
@@ -128,6 +128,15 @@
     const equipmentCount = enabled
       ? Math.max(0, Number(shapeGrammar.equipmentByBand?.[band]) || 0)
       : 0;
+    const assetBudget = enabled
+      ? Math.max(0, Number(shapeGrammar.assetBudgetByBand?.[band]) || equipmentCount)
+      : 0;
+    const steamBudget = enabled
+      ? Math.max(0, Number(shapeGrammar.steamBudgetByBand?.[band]) || 0)
+      : 0;
+    const pipeSpan = enabled
+      ? Math.max(0, Number(shapeGrammar.pipeSpanByBand?.[band]) || band * 2)
+      : 0;
     return {
       profileId:profileId || 'custom-shape-grammar',
       enabled,
@@ -137,6 +146,11 @@
       equipmentCount,
       equipment:Array.from({length:equipmentCount}, (_, index) =>
         equipment[(v + index * 7) % Math.max(1, equipment.length)] || 'vent'),
+      assetBudget,
+      steamBudget,
+      pipeSpan,
+      mechanicalDensity:shapeGrammar.mechanicalDensity || 'weathered',
+      compositionKey:`${profileId || 'custom'}:${band}:${areaClass}:${v}`,
       raisedDeck:enabled && band >= 2 && areaClass !== 'S',
       deckInset:enabled && band >= 2 ? 1 + (v % 2) : 0,
       stackHeight:enabled && band >= 4 ? 2 : enabled && band >= 3 ? 1 : 0,
