@@ -254,6 +254,9 @@ test('ランドマーク処理はstandaloneと1・2・4マップの全Webペー�
   assert.match(mapHtml, /function drawStandaloneReligiousStructure\(item\)/);
   assert.match(mapHtml, /item\.props\.religion === 'shinto'/);
   assert.match(mapHtml, /item\.landmarkDisplay === 'religious_structure'/);
+  assert.match(mapHtml, /resolveReligiousStructurePlacements\(/);
+  assert.match(mapHtml, /religiousPlacement:religiousPlacements\.byFacilityKey\.get\(f\.key\) \|\| null/);
+  assert.match(mapHtml, /item\.religiousPlacement\?\.buildingId/);
   assert.match(mapHtml, /'pixel-religious-structure'/);
   assert.match(mapHtml, /'osm-point-anchor'/);
   assert.match(mapHtml, /religiousPointLandmarksByName/);
@@ -279,6 +282,8 @@ test('施設はランドマークと汎用施設敷地の全棟を既存建物�
   assert.match(mapHtml, /owners\.sort\(\(a, b\) => compareFacilitySiteOwners\(a, b, site\)\)/);
   assert.match(mapHtml, /siteBuildingIds\.has\(facilitySourceBuildingIds\.get\(facility\)\)/);
   assert.match(mapHtml, /for \(const buildingId of site\.buildingIds\)/);
+  assert.match(mapHtml, /for \(const buildingId of excludedSourceBuildingIds\) sourceBuildingIds\.delete\(buildingId\)/);
+  assert.match(mapHtml, /facilitySites, religiousPlacements\.claimedBuildingIds/);
   assert.match(mapHtml, /featureCollectionGroups\?\.\[featureId\] === 'facility'[\s\S]*facilityFootprintGrid\[index\] = ID\.BLD/);
   const facilityFootprintLayer = mapHtml.indexOf("source:'facility-site-footprints'");
   const matchedBuildingLayer = mapHtml.indexOf("source:'map-buildings'", facilityFootprintLayer);

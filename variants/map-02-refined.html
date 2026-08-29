@@ -1170,9 +1170,12 @@ function buildingProjectionScreenCellVector(scenePoint, riseCells, shiftX){
   if (SCREEN_VERTICAL_BUILDING_EXTRUSION) return [0, -riseCells];
   return fixedVanishingScreenCellVector(scenePoint, riseCells, shiftX);
 }
-// 点登録の神社仏閣も通常建物と同じ投影関数で屋根を持ち上げる。
-// 鳥居・山門は地図の方位に左右されない正立した正面意匠として重ねる。
-const RELIGIOUS_STRUCTURE_RISE_CELLS = Object.freeze({ shinto:6, buddhist:6 });
+// 点登録の神社仏閣は、OSM点の近傍にある実建物へ厳密に結び付ける。
+// 距離・高さ・fallback意匠は論理pxで定義し、cell2／cell3で実寸を変えない。
+const RELIGIOUS_BUILDING_MATCH_LOGICAL_PX = 12;
+const RELIGIOUS_APPROACH_MAX_LOGICAL_PX = 48;
+const RELIGIOUS_BUILDING_RISE_LOGICAL_PX = Object.freeze({ shinto:6, buddhist:6 });
+const RELIGIOUS_FALLBACK_SIZE_LOGICAL_PX = Object.freeze({ shinto:6, buddhist:6 });
 function rotateWorldHitAreas(areas){
   if (!BEARING_STUDY_MODE) return;
   for (const area of areas){
@@ -2938,13 +2941,16 @@ function drawCellHeightExtrudedBuildingGrid(
     const index = y * RG + x;
     if (grid[index] !== ID.BLD) continue;
     const bi = bldGrid[index];
-    const riseLogical = BUILDING_STYLES.heightRiseLogicalPixels(buildingDescs[bi]?.heightM || 0);
+    const kind = buildingKinds[bi] || 'normal';
+    const riseLogical = buildingDescs[bi]?.riseLogicalPixels ??
+      BUILDING_STYLES.heightRiseLogicalPixels(buildingDescs[bi]?.heightM || 0);
     if (!riseLogical) continue;
     let group = groups.get(bi);
     if (!group){
       const riseCells = Math.max(1, Math.round(riseLogical / MAP_CELL_LOGICAL_SIZE));
       group = {
         bi, cells:[], owned:new Set(), riseLogical, riseCells,
+        religious:kind.startsWith('religious_'),
         shiftX:SCREEN_VERTICAL_BUILDING_EXTRUSION
           ? 0
           : Math.max(0, Math.round(riseCells * .34)),
@@ -2992,10 +2998,12 @@ function drawCellHeightExtrudedBuildingGrid(
     !owns(group, x + dx, y + dy) && dx * direction[0] + dy * direction[1] > .35);
   const paintProjected = (group, sourceX, sourceY, offsetX, offsetY, color, detailLayer) => {
     if (!owns(group, sourceX, sourceY)) return;
-    paintSolidMapCell(
+    const painted = paintSolidMapCell(
       sourceX + offsetX, sourceY + offsetY, color, detailLayer, stats,
-      stats.worldStructureDepth ? mapCellScreenDepth(sourceX, sourceY) : null
+      stats.worldStructureDepth ? mapCellScreenDepth(sourceX, sourceY) : null,
+      group.religious
     );
+    if (!painted && group.religious) stats.religiousDepthRejectedCells++;
     stats.buildingDetailCells++;
   };
 
@@ -3021,6 +3029,7 @@ function drawCellHeightExtrudedBuildingGrid(
   // 回転後の画面Yが小さい棟から描き、手前の棟を最後へ重ねる。
   const orderedGroups = [...groups.values()].sort((a, b) =>
     a.maxScreenY - b.maxScreenY || a.riseCells - b.riseCells || a.bi - b.bi);
+  const religiousGroups = [];
   for (const group of orderedGroups){
     const desc = buildingDescs[group.bi];
     const pal = desc?.pal || ROOFPAL[0];
@@ -3074,6 +3083,8 @@ function drawCellHeightExtrudedBuildingGrid(
     const [roofOffsetX, roofOffsetY] = screenCellVectorToSource(
       group.projectionScreen[0], group.projectionScreen[1]
     );
+    group.roofOffsetX = roofOffsetX;
+    group.roofOffsetY = roofOffsetY;
     for (const [x, y] of group.cells){
       const north = owns(group, x, y - 1), south = owns(group, x, y + 1);
       const west = owns(group, x - 1, y), east = owns(group, x + 1, y);
@@ -3119,9 +3130,51 @@ function drawCellHeightExtrudedBuildingGrid(
       }
       paintProjected(group, anchor.ex, anchor.ey, 0, 0, P.door, `${layer}:height-entrance`);
     }
+    if (group.religious && anchor?.religious) religiousGroups.push(group);
     stats.extrudedBuildings++;
     stats.maxBuildingRiseCells = Math.max(stats.maxBuildingRiseCells, group.riseCells);
     stats.maxBuildingRiseLogicalPixels = Math.max(stats.maxBuildingRiseLogicalPixels, group.riseLogical);
+  }
+
+  // 宗教施設の本体は実footprintで描き、入口側だけに鳥居／山門を置く。
+  // 横木は建物の軸に沿って地図と一緒に回し、柱の高さだけは画面上へ正立させる。
+  for (const group of religiousGroups){
+    const anchor = buildingAnchors[group.bi];
+    const placement = anchor.religious;
+    const religion = placement.religion;
+    const sizeCells = Math.max(3, Math.round(
+      RELIGIOUS_FALLBACK_SIZE_LOGICAL_PX[religion] / MAP_CELL_LOGICAL_SIZE));
+    const halfSpan = Math.max(1, Math.floor(sizeCells / 2));
+    const heightCells = Math.max(2, Math.round(4 / MAP_CELL_LOGICAL_SIZE));
+    const baseX = anchor.ex;
+    const baseY = anchor.ey;
+    const structureDepth = mapCellScreenDepth(anchor.ex, anchor.ey);
+    const paintGate = (along, up, color) => {
+      const [upX, upY] = screenCellVectorToSource(0, -up);
+      const x = baseX + placement.tangent[0] * along + upX;
+      const y = baseY + placement.tangent[1] * along + upY;
+      if (paintSolidMapCell(
+        x, y, color, 'religiousStructures:front', stats, structureDepth, true
+      )) stats.spriteCells++;
+      else stats.religiousDepthRejectedCells++;
+    };
+    if (religion === 'shinto'){
+      for (let along = -halfSpan; along <= halfSpan; along++)
+        paintGate(along, heightCells, OUT);
+      for (let along = -halfSpan; along <= halfSpan; along++)
+        paintGate(along, heightCells - 1, '#f06040');
+      for (const along of [-halfSpan, halfSpan])
+        for (let up = 0; up < heightCells; up++) paintGate(along, up, up ? '#d84830' : OUT);
+    } else {
+      for (let along = -halfSpan; along <= halfSpan; along++)
+        paintGate(along, heightCells, OUT);
+      for (let along = -halfSpan; along <= halfSpan; along++)
+        paintGate(along, heightCells - 1, '#9898a0');
+      for (const along of [-halfSpan, halfSpan])
+        for (let up = 0; up < heightCells; up++) paintGate(along, up, '#805038');
+      paintGate(0, heightCells - 1, '#f0c840');
+    }
+    stats.religiousProjectedStructures++;
   }
 }
 
@@ -4742,6 +4795,177 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
   };
 }
 
+function religiousBuildingAxis(cells){
+  if (!cells?.length) return { tangent:[1, 0], elongation:0, center:[0, 0] };
+  let sumX = 0, sumY = 0;
+  for (const [x, y] of cells){ sumX += x; sumY += y; }
+  const center = [sumX / cells.length, sumY / cells.length];
+  let xx = 0, xy = 0, yy = 0;
+  for (const [x, y] of cells){
+    const dx = x - center[0], dy = y - center[1];
+    xx += dx * dx; xy += dx * dy; yy += dy * dy;
+  }
+  const angle = .5 * Math.atan2(2 * xy, xx - yy);
+  const snappedAngle = Math.round(angle / (Math.PI / 4)) * Math.PI / 4;
+  let tangent = [Math.round(Math.cos(snappedAngle)), Math.round(Math.sin(snappedAngle))];
+  if (tangent[0] < 0 || (tangent[0] === 0 && tangent[1] < 0))
+    tangent = [-tangent[0], -tangent[1]];
+  const spread = Math.max(1e-6, xx + yy);
+  const contrast = Math.hypot(xx - yy, 2 * xy);
+  return { tangent, elongation:contrast / spread, center };
+}
+
+function nearestReligiousApproachCell(center, approachCells){
+  let best = null;
+  for (const cell of approachCells){
+    const dx = cell[0] - center[0], dy = cell[1] - center[1];
+    const distanceSq = dx * dx + dy * dy;
+    if (!best || distanceSq < best.distanceSq ||
+        (distanceSq === best.distanceSq && cell[2] < best.priority))
+      best = { cell, distanceSq, priority:cell[2] };
+  }
+  return best;
+}
+
+function resolveReligiousStructurePlacements(
+  facilities, sourceBuildingGrid, sourceBldGrid, sourceBuildingUnits,
+  transportCenters, sourceGrids, worldToGridPoint, gridSize
+){
+  const targets = facilities.filter(item => item.landmarkDisplay === 'religious_structure');
+  const byFacilityKey = new Map();
+  if (!targets.length || !sourceBuildingGrid || !sourceBldGrid)
+    return { byFacilityKey, matchedCount:0, fallbackCount:targets.length, claimedBuildingIds:new Set(), signature:'none' };
+
+  const cellsByBuilding = new Map();
+  for (let index = 0; index < sourceBuildingGrid.length; index++){
+    if (sourceBuildingGrid[index] !== ID.BLD || !sourceBldGrid[index]) continue;
+    const buildingId = sourceBldGrid[index];
+    if (!cellsByBuilding.has(buildingId)) cellsByBuilding.set(buildingId, []);
+    cellsByBuilding.get(buildingId).push([index % gridSize, Math.floor(index / gridSize)]);
+  }
+  const approachCells = [];
+  ['paths','localRoads','regionalRoads','majorRoads'].forEach((option, priority) => {
+    const routeGrid = transportCenters?.get(option) || sourceGrids?.get(option);
+    if (!routeGrid) return;
+    for (let index = 0; index < routeGrid.length; index++)
+      if (routeGrid[index]) approachCells.push([index % gridSize, Math.floor(index / gridSize), priority]);
+  });
+  const matchLimitCells = Math.max(1, Math.ceil(
+    RELIGIOUS_BUILDING_MATCH_LOGICAL_PX / MAP_CELL_LOGICAL_SIZE));
+  const matchCandidates = [];
+  for (const facility of targets){
+    const [anchorX, anchorY] = worldToGridPoint(facility.worldX, facility.worldY);
+    const anchorCellX = Math.floor(anchorX), anchorCellY = Math.floor(anchorY);
+    const inGrid = anchorCellX >= 0 && anchorCellY >= 0 &&
+      anchorCellX < gridSize && anchorCellY < gridSize;
+    const containingBuildingId = inGrid && sourceBuildingGrid[anchorCellY * gridSize + anchorCellX] === ID.BLD
+      ? sourceBldGrid[anchorCellY * gridSize + anchorCellX] : 0;
+    const candidates = new Map();
+    if (containingBuildingId) candidates.set(containingBuildingId, 0);
+    if (!containingBuildingId){
+      const minX = Math.max(0, anchorCellX - matchLimitCells);
+      const maxX = Math.min(gridSize - 1, anchorCellX + matchLimitCells);
+      const minY = Math.max(0, anchorCellY - matchLimitCells);
+      const maxY = Math.min(gridSize - 1, anchorCellY + matchLimitCells);
+      for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++){
+        const index = y * gridSize + x;
+        if (sourceBuildingGrid[index] !== ID.BLD || !sourceBldGrid[index]) continue;
+        const dx = x + .5 - anchorX, dy = y + .5 - anchorY;
+        const distanceSq = dx * dx + dy * dy;
+        if (distanceSq > matchLimitCells * matchLimitCells) continue;
+        const previous = candidates.get(sourceBldGrid[index]);
+        if (previous === undefined || distanceSq < previous)
+          candidates.set(sourceBldGrid[index], distanceSq);
+      }
+    }
+    const ranked = [...candidates].sort((a, b) => {
+      if (a[1] !== b[1]) return a[1] - b[1];
+      const areaA = sourceBuildingUnits?.[a[0] - 1]?.geomAreaCells || 0;
+      const areaB = sourceBuildingUnits?.[b[0] - 1]?.geomAreaCells || 0;
+      return areaB - areaA || a[0] - b[0];
+    });
+    matchCandidates.push({
+      facility, anchor:[anchorX, anchorY], buildingId:ranked[0]?.[0] || 0,
+      distanceSq:ranked[0]?.[1] ?? Infinity, contained:Boolean(containingBuildingId),
+    });
+  }
+
+  // 近い点を優先して1棟1施設に固定し、名称違いの重複点が同じ棟を奪い合わないようにする。
+  matchCandidates.sort((a, b) => Number(b.contained) - Number(a.contained) ||
+    a.distanceSq - b.distanceSq || String(a.facility.key).localeCompare(String(b.facility.key)));
+  const claimedBuildingIds = new Set();
+  for (const candidate of matchCandidates){
+    const { facility, buildingId } = candidate;
+    if (!buildingId){
+      byFacilityKey.set(facility.key, { buildingId:0, religion:facility.props.religion, reason:'no-nearby-building' });
+      continue;
+    }
+    if (claimedBuildingIds.has(buildingId)){
+      byFacilityKey.set(facility.key, { buildingId:0, religion:facility.props.religion, reason:'building-claimed' });
+      continue;
+    }
+    const cells = cellsByBuilding.get(buildingId) || [];
+    if (!cells.length){
+      byFacilityKey.set(facility.key, { buildingId:0, religion:facility.props.religion, reason:'empty-building' });
+      continue;
+    }
+    claimedBuildingIds.add(buildingId);
+    const axis = religiousBuildingAxis(cells);
+    const approach = nearestReligiousApproachCell(axis.center, approachCells);
+    const approachDistanceLogical = approach
+      ? Math.sqrt(approach.distanceSq) * MAP_CELL_LOGICAL_SIZE : Infinity;
+    let tangent = axis.tangent;
+    let front = [-tangent[1], tangent[0]];
+    let orientationSource = 'building-axis';
+    if (approach && approachDistanceLogical <= RELIGIOUS_APPROACH_MAX_LOGICAL_PX){
+      const towardApproach = [approach.cell[0] - axis.center[0], approach.cell[1] - axis.center[1]];
+      if (axis.elongation < .18){
+        const radialAngle = Math.atan2(towardApproach[1], towardApproach[0]);
+        const snapped = Math.round(radialAngle / (Math.PI / 4)) * Math.PI / 4;
+        front = [Math.round(Math.cos(snapped)), Math.round(Math.sin(snapped))];
+        tangent = [-front[1], front[0]];
+      } else if (front[0] * towardApproach[0] + front[1] * towardApproach[1] < 0){
+        front = [-front[0], -front[1]];
+      }
+      orientationSource = 'nearest-approach';
+    } else if (front[1] < 0 || (front[1] === 0 && front[0] < 0)){
+      front = [-front[0], -front[1]];
+    }
+    const centerCell = cells.reduce((best, cell) => {
+      const distanceSq = (cell[0] - axis.center[0]) ** 2 + (cell[1] - axis.center[1]) ** 2;
+      return !best || distanceSq < best.distanceSq ? { cell, distanceSq } : best;
+    }, null).cell;
+    const entranceCell = cells.reduce((best, cell) => {
+      const projection = (cell[0] - axis.center[0]) * front[0] + (cell[1] - axis.center[1]) * front[1];
+      const lateral = Math.abs((cell[0] - axis.center[0]) * tangent[0] + (cell[1] - axis.center[1]) * tangent[1]);
+      return !best || projection > best.projection ||
+        (projection === best.projection && lateral < best.lateral)
+        ? { cell, projection, lateral } : best;
+    }, null).cell;
+    byFacilityKey.set(facility.key, {
+      buildingId,
+      religion:facility.props.religion === 'shinto' ? 'shinto' : 'buddhist',
+      reason:candidate.contained ? 'source-contained' : 'nearest-building',
+      matchDistanceLogicalPixels:Math.sqrt(candidate.distanceSq) * MAP_CELL_LOGICAL_SIZE,
+      centerCell,
+      entranceCell,
+      tangent,
+      front,
+      orientationSource,
+      approachDistanceLogicalPixels:Number.isFinite(approachDistanceLogical) ? approachDistanceLogical : null,
+      axisElongation:axis.elongation,
+    });
+  }
+  const matchedCount = [...byFacilityKey.values()].filter(value => value.buildingId).length;
+  return {
+    byFacilityKey,
+    matchedCount,
+    fallbackCount:targets.length - matchedCount,
+    claimedBuildingIds,
+    signature:[...byFacilityKey].map(([key, value]) => `${key}:${value.buildingId}:${value.religion}`).sort().join('|'),
+  };
+}
+
 // 収集ランドマークと施設敷地は表示対象の選抜にだけ使い、見た目は
 // 「たてもの」レイヤーの実建物ID・形状・配色をそのまま再利用する。
 // ランドマークに対応建物がない場合だけ収集形状へ戻す。
@@ -4749,7 +4973,7 @@ function matchStandaloneLandmarksToSourceBuildings(
   landmark, sourceBuildingGrid, sourceBldGrid,
   sourceBuildingKinds, sourceBuildingDescs, sourceBuildingAnchors, sourceBldStyle,
   facilityTargets = [], sourceUnitByRingKey = null, facilityToGridPoint = null,
-  facilitySites = []
+  facilitySites = [], excludedSourceBuildingIds = new Set()
 ){
   const directFacilityTargets = facilityTargets.filter(facility =>
     isStationProps(facility.props) || isSchoolFacilityProps(facility.props));
@@ -4885,6 +5109,9 @@ function matchStandaloneLandmarksToSourceBuildings(
     }
   }
 
+  // 宗教施設として専用描画する実建物は、ランドマーク／施設敷地側の
+  // source-building layerから除き、同じ棟を二度押し出さない。
+  for (const buildingId of excludedSourceBuildingIds) sourceBuildingIds.delete(buildingId);
   const sourceGrid = new Uint8Array(sourceBuildingGrid.length);
   const facilityFootprintGrid = new Uint8Array(landmark.grid.length);
   const fallbackGrid = new Uint8Array(landmark.grid.length);
@@ -5004,12 +5231,14 @@ function render(){
     gridSize:RG,
     pixelData:CELL_ONLY_MODE ? new Uint8ClampedArray(RG * RG * 4) : null,
     occupiedMask:CELL_ONLY_MODE ? new Uint8Array(RG * RG) : null,
-    // 建物と点登録神社仏閣だけが共有する画面奥行き。地表や通常記号は対象外。
+    // 通常建物・実建物化した神社仏閣・小型fallbackが共有する画面奥行き。
     worldStructureDepth:CELL_ONLY_MODE && !EMBEDDED
       ? new Float32Array(RG * RG).fill(Number.NEGATIVE_INFINITY) : null,
     depthRejectedCells:0,
     religiousDepthRejectedCells:0,
     religiousProjectedStructures:0,
+    religiousMatchedBuildings:0,
+    religiousFallbackSymbols:0,
     paintedCells:0,
     occupiedCells:0,
     layerCells:Object.create(null),
@@ -5037,11 +5266,28 @@ function render(){
   /* --- リゾルバーの確定施設データ（アイコンにも建物の用途分類にも使う） --- */
   const resolvedView = applyStandaloneLandmarks(collectResolvedFacilities());
   if (resolvedView.pendingTiles) ensureTilesAround().catch(console.error);
+  const religiousPlacements = STANDALONE_LANDMARK_MODE && CELL_ONLY_MODE
+    ? resolveReligiousStructurePlacements(
+      resolvedView.facilities, grids.get('buildings'), bldGrid, bldUnits,
+      transportCenters, grids, worldToGridPoint, RG
+    )
+    : { byFacilityKey:new Map(), matchedCount:0, fallbackCount:0, claimedBuildingIds:new Set(), signature:'disabled' };
+  cellRenderingStats.religiousMatchedBuildings = religiousPlacements.matchedCount;
+  const religiousPlacementByBuildingId = new Map(
+    [...religiousPlacements.byFacilityKey.values()]
+      .filter(placement => placement.buildingId)
+      .map(placement => [placement.buildingId, placement])
+  );
 
   /* --- 建物の意味づけ: 棟 × リゾルバー施設 → 見た目記述子 ---
      kind/categoryはリゾルバーが唯一の正典。未解決MVTタイルの棟は一旦normalで描き、
      解決済みMVTタイルが増える（stampが変わる）たびに再計算して昇格させる。 --- */
-  const semanticStamp = tileGeneration + ':' + resolvedView.resolvedTileCount;
+  const semanticStamp = [
+    tileGeneration,
+    resolvedView.resolvedTileCount,
+    o.poi ? 'religious-on' : 'religious-off',
+    religiousPlacements.signature,
+  ].join(':');
   if (!rasterized.semantic || rasterized.semantic.stamp !== semanticStamp){
     const unitCount = bldUnits.length;
     const buildingKinds = Array(unitCount + 1).fill('normal');
@@ -5066,7 +5312,10 @@ function render(){
     for (let bi = 1; bi <= unitCount; bi++){
       const unit = bldUnits[bi - 1];
       const facility = facilityByUnit[bi];
-      const kind = facility && facility.metrics.kind !== 'none' ? facility.metrics.kind : 'normal';
+      const placement = o.poi ? religiousPlacementByBuildingId.get(bi) : null;
+      const kind = placement
+        ? `religious_${placement.religion}`
+        : facility && facility.metrics.kind !== 'none' ? facility.metrics.kind : 'normal';
       buildingKinds[bi] = kind;
       const lodSeed = BUILDING_STYLES.seedFromKey(unit.ringKey);
       buildingDescs[bi] = {
@@ -5079,6 +5328,23 @@ function render(){
         }),
         lodSeed,
       };
+      if (placement){
+        const shinto = placement.religion === 'shinto';
+        buildingDescs[bi] = {
+          ...buildingDescs[bi],
+          pal:shinto
+            ? ['#d84830', '#983020', '#f07050']
+            : ['#787888', '#505060', '#a8a8b0'],
+          accent:shinto ? '#f06040' : '#d8bd78',
+          riseLogicalPixels:RELIGIOUS_BUILDING_RISE_LOGICAL_PX[placement.religion],
+        };
+        buildingAnchors[bi] = {
+          gx:placement.centerCell[0], gy:placement.centerCell[1],
+          ex:placement.entranceCell[0], ey:placement.entranceCell[1],
+          religious:placement,
+        };
+        continue;
+      }
       if (facility){
         // 屋上マークと入口は施設のワールド座標にアンカーする（パンで動かない）
         let [ax, ay] = worldToGridCell(facility.worldX, facility.worldY);
@@ -5104,19 +5370,26 @@ function render(){
     const buildingGrid = grids.get('buildings');
     const normalBuildingGrid = new Uint8Array(RG * RG);
     const poiBuildingGrid = new Uint8Array(RG * RG);
+    const religiousBuildingGrid = new Uint8Array(RG * RG);
     if (buildingGrid){
       for (let i = 0; i < buildingGrid.length; i++){
         if (buildingGrid[i] !== ID.BLD) continue;
-        const target = buildingKinds[bldGrid[i]] === 'normal' ? normalBuildingGrid : poiBuildingGrid;
+        const kind = buildingKinds[bldGrid[i]];
+        if (kind.startsWith('religious_')) religiousBuildingGrid[i] = ID.BLD;
+        const target = kind === 'normal' || kind.startsWith('religious_')
+          ? normalBuildingGrid : poiBuildingGrid;
         target[i] = ID.BLD;
       }
     }
     rasterized.semantic = {
       stamp:semanticStamp, buildingKinds, buildingDescs, buildingAnchors,
-      bldStyle, normalBuildingGrid, poiBuildingGrid,
+      bldStyle, normalBuildingGrid, poiBuildingGrid, religiousBuildingGrid,
     };
   }
-  const { buildingKinds, buildingDescs, buildingAnchors, bldStyle, normalBuildingGrid, poiBuildingGrid } = rasterized.semantic;
+  const {
+    buildingKinds, buildingDescs, buildingAnchors, bldStyle,
+    normalBuildingGrid, poiBuildingGrid, religiousBuildingGrid,
+  } = rasterized.semantic;
   const emptyGrid = new Uint8Array(RASTER_GRID_SIZE * RASTER_GRID_SIZE);
   if (CELL_ONLY_MODE) drawCellPixelArtSurfaceGrid(emptyGrid, 'grass', cellRenderingStats, false);
   else drawGrid(emptyGrid, bldGrid, bldStyle, { grass:false });
@@ -5365,7 +5638,12 @@ function render(){
   const facilitiesInView = resolvedView.facilities
     .map(f => {
       const pt = worldToScreen(f.worldX, f.worldY);
-      return { ...f, pt, visualRadius:f.collisionRadius };
+      return {
+        ...f,
+        pt,
+        visualRadius:f.collisionRadius,
+        religiousPlacement:religiousPlacements.byFacilityKey.get(f.key) || null,
+      };
     })
     .filter(p => p.pt[0] >= -rotationVisibilityMargin && p.pt[1] >= -rotationVisibilityMargin &&
       p.pt[0] <= W + rotationVisibilityMargin && p.pt[1] <= H + rotationVisibilityMargin)
@@ -5390,7 +5668,7 @@ function render(){
       buildingKinds, buildingDescs, buildingAnchors, bldStyle,
       facilityBuildingTargets, unitByRingKey,
       facility => worldToGridPoint(facility.worldX, facility.worldY),
-      facilitySites
+      facilitySites, religiousPlacements.claimedBuildingIds
     )
     : null;
   const matchedStandaloneFacilities = landmarkBuildingRaster?.matchedFacilities || new Set();
@@ -5622,85 +5900,44 @@ function render(){
   function drawStandaloneReligiousStructure(item){
     const shinto = item.props.religion === 'shinto';
     if (CELL_ONLY_MODE){
+      if (item.religiousPlacement?.buildingId){
+        const [gx, gy] = item.religiousPlacement.centerCell;
+        item.cellPt = solidMapCellCenter(gx, gy);
+        item.visualRadius = Math.max(12, RELIGIOUS_BUILDING_MATCH_LOGICAL_PX * SCENE_PIXELS_PER_LOGICAL_PIXEL);
+        cellRenderingStats.facilitySymbols++;
+        return item.cellPt;
+      }
       const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
       const structureDepth = mapCellScreenDepth(gx, gy);
       const religion = shinto ? 'shinto' : 'buddhist';
-      const riseCells = RELIGIOUS_STRUCTURE_RISE_CELLS[religion];
-      const footprint = shinto
-        ? { minX:-3, maxX:3, minY:-2, maxY:0 }
-        : { minX:-4, maxX:4, minY:-2, maxY:0 };
-      const structureScenePoint = rotateScenePoint([
-        gridShiftX + (gx + .5) * CPX,
-        gridShiftY + (gy + .5) * CPX,
-      ]);
-      const structureProjection = buildingProjectionScreenCellVector(
-        structureScenePoint, riseCells, 0
-      );
+      const sizeCells = Math.max(3, Math.round(
+        RELIGIOUS_FALLBACK_SIZE_LOGICAL_PX[religion] / MAP_CELL_LOGICAL_SIZE));
+      const halfSpan = Math.max(1, Math.floor(sizeCells / 2));
+      const heightCells = Math.max(2, Math.round(4 / MAP_CELL_LOGICAL_SIZE));
       const paint = (dx, dy, color) => {
         const [sourceDx, sourceDy] = screenCellVectorToSource(dx, dy);
         if (paintSolidMapCell(
           gx + sourceDx, gy + sourceDy, color,
-          'religiousStructures', cellRenderingStats, structureDepth, true
+          'religiousStructures:fallback', cellRenderingStats, structureDepth, true
         )) cellRenderingStats.spriteCells++;
         else cellRenderingStats.religiousDepthRejectedCells++;
       };
-      const paintProjected = (dx, dy, color, progress = 1) => paint(
-        dx + structureProjection[0] * progress,
-        dy + structureProjection[1] * progress,
-        color
-      );
-      const paintProjectedRect = (x, y, width, height, color, progress = 1) => {
-        for (let dy = 0; dy < height; dy++)
-          for (let dx = 0; dx < width; dx++)
-            paintProjected(x + dx, y + dy, color, progress);
-      };
-
-      // 接地footprintの周縁を屋根まで連続的に伸ばす。投影は通常建物と
-      // 同じbuildingProjectionScreenCellVectorを通し、回転時も画面上方の消失点へ揃える。
-      for (let step = 0; step < riseCells; step++){
-        const progress = step / riseCells;
-        for (let x = footprint.minX; x <= footprint.maxX; x++)
-          paintProjected(x, footprint.maxY, P.wall, progress);
-        for (let y = footprint.minY; y < footprint.maxY; y++){
-          paintProjected(footprint.minX, y, OUT, progress);
-          paintProjected(footprint.maxX, y, P.wallDk, progress);
-        }
-      }
-
-      // 屋根は投影先へ置き、鳥居・山門は接地面から正立させる。
       if (shinto){
-        // 奥の社殿屋根。前後の色差で投影された屋根面を示す。
-        paintProjectedRect(-4,-3,9,1,OUT);
-        paintProjectedRect(-3,-2,7,1,'#a83828');
-        paintProjectedRect(-4,-1,9,1,'#e05838');
-        paintProjectedRect(-3,0,7,1,OUT);
-        // 手前の鳥居。横木と二本柱を社殿より鮮やかな朱色で区別する。
-        paintProjectedRect(-6,-5,13,1,OUT,0);
-        paintProjectedRect(-5,-4,11,1,'#f06040',0);
-        paintProjectedRect(-4,-3,9,1,OUT,0);
-        paintProjectedRect(-3,-2,7,1,'#d84830',0);
-        paintProjectedRect(-4,-2,2,3,OUT,0);
-        paintProjectedRect(-3,-2,1,3,'#f06040',0);
-        paintProjectedRect(3,-2,2,3,OUT,0);
-        paintProjectedRect(3,-2,1,3,'#f06040',0);
+        for (let dx = -halfSpan; dx <= halfSpan; dx++) paint(dx, -heightCells, OUT);
+        for (let dx = -halfSpan; dx <= halfSpan; dx++) paint(dx, -heightCells + 1, '#f06040');
+        for (const dx of [-halfSpan, halfSpan])
+          for (let up = 0; up < heightCells; up++) paint(dx, -up, up ? '#d84830' : OUT);
       } else {
-        // 奥の本堂屋根と、接地面から立つ手前の山門。
-        paintProjectedRect(-5,-3,11,1,OUT);
-        paintProjectedRect(-4,-2,9,1,'#686878');
-        paintProjectedRect(-5,-1,11,1,'#9898a0');
-        paintProjectedRect(-4,0,9,1,OUT);
-        paintProjectedRect(-4,-5,9,1,OUT,0);
-        paintProjectedRect(-3,-4,7,1,'#686878',0);
-        paintProjectedRect(-4,-3,9,1,'#9898a0',0);
-        paintProjectedRect(-3,-2,1,3,'#9a5038',0);
-        paintProjectedRect(3,-2,1,3,'#9a5038',0);
-        paintProjectedRect(-1,-2,3,3,'#604838',0);
-        paintProjected(0,-2,'#f0c840',0);
+        for (let dx = -halfSpan; dx <= halfSpan; dx++) paint(dx, -heightCells, OUT);
+        for (let dx = -halfSpan; dx <= halfSpan; dx++) paint(dx, -heightCells + 1, '#9898a0');
+        for (const dx of [-halfSpan, halfSpan])
+          for (let up = 0; up < heightCells; up++) paint(dx, -up, '#805038');
+        paint(0, -heightCells + 1, '#f0c840');
       }
       item.cellPt = solidMapCellCenter(gx, gy);
-      item.visualRadius = 7 * CPX;
+      item.visualRadius = Math.max(10, sizeCells * CPX);
       cellRenderingStats.facilitySymbols++;
-      cellRenderingStats.religiousProjectedStructures++;
+      cellRenderingStats.religiousFallbackSymbols++;
       return item.cellPt;
     }
     const [x0, y0] = item.pt;
@@ -5795,10 +6032,13 @@ function render(){
     for (const p of drawnIcons.filter(item => item.landmarkDisplay === 'religious_structure'))
       drawStandaloneReligiousStructure(p);
     for (const item of drawnIcons){
-      const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
+      const [gx, gy] = item.religiousPlacement?.buildingId
+        ? item.religiousPlacement.centerCell
+        : worldToGridCell(item.worldX, item.worldY);
       item.cellPt = solidMapCellCenter(gx, gy);
       const [x, y] = CELL_ONLY_MODE ? item.cellPt : item.pt;
-      const radius = item.landmarkDisplay === 'religious_structure' ? 28 : 18;
+      const radius = item.landmarkDisplay === 'religious_structure'
+        ? Math.max(18, item.visualRadius || 0) : 18;
       hitAreas.push({ x:x - radius, y:y - radius, w:radius * 2, h:radius * 2, p:item.props, kind:'poi' });
     }
   }
@@ -6106,6 +6346,13 @@ function render(){
       drawGrid(normalBuildingGrid, bldGrid, bldStyle, { grass:false, buildingKinds, buildingDescs, buildingAnchors }, true);
     }
     renderOrder.push('Z3:building');
+  }
+  if (!o.buildings && o.poi && CELL_ONLY_MODE && religiousPlacements.matchedCount){
+    drawCellPixelArtBuildingGrid(
+      religiousBuildingGrid, bldGrid, buildingKinds, buildingDescs, buildingAnchors,
+      'religiousBuildings', cellRenderingStats
+    );
+    renderOrder.push('Z3:religiousBuilding');
   }
   if (STANDALONE_UNIFIED_STYLE && o.poi && !STANDALONE_LANDMARK_MODE){
     // POI structureは通常建物と同じworld層。道路を避けて移動・変形せず、
@@ -6463,6 +6710,12 @@ function render(){
         ? cellRenderingStats.religiousDepthRejectedCells : 0,
       religiousProjectedStructures:CELL_ONLY_MODE
         ? cellRenderingStats.religiousProjectedStructures : 0,
+      religiousMatchedBuildings:CELL_ONLY_MODE
+        ? cellRenderingStats.religiousMatchedBuildings : 0,
+      religiousFallbackSymbols:CELL_ONLY_MODE
+        ? cellRenderingStats.religiousFallbackSymbols : 0,
+      religiousStructureMode:STANDALONE_LANDMARK_MODE
+        ? 'matched-building-footprint-or-compact-symbol' : 'disabled',
       religiousStructureProjectionMode:SCREEN_VERTICAL_BUILDING_EXTRUSION
         ? 'screen-vertical'
         : BEARING_STUDY_MODE ? 'fixed-vanishing-point' : 'north-up-diagonal',
@@ -6514,6 +6767,19 @@ function render(){
       matchedFacilitySiteBuildings:landmarkBuildingRaster?.matchedFacilitySiteBuildings || 0,
       matchedSourceBuildings:landmarkBuildingRaster?.sourceBuildingIds || 0,
       facilityFootprintFeatures:landmarkBuildingRaster?.facilityFootprintFeatures || 0,
+      religiousPlacementMatches:religiousPlacements.matchedCount,
+      religiousPlacementFallbacks:religiousPlacements.fallbackCount,
+      religiousPlacementDetails:[...religiousPlacements.byFacilityKey].map(([key, placement]) => ({
+        key,
+        buildingId:placement.buildingId,
+        religion:placement.religion,
+        reason:placement.reason,
+        orientationSource:placement.orientationSource || null,
+        matchDistanceLogicalPixels:placement.matchDistanceLogicalPixels ?? null,
+        approachDistanceLogicalPixels:placement.approachDistanceLogicalPixels ?? null,
+        tangent:placement.tangent || null,
+        front:placement.front || null,
+      })),
       total:resolvedView.facilities.length,
       visible:facilitiesInView.length,
       offscreen:resolvedView.facilities.length - facilitiesInView.length,

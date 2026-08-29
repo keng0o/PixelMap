@@ -269,25 +269,37 @@ test('建物は棟ごとの屋根・壁・影・施設記号を原子セルで�
   assert.match(html, /kind === 'poi' && desc\?\.glyph/);
 });
 
-test('点登録の神社仏閣は接地点の奥行きで手前の建物に遮蔽される', () => {
+test('点登録の神社仏閣は実建物のセル奥行きで手前の建物に遮蔽される', () => {
   assert.match(html, /worldStructureDepth:CELL_ONLY_MODE && !EMBEDDED/);
   assert.match(html, /function mapCellScreenDepth\(gx, gy\)/);
   assert.match(html, /function paintSolidMapCell\(gx, gy, color, layer, stats, worldDepth = null, depthTest = false\)/);
   assert.match(html, /depthTest && existingDepth > worldDepth[\s\S]*?depthRejectedCells\+\+/);
   assert.match(html, /paintSolidMapCell\([\s\S]*?sourceX \+ offsetX, sourceY \+ offsetY,[\s\S]*?mapCellScreenDepth\(sourceX, sourceY\)/);
-  assert.match(html, /const structureDepth = mapCellScreenDepth\(gx, gy\)/);
-  assert.match(html, /'religiousStructures', cellRenderingStats, structureDepth, true/);
+  assert.match(html, /kind\.startsWith\('religious_'\)/);
+  assert.match(html, /stats\.worldStructureDepth \? mapCellScreenDepth\(sourceX, sourceY\) : null,[\s\S]*?group\.religious/);
+  assert.match(html, /'religiousStructures:fallback'[\s\S]*?structureDepth, true/);
   assert.match(html, /religiousDepthRejectedCells\+\+/);
 });
 
-test('点登録の神社仏閣は通常建物と同じ消失点投影で壁と屋根を立ち上げる', () => {
-  assert.match(html, /const RELIGIOUS_STRUCTURE_RISE_CELLS = Object\.freeze\(/);
-  assert.match(html, /const structureProjection = buildingProjectionScreenCellVector\(/);
-  assert.match(html, /const paintProjected = \(dx, dy, color, progress/);
-  assert.match(html, /for \(let step = 0; step < riseCells; step\+\+\)/);
-  assert.match(html, /const paintProjectedRect = [\s\S]*?paintProjected\(/);
-  assert.match(html, /religiousProjectedStructures\+\+/);
-  assert.match(html, /religiousStructureProjectionMode:SCREEN_VERTICAL_BUILDING_EXTRUSION[\s\S]*?'screen-vertical'/);
+test('点登録の神社仏閣は実建物の輪郭・軸・道路側正面を使い、未一致だけ小型記号へ戻す', () => {
+  assert.match(html, /const RELIGIOUS_BUILDING_MATCH_LOGICAL_PX = 12/);
+  assert.match(html, /const RELIGIOUS_BUILDING_RISE_LOGICAL_PX = Object\.freeze\(/);
+  assert.match(html, /const RELIGIOUS_FALLBACK_SIZE_LOGICAL_PX = Object\.freeze\(/);
+  assert.match(html, /function resolveReligiousStructurePlacements\(/);
+  assert.match(html, /const matchLimitCells = Math\.max\(1, Math\.ceil\([\s\S]*?\/ MAP_CELL_LOGICAL_SIZE\)\)/);
+  assert.match(html, /const containingBuildingId = inGrid[\s\S]*?sourceBldGrid\[anchorCellY \* gridSize \+ anchorCellX\]/);
+  assert.match(html, /function religiousBuildingAxis\(cells\)/);
+  assert.match(html, /const approach = nearestReligiousApproachCell\(/);
+  assert.match(html, /const claimedBuildingIds = new Set\(\)/);
+  assert.match(html, /reason:'building-claimed'/);
+  assert.match(html, /const religiousBuildingGrid = new Uint8Array\(RG \* RG\)/);
+  assert.match(html, /riseLogicalPixels:RELIGIOUS_BUILDING_RISE_LOGICAL_PX\[placement\.religion\]/);
+  assert.match(html, /item\.religiousPlacement\?\.buildingId/);
+  assert.match(html, /RELIGIOUS_FALLBACK_SIZE_LOGICAL_PX\[religion\] \/ MAP_CELL_LOGICAL_SIZE/);
+  assert.doesNotMatch(html, /minX:-3, maxX:3, minY:-2, maxY:0/);
+  assert.doesNotMatch(html, /minX:-4, maxX:4, minY:-2, maxY:0/);
+  assert.match(html, /religiousMatchedBuildings/);
+  assert.match(html, /religiousFallbackSymbols/);
 });
 
 test('建物は構造輪郭を連続させ、standalone testだけ窓の黒い点を除く', () => {
