@@ -280,6 +280,16 @@ test('点登録の神社仏閣は接地点の奥行きで手前の建物に遮�
   assert.match(html, /religiousDepthRejectedCells\+\+/);
 });
 
+test('点登録の神社仏閣は通常建物と同じ消失点投影で壁と屋根を立ち上げる', () => {
+  assert.match(html, /const RELIGIOUS_STRUCTURE_RISE_CELLS = Object\.freeze\(/);
+  assert.match(html, /const structureProjection = buildingProjectionScreenCellVector\(/);
+  assert.match(html, /const paintProjected = \(dx, dy, color, progress/);
+  assert.match(html, /for \(let step = 0; step < riseCells; step\+\+\)/);
+  assert.match(html, /const paintProjectedRect = [\s\S]*?paintProjected\(/);
+  assert.match(html, /religiousProjectedStructures\+\+/);
+  assert.match(html, /religiousStructureProjectionMode:SCREEN_VERTICAL_BUILDING_EXTRUSION[\s\S]*?'screen-vertical'/);
+});
+
 test('建物は構造輪郭を連続させ、standalone testだけ窓の黒い点を除く', () => {
   assert.match(html, /const BUILDING_WINDOW_CELLS = EMBEDDED/);
   assert.match(html, /sideEdge && \(CONTINUOUS_BUILDING_STRUCTURE_OUTLINE \|\| outlinePhase !== 1\)/);

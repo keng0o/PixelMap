@@ -1170,6 +1170,9 @@ function buildingProjectionScreenCellVector(scenePoint, riseCells, shiftX){
   if (SCREEN_VERTICAL_BUILDING_EXTRUSION) return [0, -riseCells];
   return fixedVanishingScreenCellVector(scenePoint, riseCells, shiftX);
 }
+// 点登録の神社仏閣も通常建物と同じ投影関数で屋根を持ち上げる。
+// 鳥居・山門は地図の方位に左右されない正立した正面意匠として重ねる。
+const RELIGIOUS_STRUCTURE_RISE_CELLS = Object.freeze({ shinto:6, buddhist:6 });
 function rotateWorldHitAreas(areas){
   if (!BEARING_STUDY_MODE) return;
   for (const area of areas){
@@ -5006,6 +5009,7 @@ function render(){
       ? new Float32Array(RG * RG).fill(Number.NEGATIVE_INFINITY) : null,
     depthRejectedCells:0,
     religiousDepthRejectedCells:0,
+    religiousProjectedStructures:0,
     paintedCells:0,
     occupiedCells:0,
     layerCells:Object.create(null),
@@ -5620,6 +5624,18 @@ function render(){
     if (CELL_ONLY_MODE){
       const [gx, gy] = worldToGridCell(item.worldX, item.worldY);
       const structureDepth = mapCellScreenDepth(gx, gy);
+      const religion = shinto ? 'shinto' : 'buddhist';
+      const riseCells = RELIGIOUS_STRUCTURE_RISE_CELLS[religion];
+      const footprint = shinto
+        ? { minX:-3, maxX:3, minY:-2, maxY:0 }
+        : { minX:-4, maxX:4, minY:-2, maxY:0 };
+      const structureScenePoint = rotateScenePoint([
+        gridShiftX + (gx + .5) * CPX,
+        gridShiftY + (gy + .5) * CPX,
+      ]);
+      const structureProjection = buildingProjectionScreenCellVector(
+        structureScenePoint, riseCells, 0
+      );
       const paint = (dx, dy, color) => {
         const [sourceDx, sourceDy] = screenCellVectorToSource(dx, dy);
         if (paintSolidMapCell(
@@ -5628,34 +5644,63 @@ function render(){
         )) cellRenderingStats.spriteCells++;
         else cellRenderingStats.religiousDepthRejectedCells++;
       };
-      const rect = (x, y, width, height, color) => {
+      const paintProjected = (dx, dy, color, progress = 1) => paint(
+        dx + structureProjection[0] * progress,
+        dy + structureProjection[1] * progress,
+        color
+      );
+      const paintProjectedRect = (x, y, width, height, color, progress = 1) => {
         for (let dy = 0; dy < height; dy++)
-          for (let dx = 0; dx < width; dx++) paint(x + dx, y + dy, color);
+          for (let dx = 0; dx < width; dx++)
+            paintProjected(x + dx, y + dy, color, progress);
       };
-      // 点の位置は接地中心として保ち、建物絵だけを画面へ正立させる。
+
+      // 接地footprintの周縁を屋根まで連続的に伸ばす。投影は通常建物と
+      // 同じbuildingProjectionScreenCellVectorを通し、回転時も画面上方の消失点へ揃える。
+      for (let step = 0; step < riseCells; step++){
+        const progress = step / riseCells;
+        for (let x = footprint.minX; x <= footprint.maxX; x++)
+          paintProjected(x, footprint.maxY, P.wall, progress);
+        for (let y = footprint.minY; y < footprint.maxY; y++){
+          paintProjected(footprint.minX, y, OUT, progress);
+          paintProjected(footprint.maxX, y, P.wallDk, progress);
+        }
+      }
+
+      // 屋根は投影先へ置き、鳥居・山門は接地面から正立させる。
       if (shinto){
-        // 奥の社殿。
-        rect(-3,-9,7,1,OUT); rect(-4,-8,9,1,OUT);
-        rect(-3,-8,7,1,'#a83828'); rect(-3,-7,7,1,'#e05838');
-        rect(-2,-6,5,5,OUT); rect(-1,-6,3,4,'#f0dfb8');
-        rect(0,-5,1,4,'#705040');
+        // 奥の社殿屋根。前後の色差で投影された屋根面を示す。
+        paintProjectedRect(-4,-3,9,1,OUT);
+        paintProjectedRect(-3,-2,7,1,'#a83828');
+        paintProjectedRect(-4,-1,9,1,'#e05838');
+        paintProjectedRect(-3,0,7,1,OUT);
         // 手前の鳥居。横木と二本柱を社殿より鮮やかな朱色で区別する。
-        rect(-6,-7,13,1,OUT); rect(-5,-6,11,1,'#f06040');
-        rect(-4,-5,9,1,OUT); rect(-3,-4,7,1,'#d84830');
-        rect(-4,-4,2,5,OUT); rect(-3,-4,1,5,'#f06040');
-        rect(3,-4,2,5,OUT); rect(3,-4,1,5,'#f06040');
+        paintProjectedRect(-6,-5,13,1,OUT,0);
+        paintProjectedRect(-5,-4,11,1,'#f06040',0);
+        paintProjectedRect(-4,-3,9,1,OUT,0);
+        paintProjectedRect(-3,-2,7,1,'#d84830',0);
+        paintProjectedRect(-4,-2,2,3,OUT,0);
+        paintProjectedRect(-3,-2,1,3,'#f06040',0);
+        paintProjectedRect(3,-2,2,3,OUT,0);
+        paintProjectedRect(3,-2,1,3,'#f06040',0);
       } else {
-        // 山門の大屋根と、その奥に見える本堂。
-        rect(-5,-9,11,1,OUT); rect(-6,-8,13,1,OUT);
-        rect(-5,-8,11,1,'#686878'); rect(-4,-7,9,1,'#9898a0');
-        rect(-4,-6,9,1,OUT); rect(-3,-5,7,4,'#e8d8b0');
-        rect(-3,-5,1,4,'#9a5038'); rect(3,-5,1,4,'#9a5038');
-        rect(-1,-5,3,4,'#604838'); rect(0,-5,1,3,'#f0c840');
-        rect(-4,-1,9,1,OUT); rect(-3,0,7,1,'#a88860');
+        // 奥の本堂屋根と、接地面から立つ手前の山門。
+        paintProjectedRect(-5,-3,11,1,OUT);
+        paintProjectedRect(-4,-2,9,1,'#686878');
+        paintProjectedRect(-5,-1,11,1,'#9898a0');
+        paintProjectedRect(-4,0,9,1,OUT);
+        paintProjectedRect(-4,-5,9,1,OUT,0);
+        paintProjectedRect(-3,-4,7,1,'#686878',0);
+        paintProjectedRect(-4,-3,9,1,'#9898a0',0);
+        paintProjectedRect(-3,-2,1,3,'#9a5038',0);
+        paintProjectedRect(3,-2,1,3,'#9a5038',0);
+        paintProjectedRect(-1,-2,3,3,'#604838',0);
+        paintProjected(0,-2,'#f0c840',0);
       }
       item.cellPt = solidMapCellCenter(gx, gy);
       item.visualRadius = 7 * CPX;
       cellRenderingStats.facilitySymbols++;
+      cellRenderingStats.religiousProjectedStructures++;
       return item.cellPt;
     }
     const [x0, y0] = item.pt;
@@ -6416,6 +6461,11 @@ function render(){
       depthRejectedCells:CELL_ONLY_MODE ? cellRenderingStats.depthRejectedCells : 0,
       religiousDepthRejectedCells:CELL_ONLY_MODE
         ? cellRenderingStats.religiousDepthRejectedCells : 0,
+      religiousProjectedStructures:CELL_ONLY_MODE
+        ? cellRenderingStats.religiousProjectedStructures : 0,
+      religiousStructureProjectionMode:SCREEN_VERTICAL_BUILDING_EXTRUSION
+        ? 'screen-vertical'
+        : BEARING_STUDY_MODE ? 'fixed-vanishing-point' : 'north-up-diagonal',
       heightExtrusionEnabled:CELL_HEIGHT_EXTRUSION,
       buildingLineContinuity:CONTINUOUS_BUILDING_STRUCTURE_OUTLINE,
       buildingProjectionMode:SCREEN_VERTICAL_BUILDING_EXTRUSION
