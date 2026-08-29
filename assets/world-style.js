@@ -2,12 +2,12 @@
   'use strict';
 
   /*
-    PixelMap World Style v7
+    PixelMap World Style v5
     -----------------------
     productionの描画値を直接共有せず、z14比較用snapshotへ値コピーして保持する。
     production-copyは見た目の基準、retroJrpgZ14は意図的な実験用profileとして分離する。
   */
-  const VERSION = 'pixelmap-world-style/7';
+  const VERSION = 'pixelmap-world-style/5';
   const PRODUCTION_SNAPSHOT_VERSION = 'pixelmap-production-visual-snapshot/1';
 
   function frozenCopy(value){
@@ -200,113 +200,7 @@
     }),
   });
 
-  /*
-    standalone cell2/cell3だけで使う、強度3のスチームパンク機械都市skin。
-    元の道路中心線・建物footprint・水域境界は変えず、画面上へ伸びる大型の
-    非意味機械素材を重ねる。production embeddedからは選択しない。
-  */
-  const steampunkMegacityDayZ14 = Object.freeze({
-    version:VERSION,id:'steampunk-megacity-day-z14',label:'曇天のスチームパンク機械都市 z14',
-    profileKind:'standalone-test-skin',assetPack:'steampunk-megacity-pixel-v1',
-    assetSystem:'pixelmap-steampunk-map-assets/1',intensity:3,
-    tileZoom:14,sourceGeometryImmutable:true,
-    palette:frozenCopy({
-      outline:'#202729',
-      grass:'#566157',grassDark:'#424d45',grassLight:'#6f796a',
-      treeDark:'#31443a',tree:'#405647',treeLight:'#5f7059',trunk:'#563d31',
-      forestFloor:'#3f4d42',forestDeep:'#293931',forestMid:'#465b49',
-      forestLight:'#637260',forestMoss:'#737659',
-      woodsFloor:'#596555',woodsDeep:'#384b40',woodsMid:'#4c6150',woodsLight:'#71806a',
-      parkSmall:'#626e5a',parkMedium:'#5c6855',parkLarge:'#53614f',parkPath:'#8e8064',
-      residential:'#817561',residentialDark:'#5e5549',
-      commercial:'#737874',commercialDark:'#515858',
-      roadLocal:'#918a77',roadRegional:'#a49a82',roadMajor:'#ad915f',motorway:'#b19761',
-      roadEdge:'#55524a',roadPatch:'#6b6253',roadDrain:'#394345',
-      trail:'#8c775a',trailDark:'#5a4e40',
-      gravel:'#63635d',gravelDark:'#454947',gravelLight:'#85847a',
-      farm:'#80714f',farmDark:'#5d533c',sand:'#998a68',sandDark:'#746449',
-      rock:'#626568',rockDark:'#42484c',rockLight:'#848789',
-      wetland:'#4d6962',wetlandDark:'#344f4a',wetlandWater:'#496b70',
-      ice:'#aebbb8',iceDark:'#748989',iceLight:'#d0d7cf',
-      field:'#52664e',fieldAlt:'#475b44',
-      water:'#456b73',waterLight:'#6f8d92',waterDark:'#304f57',waterEdge:'#9eaaa3',
-      roofA:'#914430',roofADark:'#5f2c29',roofALight:'#b5613e',roofAEdge:'#431f22',
-      roofB:'#46616a',roofBDark:'#30454d',roofBLight:'#688087',roofBEdge:'#223339',
-      wall:'#8f8a79',wallDark:'#5b5d58',window:'#314f58',door:'#62402f',
-      railBed:'#5c5e59',railBedDark:'#414542',railBedLight:'#777a73',
-      rail:'#252c2f',railTie:'#554336',
-      rust:'#a84f32',rustDark:'#642d28',metal:'#666d6a',metalDark:'#3d4647',
-      pipe:'#334e54',warning:'#c29542',conduit:'#475b5d',
-      copper:'#4f8176',copperLight:'#76a092',brass:'#c39a4b',
-      brick:'#8f4737',brickDark:'#5c302d',steam:'#d8d4c3',steamShade:'#aaa99f',glass:'#79a5a5',
-    }),
-    poiPalette:frozenCopy({
-      transit:'#536f86',health:'#a94e43',civic:'#6f617f',food:'#a87a43',
-      commerce:'#965d69',landmark:'#b08c48',nature:'#55765b',stay:'#6e647e',
-      service:'#56656a',generic:'#68706c',
-    }),
-    building:frozenCopy({
-      mode:'steampunk-megacity-shape-grammar',sourceGeometryImmutable:true,
-      skin:{
-        version:'pixelmap-building-skin-steampunk-megacity/2',
-        legacyRoofPalettes:[
-          ['#914430','#5f2c29','#b5613e'],['#46616a','#30454d','#688087'],
-          ['#53614f','#39453b','#71806a'],['#946039','#603e31','#b27b4a'],
-          ['#666d6a','#444c4d','#868d86'],['#765443','#503a34','#936f54'],
-          ['#515c5e','#343f43','#737d7a'],['#343d42','#232b30','#566166'],
-          ['#76766f','#515550','#98968a'],['#827257','#5a5042','#a08d6c'],
-        ],
-        flatPalettes:[
-          ['#666d6a','#444c4d','#868d86'],['#7c6d59','#564b3f','#988771'],
-          ['#53686c','#394c51','#758185'],
-        ],
-        categoryAccents:{
-          transit:'#536f86',health:'#a94e43',civic:'#6f617f',food:'#a87a43',
-          commerce:'#965d69',landmark:'#b08c48',nature:'#55765b',stay:'#6e647e',
-          service:'#56656a',generic:'#68706c',
-        },
-      },
-      shapeGrammar:{
-        version:'steampunk-megacity-shape/2',sourceFootprintImmutable:true,
-        decorationsSemantic:false,protectedKinds:['religious_shinto','religious_buddhist','racecourse'],
-        mechanicalDensity:'maximal',assetBudgetByBand:{1:1,2:2,3:3,4:4},
-        steamBudgetByBand:{1:1,2:1,3:2,4:3},pipeSpanByBand:{1:3,2:4,3:6,4:8},
-        roofForms:{
-          band1:['pipe-crawl-roof','patched-boiler-roof'],
-          band2:['sawtooth-turbine-roof','tank-deck-complex'],
-          band3:['stacked-duct-quarter','gas-holder-roof-city'],
-          band4:['stacked-boiler-city','gear-spire-complex'],
-        },
-        equipmentByBand:{1:2,2:3,3:4,4:5},
-        equipment:['boiler','gas-holder','gear-tower','water-tank','pipe-organ','steam-plume'],
-        raisedDeckMinimumCells:3,
-      },
-    }),
-    corridor:frozenCopy({
-      rivers:{fill:'#456b73',edge:'#9eaaa3'},streams:{fill:'#52777d'},
-      canals:{fill:'#456b73'},drains:{fill:'#527278'},waterwayOther:{fill:'#456b73'},
-      localRoads:{fill:'#918a77'},regionalRoads:{fill:'#a49a82',edge:'#55524a',center:'#c5bda9'},
-      majorRoads:{fill:'#ad915f',edge:'#665641',center:'#d0ad5d'},
-      motorways:{fill:'#b19761',edge:'#5d513f',center:'#d5b967'},
-      paths:{fill:'#8c775a'},tracks:{fill:'#756952',center:'#4b4e4b'},
-      raceways:{fill:'#835c48',edge:'#4e4038'},ferries:{fill:'#9eaaa3'},piers:{fill:'#817561'},
-      rail:{fill:'#5c5e59',edge:'#414542',rail:'#252c2f',tie:'#554336'},
-      subway:{fill:'#30383a'},aerialways:{fill:'#666d6a',rail:'#252c2f',tie:'#554336'},
-      transportationOther:{fill:'#8c775a',center:'#625640'},
-      roadTunnels:{fill:'#30383a'},pathTunnels:{fill:'#30383a'},railTunnels:{fill:'#30383a'},
-    }),
-    surfaceFamilies:frozenCopy({
-      waterSurface:{primitive:'area',assets:['waterAreas'],skin:'cooling-channel',fill:'#456b73',light:'#6f8d92',dark:'#304f57',edge:'#9eaaa3'},
-      parkSurface:{primitive:'area',assets:['parks','landusePlayground'],skin:'soot-stained-common',small:'#626e5a',medium:'#5c6855',large:'#53614f',edge:'#31443a'},
-      sportsSurface:{primitive:'area',assets:['landuseStadium','landusePitchTrack'],skin:'faded-industrial-field',fill:'#52664e',alternate:'#475b44',edge:'#394a38'},
-    }),
-  });
-
-  // 前版の参照名は外部比較用に同じ凍結objectへ残す。
-  const weatheredIndustrialDayZ14 = steampunkMegacityDayZ14;
-
   global.PixelMapWorldStyles = Object.freeze({
     version:VERSION,productionZ14Snapshot,productionComparisonZ14,retroJrpgZ14,
-    steampunkMegacityDayZ14,weatheredIndustrialDayZ14,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

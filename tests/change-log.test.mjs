@@ -125,21 +125,11 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /本番1・2・4マップの地図描画と施設データを2026-08-29時点のtest既定状態へ統一/);
   assert.match(log, /全自動テスト172件とビルドが成功/);
   assert.match(log, /最新スクリーンショット5枚は独立視覚レビューですべてPASS/);
-  assert.match(log, /曇天の生活工業都市スキンをstandalone testへ追加/);
-  assert.match(log, /weathered-industrial-day-z14/);
-  assert.match(log, /サービスデッキ、タンク、煙突、ダクト/);
-  assert.match(log, /元の道路中心線・建物footprint・水域境界を変更しない/);
-  assert.match(log, /<strong>testのみ<\/strong>。URLを直接開いた<code>variants\/map-02-refined\.html<\/code>のcell2／cell3/);
-  assert.match(log, /本番1・2・4マップは従来の<code>standard-pixel-art<\/code>/);
-  assert.match(log, /最新スクリーンショット3枚は独立視覚レビューですべてPASS/);
-  assert.match(log, /強度3のスチームパンク機械都市と大型ピクセル素材をstandalone testへ追加/);
-  assert.match(log, /steampunk-megacity-day-z14/);
-  assert.match(log, /ボイラー煙突、ガスホルダー、歯車塔、給水塔、配管束/);
-  assert.match(log, /管橋、バルブ施設、鉄道ガントリー、冷却排出口/);
-  assert.match(log, /機械素材1,692基・機械セル114,629・蒸気8,759/);
-  assert.match(log, /宗教建物への誤蒸気は0件/);
-  assert.match(log, /元の道路中心線・鉄道・建物footprint・水域境界は変更せず/);
-  assert.match(log, /本番1・2・4マップは従来の<code>standard-pixel-art<\/code>とUI・同期処理を維持/);
+  assert.match(log, /田中達之風のstandalone testを導入前へ復元/);
+  assert.match(log, /<code>e273bf2<\/code>と<code>738381d<\/code>を逆適用/);
+  assert.match(log, /<strong>testのみ<\/strong>。standalone testのcell2／cell3/);
+  assert.match(log, /本番1・2・4マップのファイルと表示は変更しない/);
+  assert.match(log, /大型機械素材、生活工業都市スキン、専用配色・形状文法をすべて削除/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

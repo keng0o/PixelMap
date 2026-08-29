@@ -152,11 +152,6 @@
               <td>1・2・4マップも既定は<code>cell2</code>。1マップは単独、2マップは左右別々、4マップは共通チェックで<code>cell3</code>へ切替。standard描画は使用しない。</td>
             </tr>
             <tr>
-              <th scope="row">地図の外観</th>
-              <td><code>steampunk-megacity-day-z14</code>を強度3で使い、曇天の機械都市を灰緑、錆、銅、真鍮、蒸気色で表現。元の道路中心線・鉄道・建物footprint・水域境界を維持したまま、非意味装飾として大型ボイラー、ガスホルダー、給水塔、歯車塔、配管束、ダクト、タービン屋根、道路の管橋、鉄道ガントリー、水際の冷却口、蒸気を重ねる。</td>
-              <td>従来の<code>standard-pixel-art</code>を維持。standalone test専用の機械都市スキンと大型ピクセル素材は描画せず、各ページの地図とUIも変更しない。</td>
-            </tr>
-            <tr>
               <th scope="row">表示方位の実装検証</th>
               <td>コンパスの<code>−／＋</code>で表示方位を15度ずつ変更し、ページ遷移や再読込なしで地理を論理ピクセルグリッドへ再描画する。角度はURLへ履歴置換で保存。建物の高さ線は画面上方向へ垂直に伸ばし、名称・方位表示・施設記号も画面へ正立する。</td>
               <td>testと同じコンパス・再ラスタライズ・正立要素・画面垂直の建物高さ線を使用。1マップは単独、2マップは位置と方位、4マップは各地点を保ったまま方位だけを同期し、外側URLへ履歴置換で保存する。</td>
@@ -213,26 +208,14 @@
       </div>
       <article class="entry">
         <div class="entry-header">
-          <h3>強度3のスチームパンク機械都市と大型ピクセル素材をstandalone testへ追加</h3>
+          <h3>田中達之風のstandalone testを導入前へ復元</h3>
           <time datetime="2026-08-29">2026-08-29 JST</time>
         </div>
         <dl class="entry-grid">
-          <div><dt>変更内容</dt><dd>前版の配色・小設備中心の表現を<code>steampunk-megacity-day-z14</code>へ刷新。単色原子セルだけで構成した12種のオリジナル素材として、ボイラー煙突、ガスホルダー、歯車塔、給水塔、配管束、ダクト冠、タービン屋根、蒸気、管橋、バルブ施設、鉄道ガントリー、冷却排出口を追加した。高さ帯・面積・安定seedに応じて建物へ多層合成し、道路・鉄道・工業地・水際へも用途別設備を配置する。元の道路中心線・鉄道・建物footprint・水域境界は変更せず、宗教建物と競馬場の固有シルエットも保護する。</dd></div>
-          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。URLを直接開いた<code>variants/map-02-refined.html</code>のcell2／cell3。表示方位0°と45°でも設備を画面へ正立させながら地図セルへ追従させる。localhostの視覚確認時だけ同一オリジンのタイル代理URLを受け取れる検証用queryも追加した。</dd></div>
-          <div><dt>本番への影響</dt><dd>なし。機械都市スキン、素材集、描画分岐、localhost用queryは<code>!EMBEDDED &amp;&amp; CELL_ONLY_MODE</code>またはstandalone localhost条件で保護。本番1・2・4マップは従来の<code>standard-pixel-art</code>とUI・同期処理を維持し、機械素材の描画件数は0件になる。</dd></div>
-          <div><dt>確認内容</dt><dd>全自動テスト181件とビルドが成功。standalone testのcell2・45°・cell3を実画面で撮影し、cell2で機械素材1,692基・機械セル114,629・蒸気8,759・配管24,589・歯車10,343・ガントリー4,269セルを確認。宗教建物への誤蒸気は0件。最新スクリーンショット3枚は独立視覚レビューですべてPASSし、色替えではない大型機械形状、密集・非対称な機械都市、地理骨格とUIの可読性、回転時の安定性を確認した。</dd></div>
-        </dl>
-      </article>
-      <article class="entry">
-        <div class="entry-header">
-          <h3>曇天の生活工業都市スキンをstandalone testへ追加</h3>
-          <time datetime="2026-08-29">2026-08-29 JST</time>
-        </div>
-        <dl class="entry-grid">
-          <div><dt>変更内容</dt><dd>standalone test専用の<code>weathered-industrial-day-z14</code>を追加。灰緑の地表、鈍い水色、コンクリートと錆色の建物へ再配色し、建物の高さ帯と安定seedに応じてサービスデッキ、タンク、煙突、ダクト、換気設備、壁面配管を描画する。道路マスク内には舗装の補修・排水ディテールを加える。装飾は意味判定やクリック領域へ使わず、元の道路中心線・建物footprint・水域境界を変更しない。</dd></div>
-          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。URLを直接開いた<code>variants/map-02-refined.html</code>のcell2／cell3。表示方位0°と45°の再ラスタライズにも同じ形状文法を適用する。</dd></div>
-          <div><dt>本番への影響</dt><dd>なし。専用スキンは<code>!EMBEDDED &amp;&amp; CELL_ONLY_MODE</code>で保護し、本番1・2・4マップは従来の<code>standard-pixel-art</code>、配色、UI、同期処理を維持する。実画面診断でも本番1マップは<code>mapSkin=legacy</code>、工業ディテール0件を確認した。</dd></div>
-          <div><dt>確認内容</dt><dd>全Web自動テスト176件とビルドが成功。standalone testのcell2・cell3・45°を実画面で撮影し、専用スキン、非意味装飾、屋根・道路ディテールの描画件数を確認。本番1マップの従来表示も比較確認した。最新スクリーンショット3枚は独立視覚レビューですべてPASS。</dd></div>
+          <div><dt>変更内容</dt><dd>田中達之風の見た目として試作した<code>e273bf2</code>と<code>738381d</code>を逆適用し、standalone testを導入前の<code>786c733</code>時点へ復元。大型機械素材、生活工業都市スキン、専用配色・形状文法をすべて削除し、建物・道路・鉄道・水面の描画を既存の<code>production-comparison-z14</code>と共通原子セル描画へ戻した。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standalone testのcell2／cell3。追加していたボイラー、ガスホルダー、歯車塔、配管束、管橋、鉄道ガントリー、蒸気と工業都市用の色・表面模様を撤去した。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップのファイルと表示は変更しない。standalone testが本番と同じ既存ピクセル描画へ戻るだけで、各本番ページのUI、同期処理、位置、表示方位、cell2／cell3切替は維持する。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト173件とビルドが成功。専用skin名・機械素材script・test専用guardが残っていないことを契約テストで確認し、standalone testのcell2／cell3を実画面で撮影。導入前の配色と地物形状への復元、本番1マップとの表示一致、UIの回帰なしを確認し、最新スクリーンショットは独立視覚レビューでPASS。</dd></div>
         </dl>
       </article>
       <article class="entry">

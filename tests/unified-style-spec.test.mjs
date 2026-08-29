@@ -124,7 +124,7 @@ test('POI Asset Contractのroleが固定semantic z-orderを決め、座標移動
 
 test('WorldStyleの見た目変更はstandalone game profileだけに閉じる', () => {
   assert.match(html, /const WORLD_STYLE_MODE = !EMBEDDED && !CELL_ONLY_MODE && !STUDY_MODE/);
-  assert.match(html, /outline:WORLD_STYLE_MODE \? WORLD_STYLE\.palette\.outline : TEST_SKIN_PALETTE\?\.outline \|\| '#302838'/);
+  assert.match(html, /outline:WORLD_STYLE_MODE \? WORLD_STYLE\.palette\.outline : '#302838'/);
   assert.match(html, /!WORLD_STYLE_MODE \|\| WORLD_STYLE\.symbol\.decorateStructures/);
   assert.match(html, /!WORLD_STYLE_MODE \|\| WORLD_STYLE\.symbol\.auxiliaryStructures/);
   assert.match(html, /const STUDY_MODE = EMBEDDED[\s\S]*PAGE_PARAMS\.get\('layers'\) !== 'manual'[\s\S]*PAGE_PARAMS\.get\('layers'\) === 'study'/);

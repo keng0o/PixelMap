@@ -2,16 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import '../assets/building-styles.js';
 import '../assets/icon-patterns.js';
-import '../assets/world-style.js';
 
 const STYLES = globalThis.PixelMapBuildingStyles;
 const appearance = input => STYLES.buildingAppearance(input);
-const INDUSTRIAL = globalThis.PixelMapWorldStyles.steampunkMegacityDayZ14;
-const industrialAppearance = input => STYLES.buildingAppearance(input, {
-  profileId:INDUSTRIAL.id,
-  skin:INDUSTRIAL.building.skin,
-  shapeGrammar:INDUSTRIAL.building.shapeGrammar,
-});
 const dense = (candidates, gapCells = 1) => STYLES.selectDenseBuildings(candidates, { gapCells });
 
 test('高さバンドの閾値', () => {
@@ -94,32 +87,6 @@ test('決定性: 同入力→同出力、住宅の配色はシードだけで決
   const b = appearance({ heightM:4, areaCells:20, seed:777 });
   assert.equal(a.roofKey, b.roofKey);   // 面積が変わっても（S内なら）色は変わらない
   assert.equal(STYLES.seedFromKey('r:1,2,3,4'), STYLES.seedFromKey('r:1,2,3,4'));
-});
-
-test('強度3の機械都市skinは地理分類を保ったまま決定的な素材予算を返す', () => {
-  const input = { heightM:42, areaCells:38, kind:'normal', seed:12345 };
-  const first = industrialAppearance(input);
-  const second = industrialAppearance(input);
-  assert.deepEqual(first, second);
-  assert.equal(first.band, 3);
-  assert.equal(first.shape.profileId, INDUSTRIAL.id);
-  assert.equal(first.shape.enabled, true);
-  assert.equal(first.shape.semantic, false);
-  assert.equal(first.shape.sourceFootprintImmutable, true);
-  assert.equal(INDUSTRIAL.building.shapeGrammar.roofForms.band3.includes(first.shape.roofForm), true);
-  assert.equal(first.shape.assetBudget >= 3, true);
-  assert.equal(first.shape.steamBudget >= 1, true);
-  assert.equal(first.shape.pipeSpan >= 4, true);
-  assert.equal(first.shape.mechanicalDensity, 'maximal');
-  assert.equal(first.pal[0], INDUSTRIAL.building.skin.legacyRoofPalettes[first.styleIndex][0]);
-});
-
-test('強度3の機械都市skinは宗教建物の固有シルエットを機械設備で上書きしない', () => {
-  for (const kind of ['religious_shinto','religious_buddhist']){
-    const result = industrialAppearance({ heightM:12, areaCells:20, kind, seed:99 });
-    assert.equal(result.shape.enabled, false);
-    assert.equal(result.shape.equipmentCount, 0);
-  }
 });
 
 test('密集建物: 1セル以内では面積が大きい棟だけを残す', () => {
