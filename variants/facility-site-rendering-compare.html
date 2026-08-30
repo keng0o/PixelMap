@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="川崎変電所の実地図データで施設敷地の5つの描画方法を比較するtest専用ページ">
-<title>PixelMap｜施設敷地5画面比較</title>
+<meta name="description" content="川崎変電所の実地図データで施設敷地のA・B 2つの描画方法を比較するtest専用ページ">
+<title>PixelMap｜施設敷地A・B比較</title>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&amp;display=swap" rel="stylesheet">
 <style>
   :root{
@@ -65,11 +65,11 @@
     display:grid;
     min-height:0;
     flex:1 1 auto;
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    grid-template-rows:repeat(2,minmax(0,1fr));
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:minmax(0,1fr);
     gap:8px;
   }
-  .map-panel,.guide{
+  .map-panel{
     position:relative;
     min-width:0;
     min-height:0;
@@ -110,24 +110,18 @@
   }
   .map-label b{ color:var(--test); font-weight:normal; }
   iframe{ display:block; width:100%; height:100%; border:0; background:#78b850; }
-  .guide{ padding:14px; overflow:auto; }
-  .guide h2{ margin:0 0 9px; color:var(--test); font-size:13px; font-weight:normal; }
-  .guide dl{ display:grid; grid-template-columns:auto 1fr; gap:6px 9px; margin:0; }
-  .guide dt{ color:var(--accent); font-size:9px; }
-  .guide dd{ margin:0; color:var(--muted); font-size:9px; line-height:1.55; }
-  .guide p{ margin:10px 0 0; color:#8f8878; font-size:8px; line-height:1.55; }
   footer{ flex:0 0 auto; color:#807868; font-size:8px; text-align:center; }
   footer a{ color:var(--accent); }
   @media (max-width:1000px){
     body{ overflow:auto; }
     main{ grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:none; }
-    .map-panel,.guide{ min-height:340px; }
+    .map-panel{ min-height:340px; }
   }
   @media (max-width:620px){
     header{ align-items:flex-start; flex-direction:column; }
     .controls{ justify-content:flex-start; }
     main{ grid-template-columns:1fr; }
-    .map-panel,.guide{ min-height:78vw; }
+    .map-panel{ min-height:78vw; }
   }
 </style>
 </head>
@@ -135,7 +129,7 @@
 <header>
   <div class="heading">
     <small>TEST ONLY / REAL KAWASAKI MAP DATA</small>
-    <h1>川崎変電所・施設敷地の5画面比較</h1>
+    <h1>川崎変電所・施設敷地のA・B 2画面比較</h1>
   </div>
   <div class="controls" aria-label="全地図の共通操作">
     <div class="control-group" aria-label="原子セルサイズ">
@@ -152,42 +146,19 @@
   </div>
 </header>
 
-<main aria-label="施設敷地の5描画方式">
-  <section class="map-panel" data-mode="current" aria-label="現状の描画">
-    <h2 class="map-label"><b>現状</b> 建物として描画</h2>
-    <iframe title="現状。施設敷地を建物として描画" allow="geolocation"></iframe>
-  </section>
+<main aria-label="施設敷地のA・B 2描画方式">
   <section class="map-panel" data-mode="surface" aria-label="薄い敷地面">
-    <h2 class="map-label"><b>A</b> 薄い敷地面</h2>
+    <h2 class="map-label"><b>A</b> 低コントラストの敷地面</h2>
     <iframe title="A。原子セルの薄い施設敷地面" allow="geolocation"></iframe>
   </section>
   <section class="map-panel" data-mode="precise" aria-label="1論理ピクセルの精密敷地面">
-    <h2 class="map-label"><b>B</b> 1論理px精密敷地面</h2>
+    <h2 class="map-label"><b>B</b> 1論理pxで境界を精密化</h2>
     <iframe title="B。1論理ピクセルの精密施設敷地面" allow="geolocation"></iframe>
   </section>
-  <section class="map-panel" data-mode="clean" aria-label="セル輪郭整形">
-    <h2 class="map-label"><b>C</b> セル輪郭整形</h2>
-    <iframe title="C。一セルの突起とくぼみを整形した建物描画" allow="geolocation"></iframe>
-  </section>
-  <section class="map-panel" data-mode="none" aria-label="実建物のみ">
-    <h2 class="map-label"><b>D</b> 敷地なし・実建物のみ</h2>
-    <iframe title="D。施設敷地を省略し実際の建物だけを描画" allow="geolocation"></iframe>
-  </section>
-  <aside class="guide" aria-label="比較方法の説明">
-    <h2>比較の見方</h2>
-    <dl>
-      <dt>現状</dt><dd>暗い連続輪郭、屋根、壁、影を敷地全体へ適用。</dd>
-      <dt>A</dt><dd>同じ原子セル形状を、輪郭なしの低コントラスト地表として道路の下へ配置。</dd>
-      <dt>B</dt><dd>OSM由来ポリゴンを1論理pxで再ラスタライズし、道路の下へ配置。</dd>
-      <dt>C</dt><dd>1セルの突起・くぼみだけを補正し、現状の建物表現を適用。</dd>
-      <dt>D</dt><dd>収集敷地を省略し、MVTに存在する実建物だけを表示。</dd>
-    </dl>
-    <p>5画面は位置と表示方位を同期します。地図はOpenFreeMap MVT、施設敷地はOSM由来の神奈川県生成GeoJSONを使用しています。</p>
-  </aside>
 </main>
 
 <footer>
-  testのみ・本番ページへの適用なし ／ 地図データ ©
+  testのみ・本番ページへの適用なし ／ OpenFreeMap MVT＋OSM由来の神奈川県生成GeoJSON ／ 地図データ ©
   <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> ／
   <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a>
 </footer>

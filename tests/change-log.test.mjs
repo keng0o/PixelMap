@@ -134,9 +134,14 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /<code>variants\/facility-site-rendering-compare\.html<\/code>/);
   assert.match(log, /現状／A／B／C／Dの5画面/);
   assert.match(log, /全方式でMVTの実建物を残し/);
-  assert.match(log, /5画面比較用パラメータはtest専用の埋め込み時だけ有効/);
+  assert.match(log, /A・B比較用パラメータはtest専用の埋め込み時だけ有効/);
   assert.match(log, /全自動テスト177件とビルドが成功/);
   assert.match(log, /4枚の最新スクリーンショットは独立視覚レビューですべてPASS/);
+  assert.match(log, /施設敷地比較をA・Bの2画面へ絞り込み/);
+  assert.match(log, /A「低コントラストの敷地面」とB「1論理pxで境界を精密化」の2画面だけ/);
+  assert.match(log, /現状・C・D・説明カードを比較グリッドから外し/);
+  assert.match(log, /AとBを同じ大きさで横幅いっぱいに並べる/);
+  assert.match(log, /Bの境界がAより細かいこと/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

@@ -35,10 +35,14 @@ test('セル整形は孤立突起を除去し一セルのくぼみを埋める',
   assert.ok(cleaned.changedCells >= 2);
 });
 
-test('比較ページは川崎変電所の実データを5方式・同一条件で表示する', () => {
+test('比較ページは川崎変電所の実データをA・Bの2方式だけで同一条件表示する', () => {
   const panelModes = [...compareHtml.matchAll(/<section class="map-panel" data-mode="([^"]+)"/g)]
     .map(match => match[1]);
-  assert.deepEqual(panelModes, ['current','surface','precise','clean','none']);
+  assert.deepEqual(panelModes, ['surface','precise']);
+  assert.doesNotMatch(compareHtml, /class="guide"/);
+  assert.match(compareHtml, /施設敷地のA・B 2画面比較/);
+  assert.match(compareHtml, /<b>A<\/b> 低コントラストの敷地面/);
+  assert.match(compareHtml, /<b>B<\/b> 1論理pxで境界を精密化/);
   assert.match(compareHtml, /lat:'35\.5289'/);
   assert.match(compareHtml, /lon:'139\.68745'/);
   assert.match(compareHtml, /place:'川崎変電所'/);
