@@ -148,6 +148,13 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /本番1・2・4マップのembedded表示は従来の施設敷地建物描画を維持/);
   assert.match(log, /全自動テスト178件とビルドが成功/);
   assert.match(log, /通常testは<code>surface<\/code>/);
+  assert.match(log, /Aの低コントラスト施設敷地面をWeb本番へリリース/);
+  assert.match(log, /standalone testで採用済みのA方式をWeb本番へ反映/);
+  assert.match(log, /本番1・2・4マップのembedded表示でも通常モードを<code>surface<\/code>へ統一/);
+  assert.match(log, /1マップ（<code>index\.html<\/code>）/);
+  assert.match(log, /2マップ（<code>compare\.html<\/code>）/);
+  assert.match(log, /4マップ（<code>four-maps\.html<\/code>／<code>variants\/height-stack-four-map\.html<\/code>）/);
+  assert.match(log, /独立視覚レビューで本番用4枚すべてPASS/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

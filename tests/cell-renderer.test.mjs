@@ -63,10 +63,10 @@ test('2マップは左右別、4マップは共通チェックでcell2とcell3�
   assert.match(fourMapShellHtml, /function updateTopRenderUrl\(mode\)/);
   assert.match(fourMapShellHtml, /pixelmap:render-mode/);
   assert.match(fourMapShellHtml, /pixelmap:set-render-mode/);
-  assert.match(oneMapHtml, /v=20260829-current-test-production-1/);
-  assert.equal((twoMapHtml.match(/v=20260829-current-test-production-1/g) || []).length, 2);
-  assert.equal((fourMapHtml.match(/v=20260829-current-test-production-1/g) || []).length, 4);
-  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260829-current-test-production-1/);
+  assert.match(oneMapHtml, /v=20260830-facility-surface-production-1/);
+  assert.equal((twoMapHtml.match(/v=20260830-facility-surface-production-1/g) || []).length, 2);
+  assert.equal((fourMapHtml.match(/v=20260830-facility-surface-production-1/g) || []).length, 4);
+  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260830-facility-surface-production-1/);
 });
 
 test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {

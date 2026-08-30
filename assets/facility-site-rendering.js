@@ -11,9 +11,9 @@
     return Object.freeze({ enabled, mode:enabled ? requested : 'current' });
   }
 
-  function effectiveMode(comparison, embedded){
+  function effectiveMode(comparison){
     if (comparison?.enabled && MODE_SET.has(comparison.mode)) return comparison.mode;
-    return embedded ? 'current' : 'surface';
+    return 'surface';
   }
 
   function cleanAtomicFootprint(grid, buildingGrid, size){
@@ -84,7 +84,7 @@
   }
 
   root.PixelMapFacilitySiteRendering = Object.freeze({
-    version:'facility-site-rendering/1',
+    version:'facility-site-rendering/2',
     modes:MODES,
     comparisonMode,
     effectiveMode,

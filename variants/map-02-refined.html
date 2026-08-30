@@ -759,7 +759,7 @@
 <script src="../assets/landmark-entities.js?v=20260824-generic-facilities-1000"></script>
 <script src="../assets/poi-sprites.js?v=5"></script>
 <script src="../assets/building-styles.js?v=4"></script>
-<script src="../assets/facility-site-rendering.js?v=1"></script>
+<script src="../assets/facility-site-rendering.js?v=2"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=6"></script>
 <script src="../assets/world-style.js?v=5"></script>
@@ -883,10 +883,9 @@ const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
 const FACILITY_SITE_RENDERING = window.PixelMapFacilitySiteRendering;
 const FACILITY_SITE_COMPARISON = FACILITY_SITE_RENDERING.comparisonMode(PAGE_PARAMS, EMBEDDED);
-// 通常のstandalone testは採用済みのA（低コントラスト敷地面）を使う。
-// 本番embeddedは従来の建物描画を維持し、比較ページだけ明示モードを優先する。
-const FACILITY_SITE_RENDER_MODE = FACILITY_SITE_RENDERING.effectiveMode(
-  FACILITY_SITE_COMPARISON, EMBEDDED);
+// 通常のstandalone testと本番embeddedは採用済みのA（低コントラスト敷地面）を使う。
+// 比較ページだけ明示モードを優先する。
+const FACILITY_SITE_RENDER_MODE = FACILITY_SITE_RENDERING.effectiveMode(FACILITY_SITE_COMPARISON);
 const REQUESTED_MAP_BEARING = Number(PAGE_PARAMS.get('bearing'));
 const HAS_REQUESTED_MAP_BEARING = PAGE_PARAMS.has('bearing') &&
   Number.isFinite(REQUESTED_MAP_BEARING);
@@ -989,7 +988,7 @@ document.documentElement.dataset.renderMode = RENDER_MODE;
 document.documentElement.dataset.facilitySiteCompare = FACILITY_SITE_COMPARISON.enabled ? '1' : '0';
 document.documentElement.dataset.facilitySiteMode = FACILITY_SITE_RENDER_MODE;
 document.documentElement.dataset.facilitySiteSource = FACILITY_SITE_COMPARISON.enabled
-  ? 'comparison' : EMBEDDED ? 'production-current' : 'standalone-test-adopted';
+  ? 'comparison' : EMBEDDED ? 'production-adopted' : 'standalone-test-adopted';
 document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
   ? 'geometry-skin-symbol-v1'
   : 'legacy';
@@ -6840,7 +6839,8 @@ function render(){
       enabled:FACILITY_SITE_RENDER_MODE !== 'current',
       comparisonEnabled:FACILITY_SITE_COMPARISON.enabled,
       mode:FACILITY_SITE_RENDER_MODE,
-      testOnly:!EMBEDDED || FACILITY_SITE_COMPARISON.enabled,
+      comparisonTestOnly:FACILITY_SITE_COMPARISON.enabled,
+      productionReleased:true,
       source:'kanagawa-generated-osm-facility-polygons',
       footprintFeatures:landmarkBuildingRaster?.facilityFootprintFeatures || 0,
       atomicFootprintCells:facilityFootprintLayer

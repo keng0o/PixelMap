@@ -124,7 +124,7 @@
     <section class="panel" aria-labelledby="difference-title">
       <div class="section-heading">
         <h2 id="difference-title">現行の差分</h2>
-        <small>2026-08-29 / cell2 default</small>
+        <small>2026-08-30 / cell2 default</small>
       </div>
       <div class="table-wrap">
         <table>
@@ -159,7 +159,7 @@
             <tr>
               <th scope="row">ランドマーク</th>
               <td>神奈川県の生成GeoJSONは、施設を表す意味タグを持つ閉じた敷地を1,000㎡以上で汎用収集。通常の汎用施設敷地はA方式を採用し、屋根・壁・影・暗い連続輪郭を付けない低コントラストの地表面として道路・鉄道・実建物より奥へ描く。MVTの全buildingは維持する。面積制限なしの高層建物、公園・面登録の神社仏閣、点登録神社仏閣、commercial別チェックも維持。test専用の<code>variants/facility-site-rendering-compare.html</code>ではA／Bを引き続き同期比較できる。</td>
-              <td>同じ生成GeoJSONと施設対象を使用するが、通常の汎用施設敷地は従来どおり建物として屋根・壁・影・輪郭を描く。A採用はstandalone testだけで、本番1・2・4マップでは起動しない。A・B比較用パラメータはtest専用の埋め込み時だけ有効。</td>
+              <td>testと同じA方式を使用し、通常の汎用施設敷地を屋根・壁・影・暗い連続輪郭のない低コントラスト地表面として道路・鉄道・実建物より奥へ描く。MVTの全buildingは維持する。A・B比較用パラメータはtest専用の埋め込み時だけ有効。</td>
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
@@ -179,7 +179,7 @@
             <tr>
               <th scope="row">POI</th>
               <td>「施設アイコン」ではPOIアセットを表示せず、事前収集した1,000㎡以上の汎用施設敷地をAの低コントラスト地表面として描き、その上へMVT敷地内の全棟を通常の屋根色・壁色・影で重ねる。競馬場敷地、公園・神社仏閣、駅・学校fallback、汎用施設名を表示しない契約は維持。</td>
-              <td>従来どおり汎用施設敷地を建物として描き、その上へMVT全棟を重ねる。競馬場敷地、単色マーカー、点登録神社仏閣、駅／学校fallback、POIアセットと汎用施設名を表示しない契約も維持。</td>
+              <td>testと同じA方式で汎用施設敷地を低コントラスト地表面として描き、その上へMVT全棟を通常の屋根色・壁色・影で重ねる。競馬場敷地、単色マーカー、点登録神社仏閣、駅／学校fallback、POIアセットと汎用施設名を表示しない契約も維持。</td>
             </tr>
             <tr>
               <th scope="row">今回のPOC評価範囲</th>
@@ -206,6 +206,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>Aの低コントラスト施設敷地面をWeb本番へリリース</h3>
+          <time datetime="2026-08-30">2026-08-30 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>standalone testで採用済みのA方式をWeb本番へ反映。1,000㎡以上の汎用施設敷地を屋根・壁・影・暗い連続輪郭のある建物として描かず、低コントラストの地表面として道路・鉄道・水面・MVT実建物より奥へ描く。敷地内の実建物は従来どおり残す。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>全てに反映</strong>。standalone test（<code>variants/map-02-refined.html</code>）、1マップ（<code>index.html</code>）、2マップ（<code>compare.html</code>）、4マップ（<code>four-maps.html</code>／<code>variants/height-stack-four-map.html</code>）のcell2／cell3。</dd></div>
+          <div><dt>本番への影響</dt><dd>本番1・2・4マップのembedded表示でも通常モードを<code>surface</code>へ統一し、各iframeの版指定を更新。外側UI、位置・表示方位・cell2／cell3・レイヤー・素材模様の同期、比較ページのA・B専用切替は変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト178件とビルドが成功。本番1マップをcell2の0°・45°、2マップをcell2の45°、4マップをcell3の45°で撮影し、低コントラスト敷地面、MVT実建物・道路・鉄道の維持、位置・方位・cell3同期、外側UIに回帰がないことを確認。独立視覚レビューで本番用4枚すべてPASS。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>Aの低コントラスト施設敷地面をstandalone testへ採用</h3>
