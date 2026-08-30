@@ -881,6 +881,9 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+const STANDALONE_LOW_CONTRAST_ROAD_SURFACE = !EMBEDDED;
+const STANDALONE_LOW_CONTRAST_ROAD_OPTIONS = new Set(
+  ['majorRoads','regionalRoads','localRoads','paths']);
 const FACILITY_SITE_RENDERING = window.PixelMapFacilitySiteRendering;
 const FACILITY_SITE_COMPARISON = FACILITY_SITE_RENDERING.comparisonMode(PAGE_PARAMS, EMBEDDED);
 // 通常のstandalone testと本番embeddedは採用済みのA（低コントラスト敷地面）を使う。
@@ -989,6 +992,8 @@ document.documentElement.dataset.facilitySiteCompare = FACILITY_SITE_COMPARISON.
 document.documentElement.dataset.facilitySiteMode = FACILITY_SITE_RENDER_MODE;
 document.documentElement.dataset.facilitySiteSource = FACILITY_SITE_COMPARISON.enabled
   ? 'comparison' : EMBEDDED ? 'production-adopted' : 'standalone-test-adopted';
+document.documentElement.dataset.roadSurfaceMode = STANDALONE_LOW_CONTRAST_ROAD_SURFACE
+  ? 'low-contrast-a' : 'current';
 document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
   ? 'geometry-skin-symbol-v1'
   : 'legacy';
@@ -1876,6 +1881,44 @@ const SMOOTH_ROAD_STYLE = Object.freeze(Object.fromEntries(
     return [option,Object.freeze(canonical)];
   }),
 ));
+const STANDALONE_LOW_CONTRAST_ROAD_RULE = Object.freeze({
+  boundary:'none',
+  centerLine:'none',
+  materialPattern:false,
+  fills:Object.freeze({
+    majorRoads:'#b9ad84',
+    regionalRoads:'#aaa99d',
+    localRoads:'#9fa99a',
+    paths:'#a89f7e',
+  }),
+});
+function effectiveRoadRenderStyle(option){
+  const direct = SMOOTH_ROAD_STYLE[option];
+  if (!STANDALONE_LOW_CONTRAST_ROAD_SURFACE ||
+      !STANDALONE_LOW_CONTRAST_ROAD_OPTIONS.has(option)) return direct;
+  const rule = CANONICAL_TRANSPORT_RULES[option];
+  if (!rule) return direct;
+  const base = direct || {
+    width:(rule.logicalWidth || 1) * SCENE_PIXELS_PER_LOGICAL_PIXEL,
+    casing:(rule.casing || 0) * SCENE_PIXELS_PER_LOGICAL_PIXEL,
+    fill:rule.fill,
+    edge:rule.edge || rule.detail || rule.fill,
+    center:rule.center || rule.detail || null,
+    centerWidth:(rule.centerWidth || 1) * SCENE_PIXELS_PER_LOGICAL_PIXEL,
+    dash:(rule.dash || []).map(value => value * SCENE_PIXELS_PER_LOGICAL_PIXEL),
+  };
+  const fill = STANDALONE_LOW_CONTRAST_ROAD_RULE.fills[option];
+  return Object.freeze({
+    ...base,
+    width:base.width + base.casing * 2,
+    casing:0,
+    fill,
+    edge:fill,
+    center:null,
+    detail:null,
+    materialPattern:false,
+  });
+}
 /* 建物の分類・配色は building-styles.js が唯一の正典。
    ROOFPALはマップチップ生成と後方互換のためのエイリアス。 */
 const BUILDING_STYLES = window.PixelMapBuildingStyles;
@@ -2832,7 +2875,7 @@ function drawCellPixelArtTransportGrid(
   const centered = (x, y) => centerGrid && x >= 0 && y >= 0 && x < RG && y < RG && centerGrid[y * RG + x];
   const tunnel = ['subway','roadTunnels','pathTunnels','railTunnels'].includes(option);
   const rail = ['rail','subway','railTunnels','aerialways'].includes(option);
-  const roadStyle = SMOOTH_ROAD_STYLE[option];
+  const roadStyle = effectiveRoadRenderStyle(option);
   const minimumMinorRoute = STANDALONE_MINIMUM_MINOR_ROUTES &&
     ['localRoads','paths'].includes(option);
   const dashOn = (x, y, span = 8) => {
@@ -2850,13 +2893,15 @@ function drawCellPixelArtTransportGrid(
   }
 
   const fill = roadStyle?.fill || (rail ? P.gravel : CELL_COLOR_BY_OPTION[option] || P.pave);
-  const edge = bridge ? P.outline : roadStyle?.edge || (rail ? P.gravelDk : option === 'paths' ? P.trailDot : P.paveDk);
+  const edge = roadStyle?.materialPattern === false
+    ? fill
+    : bridge ? P.outline : roadStyle?.edge || (rail ? P.gravelDk : option === 'paths' ? P.trailDot : P.paveDk);
   for (let y = 0; y < RG; y++){
     for (let x = 0; x < RG; x++){
       if (!has(x, y) || (tunnel && !dashOn(x, y))) continue;
       const boundary = !has(x-1,y) || !has(x+1,y) || !has(x,y-1) || !has(x,y+1);
       const color = minimumMinorRoute
-        ? (option === 'paths' ? P.trail : roadStyle.fill)
+        ? (roadStyle?.fill || (option === 'paths' ? P.trail : fill))
         : boundary ? edge : fill;
       paintSolidMapCell(x, y, color, option, stats);
       if (boundary && !minimumMinorRoute){
@@ -2921,7 +2966,8 @@ function drawCellPixelArtTransportGrid(
       paintSolidMapCell(x, y, roadStyle.center, option, stats);
       stats.roadCenterCells++;
     }
-  } else if (centerGrid && ['paths','tracks','piers','transportationOther'].includes(option)){
+  } else if (roadStyle?.materialPattern !== false && centerGrid &&
+      ['paths','tracks','piers','transportationOther'].includes(option)){
     const detail = option === 'tracks' ? P.gravelDk : option === 'paths' ? P.trail : P.pave;
     for (let y = 0; y < RG; y++) for (let x = 0; x < RG; x++){
       if (!centered(x, y) || (tunnel && !dashOn(x, y))) continue;
@@ -5625,7 +5671,7 @@ function render(){
      （出力画像上1論理px）のグリッドへ直接描く。外形・舗装・中央線を
      別ストロークにすることで、交差点をつなげたまま細かな曲線を保つ。 */
   function drawSmoothRoadLayer(option, bridge = false){
-    const style = SMOOTH_ROAD_STYLE[option];
+    const style = effectiveRoadRenderStyle(option);
     if (!style) return;
     const features = L('transportation').filter(feature => {
       const binding = corridorBinding(feature);
@@ -6854,6 +6900,19 @@ function render(){
         ? 'ground-after-landuse-before-water-routes-buildings'
         : FACILITY_SITE_RENDER_MODE === 'none' ? 'site-omitted' : 'landmark-building-layer',
       actualMapBuildingsPreserved:true,
+    },
+    roadSurfaceRendering:{
+      enabled:STANDALONE_LOW_CONTRAST_ROAD_SURFACE,
+      testOnly:true,
+      mode:STANDALONE_LOW_CONTRAST_ROAD_SURFACE ? 'low-contrast-a' : 'current',
+      options:[...STANDALONE_LOW_CONTRAST_ROAD_OPTIONS],
+      boundary:STANDALONE_LOW_CONTRAST_ROAD_SURFACE
+        ? STANDALONE_LOW_CONTRAST_ROAD_RULE.boundary : 'current',
+      centerLine:STANDALONE_LOW_CONTRAST_ROAD_SURFACE
+        ? STANDALONE_LOW_CONTRAST_ROAD_RULE.centerLine : 'current',
+      materialPattern:STANDALONE_LOW_CONTRAST_ROAD_SURFACE
+        ? STANDALONE_LOW_CONTRAST_ROAD_RULE.materialPattern : 'current',
+      geometry:'source-position-width-order-preserved',
     },
     tileZoom:TILE.z,
     pixel:{

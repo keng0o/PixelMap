@@ -155,6 +155,14 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /2マップ（<code>compare\.html<\/code>）/);
   assert.match(log, /4マップ（<code>four-maps\.html<\/code>／<code>variants\/height-stack-four-map\.html<\/code>）/);
   assert.match(log, /独立視覚レビューで本番用4枚すべてPASS/);
+  assert.match(log, /道路4種類を境界線なしの低コントラスト面へ変更/);
+  assert.match(log, /主要道路・地区幹線道路・生活道路・歩道／小径へA方式を導入/);
+  assert.match(log, /境界線・中央線・舗装粒・踏み跡粒を削除/);
+  assert.match(log, /<strong>testのみ<\/strong>。通常のstandalone test/);
+  assert.match(log, /高速道路・作業道・鉄道・トンネルは変更しない/);
+  assert.match(log, /本番1・2・4マップのembedded表示は従来の道路色/);
+  assert.match(log, /全自動テスト179件とビルドが成功/);
+  assert.match(log, /本番1マップ内のembeddedは従来の<code>current<\/code>/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

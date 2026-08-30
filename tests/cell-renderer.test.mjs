@@ -243,6 +243,22 @@ test('全Webマップの地区幹線道路は中央線を描かない', () => {
   assert.doesNotMatch(html, /function boundaryAlignedRoadCenter/);
 });
 
+test('standalone testの道路Aは4種類を境界・中央線・粒なしの低コントラスト面にする', () => {
+  assert.match(html, /const STANDALONE_LOW_CONTRAST_ROAD_SURFACE = !EMBEDDED/);
+  assert.match(html, /\['majorRoads','regionalRoads','localRoads','paths'\]/);
+  assert.match(html, /function effectiveRoadRenderStyle\(option\)/);
+  assert.match(html, /width:base\.width \+ base\.casing \* 2/);
+  assert.match(html, /casing:0/);
+  assert.match(html, /edge:fill/);
+  assert.match(html, /center:null/);
+  assert.match(html, /materialPattern:false/);
+  assert.match(html, /const roadStyle = effectiveRoadRenderStyle\(option\)/);
+  assert.match(html, /const edge = roadStyle\?\.materialPattern === false\s*\? fill\s*: bridge \? P\.outline/);
+  assert.match(html, /dataset\.roadSurfaceMode = STANDALONE_LOW_CONTRAST_ROAD_SURFACE/);
+  assert.match(html, /boundary:'none'/);
+  assert.match(html, /centerLine:'none'/);
+});
+
 test('全Webマップは細街路を既定表示し主要道路を手前へ重ねる', () => {
   assert.match(html, /const minorRoadDefaults = new Set\(\['localRoads','paths'\]\)/);
   assert.match(html, /STUDY_LAYER_OPTIONS\.has\(option\) \|\| minorRoadDefaults\.has\(option\)/);
