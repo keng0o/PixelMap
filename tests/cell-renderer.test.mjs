@@ -64,10 +64,10 @@ test('2マップは左右別、4マップは共通チェックでcell2とcell3�
   assert.match(fourMapShellHtml, /function updateTopRenderUrl\(mode\)/);
   assert.match(fourMapShellHtml, /pixelmap:render-mode/);
   assert.match(fourMapShellHtml, /pixelmap:set-render-mode/);
-  assert.match(oneMapHtml, /v=20260830-facility-surface-production-1/);
-  assert.equal((twoMapHtml.match(/v=20260830-facility-surface-production-1/g) || []).length, 2);
-  assert.equal((fourMapHtml.match(/v=20260830-facility-surface-production-1/g) || []).length, 4);
-  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260830-facility-surface-production-1/);
+  assert.match(oneMapHtml, /v=20260830-road-surface-production-1/);
+  assert.equal((twoMapHtml.match(/v=20260830-road-surface-production-1/g) || []).length, 2);
+  assert.equal((fourMapHtml.match(/v=20260830-road-surface-production-1/g) || []).length, 4);
+  assert.match(fourMapShellHtml, /height-stack-four-map\.html\?v=20260830-road-surface-production-1/);
 });
 
 test('cell2は384×4、cell3は256×6の原子セルグリッドを使う', () => {
@@ -244,8 +244,9 @@ test('全Webマップの地区幹線道路は中央線を描かない', () => {
   assert.doesNotMatch(html, /function boundaryAlignedRoadCenter/);
 });
 
-test('standalone testの道路Aは4種類を境界・中央線・粒なしの低コントラスト面にする', () => {
-  assert.match(html, /const STANDALONE_LOW_CONTRAST_ROAD_SURFACE = !EMBEDDED/);
+test('全Webマップの道路Aは4種類を以前の色・境界・中央線・粒なしで描く', () => {
+  assert.match(html, /const ADOPTED_LOW_CONTRAST_ROAD_SURFACE = true/);
+  assert.doesNotMatch(html, /STANDALONE_LOW_CONTRAST_ROAD_SURFACE/);
   assert.match(html, /\['majorRoads','regionalRoads','localRoads','paths'\]/);
   assert.match(html, /function effectiveRoadRenderStyle\(option\)/);
   assert.match(html, /width:base\.width \+ base\.casing \* 2/);
@@ -255,7 +256,7 @@ test('standalone testの道路Aは4種類を境界・中央線・粒なしの低
   assert.match(html, /materialPattern:false/);
   assert.match(html, /const roadStyle = effectiveRoadRenderStyle\(option\)/);
   assert.match(html, /const edge = roadStyle\?\.materialPattern === false\s*\? fill\s*: bridge \? P\.outline/);
-  assert.match(html, /dataset\.roadSurfaceMode = STANDALONE_LOW_CONTRAST_ROAD_SURFACE/);
+  assert.match(html, /dataset\.roadSurfaceMode = ADOPTED_LOW_CONTRAST_ROAD_SURFACE/);
   assert.match(html, /boundary:'none'/);
   assert.match(html, /centerLine:'none'/);
   assert.match(html, /palette:'canonical-previous'/);
@@ -268,6 +269,8 @@ test('standalone testの道路Aは4種類を境界・中央線・粒なしの低
   assert.match(layerAssets, /regionalRoads:Object\.freeze\(\{[\s\S]*?fill:'#d0d0ca'/);
   assert.match(layerAssets, /majorRoads:Object\.freeze\(\{[\s\S]*?fill:'#d8c890'/);
   assert.match(layerAssets, /paths:Object\.freeze\(\{[\s\S]*?fill:'#dcc890'/);
+  assert.match(html, /testOnly:false/);
+  assert.match(html, /scope:'standalone-and-production'/);
 });
 
 test('全Webマップは細街路を既定表示し主要道路を手前へ重ねる', () => {

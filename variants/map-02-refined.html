@@ -881,8 +881,8 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
-const STANDALONE_LOW_CONTRAST_ROAD_SURFACE = !EMBEDDED;
-const STANDALONE_LOW_CONTRAST_ROAD_OPTIONS = new Set(
+const ADOPTED_LOW_CONTRAST_ROAD_SURFACE = true;
+const ADOPTED_LOW_CONTRAST_ROAD_OPTIONS = new Set(
   ['majorRoads','regionalRoads','localRoads','paths']);
 const FACILITY_SITE_RENDERING = window.PixelMapFacilitySiteRendering;
 const FACILITY_SITE_COMPARISON = FACILITY_SITE_RENDERING.comparisonMode(PAGE_PARAMS, EMBEDDED);
@@ -992,7 +992,7 @@ document.documentElement.dataset.facilitySiteCompare = FACILITY_SITE_COMPARISON.
 document.documentElement.dataset.facilitySiteMode = FACILITY_SITE_RENDER_MODE;
 document.documentElement.dataset.facilitySiteSource = FACILITY_SITE_COMPARISON.enabled
   ? 'comparison' : EMBEDDED ? 'production-adopted' : 'standalone-test-adopted';
-document.documentElement.dataset.roadSurfaceMode = STANDALONE_LOW_CONTRAST_ROAD_SURFACE
+document.documentElement.dataset.roadSurfaceMode = ADOPTED_LOW_CONTRAST_ROAD_SURFACE
   ? 'low-contrast-a' : 'current';
 document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
   ? 'geometry-skin-symbol-v1'
@@ -1881,7 +1881,7 @@ const SMOOTH_ROAD_STYLE = Object.freeze(Object.fromEntries(
     return [option,Object.freeze(canonical)];
   }),
 ));
-const STANDALONE_LOW_CONTRAST_ROAD_RULE = Object.freeze({
+const ADOPTED_LOW_CONTRAST_ROAD_RULE = Object.freeze({
   boundary:'none',
   centerLine:'none',
   materialPattern:false,
@@ -1889,8 +1889,8 @@ const STANDALONE_LOW_CONTRAST_ROAD_RULE = Object.freeze({
 });
 function effectiveRoadRenderStyle(option){
   const direct = SMOOTH_ROAD_STYLE[option];
-  if (!STANDALONE_LOW_CONTRAST_ROAD_SURFACE ||
-      !STANDALONE_LOW_CONTRAST_ROAD_OPTIONS.has(option)) return direct;
+  if (!ADOPTED_LOW_CONTRAST_ROAD_SURFACE ||
+      !ADOPTED_LOW_CONTRAST_ROAD_OPTIONS.has(option)) return direct;
   const rule = CANONICAL_TRANSPORT_RULES[option];
   if (!rule) return direct;
   const base = direct || {
@@ -6922,18 +6922,19 @@ function render(){
       actualMapBuildingsPreserved:true,
     },
     roadSurfaceRendering:{
-      enabled:STANDALONE_LOW_CONTRAST_ROAD_SURFACE,
-      testOnly:true,
-      mode:STANDALONE_LOW_CONTRAST_ROAD_SURFACE ? 'low-contrast-a' : 'current',
-      options:[...STANDALONE_LOW_CONTRAST_ROAD_OPTIONS],
-      boundary:STANDALONE_LOW_CONTRAST_ROAD_SURFACE
-        ? STANDALONE_LOW_CONTRAST_ROAD_RULE.boundary : 'current',
-      centerLine:STANDALONE_LOW_CONTRAST_ROAD_SURFACE
-        ? STANDALONE_LOW_CONTRAST_ROAD_RULE.centerLine : 'current',
-      materialPattern:STANDALONE_LOW_CONTRAST_ROAD_SURFACE
-        ? STANDALONE_LOW_CONTRAST_ROAD_RULE.materialPattern : 'current',
-      palette:STANDALONE_LOW_CONTRAST_ROAD_SURFACE
-        ? STANDALONE_LOW_CONTRAST_ROAD_RULE.palette : 'current',
+      enabled:ADOPTED_LOW_CONTRAST_ROAD_SURFACE,
+      testOnly:false,
+      scope:'standalone-and-production',
+      mode:ADOPTED_LOW_CONTRAST_ROAD_SURFACE ? 'low-contrast-a' : 'current',
+      options:[...ADOPTED_LOW_CONTRAST_ROAD_OPTIONS],
+      boundary:ADOPTED_LOW_CONTRAST_ROAD_SURFACE
+        ? ADOPTED_LOW_CONTRAST_ROAD_RULE.boundary : 'current',
+      centerLine:ADOPTED_LOW_CONTRAST_ROAD_SURFACE
+        ? ADOPTED_LOW_CONTRAST_ROAD_RULE.centerLine : 'current',
+      materialPattern:ADOPTED_LOW_CONTRAST_ROAD_SURFACE
+        ? ADOPTED_LOW_CONTRAST_ROAD_RULE.materialPattern : 'current',
+      palette:ADOPTED_LOW_CONTRAST_ROAD_SURFACE
+        ? ADOPTED_LOW_CONTRAST_ROAD_RULE.palette : 'current',
       geometry:'source-position-width-order-preserved',
     },
     tileZoom:TILE.z,

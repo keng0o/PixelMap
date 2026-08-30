@@ -176,6 +176,13 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /本番1・2・4マップは現行の低コントラスト施設敷地色を維持/);
   assert.match(log, /全自動テスト181件とビルドが成功/);
   assert.match(log, /最新2枚は独立視覚レビューで両方PASS/);
+  assert.match(log, /境界線なしの以前色道路AをWeb本番へリリース/);
+  assert.match(log, /standalone testで検証済みの道路AをWeb本番へ反映/);
+  assert.match(log, /以前の4色と境界線・中央線・舗装粒・踏み跡粒なし/);
+  assert.match(log, /<strong>全てに反映<\/strong>。standalone test/);
+  assert.match(log, /1マップ（<code>index\.html<\/code>）、2マップ（<code>compare\.html<\/code>）/);
+  assert.match(log, /4マップ（<code>four-maps\.html<\/code>／<code>variants\/height-stack-four-map\.html<\/code>）/);
+  assert.match(log, /本番embeddedの<code>roadSurfaceMode<\/code>も<code>low-contrast-a<\/code>/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {
