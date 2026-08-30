@@ -142,6 +142,12 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /現状・C・D・説明カードを比較グリッドから外し/);
   assert.match(log, /AとBを同じ大きさで横幅いっぱいに並べる/);
   assert.match(log, /Bの境界がAより細かいこと/);
+  assert.match(log, /Aの低コントラスト施設敷地面をstandalone testへ採用/);
+  assert.match(log, /施設敷地は屋根・壁・影・暗い連続輪郭を持たない低コントラストの地表面/);
+  assert.match(log, /<strong>testのみ<\/strong>。<code>variants\/map-02-refined\.html<\/code>を通常のstandalone/);
+  assert.match(log, /本番1・2・4マップのembedded表示は従来の施設敷地建物描画を維持/);
+  assert.match(log, /全自動テスト178件とビルドが成功/);
+  assert.match(log, /通常testは<code>surface<\/code>/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

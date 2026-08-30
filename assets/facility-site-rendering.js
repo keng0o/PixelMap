@@ -11,6 +11,11 @@
     return Object.freeze({ enabled, mode:enabled ? requested : 'current' });
   }
 
+  function effectiveMode(comparison, embedded){
+    if (comparison?.enabled && MODE_SET.has(comparison.mode)) return comparison.mode;
+    return embedded ? 'current' : 'surface';
+  }
+
   function cleanAtomicFootprint(grid, buildingGrid, size){
     const cleanedGrid = grid.slice();
     const cleanedBuildingGrid = buildingGrid.slice();
@@ -82,6 +87,7 @@
     version:'facility-site-rendering/1',
     modes:MODES,
     comparisonMode,
+    effectiveMode,
     cleanAtomicFootprint,
     surfaceColor,
   });

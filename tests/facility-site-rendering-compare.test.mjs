@@ -18,6 +18,12 @@ test('比較モードは専用指定されたembedded地図だけで有効にな
   { enabled:false, mode:'current' });
 });
 
+test('通常standalone testはAを採用し本番embeddedは従来方式を維持する', () => {
+  assert.equal(API.effectiveMode({ enabled:false, mode:'current' }, false), 'surface');
+  assert.equal(API.effectiveMode({ enabled:false, mode:'current' }, true), 'current');
+  assert.equal(API.effectiveMode({ enabled:true, mode:'precise' }, true), 'precise');
+});
+
 test('セル整形は孤立突起を除去し一セルのくぼみを埋める', () => {
   const size = 7;
   const grid = new Uint8Array(size * size);
@@ -56,14 +62,15 @@ test('比較ページは川崎変電所の実データをA・Bの2方式だけ�
   assert.match(compareHtml, /data-render="cell3"/);
 });
 
-test('各施設敷地方式は通常ページから隔離され実建物を維持する', () => {
+test('Aは通常standalone testへ限定採用され比較方式も実建物を維持する', () => {
   assert.match(mapHtml, /FACILITY_SITE_RENDERING\.comparisonMode\(PAGE_PARAMS, EMBEDDED\)/);
-  assert.match(mapHtml, /\['surface','precise','none'\]\.includes\(FACILITY_SITE_COMPARE_MODE\)/);
-  assert.match(mapHtml, /FACILITY_SITE_COMPARE_MODE === 'clean'/);
+  assert.match(mapHtml, /FACILITY_SITE_RENDERING\.effectiveMode\(\s*FACILITY_SITE_COMPARISON, EMBEDDED\)/);
+  assert.match(mapHtml, /\['surface','precise','none'\]\.includes\(FACILITY_SITE_RENDER_MODE\)/);
+  assert.match(mapHtml, /FACILITY_SITE_RENDER_MODE === 'clean'/);
   assert.match(mapHtml, /drawCellFacilitySiteSurfaceGrid\(facilityFootprintLayer\.grid/);
   assert.match(mapHtml, /rasterizeStandaloneFacilitySurfacePixels\(/);
   assert.match(mapHtml, /Z0\.5:facilitySiteSurface:atomic/);
   assert.match(mapHtml, /Z0\.5:facilitySiteSurface:precise-1px/);
   assert.match(mapHtml, /actualMapBuildingsPreserved:true/);
-  assert.match(mapHtml, /testOnly:FACILITY_SITE_COMPARISON\.enabled/);
+  assert.match(mapHtml, /testOnly:!EMBEDDED \|\| FACILITY_SITE_COMPARISON\.enabled/);
 });

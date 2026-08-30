@@ -883,7 +883,10 @@ const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
 const FACILITY_SITE_RENDERING = window.PixelMapFacilitySiteRendering;
 const FACILITY_SITE_COMPARISON = FACILITY_SITE_RENDERING.comparisonMode(PAGE_PARAMS, EMBEDDED);
-const FACILITY_SITE_COMPARE_MODE = FACILITY_SITE_COMPARISON.mode;
+// 通常のstandalone testは採用済みのA（低コントラスト敷地面）を使う。
+// 本番embeddedは従来の建物描画を維持し、比較ページだけ明示モードを優先する。
+const FACILITY_SITE_RENDER_MODE = FACILITY_SITE_RENDERING.effectiveMode(
+  FACILITY_SITE_COMPARISON, EMBEDDED);
 const REQUESTED_MAP_BEARING = Number(PAGE_PARAMS.get('bearing'));
 const HAS_REQUESTED_MAP_BEARING = PAGE_PARAMS.has('bearing') &&
   Number.isFinite(REQUESTED_MAP_BEARING);
@@ -984,7 +987,9 @@ const ACTIVE_ASSET_PACK = document.documentElement.dataset.assetPack;
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.documentElement.dataset.renderMode = RENDER_MODE;
 document.documentElement.dataset.facilitySiteCompare = FACILITY_SITE_COMPARISON.enabled ? '1' : '0';
-document.documentElement.dataset.facilitySiteMode = FACILITY_SITE_COMPARE_MODE;
+document.documentElement.dataset.facilitySiteMode = FACILITY_SITE_RENDER_MODE;
+document.documentElement.dataset.facilitySiteSource = FACILITY_SITE_COMPARISON.enabled
+  ? 'comparison' : EMBEDDED ? 'production-current' : 'standalone-test-adopted';
 document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
   ? 'geometry-skin-symbol-v1'
   : 'legacy';
@@ -5809,8 +5814,7 @@ function render(){
     : null;
   const facilityFootprintLayer = landmarkBuildingRaster?.layers.find(layer =>
     layer.source === 'facility-site-footprints') || null;
-  const cleanedFacilityFootprint = FACILITY_SITE_COMPARISON.enabled &&
-      FACILITY_SITE_COMPARE_MODE === 'clean' && facilityFootprintLayer
+  const cleanedFacilityFootprint = FACILITY_SITE_RENDER_MODE === 'clean' && facilityFootprintLayer
     ? FACILITY_SITE_RENDERING.cleanAtomicFootprint(
       facilityFootprintLayer.grid, facilityFootprintLayer.bldGrid, RG)
     : null;
@@ -5822,7 +5826,7 @@ function render(){
       }
     : null;
   cellRenderingStats.facilitySiteCleanedCells = cleanedFacilityFootprint?.changedCells || 0;
-  if (FACILITY_SITE_COMPARISON.enabled && FACILITY_SITE_COMPARE_MODE === 'precise')
+  if (FACILITY_SITE_RENDER_MODE === 'precise')
     cellRenderingStats.preciseFacilitySite = rasterizeStandaloneFacilitySurfacePixels(
       facilitySiteLandmarkFeatures, worldToGridPoint, RG, MAP_CELL_LOGICAL_SIZE
     );
@@ -6159,10 +6163,10 @@ function render(){
     if (landmark){
       for (const layer of landmark.layers){
         const facilityFootprint = layer.source === 'facility-site-footprints';
-        if (facilityFootprint && FACILITY_SITE_COMPARISON.enabled &&
-            ['surface','precise','none'].includes(FACILITY_SITE_COMPARE_MODE)) continue;
-        if (facilityFootprint && FACILITY_SITE_COMPARISON.enabled &&
-            FACILITY_SITE_COMPARE_MODE === 'clean' && cleanedFacilityFootprintLayer){
+        if (facilityFootprint &&
+            ['surface','precise','none'].includes(FACILITY_SITE_RENDER_MODE)) continue;
+        if (facilityFootprint &&
+            FACILITY_SITE_RENDER_MODE === 'clean' && cleanedFacilityFootprintLayer){
           drawCellPixelArtBuildingGrid(
             cleanedFacilityFootprintLayer.grid, cleanedFacilityFootprintLayer.bldGrid,
             cleanedFacilityFootprintLayer.buildingKinds,
@@ -6466,11 +6470,11 @@ function render(){
 
   // Z0〜Z4を固定し、同じZ階層内だけチェック順（後にチェックしたものほど前面）にする。
   drawRasterGroup('Z0', z0Ground);
-  if (o.poi && CELL_ONLY_MODE && FACILITY_SITE_COMPARISON.enabled){
-    if (FACILITY_SITE_COMPARE_MODE === 'surface' && facilityFootprintLayer){
+  if (o.poi && CELL_ONLY_MODE){
+    if (FACILITY_SITE_RENDER_MODE === 'surface' && facilityFootprintLayer){
       drawCellFacilitySiteSurfaceGrid(facilityFootprintLayer.grid, cellRenderingStats);
       renderOrder.push('Z0.5:facilitySiteSurface:atomic');
-    } else if (FACILITY_SITE_COMPARE_MODE === 'precise' && cellRenderingStats.preciseFacilitySite){
+    } else if (FACILITY_SITE_RENDER_MODE === 'precise' && cellRenderingStats.preciseFacilitySite){
       // 1論理px敷地面はここで有効化する。この後に描く水面・道路・建物の
       // 原子セルはocclusionへ記録され、敷地面より前面に残る。
       cellRenderingStats.facilitySurfaceOcclusionActive = true;
@@ -6833,9 +6837,10 @@ function render(){
     },
     materialPatterns:materialPatternState(),
     facilitySiteComparison:{
-      enabled:FACILITY_SITE_COMPARISON.enabled,
-      mode:FACILITY_SITE_COMPARE_MODE,
-      testOnly:FACILITY_SITE_COMPARISON.enabled,
+      enabled:FACILITY_SITE_RENDER_MODE !== 'current',
+      comparisonEnabled:FACILITY_SITE_COMPARISON.enabled,
+      mode:FACILITY_SITE_RENDER_MODE,
+      testOnly:!EMBEDDED || FACILITY_SITE_COMPARISON.enabled,
       source:'kanagawa-generated-osm-facility-polygons',
       footprintFeatures:landmarkBuildingRaster?.facilityFootprintFeatures || 0,
       atomicFootprintCells:facilityFootprintLayer
@@ -6845,9 +6850,9 @@ function render(){
       cleanedCells:cellRenderingStats.facilitySiteCleanedCells,
       preciseSourceLogicalPixels:cellRenderingStats.preciseFacilitySite?.logicalPixels || 0,
       precisePaintedLogicalPixels:cellRenderingStats.preciseFacilitySitePaintedPixels,
-      siteDrawOrder:FACILITY_SITE_COMPARE_MODE === 'surface' || FACILITY_SITE_COMPARE_MODE === 'precise'
+      siteDrawOrder:FACILITY_SITE_RENDER_MODE === 'surface' || FACILITY_SITE_RENDER_MODE === 'precise'
         ? 'ground-after-landuse-before-water-routes-buildings'
-        : FACILITY_SITE_COMPARE_MODE === 'none' ? 'site-omitted' : 'landmark-building-layer',
+        : FACILITY_SITE_RENDER_MODE === 'none' ? 'site-omitted' : 'landmark-building-layer',
       actualMapBuildingsPreserved:true,
     },
     tileZoom:TILE.z,
@@ -7949,7 +7954,7 @@ boot().finally(async () => {
     captureReady:ready && (!CAPTURE_MODE || tileCache.size >= 9),
     mode:'production',
     renderMode:RENDER_MODE,
-    facilitySiteMode:FACILITY_SITE_COMPARE_MODE,
+    facilitySiteMode:FACILITY_SITE_RENDER_MODE,
     assetTaste:'reference',
     assetPack:WORLD_STYLE_MODE ? WORLD_STYLE.assetPack : 'legacy',
     tileZoom:TILE.z,
