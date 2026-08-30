@@ -1885,12 +1885,7 @@ const STANDALONE_LOW_CONTRAST_ROAD_RULE = Object.freeze({
   boundary:'none',
   centerLine:'none',
   materialPattern:false,
-  fills:Object.freeze({
-    majorRoads:'#b9ad84',
-    regionalRoads:'#aaa99d',
-    localRoads:'#9fa99a',
-    paths:'#a89f7e',
-  }),
+  palette:'canonical-previous',
 });
 function effectiveRoadRenderStyle(option){
   const direct = SMOOTH_ROAD_STYLE[option];
@@ -1907,7 +1902,7 @@ function effectiveRoadRenderStyle(option){
     centerWidth:(rule.centerWidth || 1) * SCENE_PIXELS_PER_LOGICAL_PIXEL,
     dash:(rule.dash || []).map(value => value * SCENE_PIXELS_PER_LOGICAL_PIXEL),
   };
-  const fill = STANDALONE_LOW_CONTRAST_ROAD_RULE.fills[option];
+  const fill = rule.fill;
   return Object.freeze({
     ...base,
     width:base.width + base.casing * 2,
@@ -6912,6 +6907,8 @@ function render(){
         ? STANDALONE_LOW_CONTRAST_ROAD_RULE.centerLine : 'current',
       materialPattern:STANDALONE_LOW_CONTRAST_ROAD_SURFACE
         ? STANDALONE_LOW_CONTRAST_ROAD_RULE.materialPattern : 'current',
+      palette:STANDALONE_LOW_CONTRAST_ROAD_SURFACE
+        ? STANDALONE_LOW_CONTRAST_ROAD_RULE.palette : 'current',
       geometry:'source-position-width-order-preserved',
     },
     tileZoom:TILE.z,

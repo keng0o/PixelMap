@@ -208,6 +208,18 @@
       </div>
       <article class="entry">
         <div class="entry-header">
+          <h3>道路Aの面色を以前の配色へ戻す</h3>
+          <time datetime="2026-08-30">2026-08-30 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>道路Aの単色面を、主要道路<code>#d8c890</code>、地区幹線道路<code>#d0d0ca</code>、生活道路<code>#c6c6c0</code>、歩道／小径<code>#dcc890</code>という以前の配色へ戻す。境界線・中央線・舗装粒・踏み跡粒は削除したままとし、位置・幅・重なり順も変更しない。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。通常のstandalone test（<code>variants/map-02-refined.html</code>）のcell2／cell3。高速道路・作業道・鉄道・トンネルは変更しない。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップには影響しない。embedded表示は従来の道路色、境界線、主要道路中央線、素材模様を維持する。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト179件とビルドが成功。川崎駅周辺でcell2／cell3と0°／45°の4状態を撮影し、以前の4色へ戻ったこと、境界線・中央線・粒模様が復活していないこと、道路の位置・幅・交差・重なり順、建物・施設敷地・鉄道・水面・UIに回帰がないことを確認。最新4枚は独立視覚レビューですべてPASS。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>道路4種類を境界線なしの低コントラスト面へ変更</h3>
           <time datetime="2026-08-30">2026-08-30 JST</time>
         </div>

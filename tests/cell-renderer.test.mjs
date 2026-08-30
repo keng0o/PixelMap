@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+const layerAssets = await readFile(new URL('../assets/layer-assets.js', import.meta.url), 'utf8');
 const fourMapHtml = await readFile(new URL('../variants/height-stack-four-map.html', import.meta.url), 'utf8');
 const fourMapShellHtml = await readFile(new URL('../four-maps.html', import.meta.url), 'utf8');
 const twoMapHtml = await readFile(new URL('../compare.html', import.meta.url), 'utf8');
@@ -257,6 +258,16 @@ test('standalone testの道路Aは4種類を境界・中央線・粒なしの低
   assert.match(html, /dataset\.roadSurfaceMode = STANDALONE_LOW_CONTRAST_ROAD_SURFACE/);
   assert.match(html, /boundary:'none'/);
   assert.match(html, /centerLine:'none'/);
+  assert.match(html, /palette:'canonical-previous'/);
+  assert.match(html, /const fill = rule\.fill/);
+  assert.doesNotMatch(html, /majorRoads:'#b9ad84'/);
+  assert.doesNotMatch(html, /regionalRoads:'#aaa99d'/);
+  assert.doesNotMatch(html, /localRoads:'#9fa99a'/);
+  assert.doesNotMatch(html, /paths:'#a89f7e'/);
+  assert.match(layerAssets, /localRoads:Object\.freeze\(\{[\s\S]*?fill:'#c6c6c0'/);
+  assert.match(layerAssets, /regionalRoads:Object\.freeze\(\{[\s\S]*?fill:'#d0d0ca'/);
+  assert.match(layerAssets, /majorRoads:Object\.freeze\(\{[\s\S]*?fill:'#d8c890'/);
+  assert.match(layerAssets, /paths:Object\.freeze\(\{[\s\S]*?fill:'#dcc890'/);
 });
 
 test('全Webマップは細街路を既定表示し主要道路を手前へ重ねる', () => {
