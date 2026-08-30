@@ -158,8 +158,8 @@
             </tr>
             <tr>
               <th scope="row">ランドマーク</th>
-              <td>神奈川県の生成GeoJSONは、施設を表す意味タグを持つ閉じた敷地を1,000㎡以上で汎用収集。建物本体はMVTの全buildingを維持し、行政界・道路・河川・自然地形は補助収集しない。加えて、面積制限なしで<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集。汎用施設は収集した敷地面をラベルなしで必ず描き、その上へMVT建物を重ねる。公園・面登録の神社仏閣は単色マーカーで表示。敷地のない名前付き神社仏閣のOSM点は12論理px以内の実建物へ包含優先で結び付け、実footprint・長軸・最寄り経路側の正面を使う宗派別建物として表示する。一致しない点だけ小型の鳥居／山門記号へ戻す。commercialは別チェックで表示。</td>
-              <td>testと同じ生成GeoJSON、汎用施設敷地、高層建物、公園・面登録の神社仏閣、commercial別チェックを使用。点登録神社仏閣も同じ実建物対応付け・宗派別配色・鳥居／山門・小型fallbackを使用する。</td>
+              <td>神奈川県の生成GeoJSONは、施設を表す意味タグを持つ閉じた敷地を1,000㎡以上で汎用収集。建物本体はMVTの全buildingを維持し、行政界・道路・河川・自然地形は補助収集しない。加えて、面積制限なしで<code>height>=30m</code>または<code>building:levels>=8</code>の名前付き建物を高層建物として収集。汎用施設は収集した敷地面をラベルなしで必ず描き、その上へMVT建物を重ねる。公園・面登録の神社仏閣は単色マーカーで表示。敷地のない名前付き神社仏閣のOSM点は12論理px以内の実建物へ包含優先で結び付け、実footprint・長軸・最寄り経路側の正面を使う宗派別建物として表示する。一致しない点だけ小型の鳥居／山門記号へ戻す。commercialは別チェックで表示。test専用の<code>variants/facility-site-rendering-compare.html</code>では、川崎変電所の同じ実地図データを使い、施設敷地を現状／A／B／C／Dの5画面で同期比較できる。</td>
+              <td>testと同じ生成GeoJSON、汎用施設敷地、高層建物、公園・面登録の神社仏閣、commercial別チェックを使用。点登録神社仏閣も同じ実建物対応付け・宗派別配色・鳥居／山門・小型fallbackを使用する。5画面比較用パラメータはtest専用の埋め込み時だけ有効で、本番1・2・4マップでは比較モードを起動しない。</td>
             </tr>
             <tr>
               <th scope="row">道路・鉄道・水路</th>
@@ -206,6 +206,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>川崎の実地図データで施設敷地5方式を比較</h3>
+          <time datetime="2026-08-30">2026-08-30 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>川崎変電所を初期位置にして、同じOpenFreeMap MVTと神奈川県の施設GeoJSONから、施設敷地の描画を現状／A／B／C／Dの5画面で並べる<code>variants/facility-site-rendering-compare.html</code>を追加。Aは粗い施設面を低コントラストで描画、Bはsource形状を1論理pxで精密化、Cは孤立セルと1セルのくぼみだけを整形、Dは施設敷地だけを省略する。全方式でMVTの実建物を残し、位置・表示方位・cell2／cell3を同期する。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。5画面比較ページから埋め込む<code>variants/map-02-refined.html</code>に限り、専用パラメータで5方式を切り替える。通常のstandalone testは現状方式のまま。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップでは比較用パラメータを有効化せず、施設敷地の描画分岐は従来の現状方式を維持する。本番ページのUI、位置・方位同期、cell2／cell3切替も変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト177件とビルドが成功。川崎変電所でcell2／cell3と0°／45°の4状態を撮影し、5画面の位置・方位同期、A／Bの暗い連続輪郭抑制、Bの細かな境界、Cの微小整形、Dで施設敷地だけを消して実建物・道路・鉄道を残すことを確認。通常ページでは比較分岐が起動しないことも確認し、4枚の最新スクリーンショットは独立視覚レビューですべてPASS。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>田中達之風のstandalone testを導入前へ復元</h3>

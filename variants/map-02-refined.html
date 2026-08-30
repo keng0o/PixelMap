@@ -538,6 +538,7 @@
     height:max(100dvw, 100dvh);
     max-width:none;
   }
+  body.facility-site-compare-panel #bearingIndicator{ display:none; }
   body.capture-mode{
     display:flex;
     min-height:100vh;
@@ -758,6 +759,7 @@
 <script src="../assets/landmark-entities.js?v=20260824-generic-facilities-1000"></script>
 <script src="../assets/poi-sprites.js?v=5"></script>
 <script src="../assets/building-styles.js?v=4"></script>
+<script src="../assets/facility-site-rendering.js?v=1"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=6"></script>
 <script src="../assets/world-style.js?v=5"></script>
@@ -879,6 +881,9 @@ function parseTile(buf){
    ===================================================== */
 const PAGE_PARAMS = new URLSearchParams(location.search);
 const EMBEDDED = PAGE_PARAMS.get('embedded') === '1' && window.parent !== window;
+const FACILITY_SITE_RENDERING = window.PixelMapFacilitySiteRendering;
+const FACILITY_SITE_COMPARISON = FACILITY_SITE_RENDERING.comparisonMode(PAGE_PARAMS, EMBEDDED);
+const FACILITY_SITE_COMPARE_MODE = FACILITY_SITE_COMPARISON.mode;
 const REQUESTED_MAP_BEARING = Number(PAGE_PARAMS.get('bearing'));
 const HAS_REQUESTED_MAP_BEARING = PAGE_PARAMS.has('bearing') &&
   Number.isFinite(REQUESTED_MAP_BEARING);
@@ -969,6 +974,7 @@ document.getElementById('map').setAttribute(
 document.body.classList.toggle('embedded', EMBEDDED);
 document.body.classList.toggle('shared-controls', SHARED_CONTROLS);
 document.body.classList.toggle('capture-mode', CAPTURE_MODE);
+document.body.classList.toggle('facility-site-compare-panel', FACILITY_SITE_COMPARISON.enabled);
 document.documentElement.style.setProperty('--pattern-accent', ACTIVE_PATTERN.palette.transit || ACTIVE_PATTERN.palette.generic);
 document.documentElement.style.setProperty('--pattern-muted', ACTIVE_PATTERN.palette.generic || '#78828a');
 document.documentElement.dataset.mapMode = 'production';
@@ -977,6 +983,8 @@ document.documentElement.dataset.assetPack = WORLD_STYLE_MODE ? WORLD_STYLE.asse
 const ACTIVE_ASSET_PACK = document.documentElement.dataset.assetPack;
 document.documentElement.dataset.pattern = ACTIVE_PATTERN.id;
 document.documentElement.dataset.renderMode = RENDER_MODE;
+document.documentElement.dataset.facilitySiteCompare = FACILITY_SITE_COMPARISON.enabled ? '1' : '0';
+document.documentElement.dataset.facilitySiteMode = FACILITY_SITE_COMPARE_MODE;
 document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
   ? 'geometry-skin-symbol-v1'
   : 'legacy';
@@ -2465,6 +2473,8 @@ const cellCompositeContext = cellCompositeCanvas.getContext('2d');
 const bearingCompositeCanvas = document.createElement('canvas');
 bearingCompositeCanvas.width = bearingCompositeCanvas.height = PRESENTATION_SIZE;
 const bearingCompositeContext = bearingCompositeCanvas.getContext('2d');
+const facilitySiteFineCanvas = document.createElement('canvas');
+const facilitySiteFineContext = facilitySiteFineCanvas.getContext('2d');
 const CELL_RGBA_CACHE = new Map();
 function solidCellRgba(color){
   if (CELL_RGBA_CACHE.has(color)) return CELL_RGBA_CACHE.get(color);
@@ -2499,6 +2509,8 @@ function paintSolidMapCell(gx, gy, color, layer, stats, worldDepth = null, depth
     }
     stats.worldStructureDepth[index] = Math.max(existingDepth, worldDepth);
   }
+  if (stats.facilitySurfaceOcclusionActive && stats.facilitySurfaceOcclusion)
+    stats.facilitySurfaceOcclusion[index] = 1;
   const pixelIndex = index * 4;
   const rgba = solidCellRgba(color);
   stats.pixelData[pixelIndex] = rgba[0];
@@ -2512,6 +2524,55 @@ function paintSolidMapCell(gx, gy, color, layer, stats, worldDepth = null, depth
   }
   stats.layerCells[layer] = (stats.layerCells[layer] || 0) + 1;
   return true;
+}
+
+function preciseFacilitySiteColor(stats, fineX, fineY){
+  const scale = stats.preciseFacilitySite?.scale || 1;
+  const worldLogicalX = (TILE.x * GRID + gridOriginX) * scale + fineX;
+  const worldLogicalY = (TILE.y * GRID + gridOriginY) * scale + fineY;
+  return FACILITY_SITE_RENDERING.surfaceColor(worldLogicalX, worldLogicalY);
+}
+
+function preciseFacilitySitePixel(stats, fineX, fineY){
+  const surface = stats.preciseFacilitySite;
+  if (!surface || fineX < 0 || fineY < 0 || fineX >= surface.size || fineY >= surface.size)
+    return null;
+  if (!surface.mask[fineY * surface.size + fineX]) return null;
+  const coarseX = Math.floor(fineX / surface.scale);
+  const coarseY = Math.floor(fineY / surface.scale);
+  if (stats.facilitySurfaceOcclusion?.[coarseY * stats.gridSize + coarseX]) return null;
+  return solidCellRgba(preciseFacilitySiteColor(stats, fineX, fineY));
+}
+
+function drawPreciseFacilitySiteOverlay(stats, originX, originY){
+  const surface = stats.preciseFacilitySite;
+  if (!surface) return;
+  if (facilitySiteFineCanvas.width !== surface.size || facilitySiteFineCanvas.height !== surface.size){
+    facilitySiteFineCanvas.width = surface.size;
+    facilitySiteFineCanvas.height = surface.size;
+  }
+  const image = facilitySiteFineContext.createImageData(surface.size, surface.size);
+  let painted = 0;
+  for (let fineY = 0; fineY < surface.size; fineY++){
+    for (let fineX = 0; fineX < surface.size; fineX++){
+      const rgba = preciseFacilitySitePixel(stats, fineX, fineY);
+      if (!rgba) continue;
+      const index = (fineY * surface.size + fineX) * 4;
+      image.data[index] = rgba[0];
+      image.data[index + 1] = rgba[1];
+      image.data[index + 2] = rgba[2];
+      image.data[index + 3] = rgba[3];
+      painted++;
+    }
+  }
+  facilitySiteFineContext.putImageData(image, 0, 0);
+  ctx.drawImage(
+    facilitySiteFineCanvas,
+    originX, originY,
+    surface.size * SCENE_PIXELS_PER_LOGICAL_PIXEL,
+    surface.size * SCENE_PIXELS_PER_LOGICAL_PIXEL
+  );
+  stats.preciseFacilitySitePaintedPixels = painted;
 }
 
 function paintLegacyCellBlock(gx, gy, color, layer, stats){
@@ -2555,12 +2616,23 @@ function flushSolidCellBuffer(stats){
         const gx = Math.floor((sourceX - originX) / CPX);
         const gy = Math.floor((sourceY - originY) / CPX);
         if (gx < 0 || gy < 0 || gx >= size || gy >= size) continue;
-        const sourcePixel = (gy * size + gx) * 4;
         const targetPixel = (logicalY * PRESENTATION_SIZE + logicalX) * 4;
-        output.data[targetPixel] = stats.pixelData[sourcePixel];
-        output.data[targetPixel + 1] = stats.pixelData[sourcePixel + 1];
-        output.data[targetPixel + 2] = stats.pixelData[sourcePixel + 2];
-        output.data[targetPixel + 3] = stats.pixelData[sourcePixel + 3];
+        const fineX = Math.floor((sourceX - originX) / SCENE_PIXELS_PER_LOGICAL_PIXEL);
+        const fineY = Math.floor((sourceY - originY) / SCENE_PIXELS_PER_LOGICAL_PIXEL);
+        const preciseRgba = preciseFacilitySitePixel(stats, fineX, fineY);
+        if (preciseRgba){
+          output.data[targetPixel] = preciseRgba[0];
+          output.data[targetPixel + 1] = preciseRgba[1];
+          output.data[targetPixel + 2] = preciseRgba[2];
+          output.data[targetPixel + 3] = preciseRgba[3];
+          stats.preciseFacilitySitePaintedPixels++;
+        } else {
+          const sourcePixel = (gy * size + gx) * 4;
+          output.data[targetPixel] = stats.pixelData[sourcePixel];
+          output.data[targetPixel + 1] = stats.pixelData[sourcePixel + 1];
+          output.data[targetPixel + 2] = stats.pixelData[sourcePixel + 2];
+          output.data[targetPixel + 3] = stats.pixelData[sourcePixel + 3];
+        }
       }
     }
     bearingCompositeContext.putImageData(output, 0, 0);
@@ -2572,6 +2644,7 @@ function flushSolidCellBuffer(stats){
     stats.rerasterizedLogicalPixels = PRESENTATION_SIZE * PRESENTATION_SIZE;
   } else {
     ctx.drawImage(cellCompositeCanvas, originX, originY, size * CPX, size * CPX);
+    drawPreciseFacilitySiteOverlay(stats, originX, originY);
     stats.rerasterizedLogicalPixels = 0;
   }
   ctx.restore();
@@ -2720,6 +2793,21 @@ function drawCellPixelArtSurfaceGrid(grid, option, stats, transparent = true){
       paintSolidMapCell(x, y, color, option, stats);
       if (boundary){ stats.boundaryCells++; continue; }
       if (chipColor && chipColor.toLowerCase() !== String(baseColor || '').toLowerCase()) stats.groundPatternCells++;
+    }
+  }
+}
+
+function drawCellFacilitySiteSurfaceGrid(grid, stats){
+  const RG = RASTER_GRID_SIZE;
+  const scale = MAP_CELL_LOGICAL_SIZE;
+  for (let y = 0; y < RG; y++){
+    for (let x = 0; x < RG; x++){
+      if (grid[y * RG + x] !== ID.BLD) continue;
+      const worldLogicalX = (TILE.x * GRID + gridOriginX + x) * scale;
+      const worldLogicalY = (TILE.y * GRID + gridOriginY + y) * scale;
+      const color = FACILITY_SITE_RENDERING.surfaceColor(worldLogicalX, worldLogicalY);
+      paintSolidMapCell(x, y, color, 'facilitySiteSurface', stats);
+      stats.facilitySiteSurfaceCells++;
     }
   }
 }
@@ -4786,6 +4874,54 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
   };
 }
 
+function rasterizeStandaloneFacilitySurfacePixels(features, worldToGridPoint, gridSize, scale){
+  const size = gridSize * scale;
+  const mask = new Uint8Array(size * size);
+  let visibleFeatures = 0;
+  let logicalPixels = 0;
+  for (const feature of features){
+    let painted = false;
+    for (const polygon of landmarkGeometryPolygons(feature.geometry)){
+      const rings = polygon.map(ring => ring.map(coordinate => {
+        const [worldX, worldY] = landmarkWorldPoint(coordinate);
+        const [gridX, gridY] = worldToGridPoint(worldX, worldY);
+        return [gridX * scale, gridY * scale];
+      }));
+      let minY = Infinity, maxY = -Infinity;
+      for (const ring of rings) for (const [, y] of ring){
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+      const y0 = Math.max(0, Math.ceil(minY - .5));
+      const y1 = Math.min(size - 1, Math.floor(maxY - .5));
+      for (let y = y0; y <= y1; y++){
+        const sampleY = y + .5;
+        const intersections = [];
+        for (const ring of rings){
+          for (let index = 0; index + 1 < ring.length; index++){
+            const [xa, ya] = ring[index], [xb, yb] = ring[index + 1];
+            if ((ya <= sampleY) !== (yb <= sampleY))
+              intersections.push(xa + (sampleY - ya) * (xb - xa) / (yb - ya));
+          }
+        }
+        intersections.sort((a, b) => a - b);
+        for (let index = 0; index + 1 < intersections.length; index += 2){
+          const x0 = Math.max(0, Math.ceil(intersections[index] - .5));
+          const x1 = Math.min(size - 1, Math.floor(intersections[index + 1] - .5));
+          for (let x = x0; x <= x1; x++){
+            const maskIndex = y * size + x;
+            if (!mask[maskIndex]) logicalPixels++;
+            mask[maskIndex] = 1;
+            painted = true;
+          }
+        }
+      }
+    }
+    if (painted) visibleFeatures++;
+  }
+  return { mask, size, scale, visibleFeatures, logicalPixels };
+}
+
 function religiousBuildingAxis(cells){
   if (!cells?.length) return { tangent:[1, 0], elongation:0, center:[0, 0] };
   let sumX = 0, sumY = 0;
@@ -5236,6 +5372,12 @@ function render(){
     countedFeatureOptions:new Set(),
     cellizedFeatures:0,
     facilitySymbols:0,
+    facilitySiteSurfaceCells:0,
+    facilitySiteCleanedCells:0,
+    preciseFacilitySitePaintedPixels:0,
+    preciseFacilitySite:null,
+    facilitySurfaceOcclusion:CELL_ONLY_MODE ? new Uint8Array(RG * RG) : null,
+    facilitySurfaceOcclusionActive:false,
     terrainSymbols:0,
     groundPatternCells:0,
     boundaryCells:0,
@@ -5649,9 +5791,12 @@ function render(){
   const facilityBuildingTargets = STANDALONE_LANDMARK_MODE
     ? facilitiesInView.filter(item => !item.landmarkEntity)
     : [];
+  const collectedLandmarkFeatures = resolvedView.landmarkFeatures.filter(feature =>
+    (feature.properties?.display_mode || 'building') === 'building');
+  const facilitySiteLandmarkFeatures = collectedLandmarkFeatures.filter(feature =>
+    feature.properties?.collection_group === 'facility');
   const collectedLandmarkRaster = STANDALONE_LANDMARK_MODE && o.poi
-    ? rasterizeStandaloneLandmarkBuildings(resolvedView.landmarkFeatures.filter(feature =>
-      (feature.properties?.display_mode || 'building') === 'building'), worldToGridPoint, RG)
+    ? rasterizeStandaloneLandmarkBuildings(collectedLandmarkFeatures, worldToGridPoint, RG)
     : null;
   const landmarkBuildingRaster = collectedLandmarkRaster
     ? matchStandaloneLandmarksToSourceBuildings(
@@ -5662,6 +5807,25 @@ function render(){
       facilitySites, religiousPlacements.claimedBuildingIds
     )
     : null;
+  const facilityFootprintLayer = landmarkBuildingRaster?.layers.find(layer =>
+    layer.source === 'facility-site-footprints') || null;
+  const cleanedFacilityFootprint = FACILITY_SITE_COMPARISON.enabled &&
+      FACILITY_SITE_COMPARE_MODE === 'clean' && facilityFootprintLayer
+    ? FACILITY_SITE_RENDERING.cleanAtomicFootprint(
+      facilityFootprintLayer.grid, facilityFootprintLayer.bldGrid, RG)
+    : null;
+  const cleanedFacilityFootprintLayer = cleanedFacilityFootprint
+    ? {
+        ...facilityFootprintLayer,
+        grid:cleanedFacilityFootprint.grid,
+        bldGrid:cleanedFacilityFootprint.buildingGrid,
+      }
+    : null;
+  cellRenderingStats.facilitySiteCleanedCells = cleanedFacilityFootprint?.changedCells || 0;
+  if (FACILITY_SITE_COMPARISON.enabled && FACILITY_SITE_COMPARE_MODE === 'precise')
+    cellRenderingStats.preciseFacilitySite = rasterizeStandaloneFacilitySurfacePixels(
+      facilitySiteLandmarkFeatures, worldToGridPoint, RG, MAP_CELL_LOGICAL_SIZE
+    );
   const matchedStandaloneFacilities = landmarkBuildingRaster?.matchedFacilities || new Set();
   const isStandaloneBuildingFacility = item => item.landmarkEntity ||
     isStationProps(item.props) || isSchoolFacilityProps(item.props) ||
@@ -5994,6 +6158,20 @@ function render(){
     const landmark = landmarkBuildingRaster;
     if (landmark){
       for (const layer of landmark.layers){
+        const facilityFootprint = layer.source === 'facility-site-footprints';
+        if (facilityFootprint && FACILITY_SITE_COMPARISON.enabled &&
+            ['surface','precise','none'].includes(FACILITY_SITE_COMPARE_MODE)) continue;
+        if (facilityFootprint && FACILITY_SITE_COMPARISON.enabled &&
+            FACILITY_SITE_COMPARE_MODE === 'clean' && cleanedFacilityFootprintLayer){
+          drawCellPixelArtBuildingGrid(
+            cleanedFacilityFootprintLayer.grid, cleanedFacilityFootprintLayer.bldGrid,
+            cleanedFacilityFootprintLayer.buildingKinds,
+            cleanedFacilityFootprintLayer.buildingDescs,
+            cleanedFacilityFootprintLayer.buildingAnchors,
+            'landmarkBuildings:cleanedFacilitySite', cellRenderingStats
+          );
+          continue;
+        }
         if (CELL_ONLY_MODE){
           drawCellPixelArtBuildingGrid(
             layer.grid, layer.bldGrid, layer.buildingKinds,
@@ -6288,6 +6466,17 @@ function render(){
 
   // Z0〜Z4を固定し、同じZ階層内だけチェック順（後にチェックしたものほど前面）にする。
   drawRasterGroup('Z0', z0Ground);
+  if (o.poi && CELL_ONLY_MODE && FACILITY_SITE_COMPARISON.enabled){
+    if (FACILITY_SITE_COMPARE_MODE === 'surface' && facilityFootprintLayer){
+      drawCellFacilitySiteSurfaceGrid(facilityFootprintLayer.grid, cellRenderingStats);
+      renderOrder.push('Z0.5:facilitySiteSurface:atomic');
+    } else if (FACILITY_SITE_COMPARE_MODE === 'precise' && cellRenderingStats.preciseFacilitySite){
+      // 1論理px敷地面はここで有効化する。この後に描く水面・道路・建物の
+      // 原子セルはocclusionへ記録され、敷地面より前面に残る。
+      cellRenderingStats.facilitySurfaceOcclusionActive = true;
+      renderOrder.push('Z0.5:facilitySiteSurface:precise-1px');
+    }
+  }
   drawRasterGroup('Z1', z1Water);
   for (const option of roadStackOrder(layerOrder)){
     if (!o[option] || !z2Routes.has(option)) continue;
@@ -6643,6 +6832,24 @@ function render(){
       drawOrder:ACTIVE_PATTERN.drawOrder,
     },
     materialPatterns:materialPatternState(),
+    facilitySiteComparison:{
+      enabled:FACILITY_SITE_COMPARISON.enabled,
+      mode:FACILITY_SITE_COMPARE_MODE,
+      testOnly:FACILITY_SITE_COMPARISON.enabled,
+      source:'kanagawa-generated-osm-facility-polygons',
+      footprintFeatures:landmarkBuildingRaster?.facilityFootprintFeatures || 0,
+      atomicFootprintCells:facilityFootprintLayer
+        ? facilityFootprintLayer.grid.reduce((count, value) => count + (value === ID.BLD ? 1 : 0), 0)
+        : 0,
+      surfaceCells:cellRenderingStats.facilitySiteSurfaceCells,
+      cleanedCells:cellRenderingStats.facilitySiteCleanedCells,
+      preciseSourceLogicalPixels:cellRenderingStats.preciseFacilitySite?.logicalPixels || 0,
+      precisePaintedLogicalPixels:cellRenderingStats.preciseFacilitySitePaintedPixels,
+      siteDrawOrder:FACILITY_SITE_COMPARE_MODE === 'surface' || FACILITY_SITE_COMPARE_MODE === 'precise'
+        ? 'ground-after-landuse-before-water-routes-buildings'
+        : FACILITY_SITE_COMPARE_MODE === 'none' ? 'site-omitted' : 'landmark-building-layer',
+      actualMapBuildingsPreserved:true,
+    },
     tileZoom:TILE.z,
     pixel:{
       requestedScale:REQUESTED_DISPLAY_SCALE,
@@ -7742,6 +7949,7 @@ boot().finally(async () => {
     captureReady:ready && (!CAPTURE_MODE || tileCache.size >= 9),
     mode:'production',
     renderMode:RENDER_MODE,
+    facilitySiteMode:FACILITY_SITE_COMPARE_MODE,
     assetTaste:'reference',
     assetPack:WORLD_STYLE_MODE ? WORLD_STYLE.assetPack : 'legacy',
     tileZoom:TILE.z,

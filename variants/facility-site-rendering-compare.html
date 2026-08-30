@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="川崎変電所の実地図データで施設敷地の5つの描画方法を比較するtest専用ページ">
+<title>PixelMap｜施設敷地5画面比較</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&amp;display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#181820;
+    --panel:#101018;
+    --ink:#f8f0d8;
+    --muted:#b8b09c;
+    --line:#585848;
+    --accent:#88c860;
+    --test:#f8d038;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ min-width:320px; min-height:100%; margin:0; background:var(--bg); }
+  body{
+    display:flex;
+    min-height:100vh;
+    min-height:100dvh;
+    flex-direction:column;
+    gap:10px;
+    padding:10px;
+    color:var(--ink);
+    font-family:'DotGothic16',monospace;
+  }
+  header{
+    display:flex;
+    flex:0 0 auto;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    min-height:54px;
+    padding:8px 12px;
+    border:2px solid var(--ink);
+    background:var(--panel);
+  }
+  .heading{ min-width:0; }
+  .heading small{ display:block; color:var(--test); font-size:9px; letter-spacing:1px; }
+  h1{ margin:2px 0 0; font-size:17px; font-weight:normal; line-height:1.25; }
+  .controls{ display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
+  .control-group{ display:flex; align-items:center; gap:4px; }
+  .control-label{ color:var(--muted); font-size:9px; }
+  button{
+    min-width:38px;
+    height:30px;
+    padding:0 8px;
+    border:1px solid var(--ink);
+    border-radius:0;
+    background:#202028;
+    color:var(--ink);
+    font:11px/1 'DotGothic16',monospace;
+    cursor:pointer;
+  }
+  button:hover,button:focus-visible{ border-color:var(--test); color:var(--test); }
+  button[aria-pressed="true"]{ border-color:var(--accent); background:#203020; color:#d8f0c0; }
+  button:disabled{ cursor:wait; opacity:.45; }
+  #bearingValue{ min-width:48px; color:var(--ink); font-size:10px; text-align:center; }
+  main{
+    display:grid;
+    min-height:0;
+    flex:1 1 auto;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    grid-template-rows:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .map-panel,.guide{
+    position:relative;
+    min-width:0;
+    min-height:0;
+    overflow:hidden;
+    border:2px solid var(--ink);
+    background:var(--panel);
+  }
+  .map-panel::after{
+    content:'地図を読み込み中';
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-items:center;
+    z-index:3;
+    background:#101018d8;
+    color:var(--muted);
+    font-size:10px;
+    pointer-events:none;
+  }
+  .map-panel[data-ready="1"]::after{ display:none; }
+  .map-label{
+    position:absolute;
+    top:6px;
+    left:50%;
+    z-index:2;
+    width:max-content;
+    max-width:calc(100% - 14px);
+    transform:translateX(-50%);
+    padding:4px 7px;
+    border:1px solid var(--ink);
+    background:#101018e8;
+    color:var(--ink);
+    font-size:9px;
+    font-weight:normal;
+    line-height:1.25;
+    text-align:center;
+    pointer-events:none;
+  }
+  .map-label b{ color:var(--test); font-weight:normal; }
+  iframe{ display:block; width:100%; height:100%; border:0; background:#78b850; }
+  .guide{ padding:14px; overflow:auto; }
+  .guide h2{ margin:0 0 9px; color:var(--test); font-size:13px; font-weight:normal; }
+  .guide dl{ display:grid; grid-template-columns:auto 1fr; gap:6px 9px; margin:0; }
+  .guide dt{ color:var(--accent); font-size:9px; }
+  .guide dd{ margin:0; color:var(--muted); font-size:9px; line-height:1.55; }
+  .guide p{ margin:10px 0 0; color:#8f8878; font-size:8px; line-height:1.55; }
+  footer{ flex:0 0 auto; color:#807868; font-size:8px; text-align:center; }
+  footer a{ color:var(--accent); }
+  @media (max-width:1000px){
+    body{ overflow:auto; }
+    main{ grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:none; }
+    .map-panel,.guide{ min-height:340px; }
+  }
+  @media (max-width:620px){
+    header{ align-items:flex-start; flex-direction:column; }
+    .controls{ justify-content:flex-start; }
+    main{ grid-template-columns:1fr; }
+    .map-panel,.guide{ min-height:78vw; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="heading">
+    <small>TEST ONLY / REAL KAWASAKI MAP DATA</small>
+    <h1>川崎変電所・施設敷地の5画面比較</h1>
+  </div>
+  <div class="controls" aria-label="全地図の共通操作">
+    <div class="control-group" aria-label="原子セルサイズ">
+      <span class="control-label">セル</span>
+      <button type="button" data-render="cell2">cell2</button>
+      <button type="button" data-render="cell3">cell3</button>
+    </div>
+    <div class="control-group" aria-label="表示方位">
+      <span class="control-label">方位</span>
+      <button type="button" id="bearingMinus" aria-label="表示方位を15度戻す">−15°</button>
+      <output id="bearingValue">0°</output>
+      <button type="button" id="bearingPlus" aria-label="表示方位を15度進める">＋15°</button>
+    </div>
+  </div>
+</header>
+
+<main aria-label="施設敷地の5描画方式">
+  <section class="map-panel" data-mode="current" aria-label="現状の描画">
+    <h2 class="map-label"><b>現状</b> 建物として描画</h2>
+    <iframe title="現状。施設敷地を建物として描画" allow="geolocation"></iframe>
+  </section>
+  <section class="map-panel" data-mode="surface" aria-label="薄い敷地面">
+    <h2 class="map-label"><b>A</b> 薄い敷地面</h2>
+    <iframe title="A。原子セルの薄い施設敷地面" allow="geolocation"></iframe>
+  </section>
+  <section class="map-panel" data-mode="precise" aria-label="1論理ピクセルの精密敷地面">
+    <h2 class="map-label"><b>B</b> 1論理px精密敷地面</h2>
+    <iframe title="B。1論理ピクセルの精密施設敷地面" allow="geolocation"></iframe>
+  </section>
+  <section class="map-panel" data-mode="clean" aria-label="セル輪郭整形">
+    <h2 class="map-label"><b>C</b> セル輪郭整形</h2>
+    <iframe title="C。一セルの突起とくぼみを整形した建物描画" allow="geolocation"></iframe>
+  </section>
+  <section class="map-panel" data-mode="none" aria-label="実建物のみ">
+    <h2 class="map-label"><b>D</b> 敷地なし・実建物のみ</h2>
+    <iframe title="D。施設敷地を省略し実際の建物だけを描画" allow="geolocation"></iframe>
+  </section>
+  <aside class="guide" aria-label="比較方法の説明">
+    <h2>比較の見方</h2>
+    <dl>
+      <dt>現状</dt><dd>暗い連続輪郭、屋根、壁、影を敷地全体へ適用。</dd>
+      <dt>A</dt><dd>同じ原子セル形状を、輪郭なしの低コントラスト地表として道路の下へ配置。</dd>
+      <dt>B</dt><dd>OSM由来ポリゴンを1論理pxで再ラスタライズし、道路の下へ配置。</dd>
+      <dt>C</dt><dd>1セルの突起・くぼみだけを補正し、現状の建物表現を適用。</dd>
+      <dt>D</dt><dd>収集敷地を省略し、MVTに存在する実建物だけを表示。</dd>
+    </dl>
+    <p>5画面は位置と表示方位を同期します。地図はOpenFreeMap MVT、施設敷地はOSM由来の神奈川県生成GeoJSONを使用しています。</p>
+  </aside>
+</main>
+
+<footer>
+  testのみ・本番ページへの適用なし ／ 地図データ ©
+  <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> ／
+  <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a>
+</footer>
+
+<script>
+'use strict';
+const PAGE_PARAMS = new URLSearchParams(location.search);
+const RENDER_MODE = PAGE_PARAMS.get('render') === 'cell3' ? 'cell3' : 'cell2';
+const DEFAULT_LOCATION = Object.freeze({ lat:'35.5289', lon:'139.68745', place:'川崎変電所' });
+const latitude = PAGE_PARAMS.get('lat') || DEFAULT_LOCATION.lat;
+const longitude = PAGE_PARAMS.get('lon') || DEFAULT_LOCATION.lon;
+const place = PAGE_PARAMS.get('place') || DEFAULT_LOCATION.place;
+const normalizeBearing = value => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? ((numeric % 360) + 360) % 360 : 0;
+};
+let latestBearing = normalizeBearing(PAGE_PARAMS.get('bearing'));
+let latestViewport = null;
+const panels = [...document.querySelectorAll('.map-panel[data-mode]')];
+const frames = panels.map(panel => panel.querySelector('iframe'));
+const readyFrames = new Set();
+const targetOrigin = location.origin === 'null' ? '*' : location.origin;
+
+function frameUrl(mode, index){
+  const params = new URLSearchParams({
+    embedded:'1',
+    'shared-controls':'1',
+    pattern:'07',
+    layers:'study',
+    map:`facility-site-${index + 1}-${mode}`,
+    render:RENDER_MODE,
+    lat:latitude,
+    lon:longitude,
+    place,
+    bearing:String(latestBearing),
+    'facility-site-compare':'1',
+    'facility-site-mode':mode,
+  });
+  return `map-02-refined.html?${params}`;
+}
+
+for (const [index, panel] of panels.entries())
+  frames[index].src = frameUrl(panel.dataset.mode, index);
+
+for (const button of document.querySelectorAll('[data-render]')){
+  const active = button.dataset.render === RENDER_MODE;
+  button.setAttribute('aria-pressed', String(active));
+  button.addEventListener('click', () => {
+    if (active) return;
+    const url = new URL(location.href);
+    url.searchParams.set('render', button.dataset.render);
+    location.assign(url.href);
+  });
+}
+
+function updateBearingUrl(){
+  const url = new URL(location.href);
+  url.searchParams.set('bearing', String(latestBearing));
+  history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  document.getElementById('bearingValue').textContent = `${latestBearing}°`;
+  document.documentElement.dataset.mapBearing = String(latestBearing);
+}
+function isMapFrame(source){ return frames.some(frame => frame.contentWindow === source); }
+function sendViewport(frame, state){
+  frame.contentWindow?.postMessage({ type:'pixelmap:set-viewport', state }, targetOrigin);
+}
+function sendBearing(frame){
+  frame.contentWindow?.postMessage({ type:'pixelmap:set-bearing', bearing:latestBearing }, targetOrigin);
+}
+function setReadyState(frame){
+  readyFrames.add(frame);
+  const panel = panels.find(item => item.querySelector('iframe') === frame);
+  if (panel) panel.dataset.ready = '1';
+  const ready = readyFrames.size === frames.length;
+  document.documentElement.dataset.compareReady = ready ? '1' : '0';
+  document.getElementById('bearingMinus').disabled = !ready;
+  document.getElementById('bearingPlus').disabled = !ready;
+  window.PixelMapFacilityCompare = {
+    ready,
+    renderMode:RENDER_MODE,
+    bearing:latestBearing,
+    modes:panels.map(item => item.dataset.mode),
+    location:{ latitude:Number(latitude), longitude:Number(longitude), name:place },
+  };
+}
+
+window.addEventListener('message', event => {
+  if (!isMapFrame(event.source)) return;
+  if (location.origin !== 'null' && event.origin !== location.origin) return;
+  const frame = frames.find(item => item.contentWindow === event.source);
+  if (event.data?.type === 'pixelmap:ready'){
+    if (frame) setReadyState(frame);
+    if (latestViewport && frame) sendViewport(frame, latestViewport);
+    if (frame) sendBearing(frame);
+    return;
+  }
+  if (event.data?.type === 'pixelmap:bearing'){
+    latestBearing = normalizeBearing(event.data.bearing);
+    updateBearingUrl();
+    for (const target of frames) sendBearing(target);
+    return;
+  }
+  if (event.data?.type !== 'pixelmap:viewport') return;
+  latestViewport = event.data.state;
+  for (const target of frames)
+    if (target.contentWindow !== event.source) sendViewport(target, latestViewport);
+});
+
+function shiftBearing(delta){
+  latestBearing = normalizeBearing(latestBearing + delta);
+  updateBearingUrl();
+  for (const frame of frames) sendBearing(frame);
+}
+document.getElementById('bearingMinus').addEventListener('click', () => shiftBearing(-15));
+document.getElementById('bearingPlus').addEventListener('click', () => shiftBearing(15));
+document.getElementById('bearingMinus').disabled = true;
+document.getElementById('bearingPlus').disabled = true;
+updateBearingUrl();
+document.documentElement.dataset.compareReady = '0';
+</script>
+</body>
+</html>

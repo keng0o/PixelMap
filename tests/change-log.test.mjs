@@ -130,6 +130,13 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /<strong>testのみ<\/strong>。standalone testのcell2／cell3/);
   assert.match(log, /本番1・2・4マップのファイルと表示は変更しない/);
   assert.match(log, /大型機械素材、生活工業都市スキン、専用配色・形状文法をすべて削除/);
+  assert.match(log, /川崎の実地図データで施設敷地5方式を比較/);
+  assert.match(log, /<code>variants\/facility-site-rendering-compare\.html<\/code>/);
+  assert.match(log, /現状／A／B／C／Dの5画面/);
+  assert.match(log, /全方式でMVTの実建物を残し/);
+  assert.match(log, /5画面比較用パラメータはtest専用の埋め込み時だけ有効/);
+  assert.match(log, /全自動テスト177件とビルドが成功/);
+  assert.match(log, /4枚の最新スクリーンショットは独立視覚レビューですべてPASS/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {
