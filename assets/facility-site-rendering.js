@@ -76,11 +76,15 @@
     return { grid:cleanedGrid, buildingGrid:cleanedBuildingGrid, changedCells };
   }
 
-  function surfaceColor(worldLogicalX, worldLogicalY){
+  const DEFAULT_SURFACE_PALETTE = Object.freeze(['#aaa287','#9a937c','#b8b096']);
+
+  function surfaceColor(worldLogicalX, worldLogicalY, palette = null){
+    const colors = Array.isArray(palette) && palette.length >= 3
+      ? palette : DEFAULT_SURFACE_PALETTE;
     const phase = ((worldLogicalX * 17 + worldLogicalY * 29) % 43 + 43) % 43;
-    if (phase === 0) return '#b8b096';
-    if (phase === 19) return '#9a937c';
-    return '#aaa287';
+    if (phase === 0) return colors[2];
+    if (phase === 19) return colors[1];
+    return colors[0];
   }
 
   root.PixelMapFacilitySiteRendering = Object.freeze({

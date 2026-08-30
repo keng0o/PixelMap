@@ -23,6 +23,14 @@ test('通常standalone testと本番embeddedはAを採用する', () => {
   assert.equal(API.effectiveMode({ enabled:true, mode:'precise' }), 'precise');
 });
 
+test('低コントラスト敷地面は通常色を維持しつつ専用パレットを受け取れる', () => {
+  const racecoursePalette = ['#315c3b','#1f3f29','#4f7d58'];
+  assert.equal(API.surfaceColor(1, 1), '#aaa287');
+  assert.equal(API.surfaceColor(0, 0), '#b8b096');
+  assert.equal(API.surfaceColor(1, 1, racecoursePalette), '#315c3b');
+  assert.equal(API.surfaceColor(0, 0, racecoursePalette), '#4f7d58');
+});
+
 test('セル整形は孤立突起を除去し一セルのくぼみを埋める', () => {
   const size = 7;
   const grid = new Uint8Array(size * size);
@@ -66,7 +74,7 @@ test('Aはstandalone testと本番へ採用され比較方式も実建物を維�
   assert.match(mapHtml, /FACILITY_SITE_RENDERING\.effectiveMode\(FACILITY_SITE_COMPARISON\)/);
   assert.match(mapHtml, /\['surface','precise','none'\]\.includes\(FACILITY_SITE_RENDER_MODE\)/);
   assert.match(mapHtml, /FACILITY_SITE_RENDER_MODE === 'clean'/);
-  assert.match(mapHtml, /drawCellFacilitySiteSurfaceGrid\(facilityFootprintLayer\.grid/);
+  assert.match(mapHtml, /drawCellFacilitySiteSurfaceGrid\(\s*facilityFootprintLayer\.grid/);
   assert.match(mapHtml, /rasterizeStandaloneFacilitySurfacePixels\(/);
   assert.match(mapHtml, /Z0\.5:facilitySiteSurface:atomic/);
   assert.match(mapHtml, /Z0\.5:facilitySiteSurface:precise-1px/);

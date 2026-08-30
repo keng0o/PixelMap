@@ -759,7 +759,7 @@
 <script src="../assets/landmark-entities.js?v=20260824-generic-facilities-1000"></script>
 <script src="../assets/poi-sprites.js?v=5"></script>
 <script src="../assets/building-styles.js?v=4"></script>
-<script src="../assets/facility-site-rendering.js?v=2"></script>
+<script src="../assets/facility-site-rendering.js?v=3"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=6"></script>
 <script src="../assets/world-style.js?v=5"></script>
@@ -2839,17 +2839,27 @@ function drawCellPixelArtSurfaceGrid(grid, option, stats, transparent = true){
   }
 }
 
-function drawCellFacilitySiteSurfaceGrid(grid, stats){
+function facilitySiteSurfacePalette(kind){
+  return !EMBEDDED && kind === 'racecourse'
+    ? BUILDING_STYLES.RACECOURSE_PALETTE : null;
+}
+
+function drawCellFacilitySiteSurfaceGrid(grid, buildingGrid, buildingKinds, racecourseGrid, stats){
   const RG = RASTER_GRID_SIZE;
   const scale = MAP_CELL_LOGICAL_SIZE;
   for (let y = 0; y < RG; y++){
     for (let x = 0; x < RG; x++){
-      if (grid[y * RG + x] !== ID.BLD) continue;
+      const index = y * RG + x;
+      if (grid[index] !== ID.BLD) continue;
       const worldLogicalX = (TILE.x * GRID + gridOriginX + x) * scale;
       const worldLogicalY = (TILE.y * GRID + gridOriginY + y) * scale;
-      const color = FACILITY_SITE_RENDERING.surfaceColor(worldLogicalX, worldLogicalY);
+      const kind = racecourseGrid?.[index]
+        ? 'racecourse' : buildingKinds?.[buildingGrid?.[index]] || 'normal';
+      const color = FACILITY_SITE_RENDERING.surfaceColor(
+        worldLogicalX, worldLogicalY, facilitySiteSurfacePalette(kind));
       paintSolidMapCell(x, y, color, 'facilitySiteSurface', stats);
       stats.facilitySiteSurfaceCells++;
+      if (!EMBEDDED && kind === 'racecourse') stats.racecourseSurfaceCells++;
     }
   }
 }
@@ -4832,6 +4842,7 @@ function isRacecourseLandmarkProps(props = {}){
 function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSize){
   const grid = new Uint8Array(gridSize * gridSize);
   const bldGrid = new Uint16Array(gridSize * gridSize);
+  const racecourseGrid = new Uint8Array(gridSize * gridSize);
   const buildingKinds = Array(features.length + 1).fill('normal');
   const buildingDescs = Array(features.length + 1).fill(null);
   const buildingAnchors = Array(features.length + 1).fill(null);
@@ -4843,8 +4854,10 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
 
   const stampCell = (bi, x, y) => {
     if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) return false;
-    grid[y * gridSize + x] = ID.BLD;
-    bldGrid[y * gridSize + x] = bi;
+    const index = y * gridSize + x;
+    grid[index] = ID.BLD;
+    bldGrid[index] = bi;
+    if (buildingKinds[bi] === 'racecourse') racecourseGrid[index] = 1;
     return true;
   };
   for (let featureIndex = 0; featureIndex < features.length; featureIndex++){
@@ -4861,11 +4874,13 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
       featureGridAnchors[bi] = [Math.floor(gx), Math.floor(gy)];
     }
     const lodSeed = BUILDING_STYLES.seedFromKey(`landmark:${LANDMARK_ENTITY_API.featureId(feature)}`);
+    const kind = isRacecourseLandmarkProps(props) ? 'racecourse' : 'normal';
+    buildingKinds[bi] = kind;
     buildingDescs[bi] = {
       ...buildingAppearanceForActiveProfile({
         heightM:Number(props.height_m || 0),
         areaCells:landmarkAreaCells(props.area_m2, latitude),
-        kind:isRacecourseLandmarkProps(props) ? 'racecourse' : 'normal',
+        kind,
         category:null,
         seed:lodSeed,
       }),
@@ -4914,7 +4929,7 @@ function rasterizeStandaloneLandmarkBuildings(features, worldToGridPoint, gridSi
     if (painted) visibleFeatures++;
   }
   return {
-    grid, bldGrid, buildingKinds, buildingDescs, buildingAnchors, bldStyle,
+    grid, bldGrid, racecourseGrid, buildingKinds, buildingDescs, buildingAnchors, bldStyle,
     featureRoles, featureCollectionGroups, featureGridAnchors, visibleFeatures,
   };
 }
@@ -5418,6 +5433,7 @@ function render(){
     cellizedFeatures:0,
     facilitySymbols:0,
     facilitySiteSurfaceCells:0,
+    racecourseSurfaceCells:0,
     facilitySiteCleanedCells:0,
     preciseFacilitySitePaintedPixels:0,
     preciseFacilitySite:null,
@@ -6512,7 +6528,13 @@ function render(){
   drawRasterGroup('Z0', z0Ground);
   if (o.poi && CELL_ONLY_MODE){
     if (FACILITY_SITE_RENDER_MODE === 'surface' && facilityFootprintLayer){
-      drawCellFacilitySiteSurfaceGrid(facilityFootprintLayer.grid, cellRenderingStats);
+      drawCellFacilitySiteSurfaceGrid(
+        facilityFootprintLayer.grid,
+        facilityFootprintLayer.bldGrid,
+        facilityFootprintLayer.buildingKinds,
+        facilityFootprintLayer.racecourseGrid,
+        cellRenderingStats
+      );
       renderOrder.push('Z0.5:facilitySiteSurface:atomic');
     } else if (FACILITY_SITE_RENDER_MODE === 'precise' && cellRenderingStats.preciseFacilitySite){
       // 1論理px敷地面はここで有効化する。この後に描く水面・道路・建物の
@@ -6882,12 +6904,15 @@ function render(){
       mode:FACILITY_SITE_RENDER_MODE,
       comparisonTestOnly:FACILITY_SITE_COMPARISON.enabled,
       productionReleased:true,
+      racecourseSurfacePalette:!EMBEDDED ? 'dark-green-test' : 'neutral-production',
+      racecourseSurfacePaletteTestOnly:!EMBEDDED,
       source:'kanagawa-generated-osm-facility-polygons',
       footprintFeatures:landmarkBuildingRaster?.facilityFootprintFeatures || 0,
       atomicFootprintCells:facilityFootprintLayer
         ? facilityFootprintLayer.grid.reduce((count, value) => count + (value === ID.BLD ? 1 : 0), 0)
         : 0,
       surfaceCells:cellRenderingStats.facilitySiteSurfaceCells,
+      racecourseSurfaceCells:cellRenderingStats.racecourseSurfaceCells,
       cleanedCells:cellRenderingStats.facilitySiteCleanedCells,
       preciseSourceLogicalPixels:cellRenderingStats.preciseFacilitySite?.logicalPixels || 0,
       precisePaintedLogicalPixels:cellRenderingStats.preciseFacilitySitePaintedPixels,
