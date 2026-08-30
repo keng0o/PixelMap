@@ -208,6 +208,18 @@
       </div>
       <article class="entry">
         <div class="entry-header">
+          <h3>競馬場の低コントラスト敷地面を暗緑へ復元</h3>
+          <time datetime="2026-08-30">2026-08-30 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>施設敷地のA方式は維持したまま、地表面セルが施設種別の専用パレットを受け取れるようにした。競馬場は既存の暗緑<code>#315c3b</code>・暗部<code>#1f3f29</code>・ハイライト<code>#4f7d58</code>を使い、通常施設のベージュ色と低コントラスト表現は変更しない。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。通常のstandalone test（<code>variants/map-02-refined.html</code>）のcell2／cell3で「施設アイコン」を有効にしたときの競馬場敷地。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。<code>!EMBEDDED</code>の専用guardで分離し、本番1・2・4マップは現行の低コントラスト施設敷地色を維持する。屋根・壁・影・暗い連続輪郭は復活させない。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト181件とビルドが成功。川崎競馬場のcell2／cell3を撮影し、暗緑敷地面、内部のトラック線・実建物、道路・鉄道・河川の前後関係を確認。embedded比較で本番guardが現行の中立色を維持することも確認し、最新2枚は独立視覚レビューで両方PASS。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>道路4種類を境界線なしの低コントラスト面へ変更</h3>
           <time datetime="2026-08-30">2026-08-30 JST</time>
         </div>

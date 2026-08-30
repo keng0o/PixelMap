@@ -163,6 +163,12 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /本番1・2・4マップのembedded表示は従来の道路色/);
   assert.match(log, /全自動テスト179件とビルドが成功/);
   assert.match(log, /本番1マップ内のembeddedは従来の<code>current<\/code>/);
+  assert.match(log, /競馬場の低コントラスト敷地面を暗緑へ復元/);
+  assert.match(log, /競馬場は既存の暗緑<code>#315c3b<\/code>/);
+  assert.match(log, /通常施設のベージュ色と低コントラスト表現は変更しない/);
+  assert.match(log, /本番1・2・4マップは現行の低コントラスト施設敷地色を維持/);
+  assert.match(log, /全自動テスト181件とビルドが成功/);
+  assert.match(log, /最新2枚は独立視覚レビューで両方PASS/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {
