@@ -110,6 +110,7 @@ export function buildDirectionalAssets(){
       bounds:image.meta.bounds,
       opaquePixels:image.meta.stats.opaquePixels,
       archPixels:image.meta.stats.archPixels,
+      details:image.meta.stats.details,
       visibleEdges:image.meta.visibleEdges,
     });
   }

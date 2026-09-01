@@ -43,6 +43,16 @@
       },
       "opaquePixels": 1908,
       "archPixels": 184,
+      "details": {
+        "masonryJointPixels": 36,
+        "voussoirPixels": 50,
+        "keystonePixels": 6,
+        "centralPierPixels": 8,
+        "abutmentPixels": 26,
+        "capstoneJointPixels": 40,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 78
+      },
       "visibleEdges": [
         {
           "id": "long-positive",
@@ -62,6 +72,16 @@
       },
       "opaquePixels": 1947,
       "archPixels": 176,
+      "details": {
+        "masonryJointPixels": 54,
+        "voussoirPixels": 49,
+        "keystonePixels": 5,
+        "centralPierPixels": 9,
+        "abutmentPixels": 48,
+        "capstoneJointPixels": 40,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 89
+      },
       "visibleEdges": [
         {
           "id": "end-positive",
@@ -86,6 +106,16 @@
       },
       "opaquePixels": 2007,
       "archPixels": 158,
+      "details": {
+        "masonryJointPixels": 57,
+        "voussoirPixels": 45,
+        "keystonePixels": 6,
+        "centralPierPixels": 8,
+        "abutmentPixels": 55,
+        "capstoneJointPixels": 48,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 68
+      },
       "visibleEdges": [
         {
           "id": "end-positive",
@@ -108,8 +138,18 @@
         "width": 53,
         "height": 66
       },
-      "opaquePixels": 1813,
+      "opaquePixels": 1818,
       "archPixels": 142,
+      "details": {
+        "masonryJointPixels": 57,
+        "voussoirPixels": 46,
+        "keystonePixels": 6,
+        "centralPierPixels": 7,
+        "abutmentPixels": 43,
+        "capstoneJointPixels": 42,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 75
+      },
       "visibleEdges": [
         {
           "id": "end-positive",
@@ -134,6 +174,16 @@
       },
       "opaquePixels": 1854,
       "archPixels": 108,
+      "details": {
+        "masonryJointPixels": 57,
+        "voussoirPixels": 43,
+        "keystonePixels": 6,
+        "centralPierPixels": 9,
+        "abutmentPixels": 53,
+        "capstoneJointPixels": 52,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 68
+      },
       "visibleEdges": [
         {
           "id": "end-positive",
@@ -158,6 +208,16 @@
       },
       "opaquePixels": 1622,
       "archPixels": 76,
+      "details": {
+        "masonryJointPixels": 57,
+        "voussoirPixels": 39,
+        "keystonePixels": 5,
+        "centralPierPixels": 9,
+        "abutmentPixels": 44,
+        "capstoneJointPixels": 40,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 91
+      },
       "visibleEdges": [
         {
           "id": "end-positive",
@@ -182,6 +242,16 @@
       },
       "opaquePixels": 1458,
       "archPixels": 0,
+      "details": {
+        "masonryJointPixels": 21,
+        "voussoirPixels": 0,
+        "keystonePixels": 0,
+        "centralPierPixels": 0,
+        "abutmentPixels": 19,
+        "capstoneJointPixels": 40,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 78
+      },
       "visibleEdges": [
         {
           "id": "end-positive",
@@ -201,6 +271,16 @@
       },
       "opaquePixels": 1620,
       "archPixels": 76,
+      "details": {
+        "masonryJointPixels": 57,
+        "voussoirPixels": 39,
+        "keystonePixels": 5,
+        "centralPierPixels": 9,
+        "abutmentPixels": 44,
+        "capstoneJointPixels": 40,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 89
+      },
       "visibleEdges": [
         {
           "id": "long-negative",
@@ -225,6 +305,16 @@
       },
       "opaquePixels": 1853,
       "archPixels": 108,
+      "details": {
+        "masonryJointPixels": 57,
+        "voussoirPixels": 43,
+        "keystonePixels": 6,
+        "centralPierPixels": 8,
+        "abutmentPixels": 53,
+        "capstoneJointPixels": 48,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 68
+      },
       "visibleEdges": [
         {
           "id": "long-negative",
@@ -247,8 +337,18 @@
         "width": 53,
         "height": 66
       },
-      "opaquePixels": 1839,
+      "opaquePixels": 1842,
       "archPixels": 142,
+      "details": {
+        "masonryJointPixels": 57,
+        "voussoirPixels": 46,
+        "keystonePixels": 6,
+        "centralPierPixels": 7,
+        "abutmentPixels": 43,
+        "capstoneJointPixels": 42,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 75
+      },
       "visibleEdges": [
         {
           "id": "long-negative",
@@ -273,6 +373,16 @@
       },
       "opaquePixels": 2006,
       "archPixels": 158,
+      "details": {
+        "masonryJointPixels": 57,
+        "voussoirPixels": 45,
+        "keystonePixels": 6,
+        "centralPierPixels": 8,
+        "abutmentPixels": 55,
+        "capstoneJointPixels": 48,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 68
+      },
       "visibleEdges": [
         {
           "id": "long-negative",
@@ -297,6 +407,16 @@
       },
       "opaquePixels": 1945,
       "archPixels": 176,
+      "details": {
+        "masonryJointPixels": 54,
+        "voussoirPixels": 49,
+        "keystonePixels": 5,
+        "centralPierPixels": 9,
+        "abutmentPixels": 48,
+        "capstoneJointPixels": 40,
+        "parapetPostPixels": 50,
+        "roadPavingPixels": 91
+      },
       "visibleEdges": [
         {
           "id": "long-negative",

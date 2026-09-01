@@ -69,3 +69,27 @@ test('全方向が同じ接地点を持ち不透明画素が存在する',()=>{
     assert.ok(image.meta.visibleEdges.length>=1);
   }
 });
+
+test('全方向が石積み・笠石・支柱・舗装石の共通細部を持つ',()=>{
+  for(const angle of ANGLES){
+    const details=renderBridge(angle).meta.stats.details;
+    assert.ok(details.masonryJointPixels>=6,`${angle}度の石積み目地が不足しています`);
+    assert.ok(details.capstoneJointPixels>=6,`${angle}度の笠石継ぎ目が不足しています`);
+    assert.ok(details.parapetPostPixels>=8,`${angle}度の欄干支柱が不足しています`);
+    assert.ok(details.roadPavingPixels>=20,`${angle}度の舗装石が不足しています`);
+  }
+});
+
+test('アーチ可視方向は迫石・要石・中央橋脚・橋台を描き分ける',()=>{
+  for(const angle of [0,15,30,45,135,150,165]){
+    const details=renderBridge(angle).meta.stats.details;
+    assert.ok(details.voussoirPixels>=12,`${angle}度の迫石が不足しています`);
+    assert.ok(details.keystonePixels>=2,`${angle}度の要石が不足しています`);
+    assert.ok(details.centralPierPixels>=4,`${angle}度の中央橋脚が不足しています`);
+    assert.ok(details.abutmentPixels>=8,`${angle}度の橋台石が不足しています`);
+  }
+  const edgeOn=renderBridge(90).meta.stats.details;
+  assert.equal(edgeOn.voussoirPixels,0);
+  assert.equal(edgeOn.keystonePixels,0);
+  assert.equal(edgeOn.centralPierPixels,0);
+});

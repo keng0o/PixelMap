@@ -155,6 +155,34 @@ function drawPolygonOutline(surface,points,color=PALETTE.outline){
     drawSupercoverLine(surface,points[index],points[(index+1)%points.length],color);
 }
 
+function detailTracker(){
+  return {
+    masonryJointPixels:new Set(),
+    voussoirPixels:new Set(),
+    keystonePixels:new Set(),
+    centralPierPixels:new Set(),
+    abutmentPixels:new Set(),
+    capstoneJointPixels:new Set(),
+    parapetPostPixels:new Set(),
+    roadPavingPixels:new Set(),
+  };
+}
+
+function trackPoint(set,point){
+  set.add(`${point.x},${point.y}`);
+}
+
+function trackedPixel(surface,point,color,set){
+  putPixel(surface,point.x,point.y,color);
+  trackPoint(set,point);
+}
+
+function trackedLine(surface,from,to,color,set){
+  const points=drawSupercoverLine(surface,from,to,color);
+  for(const point of points) trackPoint(set,point);
+  return points;
+}
+
 function drawWallCourses(surface,from,to,depth){
   for(const course of [3,6]){
     if(course>=depth) continue;
@@ -162,13 +190,30 @@ function drawWallCourses(surface,from,to,depth){
   }
 }
 
-function drawLongWallDetails(surface,angle,edge,openingPixels){
+function drawLongWallDetails(surface,angle,edge,openingPixels,details){
   const v=edge.side*GEOMETRY.masonryWidth/2;
-  for(const joint of [-20,-12,-4,4,12,20]){
-    const base=projectLocal(angle,joint,v);
-    const start=2+Math.abs(joint/8)%2;
-    for(let depth=start;depth<GEOMETRY.wallDepth;depth+=4)
-      putPixel(surface,base.x,base.y+Math.floor(depth),PALETTE.stoneDark);
+  const courses=[
+    {from:0,to:2,joints:[-20,-8,4,16]},
+    {from:3,to:5,joints:[-14,-2,10,22]},
+    {from:6,to:8,joints:[-20,-8,4,16]},
+  ];
+  for(const course of courses){
+    for(const joint of course.joints){
+      const base=projectLocal(angle,joint,v);
+      trackedLine(surface,{x:base.x,y:base.y+course.from},{x:base.x,y:base.y+course.to},
+        PALETTE.stoneDark,details.masonryJointPixels);
+    }
+  }
+  for(const boundary of [-20,20]){
+    const base=projectLocal(angle,boundary,v);
+    trackedLine(surface,{x:base.x,y:base.y+1},{x:base.x,y:base.y+GEOMETRY.wallDepth-1},
+      PALETTE.stoneDark,details.abutmentPixels);
+  }
+  for(const [fromU,toU] of [[-25,-20],[20,25]]){
+    const from=projectLocal(angle,fromU,v);
+    const to=projectLocal(angle,toU,v);
+    trackedLine(surface,{x:from.x,y:from.y+5},{x:to.x,y:to.y+5},
+      PALETTE.stoneLight,details.abutmentPixels);
   }
   for(const center of LOCAL.archCenters){
     const columns=[];
@@ -178,8 +223,13 @@ function drawLongWallDetails(surface,angle,edge,openingPixels){
       const top=Math.min(GEOMETRY.wallDepth-1,
         1+Math.round(GEOMETRY.archHeight-curve));
       const base=projectLocal(angle,center+relative,v);
-      columns.push({base,top});
-      if(top>0) putPixel(surface,base.x,base.y+top-1,PALETTE.stoneLight);
+      columns.push({base,top,relative});
+      if(top>0) trackedPixel(surface,{x:base.x,y:base.y+top-1},
+        PALETTE.stoneLight,details.voussoirPixels);
+      if(top>1) trackedPixel(surface,{x:base.x,y:base.y+top-2},
+        PALETTE.stoneMid,details.voussoirPixels);
+      if([-6,-3,3,6].includes(relative)&&top>0)
+        trackedPixel(surface,{x:base.x,y:base.y+top-1},PALETTE.stoneDark,details.voussoirPixels);
     }
     for(const {base,top} of columns){
       const points=drawSupercoverLine(surface,
@@ -187,21 +237,52 @@ function drawLongWallDetails(surface,angle,edge,openingPixels){
         {x:base.x,y:base.y+GEOMETRY.wallDepth-1},PALETTE.opening);
       for(const point of points) openingPixels.add(`${point.x},${point.y}`);
     }
+    const keystone=columns.find(column=>column.relative===0);
+    for(const relative of [-1,0,1]){
+      const column=columns.find(candidate=>candidate.relative===relative);
+      if(!column) continue;
+      const y=column.base.y+Math.max(0,column.top-1);
+      trackedPixel(surface,{x:column.base.x,y},
+        relative===0?PALETTE.stoneLight:PALETTE.stoneMid,details.keystonePixels);
+    }
+    if(keystone&&keystone.top>1)
+      trackedPixel(surface,{x:keystone.base.x,y:keystone.base.y+keystone.top-2},
+        PALETTE.stoneLight,details.keystonePixels);
   }
+  const pierTopLeft=projectLocal(angle,-2,v);
+  const pierTopRight=projectLocal(angle,2,v);
+  trackedLine(surface,{x:pierTopLeft.x,y:pierTopLeft.y+5},{x:pierTopRight.x,y:pierTopRight.y+5},
+    PALETTE.stoneLight,details.centralPierPixels);
+  const pierCenter=projectLocal(angle,0,v);
+  trackedLine(surface,{x:pierCenter.x,y:pierCenter.y+6},
+    {x:pierCenter.x,y:pierCenter.y+GEOMETRY.wallDepth-1},
+    PALETTE.stoneDark,details.centralPierPixels);
 }
 
-function drawEndWallDetails(surface,angle,edge){
+function drawEndWallDetails(surface,angle,edge,details){
   const u=edge.side*GEOMETRY.length/2;
-  for(const v of [-7,0,7]){
-    const base=projectLocal(angle,u,v);
-    for(let depth=2+(Math.abs(v/7)%2);depth<GEOMETRY.wallDepth;depth+=4)
-      putPixel(surface,base.x,base.y+Math.floor(depth),PALETTE.stoneDark);
+  const courses=[
+    {from:0,to:2,joints:[-6,6]},
+    {from:3,to:5,joints:[-9,0,9]},
+    {from:6,to:8,joints:[-6,6]},
+  ];
+  for(const course of courses){
+    for(const v of course.joints){
+      const base=projectLocal(angle,u,v);
+      trackedLine(surface,{x:base.x,y:base.y+course.from},{x:base.x,y:base.y+course.to},
+        PALETTE.stoneDark,details.masonryJointPixels);
+    }
   }
+  const left=projectLocal(angle,u,-9);
+  const right=projectLocal(angle,u,9);
+  trackedLine(surface,{x:left.x,y:left.y+5},{x:right.x,y:right.y+5},
+    PALETTE.stoneLight,details.abutmentPixels);
 }
 
 function drawBridgeWalls(surface,angle){
   const visibleEdges=[];
   const openingPixels=new Set();
+  const details=detailTracker();
   for(const edge of LOCAL.edges){
     const outward=rotateVector(angle,edge.outward.u,edge.outward.v);
     if(outward.y<=1e-7) continue;
@@ -211,25 +292,22 @@ function drawBridgeWalls(surface,angle){
     const faceColor=outward.x>0.15?PALETTE.stoneDark:PALETTE.stoneMid;
     fillPolygon(surface,quad,faceColor);
     drawWallCourses(surface,from,to,GEOMETRY.wallDepth);
-    if(edge.kind==='long') drawLongWallDetails(surface,angle,edge,openingPixels);
-    else drawEndWallDetails(surface,angle,edge);
+    if(edge.kind==='long') drawLongWallDetails(surface,angle,edge,openingPixels,details);
+    else drawEndWallDetails(surface,angle,edge,details);
     drawPolygonOutline(surface,quad);
     visibleEdges.push({id:edge.id,kind:edge.kind,exposure:Number(outward.y.toFixed(6))});
   }
-  return {visibleEdges,archPixels:openingPixels.size};
+  return {visibleEdges,archPixels:openingPixels.size,details};
 }
 
-function drawRoadTexture(surface,angle){
-  const rows=[-4,0,4];
+function drawRoadTexture(surface,angle,details){
+  const rows=[-5,-2,1,4];
   for(let rowIndex=0;rowIndex<rows.length;rowIndex++){
-    const offset=rowIndex%2===0?0:4;
-    for(let u=-22+offset;u<=22;u+=8){
-      const point=projectLocal(angle,u,rows[rowIndex]);
-      putPixel(surface,point.x,point.y,PALETTE.roadLight);
-      if((Math.abs(u)+rowIndex)%3===0){
-        const next=projectLocal(angle,u+1,rows[rowIndex]);
-        putPixel(surface,next.x,next.y,PALETTE.roadLight);
-      }
+    const offset=rowIndex%2===0?0:3;
+    for(let u=-22+offset;u<=20;u+=7){
+      const from=projectLocal(angle,u,rows[rowIndex]);
+      const to=projectLocal(angle,u+2,rows[rowIndex]);
+      trackedLine(surface,from,to,PALETTE.roadLight,details.roadPavingPixels);
     }
   }
 }
@@ -243,7 +321,7 @@ function localPolygonEdges(points){
   });
 }
 
-function drawParapet(surface,angle,localPoints){
+function drawParapet(surface,angle,localPoints,details){
   const base=projectPoints(angle,localPoints);
   for(const edge of localPolygonEdges(localPoints)){
     const outward=rotateVector(angle,edge.outward.u,edge.outward.v);
@@ -259,6 +337,22 @@ function drawParapet(surface,angle,localPoints){
   const top=translatePoints(base,0,-GEOMETRY.parapetHeight);
   fillPolygon(surface,top,PALETTE.stoneLight);
   drawPolygonOutline(surface,top);
+  const vValues=localPoints.map(point=>point.v);
+  const vMin=Math.min(...vValues);
+  const vMax=Math.max(...vValues);
+  for(const u of [-18,-9,0,9,18]){
+    const from=projectLocal(angle,u,vMin);
+    const to=projectLocal(angle,u,vMax);
+    trackedLine(surface,{x:from.x,y:from.y-GEOMETRY.parapetHeight},
+      {x:to.x,y:to.y-GEOMETRY.parapetHeight},
+      PALETTE.stoneMid,details.capstoneJointPixels);
+  }
+  for(const u of [-24,-12,0,12,24]){
+    const candidates=[projectLocal(angle,u,vMin),projectLocal(angle,u,vMax)];
+    const basePoint=candidates.sort((left,right)=>right.y-left.y||right.x-left.x)[0];
+    trackedLine(surface,basePoint,{x:basePoint.x,y:basePoint.y-GEOMETRY.parapetHeight},
+      PALETTE.stoneDark,details.parapetPostPixels);
+  }
   for(const point of base)
     drawSupercoverLine(surface,point,{x:point.x,y:point.y-GEOMETRY.parapetHeight},PALETTE.outline);
 }
@@ -293,13 +387,13 @@ export function renderBridge(angle){
   const road=projectPoints(model.angle,LOCAL.road);
   fillPolygon(surface,road,PALETTE.road);
   drawPolygonOutline(surface,road,PALETTE.roadLight);
-  drawRoadTexture(surface,model.angle);
+  drawRoadTexture(surface,model.angle,wall.details);
 
   const parapets=LOCAL.parapets.map(points=>({
     points,
     averageY:projectPoints(model.angle,points).reduce((sum,point)=>sum+point.y,0)/points.length,
   })).sort((left,right)=>left.averageY-right.averageY);
-  for(const parapet of parapets) drawParapet(surface,model.angle,parapet.points);
+  for(const parapet of parapets) drawParapet(surface,model.angle,parapet.points,wall.details);
 
   const result=opaqueBounds(surface);
   return {
@@ -313,7 +407,11 @@ export function renderBridge(angle){
         wall:{x:0,y:GEOMETRY.wallDepth},
       },
       visibleEdges:wall.visibleEdges,
-      stats:{opaquePixels:result.opaquePixels,archPixels:wall.archPixels},
+      stats:{
+        opaquePixels:result.opaquePixels,
+        archPixels:wall.archPixels,
+        details:Object.fromEntries(Object.entries(wall.details).map(([name,set])=>[name,set.size])),
+      },
     },
   };
 }

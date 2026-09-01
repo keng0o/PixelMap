@@ -36,6 +36,10 @@ test('個別PNGとmanifestが寸法・alpha・パレット・接地点契約を�
   assert.deepEqual(manifest.sprites.map(sprite=>sprite.angle),ANGLES);
   const paletteRgb=new Set(Object.values(PALETTE).map(color=>color.slice(1)));
   for(const sprite of manifest.sprites){
+    assert.ok(sprite.details.masonryJointPixels>=6);
+    assert.ok(sprite.details.capstoneJointPixels>=6);
+    assert.ok(sprite.details.parapetPostPixels>=8);
+    assert.ok(sprite.details.roadPavingPixels>=20);
     const decoded=decodePng(assets.get(sprite.file));
     assert.deepEqual({width:decoded.width,height:decoded.height},GEOMETRY.canvas);
     const seen=new Set();
