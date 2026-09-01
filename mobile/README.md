@@ -12,7 +12,7 @@ npm run ios
 npm run android
 ```
 
-`npm run start:qr` starts Metro on the local network and prints a fresh QR code for Expo Go. Keep that terminal running while scanning. The phone and development machine must be on the same network; use `npx expo start --tunnel` when LAN access is unavailable.
+`npm run start:qr` starts Metro on the local network and prints a fresh QR code for the PixelMap development build. Keep that terminal running while scanning. The phone and development machine must be on the same network; use `npx expo start --dev-client --tunnel` when LAN access is unavailable.
 
 ## Android APK
 
@@ -60,7 +60,7 @@ After the cloud build completes, download the artifact from its EAS build page. 
 ## Typography contract
 
 - UI text uses the Japanese-capable `DotGothic16` face from the Expo Google Fonts package, matching the web POC without a network font request.
-- The font is embedded for standalone iOS/Android builds and also loaded from the bundled asset at runtime for Expo Go; a load error falls back to the platform font instead of blocking the map.
+- The font is bundled with the app and loaded locally at runtime; a load error falls back to the platform font instead of blocking the map.
 - DotGothic16 is distributed under the SIL Open Font License 1.1; the required notice is included in `assets/fonts/DotGothic16-OFL.txt`.
 
 ## Assistive technology contract
@@ -77,7 +77,7 @@ After the cloud build completes, download the artifact from its EAS build page. 
 
 ## Observability contract
 
-- Production builds enable Sentry only when `EXPO_PUBLIC_SENTRY_DSN` is present. With no DSN, the SDK is not loaded and Expo Go keeps running without a native-module dependency.
+- Production builds enable Sentry only when `EXPO_PUBLIC_SENTRY_DSN` is present. With no DSN, monitoring remains disabled.
 - Native/JavaScript crashes, sessions, app-start performance, and a custom visible-tile load span are captured without default PII, screenshots, view hierarchies, or failed-request contents.
 - Root render failures show an accessible Japanese recovery screen instead of leaving a blank view. Retrying remounts the map subtree.
 - Sentry source-map upload requires `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` in the EAS build environment. Copy `.env.example` locally; never commit real credentials.
