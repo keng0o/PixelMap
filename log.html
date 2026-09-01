@@ -124,7 +124,7 @@
     <section class="panel" aria-labelledby="difference-title">
       <div class="section-heading">
         <h2 id="difference-title">現行の差分</h2>
-        <small>2026-09-01 / cell2 default</small>
+        <small>2026-09-02 / cell2 default</small>
       </div>
       <div class="table-wrap">
         <table>
@@ -167,6 +167,11 @@
               <td>testと同じ道路Aを使用。主要道路・地区幹線道路・生活道路・歩道／小径は以前の4色を維持しながら、境界線・中央線・舗装粒・踏み跡粒を付けない単色面として描く。位置・幅・重なり順、斜線終点固定、細街路の既定表示と描画順は変更しない。地上鉄道は線路単位の左右4連結レール、40論理px描画・5論理px空白、枕木なし、並走線の表示代表化を使用する。</td>
             </tr>
             <tr>
+              <th scope="row">橋デザイン研究</th>
+              <td><code>variants/map-08-bridge-study.html</code>だけで、橋を用途・交差対象・長さLODへ分類し、画面下方向の側壁、アーチ開口、橋脚、欄干ハイライトを合成する。通常のstandalone testは変更しない。</td>
+              <td>変更なし。本番1・2・4マップと通常のstandalone testは新しい橋分類器・描画器を読み込まない。</td>
+            </tr>
+            <tr>
               <th scope="row">水面・公園・競技面</th>
               <td>意味分類を維持したまま原子セルへ直接ラスタライズし、単色セルを組み合わせた地表模様・水際・林縁・公園境界を描画。</td>
               <td>testと同じcell2/cell3地表描画を使用。</td>
@@ -206,6 +211,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>可変角度・可変サイズの橋デザイン研究ページを追加</h3>
+          <time datetime="2026-09-02">2026-09-02 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd><code>variants/map-02-refined.html</code>を新規の<code>variants/map-08-bridge-study.html</code>へコピーし、専用の橋分類器と橋体描画器を追加。MVTで明示される道路・歩道・鉄道などの用途、周辺maskから推定する水域・道路・鉄道との交差、橋の論理セル長によるtiny／small／medium／largeを分離し、種類ごとに側壁・画面下方向の厚み・ピクセルアーチ・橋脚・欄干明部を合成する。構造形式や材質はMVTに根拠がないため、事実分類せずゲーム表現のgeneric bridgeとして診断へ明記する。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。新規の橋研究ページ<code>variants/map-08-bridge-study.html</code>のcell2／cell3。0°から任意方位へ回転しても世界座標の橋形状を再ラスタライズし、橋の厚みだけを画面下方向へ保つ。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。元のstandalone test<code>variants/map-02-refined.html</code>、本番1マップ<code>index.html</code>、2マップ<code>compare.html</code>、4マップ<code>four-maps.html</code>／<code>variants/height-stack-four-map.html</code>は橋研究moduleを読み込まず、既存描画を維持する。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト197件とビルドが成功。ガス橋の実MVTデータをcell2／cell3の0°／45°で撮影し、大型水上橋LOD、側壁、複数rowのアーチ、橋脚、画面下方向の厚み、回転後の連続性、周辺地図とUIを確認。4枚の最新スクリーンショットは独立視覚レビューですべてPASS。鉄道橋・歩道橋・道路立体交差の分類分岐は自動テストと実ページ診断値で確認した。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>鉄道Aのレール色を濃い灰色へ変更</h3>
