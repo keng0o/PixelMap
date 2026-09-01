@@ -249,7 +249,7 @@ test('地上鉄道は枕木を描かず線路単位の左右レールを生成�
 test('standalone鉄道Aは境界・砂利模様なしの路盤と連続した低コントラスト2本レールで描く', () => {
   assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_SURFACE = !EMBEDDED && CELL_ONLY_MODE/);
   assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object\.freeze\(\{[\s\S]*?bed:'#a8a098'/);
-  assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object\.freeze\(\{[\s\S]*?rail:'#888488'/);
+  assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object\.freeze\(\{[\s\S]*?rail:'#747078'/);
   assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object\.freeze\(\{[\s\S]*?boundary:'none'/);
   assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object\.freeze\(\{[\s\S]*?materialPattern:false/);
   assert.match(html, /dataset\.railSurfaceMode = STANDALONE_LOW_CONTRAST_RAIL_SURFACE[\s\S]*?'low-contrast-a'[\s\S]*?'current'/);

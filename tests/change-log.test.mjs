@@ -188,6 +188,9 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /40論理px描画・5論理px空白を使わず連続表示/);
   assert.match(log, /<strong>testのみ<\/strong>。通常のstandalone test/);
   assert.match(log, /本番1・2・4マップは従来の鉄道色、路盤境界、40論理px描画・5論理px空白を維持/);
+  assert.match(log, /鉄道Aのレール色を濃い灰色へ変更/);
+  assert.match(log, /<code>#888488<\/code>から<code>#747078<\/code>へ変更/);
+  assert.match(log, /境界線なし、砂利模様なし、枕木なし、連続2本レール/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {
