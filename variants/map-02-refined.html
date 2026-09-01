@@ -925,6 +925,16 @@ const REQUESTED_RENDER_MODE = PAGE_PARAMS.get('render');
 const RENDER_MODE = REQUESTED_RENDER_MODE === 'cell3' ? 'cell3' : 'cell2';
 const CELL_RENDER_LOGICAL_SIZE = Number(RENDER_MODE.slice(4));
 const CELL_ONLY_MODE = ['cell2','cell3'].includes(RENDER_MODE);
+// standalone testの地上鉄道だけをA方式へ切り替える。本番embeddedは
+// 従来の色・路盤境界・40論理px描画／5論理px空白を維持する。
+const STANDALONE_LOW_CONTRAST_RAIL_SURFACE = !EMBEDDED && CELL_ONLY_MODE;
+const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object.freeze({
+  bed:'#a8a098',
+  rail:'#888488',
+  boundary:'none',
+  materialPattern:false,
+  continuity:'continuous',
+});
 // 全Webマップの地上鉄道は、線路単位の接線から左右レールを別マスクへ生成する。
 // 路盤と左右レールだけを表示し、枕木は描画しない。
 const CONTINUOUS_RAIL_SKIN = CELL_ONLY_MODE;
@@ -993,6 +1003,8 @@ document.documentElement.dataset.facilitySiteMode = FACILITY_SITE_RENDER_MODE;
 document.documentElement.dataset.facilitySiteSource = FACILITY_SITE_COMPARISON.enabled
   ? 'comparison' : EMBEDDED ? 'production-adopted' : 'standalone-test-adopted';
 document.documentElement.dataset.roadSurfaceMode = ADOPTED_LOW_CONTRAST_ROAD_SURFACE
+  ? 'low-contrast-a' : 'current';
+document.documentElement.dataset.railSurfaceMode = STANDALONE_LOW_CONTRAST_RAIL_SURFACE
   ? 'low-contrast-a' : 'current';
 document.documentElement.dataset.styleModel = STANDALONE_UNIFIED_STYLE
   ? 'geometry-skin-symbol-v1'
@@ -1914,6 +1926,11 @@ function effectiveRoadRenderStyle(option){
     materialPattern:false,
   });
 }
+function effectiveRailRenderStyle(option){
+  return STANDALONE_LOW_CONTRAST_RAIL_SURFACE && option === 'rail'
+    ? STANDALONE_LOW_CONTRAST_RAIL_STYLE
+    : null;
+}
 /* 建物の分類・配色は building-styles.js が唯一の正典。
    ROOFPALはマップチップ生成と後方互換のためのエイリアス。 */
 const BUILDING_STYLES = window.PixelMapBuildingStyles;
@@ -2406,8 +2423,12 @@ function rasterizeGrid(layers, options){
     if (continuousRailSkin){
       finalizeContinuousRailSkin(continuousRailSkin, {
         offsetCells:Math.max(1, Math.round(2 / MAP_CELL_LOGICAL_SIZE)),
-        railOnCells:Math.max(1, Math.round(40 / MAP_CELL_LOGICAL_SIZE)),
-        railGapCells:Math.max(1, Math.round(5 / MAP_CELL_LOGICAL_SIZE)),
+        railOnCells:STANDALONE_LOW_CONTRAST_RAIL_SURFACE
+          ? 2
+          : Math.max(1, Math.round(40 / MAP_CELL_LOGICAL_SIZE)),
+        railGapCells:STANDALONE_LOW_CONTRAST_RAIL_SURFACE
+          ? 0
+          : Math.max(1, Math.round(5 / MAP_CELL_LOGICAL_SIZE)),
         tiePeriodCells:Math.max(2, Math.round(6 / MAP_CELL_LOGICAL_SIZE)),
         tieHalfSpanCells:Math.max(2, Math.ceil(detailCellSpan(1) / 2)),
         lodDistanceCells:Math.max(2, Math.round(4 / MAP_CELL_LOGICAL_SIZE)),
@@ -2881,6 +2902,7 @@ function drawCellPixelArtTransportGrid(
   const tunnel = ['subway','roadTunnels','pathTunnels','railTunnels'].includes(option);
   const rail = ['rail','subway','railTunnels','aerialways'].includes(option);
   const roadStyle = effectiveRoadRenderStyle(option);
+  const railStyle = effectiveRailRenderStyle(option);
   const minimumMinorRoute = STANDALONE_MINIMUM_MINOR_ROUTES &&
     ['localRoads','paths'].includes(option);
   const dashOn = (x, y, span = 8) => {
@@ -2897,10 +2919,14 @@ function drawCellPixelArtTransportGrid(
     return;
   }
 
-  const fill = roadStyle?.fill || (rail ? P.gravel : CELL_COLOR_BY_OPTION[option] || P.pave);
-  const edge = roadStyle?.materialPattern === false
+  const fill = roadStyle?.fill || railStyle?.bed ||
+    (rail ? P.gravel : CELL_COLOR_BY_OPTION[option] || P.pave);
+  const edge = railStyle?.boundary === 'none'
     ? fill
-    : bridge ? P.outline : roadStyle?.edge || (rail ? P.gravelDk : option === 'paths' ? P.trailDot : P.paveDk);
+    : roadStyle?.materialPattern === false
+      ? fill
+      : bridge ? P.outline : roadStyle?.edge ||
+        (rail ? P.gravelDk : option === 'paths' ? P.trailDot : P.paveDk);
   for (let y = 0; y < RG; y++){
     for (let x = 0; x < RG; x++){
       if (!has(x, y) || (tunnel && !dashOn(x, y))) continue;
@@ -2909,7 +2935,7 @@ function drawCellPixelArtTransportGrid(
         ? (roadStyle?.fill || (option === 'paths' ? P.trail : fill))
         : boundary ? edge : fill;
       paintSolidMapCell(x, y, color, option, stats);
-      if (boundary && !minimumMinorRoute){
+      if (boundary && !minimumMinorRoute && railStyle?.boundary !== 'none'){
         if (rail) stats.boundaryCells++;
         else stats.roadCasingCells++;
       }
@@ -2933,7 +2959,7 @@ function drawCellPixelArtTransportGrid(
         for (let index = 0; index < mask.length; index++){
           if (!mask[index]) continue;
           const x = index % RG, y = Math.floor(index / RG);
-          if (has(x, y)) paintSolidMapCell(x, y, P.rail, option, stats);
+          if (has(x, y)) paintSolidMapCell(x, y, railStyle?.rail || P.rail, option, stats);
         }
       }
       return;
@@ -6935,6 +6961,25 @@ function render(){
         ? ADOPTED_LOW_CONTRAST_ROAD_RULE.materialPattern : 'current',
       palette:ADOPTED_LOW_CONTRAST_ROAD_SURFACE
         ? ADOPTED_LOW_CONTRAST_ROAD_RULE.palette : 'current',
+      geometry:'source-position-width-order-preserved',
+    },
+    railSurfaceRendering:{
+      enabled:STANDALONE_LOW_CONTRAST_RAIL_SURFACE,
+      testOnly:true,
+      production:'unchanged',
+      mode:STANDALONE_LOW_CONTRAST_RAIL_SURFACE ? 'low-contrast-a' : 'current',
+      scope:'standalone-ground-rail',
+      bed:STANDALONE_LOW_CONTRAST_RAIL_SURFACE
+        ? STANDALONE_LOW_CONTRAST_RAIL_STYLE.bed : 'current',
+      rail:STANDALONE_LOW_CONTRAST_RAIL_SURFACE
+        ? STANDALONE_LOW_CONTRAST_RAIL_STYLE.rail : 'current',
+      boundary:STANDALONE_LOW_CONTRAST_RAIL_SURFACE
+        ? STANDALONE_LOW_CONTRAST_RAIL_STYLE.boundary : 'current',
+      materialPattern:STANDALONE_LOW_CONTRAST_RAIL_SURFACE
+        ? STANDALONE_LOW_CONTRAST_RAIL_STYLE.materialPattern : 'current',
+      continuity:STANDALONE_LOW_CONTRAST_RAIL_SURFACE
+        ? STANDALONE_LOW_CONTRAST_RAIL_STYLE.continuity : '40-logical-px-on-5-logical-px-off',
+      ties:false,
       geometry:'source-position-width-order-preserved',
     },
     tileZoom:TILE.z,

@@ -183,6 +183,11 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /1マップ（<code>index\.html<\/code>）、2マップ（<code>compare\.html<\/code>）/);
   assert.match(log, /4マップ（<code>four-maps\.html<\/code>／<code>variants\/height-stack-four-map\.html<\/code>）/);
   assert.match(log, /本番embeddedの<code>roadSurfaceMode<\/code>も<code>low-contrast-a<\/code>/);
+  assert.match(log, /鉄道を境界なしの低コントラストAへ変更/);
+  assert.match(log, /淡い単色路盤と薄い灰色<code>#888488<\/code>の連続2本レール/);
+  assert.match(log, /40論理px描画・5論理px空白を使わず連続表示/);
+  assert.match(log, /<strong>testのみ<\/strong>。通常のstandalone test/);
+  assert.match(log, /本番1・2・4マップは従来の鉄道色、路盤境界、40論理px描画・5論理px空白を維持/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

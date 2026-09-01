@@ -171,7 +171,7 @@ test('交通を縁・面・中央線と鉄道路盤・レール・枕木へ分�
   assert.match(html, /positiveModulo\(wx \+ wy \* 3, span\)/);
 });
 
-test('全Webマップの地上鉄道は枕木を描かず左右レールを40px描画・5px空白にする', () => {
+test('地上鉄道は枕木を描かず線路単位の左右レールを生成する', () => {
   const source = html.match(/function walkFourConnectedGridLine[\s\S]*?\nconst isRoad/)?.[0]
     .replace(/\nconst isRoad[\s\S]*$/u, '');
   assert.ok(source, '連続レール生成器を取得できる');
@@ -213,6 +213,14 @@ test('全Webマップの地上鉄道は枕木を描かず左右レールを40px�
   assert.ok(componentCount(dashedSkin.leftRail, dashedSkin.size) >= 3);
   assert.ok(componentCount(dashedSkin.rightRail, dashedSkin.size) >= 3);
 
+  const continuousSkin = createContinuousRailSkin(72);
+  appendContinuousRailSkinPath(
+    Array.from({length:60}, (_, index) => [4 + index, 30]), continuousSkin,
+    { railOnCells:2, railGapCells:0, phaseAt:() => 0 }
+  );
+  assert.equal(componentCount(continuousSkin.leftRail, continuousSkin.size), 1);
+  assert.equal(componentCount(continuousSkin.rightRail, continuousSkin.size), 1);
+
   const lodSkin = createContinuousRailSkin(24);
   lodSkin.sourcePaths.push(
     Array.from({length:11}, (_, index) => [2 + index, 4]),
@@ -226,8 +234,8 @@ test('全Webマップの地上鉄道は枕木を描かず左右レールを40px�
 
   assert.match(html, /const CONTINUOUS_RAIL_SKIN = CELL_ONLY_MODE/);
   assert.match(html, /const RAIL_TIES = false/);
-  assert.match(html, /railOnCells:Math\.max\(1, Math\.round\(40 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
-  assert.match(html, /railGapCells:Math\.max\(1, Math\.round\(5 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
+  assert.match(html, /railOnCells:STANDALONE_LOW_CONTRAST_RAIL_SURFACE[\s\S]*?: Math\.max\(1, Math\.round\(40 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
+  assert.match(html, /railGapCells:STANDALONE_LOW_CONTRAST_RAIL_SURFACE[\s\S]*?: Math\.max\(1, Math\.round\(5 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
   assert.match(html, /routeOption === 'rail'[\s\S]*?continuousRailSkinGrid\(layer\)/);
   assert.match(html, /continuousRailSkin\.sourcePaths\.push\(railPath\)/);
   assert.match(html, /finalizeContinuousRailSkin\(continuousRailSkin/);
@@ -236,6 +244,23 @@ test('全Webマップの地上鉄道は枕木を描かず左右レールを40px�
   assert.match(html, /railLodSuppressedPaths \+= continuousRailSkin\.lodSuppressedPathCount/);
   assert.match(html, /railRenderer:CONTINUOUS_RAIL_SKIN[\s\S]*?'source-track-connected-masks'/);
   assert.match(html, /railPassOrder:CONTINUOUS_RAIL_SKIN[\s\S]*?\['bed','left-rail','right-rail'\]/);
+});
+
+test('standalone鉄道Aは境界・砂利模様なしの路盤と連続した低コントラスト2本レールで描く', () => {
+  assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_SURFACE = !EMBEDDED && CELL_ONLY_MODE/);
+  assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object\.freeze\(\{[\s\S]*?bed:'#a8a098'/);
+  assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object\.freeze\(\{[\s\S]*?rail:'#888488'/);
+  assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object\.freeze\(\{[\s\S]*?boundary:'none'/);
+  assert.match(html, /const STANDALONE_LOW_CONTRAST_RAIL_STYLE = Object\.freeze\(\{[\s\S]*?materialPattern:false/);
+  assert.match(html, /dataset\.railSurfaceMode = STANDALONE_LOW_CONTRAST_RAIL_SURFACE[\s\S]*?'low-contrast-a'[\s\S]*?'current'/);
+  assert.match(html, /function effectiveRailRenderStyle\(option\)/);
+  assert.match(html, /STANDALONE_LOW_CONTRAST_RAIL_SURFACE && option === 'rail'/);
+  assert.match(html, /railOnCells:STANDALONE_LOW_CONTRAST_RAIL_SURFACE[\s\S]*?\? 2[\s\S]*?: Math\.max\(1, Math\.round\(40 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
+  assert.match(html, /railGapCells:STANDALONE_LOW_CONTRAST_RAIL_SURFACE[\s\S]*?\? 0[\s\S]*?: Math\.max\(1, Math\.round\(5 \/ MAP_CELL_LOGICAL_SIZE\)\)/);
+  assert.match(html, /const railStyle = effectiveRailRenderStyle\(option\)/);
+  assert.match(html, /railStyle\?\.boundary === 'none'[\s\S]*?fill/);
+  assert.match(html, /paintSolidMapCell\(x, y, railStyle\?\.rail \|\| P\.rail, option, stats\)/);
+  assert.match(html, /railSurfaceRendering:\{[\s\S]*?testOnly:true[\s\S]*?production:'unchanged'/);
 });
 
 test('全Webマップの地区幹線道路は中央線を描かない', () => {
@@ -255,7 +280,7 @@ test('全Webマップの道路Aは4種類を以前の色・境界・中央線・
   assert.match(html, /center:null/);
   assert.match(html, /materialPattern:false/);
   assert.match(html, /const roadStyle = effectiveRoadRenderStyle\(option\)/);
-  assert.match(html, /const edge = roadStyle\?\.materialPattern === false\s*\? fill\s*: bridge \? P\.outline/);
+  assert.match(html, /roadStyle\?\.materialPattern === false[\s\S]*?\? fill[\s\S]*?: bridge \? P\.outline/);
   assert.match(html, /dataset\.roadSurfaceMode = ADOPTED_LOW_CONTRAST_ROAD_SURFACE/);
   assert.match(html, /boundary:'none'/);
   assert.match(html, /centerLine:'none'/);
