@@ -1,0 +1,314 @@
+{
+  "schema": "pixelmap-directional-bridge/1",
+  "canvas": {
+    "width": 96,
+    "height": 96
+  },
+  "anchor": {
+    "x": 48,
+    "y": 40
+  },
+  "geometry": {
+    "length": 52,
+    "masonryWidth": 22,
+    "roadWidth": 14,
+    "parapetThickness": 3,
+    "parapetHeight": 4,
+    "wallDepth": 9,
+    "archCount": 2,
+    "archWidth": 14,
+    "archHeight": 7,
+    "abutmentLength": 6
+  },
+  "projection": "screen-vertical",
+  "lighting": "screen-top-left",
+  "palette": {
+    "outline": "#2b292e",
+    "road": "#7a7478",
+    "roadLight": "#999295",
+    "stoneLight": "#d8d0c0",
+    "stoneMid": "#aaa397",
+    "stoneDark": "#6b6459",
+    "opening": "#303b46"
+  },
+  "sprites": [
+    {
+      "angle": 0,
+      "file": "bridge-000.png",
+      "bounds": {
+        "x": 22,
+        "y": 25,
+        "width": 53,
+        "height": 36
+      },
+      "opaquePixels": 1908,
+      "archPixels": 184,
+      "visibleEdges": [
+        {
+          "id": "long-positive",
+          "kind": "long",
+          "exposure": 1
+        }
+      ]
+    },
+    {
+      "angle": 15,
+      "file": "bridge-015.png",
+      "bounds": {
+        "x": 20,
+        "y": 19,
+        "width": 57,
+        "height": 48
+      },
+      "opaquePixels": 1947,
+      "archPixels": 176,
+      "visibleEdges": [
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.258819
+        },
+        {
+          "id": "long-positive",
+          "kind": "long",
+          "exposure": 0.965926
+        }
+      ]
+    },
+    {
+      "angle": 30,
+      "file": "bridge-030.png",
+      "bounds": {
+        "x": 20,
+        "y": 13,
+        "width": 57,
+        "height": 60
+      },
+      "opaquePixels": 2007,
+      "archPixels": 158,
+      "visibleEdges": [
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.5
+        },
+        {
+          "id": "long-positive",
+          "kind": "long",
+          "exposure": 0.866025
+        }
+      ]
+    },
+    {
+      "angle": 45,
+      "file": "bridge-045.png",
+      "bounds": {
+        "x": 22,
+        "y": 10,
+        "width": 53,
+        "height": 66
+      },
+      "opaquePixels": 1813,
+      "archPixels": 142,
+      "visibleEdges": [
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.707107
+        },
+        {
+          "id": "long-positive",
+          "kind": "long",
+          "exposure": 0.707107
+        }
+      ]
+    },
+    {
+      "angle": 60,
+      "file": "bridge-060.png",
+      "bounds": {
+        "x": 25,
+        "y": 8,
+        "width": 47,
+        "height": 70
+      },
+      "opaquePixels": 1854,
+      "archPixels": 108,
+      "visibleEdges": [
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.866025
+        },
+        {
+          "id": "long-positive",
+          "kind": "long",
+          "exposure": 0.5
+        }
+      ]
+    },
+    {
+      "angle": 75,
+      "file": "bridge-075.png",
+      "bounds": {
+        "x": 31,
+        "y": 8,
+        "width": 35,
+        "height": 70
+      },
+      "opaquePixels": 1622,
+      "archPixels": 76,
+      "visibleEdges": [
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.965926
+        },
+        {
+          "id": "long-positive",
+          "kind": "long",
+          "exposure": 0.258819
+        }
+      ]
+    },
+    {
+      "angle": 90,
+      "file": "bridge-090.png",
+      "bounds": {
+        "x": 37,
+        "y": 10,
+        "width": 23,
+        "height": 66
+      },
+      "opaquePixels": 1458,
+      "archPixels": 0,
+      "visibleEdges": [
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 1
+        }
+      ]
+    },
+    {
+      "angle": 105,
+      "file": "bridge-105.png",
+      "bounds": {
+        "x": 31,
+        "y": 8,
+        "width": 35,
+        "height": 70
+      },
+      "opaquePixels": 1620,
+      "archPixels": 76,
+      "visibleEdges": [
+        {
+          "id": "long-negative",
+          "kind": "long",
+          "exposure": 0.258819
+        },
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.965926
+        }
+      ]
+    },
+    {
+      "angle": 120,
+      "file": "bridge-120.png",
+      "bounds": {
+        "x": 25,
+        "y": 8,
+        "width": 47,
+        "height": 70
+      },
+      "opaquePixels": 1853,
+      "archPixels": 108,
+      "visibleEdges": [
+        {
+          "id": "long-negative",
+          "kind": "long",
+          "exposure": 0.5
+        },
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.866025
+        }
+      ]
+    },
+    {
+      "angle": 135,
+      "file": "bridge-135.png",
+      "bounds": {
+        "x": 22,
+        "y": 10,
+        "width": 53,
+        "height": 66
+      },
+      "opaquePixels": 1839,
+      "archPixels": 142,
+      "visibleEdges": [
+        {
+          "id": "long-negative",
+          "kind": "long",
+          "exposure": 0.707107
+        },
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.707107
+        }
+      ]
+    },
+    {
+      "angle": 150,
+      "file": "bridge-150.png",
+      "bounds": {
+        "x": 20,
+        "y": 13,
+        "width": 57,
+        "height": 60
+      },
+      "opaquePixels": 2006,
+      "archPixels": 158,
+      "visibleEdges": [
+        {
+          "id": "long-negative",
+          "kind": "long",
+          "exposure": 0.866025
+        },
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.5
+        }
+      ]
+    },
+    {
+      "angle": 165,
+      "file": "bridge-165.png",
+      "bounds": {
+        "x": 20,
+        "y": 19,
+        "width": 57,
+        "height": 48
+      },
+      "opaquePixels": 1945,
+      "archPixels": 176,
+      "visibleEdges": [
+        {
+          "id": "long-negative",
+          "kind": "long",
+          "exposure": 0.965926
+        },
+        {
+          "id": "end-positive",
+          "kind": "end",
+          "exposure": 0.258819
+        }
+      ]
+    }
+  ]
+}
