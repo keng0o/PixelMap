@@ -8,8 +8,10 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(core){
   'use strict';
 
-  const VERSION='pixelmap-bridge-component-preview/1';
-  const DEFAULT_STATE=Object.freeze({angle:45,length:52,masonryWidth:22,roadWidth:14,debug:'none'});
+  const VERSION='pixelmap-bridge-component-preview/2';
+  const DEFAULT_STATE=Object.freeze({
+    angle:45,length:52,masonryWidth:22,roadWidth:14,debug:'none',detail:'auto',background:'water',
+  });
   const DEBUG_COLORS=Object.freeze([
     '#f06048','#f8d038','#58a8d8','#68b860','#b078d0','#e89050','#50c8b0','#d86890',
   ]);
@@ -29,14 +31,17 @@
     const masonryWidth=clamp(integer(input.masonryWidth,DEFAULT_STATE.masonryWidth),10,50);
     const roadWidth=clamp(integer(input.roadWidth,DEFAULT_STATE.roadWidth),1,masonryWidth-6);
     const debug=input.debug==='components'?'components':'none';
-    return freeze({angle,length,masonryWidth,roadWidth,debug});
+    const detail=['auto','small','medium','large'].includes(input.detail)?input.detail:DEFAULT_STATE.detail;
+    const background=['water','ground','checker'].includes(input.background)?input.background:DEFAULT_STATE.background;
+    return freeze({angle,length,masonryWidth,roadWidth,debug,detail,background});
   }
 
   function parseState(search=''){
     const params=new URLSearchParams(String(search).replace(/^\?/, ''));
     return normalizeState({
       angle:params.get('angle'),length:params.get('length'),masonryWidth:params.get('width'),
-      roadWidth:params.get('roadWidth'),debug:params.get('debug'),
+      roadWidth:params.get('roadWidth'),debug:params.get('debug'),detail:params.get('detail'),
+      background:params.get('background'),
     });
   }
 
@@ -53,6 +58,8 @@
     params.set('width',String(state.masonryWidth));
     params.set('roadWidth',String(state.roadWidth));
     if(state.debug==='components') params.set('debug','components');
+    if(state.detail!=='auto') params.set('detail',state.detail);
+    if(state.background!=='water') params.set('background',state.background);
     return `?${params.toString()}`;
   }
 
@@ -82,9 +89,10 @@
     canvas.dataset.logicalHeight=String(canvas.height);
   }
 
-  function canvasCard(document,label,composition,debug,scale=3){
+  function canvasCard(document,label,composition,debug,scale=3,background='water'){
     const figure=document.createElement('figure');
-    figure.className='bridge-component-card';
+    figure.className=`bridge-component-card bridge-component-background bridge-background-${background}`;
+    figure.dataset.background=background;
     const canvas=document.createElement('canvas');
     canvas.setAttribute('role','img');
     canvas.setAttribute('aria-label',label);
@@ -99,8 +107,8 @@
     return `
       <header class="bridge-component-header rpg-window">
         <p class="bridge-component-kicker">BRIDGE COMPONENT STUDY / TEST ONLY</p>
-        <h1>部品合成式 石造アーチ橋</h1>
-        <p>完成画像を回転せず、橋台・床版・側壁・アーチ・橋脚・欄干を5°刻みで組み立てます。</p>
+        <h1>判読性優先 石造アーチ橋 V2</h1>
+        <p>透明なアーチ開口、張り出す橋脚、厚い笠石を、3段階LODと5°刻みの共通部品から組み立てます。</p>
       </header>
       <section class="bridge-component-controls rpg-window" aria-label="橋の形状設定">
         <div class="bridge-angle-control">
@@ -111,6 +119,8 @@
         <label>長さ <input id="bridgeComponentLength" type="number" min="22" max="120" step="1"></label>
         <label>石造部幅 <input id="bridgeComponentWidth" type="number" min="10" max="50" step="1"></label>
         <label>路面幅 <input id="bridgeComponentRoadWidth" type="number" min="1" max="44" step="1"></label>
+        <label>LOD <select id="bridgeComponentDetail"><option value="auto">自動</option><option value="small">小</option><option value="medium">中</option><option value="large">大</option></select></label>
+        <label>背景 <select id="bridgeComponentBackground"><option value="water">水面</option><option value="ground">地面</option><option value="checker">透明確認</option></select></label>
         <label>表示 <select id="bridgeComponentDebug"><option value="none">通常</option><option value="components">部品境界</option></select></label>
       </section>
       <section class="bridge-component-hero rpg-window" aria-labelledby="bridgeComponentCurrentTitle">
@@ -122,7 +132,7 @@
         </div>
         <figure class="bridge-component-reference">
           <img src="../assets/bridge-study/bridge-reference-pixel-art-v1.png" alt="デザイン参照元の石造アーチ橋">
-          <figcaption>参照画像：太い欄干・石造側壁・暗い2連アーチ</figcaption>
+          <figcaption>参照目標：大きな2連アーチ・張り出し橋脚・厚い笠石・太い端柱</figcaption>
         </figure>
       </section>
       <section class="bridge-component-section rpg-window" aria-labelledby="bridgeDirectionTitle">
@@ -158,6 +168,8 @@
       length:document.getElementById('bridgeComponentLength'),
       masonryWidth:document.getElementById('bridgeComponentWidth'),
       roadWidth:document.getElementById('bridgeComponentRoadWidth'),
+      detail:document.getElementById('bridgeComponentDetail'),
+      background:document.getElementById('bridgeComponentBackground'),
       debug:document.getElementById('bridgeComponentDebug'),
     };
     const main=document.getElementById('bridgeComponentMain');
@@ -169,12 +181,16 @@
       for(const [key,control] of Object.entries(controls)) control.value=String(state[key]);
       controls.roadWidth.max=String(state.masonryWidth-6);
     };
-    const compositionFor=(input,seed)=>renderer.composeSafe({...input,patternSeed:seed});
+    const compositionFor=(input,seed)=>renderer.composeSafe({
+      family:'stoneArch',material:'stone',carry:'road',crossing:'water',
+      classificationSource:'explicit',detailLevel:state.detail,...input,patternSeed:seed,
+    });
     const renderDirections=()=>{
       directions.replaceChildren();
       for(const angle of core.angles){
         const composition=compositionFor({screenAngle:angle,length:52,masonryWidth:22,roadWidth:14},'directions');
-        directions.append(canvasCard(document,`${String(angle).padStart(3,'0')}°`,composition,state.debug,2));
+        directions.append(canvasCard(document,`${String(angle).padStart(3,'0')}°`,composition,
+          state.debug,2,state.background));
       }
     };
     const renderSizes=()=>{
@@ -183,26 +199,32 @@
         const composition=compositionFor({...preset,screenAngle:state.angle},'sizes');
         sizes.append(canvasCard(document,
           `${preset.id} / ${preset.length}×${preset.masonryWidth} / road ${preset.roadWidth}`,
-          composition,state.debug,3));
+          composition,state.debug,3,state.background));
       }
     };
     const redraw=({replaceUrl=true}={})=>{
       state=normalizeState(state);
       syncControls();
+      container.dataset.background=state.background;
       const composition=compositionFor({
         id:'interactive',screenAngle:state.angle,length:state.length,
         masonryWidth:state.masonryWidth,roadWidth:state.roadWidth,
       },'interactive');
       main.replaceChildren(canvasCard(document,
-        `${state.angle}度 長さ${state.length} 幅${state.masonryWidth} 路面${state.roadWidth}`,
-        composition,state.debug,6));
+        `${state.angle}度 長さ${state.length} 幅${state.masonryWidth} 路面${state.roadWidth} LOD ${composition.stats.lod}`,
+        composition,state.debug,6,state.background));
       renderDirections();
       renderSizes();
       const rendererStats=renderer.stats();
       diagnostics.textContent=JSON.stringify({
         rendererVersion:core.version,previewVersion:VERSION,angle:state.angle,length:state.length,
-        masonryWidth:state.masonryWidth,roadWidth:state.roadWidth,arches:composition.model.spans.length,
-        bounds:composition.bounds,details:composition.stats.details,fallback:composition.diagnostics.fallback,
+        masonryWidth:state.masonryWidth,roadWidth:state.roadWidth,family:composition.model.family,
+        material:composition.model.material,arches:composition.model.spans.length,lod:composition.stats.lod,
+        openings:composition.stats.openingPixels,innerShadow:composition.stats.innerShadowPixels,
+        piers:composition.stats.pierPixels,capstones:composition.stats.capstonePixels,
+        exaggeration:composition.stats.exaggerationPixels,maxExaggeration:composition.stats.maxExaggeration,
+        bounds:composition.bounds,details:composition.stats.details,
+        suppressed:composition.diagnostics.suppressed,fallback:composition.diagnostics.fallback,
         cache:rendererStats,
       },null,2);
       if(replaceUrl) window.history.replaceState(null,'',stateSearch(state));
