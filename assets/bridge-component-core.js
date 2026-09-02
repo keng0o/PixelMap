@@ -6,8 +6,16 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
 
-  const VERSION='pixelmap-bridge-components/1';
+  const VERSION='pixelmap-bridge-components/2';
   const ANGLES=Object.freeze(Array.from({length:36},(_,index)=>index*5));
+  const ANGLE_BASES=Object.freeze(ANGLES.map(angle=>{
+    const radians=angle*Math.PI/180;
+    return Object.freeze({
+      angle,
+      cos:Number(Math.cos(radians).toFixed(15)),
+      sin:Number(Math.sin(radians).toFixed(15)),
+    });
+  }));
   const PALETTE=Object.freeze({
     outline:'#2b292e',road:'#7a7478',roadLight:'#999295',stoneLight:'#d8d0c0',
     stoneMid:'#aaa397',stoneDark:'#6b6459',opening:'#303b46',shadow:'#222a33',
@@ -15,8 +23,15 @@
   const STYLES=Object.freeze({
     stoneArchReference:Object.freeze({
       key:'stoneArchReference',abutmentLength:6,preferredSpanLength:20,minimumSpanLength:10,
-      pierWidth:4,parapetThickness:3,parapetHeight:4,wallDepth:9,
+      pierWidth:4,parapetThickness:3,parapetHeight:4,wallDepth:9,maxSpanCount:5,
     }),
+  });
+  const ENUMS=Object.freeze({
+    family:Object.freeze(['stoneArch']),material:Object.freeze(['stone']),
+    carry:Object.freeze(['road','rail','foot','other']),
+    crossing:Object.freeze(['water','road','rail','mixed','unknown']),
+    classificationSource:Object.freeze(['explicit','inferred','fallback']),
+    detailLevel:Object.freeze(['auto','small','medium','large']),
   });
   const PRESETS=Object.freeze([
     ['short-narrow',36,16,8],['short-standard',36,22,14],['short-wide',36,30,20],
@@ -68,15 +83,32 @@
     if(Number.isInteger(input.masonryWidth)&&Number.isInteger(input.roadWidth)&&
       input.masonryWidth<input.roadWidth+2*rulesStyle.parapetThickness)
       issues.push({code:'width',field:'masonryWidth',message:'石造部幅に路面と左右欄干が収まりません'});
-    if(input.detailLevel!==undefined&&!['auto','full','quiet'].includes(input.detailLevel))
-      issues.push({code:'detailLevel',field:'detailLevel',message:'未対応のdetailLevelです'});
+    const semanticDefaults={
+      family:'stoneArch',material:'stone',carry:'road',crossing:'water',
+      classificationSource:'explicit',detailLevel:'auto',
+    };
+    for(const [field,allowed] of Object.entries(ENUMS)){
+      const value=input[field]??semanticDefaults[field];
+      if(!allowed.includes(value))
+        issues.push({code:field,field,message:`未対応の${field}です: ${value}`});
+    }
+    const spanCount=input.spanCount??'auto';
+    if(spanCount!=='auto'&&(!Number.isInteger(spanCount)||spanCount<1||spanCount>rulesStyle.maxSpanCount))
+      issues.push({code:'spanCount',field:'spanCount',message:'spanCountはautoまたは1から5の整数で指定してください'});
+    if(Number.isInteger(spanCount)&&Number.isInteger(input.length)){
+      const usableLength=input.length-2*rulesStyle.abutmentLength;
+      const required=spanCount*rulesStyle.minimumSpanLength+(spanCount-1)*rulesStyle.pierWidth;
+      if(required>usableLength)
+        issues.push({code:'spanCount',field:'spanCount',message:'指定径間数が橋長へ収まりません'});
+    }
     return freeze({valid:issues.length===0,issues});
   }
 
-  function symmetricSpanLayout(length,style){
+  function symmetricSpanLayout(length,style,requestedCount='auto'){
     const usableLength=length-2*style.abutmentLength;
-    let count=Math.max(1,Math.round(
-      (usableLength+style.pierWidth)/(style.preferredSpanLength+style.pierWidth)));
+    let count=requestedCount==='auto'?Math.max(1,Math.round(
+      (usableLength+style.pierWidth)/(style.preferredSpanLength+style.pierWidth))):requestedCount;
+    count=Math.min(style.maxSpanCount,count);
     const minimumFor=value=>value*style.minimumSpanLength+(value-1)*style.pierWidth;
     while(count>1&&minimumFor(count)>usableLength) count--;
 
@@ -141,7 +173,14 @@
     const halfRoad=roadWidth/2;
     const shoulder=(masonryWidth-roadWidth-2*style.parapetThickness)/2;
     const parapetInner=halfWidth-style.parapetThickness;
-    const layout=symmetricSpanLayout(length,style);
+    const family=input.family??'stoneArch';
+    const material=input.material??'stone';
+    const carry=input.carry??'road';
+    const crossing=input.crossing??'water';
+    const classificationSource=input.classificationSource??'explicit';
+    const spanCount=input.spanCount??'auto';
+    const detailLevel=input.detailLevel??'auto';
+    const layout=symmetricSpanLayout(length,style,spanCount);
     const abutments=[
       {id:'abutment-left',kind:'abutment',uMin:-halfLength,uMax:-halfLength+style.abutmentLength},
       {id:'abutment-right',kind:'abutment',uMin:halfLength-style.abutmentLength,uMax:halfLength},
@@ -159,9 +198,10 @@
     ];
     return freeze({
       id:String(input.id??'bridge'),styleKey:style.key,style,screenAngle,length,masonryWidth,roadWidth,
+      family,material,carry,crossing,classificationSource,spanCount,
       wallDepth:Number.isInteger(input.wallDepth)?input.wallDepth:style.wallDepth,
       parapetHeight:Number.isInteger(input.parapetHeight)?input.parapetHeight:style.parapetHeight,
-      detailLevel:input.detailLevel??'auto',patternSeed:input.patternSeed??input.id??0,
+      detailLevel,patternSeed:input.patternSeed??input.id??0,
       anchor:{x:0,y:0},halfLength,halfWidth,halfRoad,
       widthLayout:{leftParapet:style.parapetThickness,leftShoulder:shoulder,road:roadWidth,
         rightShoulder:shoulder,rightParapet:style.parapetThickness},
@@ -173,17 +213,20 @@
   const parsePixelKey=key=>key.split(',').map(Number);
 
   function rotateVector(angle,u,v){
-    const radians=normalizeAngle(angle)*Math.PI/180;
-    const cosine=Math.cos(radians);
-    const sine=Math.sin(radians);
-    return {x:u*cosine-v*sine,y:u*sine+v*cosine};
+    const basis=ANGLE_BASES[quantizeAngle(angle)/5];
+    return {x:u*basis.cos-v*basis.sin,y:u*basis.sin+v*basis.cos};
   }
 
-  function projectLocal(model,u,v,z=0){
+  function projectLocalFloat(model,u,v,z=0){
     if(!model||!Number.isFinite(u)||!Number.isFinite(v)||!Number.isFinite(z))
       throw new BridgeValidationError([{code:'coordinate',message:'局所座標は有限数で指定してください'}]);
     const rotated=rotateVector(model.screenAngle,u,v);
-    return {x:model.anchor.x+Math.round(rotated.x),y:model.anchor.y+Math.round(rotated.y)-Math.round(z)};
+    return {x:model.anchor.x+rotated.x,y:model.anchor.y+rotated.y-z};
+  }
+
+  function projectLocal(model,u,v,z=0){
+    const point=projectLocalFloat(model,u,v,z);
+    return {x:Math.round(point.x),y:Math.round(point.y)};
   }
 
   function supercoverPoints(from,to){
@@ -491,10 +534,11 @@
     const roadWidth=Math.max(1,Math.min(roadCandidate,masonryWidth-2*style.parapetThickness));
     const sanitized={
       id:input?.id??'fallback',styleKey:'stoneArchReference',
+      family:'stoneArch',material:'stone',carry:'other',crossing:'unknown',classificationSource:'fallback',
       screenAngle:Number.isFinite(input?.screenAngle)?input.screenAngle:0,
       length:Math.max(2*style.abutmentLength+style.minimumSpanLength,
         Number.isInteger(input?.length)?input.length:22),
-      masonryWidth,roadWidth,wallDepth:1,parapetHeight:1,detailLevel:'quiet',
+      masonryWidth,roadWidth,wallDepth:1,parapetHeight:1,detailLevel:'small',
       patternSeed:input?.patternSeed??'fallback',
     };
     const base=composeStrict(sanitized);
@@ -616,8 +660,8 @@
   }
 
   return freeze({
-    version:VERSION,angles:ANGLES,palette:PALETTE,styles:STYLES,presets:PRESETS,
-    BridgeValidationError,normalizeAngle,quantizeAngle,validateInput,createModel,projectLocal,
+    version:VERSION,angles:ANGLES,angleBases:ANGLE_BASES,palette:PALETTE,styles:STYLES,presets:PRESETS,
+    BridgeValidationError,normalizeAngle,quantizeAngle,validateInput,createModel,projectLocalFloat,projectLocal,
     composeStrict,composeSafe,createRenderer,placeComposition,
   });
 });
