@@ -51,9 +51,11 @@ function drawDigits(surface,text,x,y,scale=2){
   }
 }
 
-function bridgeImage(angle){
+export function buildBridgeImage(angle){
   const composition=core.composeStrict({
-    id:`sheet-${angle}`,screenAngle:angle,length:52,masonryWidth:22,roadWidth:14,patternSeed:'sheet',
+    id:`sheet-${angle}`,screenAngle:angle,length:52,masonryWidth:22,roadWidth:14,
+    family:'stoneArch',material:'stone',carry:'road',crossing:'water',
+    classificationSource:'explicit',detailLevel:'auto',patternSeed:'sheet',
   });
   const centerX=composition.bounds.x+(composition.bounds.width-1)/2;
   const centerY=composition.bounds.y+(composition.bounds.height-1)/2;
@@ -63,6 +65,10 @@ function bridgeImage(angle){
   const image=createSurface(96,96);
   for(const operation of [...placed.underlay,...placed.surface,...placed.overlay])
     putPixel(image,operation.x,operation.y,operation.color);
+  for(const point of placed.openingMask){
+    const alpha=image.data[(point.y*image.width+point.x)*4+3];
+    if(alpha!==0) throw new Error(`${angle}度の透明アーチ開口が不透明画素で埋まっています`);
+  }
   return image;
 }
 
@@ -79,7 +85,7 @@ function sheetSurface(){
     drawDigits(sheet,String(angle).padStart(3,'0'),cellX+8,cellY+3,2);
     drawChecker(sheet,cellX+8,cellY+20,96,96,8);
     drawChecker(sheet,cellX+108,cellY+20,384,384,16);
-    const image=bridgeImage(angle);
+    const image=buildBridgeImage(angle);
     blit(sheet,image,cellX+8,cellY+20);
     blit(sheet,scaleNearest(image,4),cellX+108,cellY+20);
   }

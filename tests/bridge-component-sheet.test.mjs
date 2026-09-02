@@ -7,10 +7,24 @@ import {join} from 'node:path';
 import {decodePng} from '../tools/rgba-png.mjs';
 import {
   outputFileNames,
+  buildBridgeImage,
   buildComponentSheet,
   writeComponentSheet,
   checkComponentSheet,
 } from '../tools/generate-bridge-component-sheet.mjs';
+
+test('V2原寸橋は透明画素と不透明構造を両方持つ',()=>{
+  for(const angle of [0,30,45,60,135]){
+    const image=buildBridgeImage(angle);
+    let transparent=0,opaque=0;
+    for(let index=3;index<image.data.length;index+=4){
+      if(image.data[index]===0) transparent++;
+      if(image.data[index]===255) opaque++;
+    }
+    assert.ok(transparent>0,`${angle}: transparent`);
+    assert.ok(opaque>100,`${angle}: opaque`);
+  }
+});
 
 test('生成対象は36方向をまとめた比較シート1枚だけである',()=>{
   assert.deepEqual(outputFileNames(),['bridge-component-sheet.png']);
