@@ -78,6 +78,14 @@ test('可視長辺だけにアーチが現れ90度で人工的に正面化しな
   assert.ok(core.composeStrict({...standard,screenAngle:135}).stats.archPixels>10);
 });
 
+test('近垂直の85度と95度は1pxの長辺sliverを端面へ統合する',()=>{
+  const archPixels=angle=>core.composeStrict({...standard,screenAngle:angle}).stats.archPixels;
+  assert.ok(archPixels(80)>0);
+  assert.equal(archPixels(85),0);
+  assert.equal(archPixels(95),0);
+  assert.ok(archPixels(100)>0);
+});
+
 test('参照橋の石積み・迫石・要石・橋脚・笠石・舗装細部を持つ',()=>{
   for(const angle of [0,5,45,135,175]){
     const details=core.composeStrict({...standard,screenAngle:angle}).stats.details;

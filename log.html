@@ -220,7 +220,7 @@
           <div><dt>変更内容</dt><dd>橋台・床版・路面・側壁・アーチ・橋脚・欄干・石積み模様を共通部品として手続き的に合成する橋rendererを追加。完成画像を回転・拡大縮小せず、<strong>5度刻みの36方向</strong>を同じ投影規則、画面上方向の高さ、画面下方向の壁厚、左上光源で描く。長さから1〜3連アーチを対称配置し、<strong>長さ・石造部幅・路面幅</strong>を独立して変更できる。</dd></div>
           <div><dt>対象モード</dt><dd><strong>testのみ</strong>。橋研究ページ<code>variants/map-08-bridge-study.html?render=bridge-components</code>に、選択中の橋、36方向、3長さ×3幅、部品境界表示、診断値を備えた橋単体previewを追加する。</dd></div>
           <div><dt>本番への影響</dt><dd>なし。<code>render=bridge-components</code>の明示時だけ起動し、地図タイルとMVT橋分類を起動しない。元のstandalone test<code>variants/map-02-refined.html</code>、本番1マップ<code>index.html</code>、2マップ<code>compare.html</code>、4マップ<code>four-maps.html</code>／<code>variants/height-stack-four-map.html</code>は変更しない。</dd></div>
-          <div><dt>確認内容</dt><dd>部品renderer、5度量子化、36方向×9サイズ、対称アーチ、詳細pixel、fallback、128件LRU、比較sheet、preview状態と単体起動分岐の自動テストを実施。ローカル実ブラウザで45°→50°→45°、通常／部品境界表示、URL同期、地図タイル・MVT未要求、既存の地図モード起動を確認した。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト234件、36方向比較sheetの同期確認、ビルドが成功。ローカル実ブラウザで45°→50°→45°、通常／部品境界表示、URL同期、地図タイル・MVT未要求、既存の地図モード起動を確認した。36方向・9サイズの最新スクリーンショットを参照画像と比較し、85°／95°の端面sliver修正後に独立視覚レビューでPASS。</dd></div>
         </dl>
       </article>
       <article class="entry">

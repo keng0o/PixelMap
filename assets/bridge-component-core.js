@@ -267,7 +267,9 @@
   }
 
   function visible(outward,angle){
-    return rotateVector(angle,outward.u,outward.v).y>0.05;
+    // A face seen within one 5-degree step of edge-on collapses to disconnected-looking
+    // one-pixel end fragments after integer projection. Merge that sliver into the end face.
+    return rotateVector(angle,outward.u,outward.v).y>0.1;
   }
 
   function composeStrict(input){
