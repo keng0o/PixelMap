@@ -86,4 +86,3 @@ test('寸法・角度・styleの不正入力を構造化エラーで拒否する
     }),error=>error?.name==='BridgeValidationError'&&error.issues.some(issue=>issue.code===code));
   }
 });
-

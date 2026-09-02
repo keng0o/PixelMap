@@ -98,4 +98,3 @@ test('0度と180度は同じ画素列になり模様seedだけが細部を変え
   assert.notDeepEqual(other.overlay,zero.overlay);
   assert.deepEqual(other.surfaceMask,zero.surfaceMask);
 });
-

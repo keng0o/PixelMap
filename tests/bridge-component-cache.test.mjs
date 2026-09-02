@@ -61,4 +61,3 @@ test('配置関数は平行移動し指定viewport外だけを安全に切り捨
   assert.deepEqual(placed.anchor,{x:20,y:30});
   assert.ok(placed.diagnostics.clippedPixels>0);
 });
-
