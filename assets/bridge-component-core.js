@@ -6,7 +6,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
 
-  const VERSION='pixelmap-bridge-components/2';
+  const VERSION='pixelmap-bridge-components/3';
   const ANGLES=Object.freeze(Array.from({length:36},(_,index)=>index*5));
   const ANGLE_BASES=Object.freeze(ANGLES.map(angle=>{
     const radians=angle*Math.PI/180;
@@ -22,8 +22,10 @@
   });
   const STYLES=Object.freeze({
     stoneArchReference:Object.freeze({
-      key:'stoneArchReference',abutmentLength:6,preferredSpanLength:20,minimumSpanLength:10,
-      pierWidth:4,parapetThickness:3,parapetHeight:4,wallDepth:9,maxSpanCount:5,
+      key:'stoneArchReference',abutmentLength:6,preferredSpanLength:18,minimumSpanLength:10,
+      pierWidth:6,pierProjection:3,abutmentProjection:3,
+      parapetThickness:4,parapetHeight:5,capstoneThickness:2,terminalPostWidth:3,
+      wallDepth:12,spandrelDepth:3,archRingThickness:2,maxSpanCount:5,
     }),
   });
   const ENUMS=Object.freeze({
@@ -318,6 +320,9 @@
 
   const LOD_NAMES=Object.freeze(['small','medium','large']);
   const NEIGHBORS_4=Object.freeze([[1,0],[-1,0],[0,1],[0,-1]]);
+  const NEIGHBORS_8=Object.freeze([
+    [-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1],
+  ]);
 
   function resolveLod(model){
     if(model.detailLevel!=='auto') return model.detailLevel;
@@ -377,6 +382,8 @@
     const structureMask=new Set();
     const innerShadowPixels=new Set();
     const pierPixels=new Set();
+    const pierProjectionPixels=new Set();
+    const abutmentProjectionPixels=new Set();
     const capstonePixels=new Set();
     const exaggerationPixels=new Set();
     const detailSets={
@@ -389,8 +396,8 @@
     const halfWidth=model.halfWidth;
     const lodIndex=LOD_NAMES.indexOf(lod);
     const pierExtra=lod==='large'?0:1;
-    const capExtra=1;
-    const terminalWidth=lod==='small'?2:lod==='medium'?1.5:1;
+    const capExtra=model.style.capstoneThickness;
+    const terminalWidth=model.style.terminalPostWidth+(lod==='small'?1:0);
     const mark=(tracker,point)=>tracker.add(pixelKey(point.x,point.y));
     const trackedPut=(target,point,color,kind,componentId,tracker)=>{
       target.put(point.x,point.y,color,kind,componentId);
@@ -442,14 +449,15 @@
       if(edge.kind==='long'){
         const v=edge.side*halfWidth;
         for(const span of model.spans){
-          const radius=Math.max(3,(span.width-2)/2);
-          const archHeight=Math.min(model.wallDepth-1,Math.max(3,Math.round(radius*1.15)));
+          const radius=Math.max(3,(span.width-3)/2);
+          const archHeight=Math.min(model.wallDepth-model.style.spandrelDepth-1,
+            Math.max(4,Math.round(radius)));
           const spanOpening=new Set();
           for(let localU=span.center-radius;localU<=span.center+radius;localU+=.25){
             const relative=(localU-span.center)/radius;
             if(Math.abs(relative)>1) continue;
             const curve=Math.sqrt(Math.max(0,1-relative*relative));
-            const top=1+archHeight*(1-curve);
+            const top=model.style.spandrelDepth+archHeight*(1-curve);
             const base=projectLocalFloat(model,localU,v);
             for(let offset=top;offset<model.wallDepth;offset+=.25){
               const point={x:Math.round(base.x),y:Math.round(base.y+offset)};
@@ -460,21 +468,31 @@
           for(const key of spanOpening){edgeOpenings.add(key);openingMask.add(key);}
           const inner=boundaryOutside(spanOpening,faceMask);
           const blocked=new Set([...spanOpening,...inner]);
-          const ring=boundaryOutside(inner,faceMask,blocked);
+          let previousRing=inner;
+          const ringLayers=[];
+          for(let layer=0;layer<model.style.archRingThickness;layer++){
+            const ring=boundaryOutside(previousRing,faceMask,blocked);
+            if(!ring.size) break;
+            ringLayers.push(ring);
+            for(const key of ring) blocked.add(key);
+            previousRing=ring;
+          }
           for(const key of inner){
             const [x,y]=parsePixelKey(key);
             trackedPut(underlay,{x,y},PALETTE.stoneDark,'arch-inner-shadow',span.id,innerShadowPixels);
             reservedStructureMask.add(key);
           }
-          for(const key of ring){
+          for(let layer=0;layer<ringLayers.length;layer++) for(const key of ringLayers[layer]){
             const [x,y]=parsePixelKey(key);
-            trackedPut(underlay,{x,y},PALETTE.stoneLight,'arch-ring',span.id,detailSets.voussoirPixels);
+            trackedPut(underlay,{x,y},layer===0?PALETTE.stoneMid:PALETTE.stoneLight,
+              layer===0?'arch-ring-inner':'arch-ring-outer',span.id,detailSets.voussoirPixels);
             reservedStructureMask.add(key);
           }
-          if(lod!=='small'&&ring.size){
+          const keystoneRing=ringLayers[ringLayers.length-1]||ringLayers[0];
+          if(lod!=='small'&&keystoneRing?.size){
             const target=projectLocalFloat(model,span.center,v);
             let best=null,bestDistance=Infinity;
-            for(const key of ring){
+            for(const key of keystoneRing){
               const [x,y]=parsePixelKey(key);
               const distance=Math.abs(x-target.x)+Math.abs(y-(target.y+1));
               if(distance<bestDistance){best={x,y};bestDistance=distance;}
@@ -493,16 +511,29 @@
 
         for(const pier of model.piers){
           const uMin=pier.uMin-pierExtra,uMax=pier.uMax+pierExtra;
-          const topA=projectLocalFloat(model,uMin,v),topB=projectLocalFloat(model,uMax,v);
-          const pierFace=[topA,topB,{x:topB.x,y:topB.y+model.wallDepth+2},
-            {x:topA.x,y:topA.y+model.wallDepth+2}];
-          const pixels=connectedPixels(polygonPixels(pierFace),structureMask,openingMask);
-          putMask(underlay,pixels,PALETTE.stoneDark,'projecting-pier',pier.id,pierPixels);
-          for(const point of pixels){
-            const key=pixelKey(point.x,point.y);reservedStructureMask.add(key);
-            if(pierExtra||point.y>Math.max(topA.y,topB.y)+model.wallDepth) exaggerationPixels.add(key);
+          const outerV=v+edge.side*model.style.pierProjection;
+          const wallA=projectLocalFloat(model,uMin,v),wallB=projectLocalFloat(model,uMax,v);
+          const outerA=projectLocalFloat(model,uMin,outerV),outerB=projectLocalFloat(model,uMax,outerV);
+          const pierTop=polygonPixels([wallA,wallB,outerB,outerA]);
+          putMask(underlay,pierTop,PALETTE.stoneLight,'pier-top',pier.id,pierPixels);
+          const pierBottom= Math.max(2,model.wallDepth+2);
+          const pierFront=polygonPixels([outerA,outerB,
+            {x:outerB.x,y:outerB.y+pierBottom},{x:outerA.x,y:outerA.y+pierBottom}]);
+          putMask(underlay,pierFront,PALETTE.stoneDark,'projecting-pier-front',pier.id,pierPixels);
+          const pierSides=[
+            polygonPixels([wallA,outerA,{x:outerA.x,y:outerA.y+pierBottom},
+              {x:wallA.x,y:wallA.y+model.wallDepth}]),
+            polygonPixels([wallB,outerB,{x:outerB.x,y:outerB.y+pierBottom},
+              {x:wallB.x,y:wallB.y+model.wallDepth}]),
+          ];
+          for(const sidePixels of pierSides)
+            putMask(underlay,sidePixels,PALETTE.stoneMid,'pier-side',pier.id,pierPixels);
+          for(const point of [...pierTop,...pierFront,...pierSides.flat()]){
+            const key=pixelKey(point.x,point.y);
+            reservedStructureMask.add(key);pierProjectionPixels.add(key);
+            if(pierExtra||!faceMask.has(key)) exaggerationPixels.add(key);
           }
-          const capA={x:topA.x,y:topA.y+2},capB={x:topB.x,y:topB.y+2};
+          const capA={x:outerA.x,y:outerA.y+1},capB={x:outerB.x,y:outerB.y+1};
           for(const point of supercoverPoints(capA,capB)){
             const key=pixelKey(point.x,point.y);
             if(openingMask.has(key)) continue;
@@ -512,13 +543,28 @@
         }
 
         for(const abutment of model.abutments){
-          const a=projectLocalFloat(model,abutment.uMin,v);
-          const b=projectLocalFloat(model,abutment.uMax,v);
-          const pixels=connectedPixels(
-            polygonPixels([a,b,{x:b.x,y:b.y+model.wallDepth+1},{x:a.x,y:a.y+model.wallDepth+1}]),
-            structureMask,openingMask);
-          putMask(underlay,pixels,PALETTE.stoneMid,'stepped-abutment',abutment.id,reservedStructureMask);
-          const lower=pixels.filter(point=>point.y>=Math.max(a.y,b.y)+model.wallDepth-1);
+          const outerV=v+edge.side*model.style.abutmentProjection;
+          const wallA=projectLocalFloat(model,abutment.uMin,v);
+          const wallB=projectLocalFloat(model,abutment.uMax,v);
+          const outerA=projectLocalFloat(model,abutment.uMin,outerV);
+          const outerB=projectLocalFloat(model,abutment.uMax,outerV);
+          const top=polygonPixels([wallA,wallB,outerB,outerA]);
+          const front=polygonPixels([outerA,outerB,
+            {x:outerB.x,y:outerB.y+model.wallDepth+2},{x:outerA.x,y:outerA.y+model.wallDepth+2}]);
+          putMask(underlay,top,PALETTE.stoneLight,'abutment-top',abutment.id,reservedStructureMask);
+          putMask(underlay,front,PALETTE.stoneMid,'abutment-front',abutment.id,reservedStructureMask);
+          const sides=[
+            polygonPixels([wallA,outerA,{x:outerA.x,y:outerA.y+model.wallDepth+2},
+              {x:wallA.x,y:wallA.y+model.wallDepth}]),
+            polygonPixels([wallB,outerB,{x:outerB.x,y:outerB.y+model.wallDepth+2},
+              {x:wallB.x,y:wallB.y+model.wallDepth}]),
+          ];
+          for(const sidePixels of sides)
+            putMask(underlay,sidePixels,PALETTE.stoneDark,'abutment-side',abutment.id,
+              reservedStructureMask);
+          for(const point of [...top,...front,...sides.flat()])
+            abutmentProjectionPixels.add(pixelKey(point.x,point.y));
+          const lower=front.filter(point=>point.y>=Math.max(outerA.y,outerB.y)+model.wallDepth);
           putMask(underlay,lower,PALETTE.stoneDark,'abutment-step',abutment.id,reservedStructureMask);
         }
 
@@ -575,9 +621,10 @@
       roadMask.add(key);structureMask.add(key);
     }
     for(const edge of localEdges(roadPoints)) surface.line(edge.from,edge.to,PALETTE.roadLight,'road-edge','road');
-    if(lod==='large'){
+    if(lod!=='small'){
       const roadPhase=seed%11;
-      for(let u=Math.ceil(-halfLength)+roadPhase;u<halfLength;u+=11){
+      const roadSpacing=lod==='large'?8:12;
+      for(let u=Math.ceil(-halfLength)+roadPhase;u<halfLength;u+=roadSpacing){
         const from=projectLocalFloat(model,u,-model.halfRoad);
         const to=projectLocalFloat(model,u,model.halfRoad);
         const middle={x:(from.x+to.x)/2,y:(from.y+to.y)/2};
@@ -606,6 +653,7 @@
       }
       const top=points.map(point=>({x:point.x,y:point.y-height}));
       const topPixels=polygonPixels(top);
+      const topMask=new Set(topPixels.map(({x,y})=>pixelKey(x,y)));
       putMask(overlay,topPixels,PALETTE.stoneLight,'capstone-top',component.id,capstonePixels);
       for(const key of capstonePixels) reservedStructureMask.add(key);
       for(const edge of localEdges(top)) overlay.line(edge.from,edge.to,PALETTE.outline,'parapet-outline',component.id);
@@ -631,15 +679,19 @@
         }
       }
 
-      if(lod==='large'){
-        const phase=(seed+component.side+16)%10;
-        for(let u=Math.ceil(-halfLength)+phase;u<=halfLength;u+=10){
-          const point=projectLocalFloat(model,u,v,model.parapetHeight+capExtra);
-          const raster={x:Math.round(point.x),y:Math.round(point.y)};
-          const key=pixelKey(raster.x,raster.y);
-          if(openingMask.has(key)||reservedStructureMask.has(key)) continue;
-          trackedPut(overlay,raster,PALETTE.stoneMid,'capstone-joint',component.id,
-            detailSets.capstoneJointPixels);
+      if(lod!=='small'){
+        const spacing=lod==='large'?6:8;
+        const phase=(seed+component.side+16)%spacing;
+        for(let u=Math.ceil(-halfLength)+phase;u<=halfLength;u+=spacing){
+          const outer=projectLocalFloat(model,u,v,model.parapetHeight+capExtra);
+          const inner=projectLocalFloat(model,u,v-component.side*model.style.parapetThickness,
+            model.parapetHeight+capExtra);
+          for(const raster of supercoverPoints(outer,inner)){
+            const key=pixelKey(raster.x,raster.y);
+            if(!topMask.has(key)) continue;
+            trackedPut(overlay,raster,PALETTE.stoneMid,'capstone-joint',component.id,
+              detailSets.capstoneJointPixels);
+          }
         }
       }
       for(const point of [...overlay.map.values()]) if(point.componentId===component.id)
@@ -660,6 +712,55 @@
     for(const key of openingMask){
       underlay.map.delete(key);surface.map.delete(key);overlay.map.delete(key);roadMask.delete(key);
     }
+    const nonOutlineKeys=new Set([
+      ...[...underlay.map.entries()].filter(([,operation])=>operation.kind!=='shadow').map(([key])=>key),
+      ...[...surface.map.entries()].filter(([,operation])=>operation.kind!=='shadow').map(([key])=>key),
+      ...[...overlay.map.entries()].filter(([,operation])=>
+        operation.kind!=='outer-outline'&&operation.kind!=='shadow')
+        .map(([key])=>key),
+    ]);
+    const outlineKeys=new Set([...overlay.map.entries()]
+      .filter(([,operation])=>operation.kind==='outer-outline').map(([key])=>key));
+    const connectedOutline=new Set();
+    const outlinePending=[];
+    for(const key of outlineKeys){
+      const [x,y]=parsePixelKey(key);
+      if(NEIGHBORS_8.some(([dx,dy])=>nonOutlineKeys.has(pixelKey(x+dx,y+dy)))){
+        connectedOutline.add(key);outlinePending.push(key);
+      }
+    }
+    while(outlinePending.length){
+      const [x,y]=parsePixelKey(outlinePending.pop());
+      for(const [dx,dy] of NEIGHBORS_8){
+        const key=pixelKey(x+dx,y+dy);
+        if(outlineKeys.has(key)&&!connectedOutline.has(key)){
+          connectedOutline.add(key);outlinePending.push(key);
+        }
+      }
+    }
+    for(const key of outlineKeys) if(!connectedOutline.has(key)) overlay.map.delete(key);
+    const opaqueKeys=new Set([
+      ...underlay.map.entries(),...surface.map.entries(),...overlay.map.entries(),
+    ].filter(([,operation])=>operation.kind!=='shadow').map(([key])=>key));
+    const opaquePending=new Set(opaqueKeys);
+    let mainOpaqueComponent=new Set();
+    while(opaquePending.size){
+      const start=opaquePending.values().next().value;
+      opaquePending.delete(start);
+      const component=new Set([start]);
+      const pending=[start];
+      while(pending.length){
+        const [x,y]=parsePixelKey(pending.pop());
+        for(const [dx,dy] of NEIGHBORS_8){
+          const key=pixelKey(x+dx,y+dy);
+          if(opaquePending.delete(key)){component.add(key);pending.push(key);}
+        }
+      }
+      if(component.size>mainOpaqueComponent.size) mainOpaqueComponent=component;
+    }
+    for(const map of [underlay.map,surface.map,overlay.map]) for(const [key,operation] of map){
+      if(operation.kind!=='shadow'&&!mainOpaqueComponent.has(key)) map.delete(key);
+    }
     const underlayOperations=stableOperations(underlay.map);
     const surfaceOperations=stableOperations(surface.map);
     const overlayOperations=stableOperations(overlay.map);
@@ -674,6 +775,8 @@
       stats:{
         lod,archPixels:openingMask.size,openingPixels:openingMask.size,
         innerShadowPixels:innerShadowPixels.size,pierPixels:pierPixels.size,
+        pierProjectionPixels:pierProjectionPixels.size,
+        abutmentProjectionPixels:abutmentProjectionPixels.size,
         capstonePixels:capstonePixels.size,exaggerationPixels:exaggerationPixels.size,
         maxExaggeration:lod==='large'?1:2,
         wallPixels:new Set(underlayOperations.filter(operation=>operation.kind==='wall')
@@ -704,7 +807,9 @@
     const base=composeStrict(sanitized);
     const rejectedKinds=new Set([
       'arch-opening','arch-voussoir','arch-keystone','arch-inner-shadow','arch-ring',
-      'projecting-pier','pier-cap','pier-detail','stepped-abutment','abutment-step',
+      'arch-ring-inner','arch-ring-outer',
+      'projecting-pier','projecting-pier-front','pier-top','pier-side','pier-cap','pier-detail',
+      'stepped-abutment','abutment-top','abutment-front','abutment-side','abutment-step',
       'masonry-course','masonry-joint','road-paving','parapet-post','terminal-post',
       'terminal-cap','capstone-joint',
     ]);
@@ -720,7 +825,8 @@
       ...base,model:fallbackModel,underlay,surface,overlay,openingMask:freeze([]),
       reservedStructureMask:freeze([]),
       stats:{...base.stats,archPixels:0,openingPixels:0,innerShadowPixels:0,pierPixels:0,
-        exaggerationPixels:0,details:Object.fromEntries(
+        pierProjectionPixels:0,abutmentProjectionPixels:0,exaggerationPixels:0,
+        details:Object.fromEntries(
         Object.keys(base.stats.details).map(key=>[key,0]))},
       diagnostics:{
         fallback:true,issues:issues.map(issue=>({...issue})),lod:'small',

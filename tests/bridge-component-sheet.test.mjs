@@ -13,7 +13,7 @@ import {
   checkComponentSheet,
 } from '../tools/generate-bridge-component-sheet.mjs';
 
-test('V2原寸橋は透明画素と不透明構造を両方持つ',()=>{
+test('V3基準橋は透明画素と不透明構造を両方持つ',()=>{
   for(const angle of [0,30,45,60,135]){
     const image=buildBridgeImage(angle);
     let transparent=0,opaque=0;

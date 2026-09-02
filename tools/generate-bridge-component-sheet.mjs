@@ -53,9 +53,9 @@ function drawDigits(surface,text,x,y,scale=2){
 
 export function buildBridgeImage(angle){
   const composition=core.composeStrict({
-    id:`sheet-${angle}`,screenAngle:angle,length:52,masonryWidth:22,roadWidth:14,
+    id:`sheet-${angle}`,screenAngle:angle,length:48,masonryWidth:28,roadWidth:18,
     family:'stoneArch',material:'stone',carry:'road',crossing:'water',
-    classificationSource:'explicit',detailLevel:'auto',patternSeed:'sheet',
+    classificationSource:'explicit',detailLevel:'medium',patternSeed:'sheet-v3-canonical',
   });
   const centerX=composition.bounds.x+(composition.bounds.width-1)/2;
   const centerY=composition.bounds.y+(composition.bounds.height-1)/2;

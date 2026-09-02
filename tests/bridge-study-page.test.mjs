@@ -38,16 +38,17 @@ test('橋単体modeは地図decoder・MVT分類・地図bootより前に分岐�
   assert.match(study,/id="bridgeComponentStudy"/);
 });
 
-test('橋単体modeはV2 core・previewとLOD・透明背景UIを使う',async()=>{
+test('橋単体modeはV3基準橋core・previewとLOD・透明背景UIを使う',async()=>{
   const [study,preview]=await Promise.all([
     read('variants/map-08-bridge-study.html'),read('assets/bridge-component-preview.js'),
   ]);
-  assert.match(study,/bridge-component-core\.js\?v=2/);
-  assert.match(study,/bridge-component-preview\.js\?v=2/);
+  assert.match(study,/bridge-component-core\.js\?v=3/);
+  assert.match(study,/bridge-component-preview\.js\?v=3/);
   for(const token of ['bridge-background-water','bridge-background-ground','bridge-background-checker'])
     assert.match(study,new RegExp(token));
   for(const token of [
-    'bridgeComponentDetail','bridgeComponentBackground','透明なアーチ開口','openingPixels','maxExaggeration',
+    'bridgeComponentDetail','bridgeComponentBackground','地図と同じ立体感','openingPixels',
+    'pierProjectionPixels','maxExaggeration',
   ]) assert.match(preview,new RegExp(token),token);
 });
 
@@ -99,4 +100,13 @@ test('石造アーチ橋V2のtest-only範囲を差分ログへ記録する',asyn
   assert.match(log,/全自動テスト244件/);
   assert.match(log,/独立視覚レビューで3項目すべてPASS/);
   assert.match(log,/地図タイル・MVT未要求/);
+});
+
+test('地図立体感の45度基準橋V3をtest-onlyとして差分ログへ記録する',async()=>{
+  const log=await read('log.html');
+  assert.match(log,/地図と同じ立体感の45°基準石造橋V3へ更新/);
+  assert.match(log,/大きな2連アーチ/);
+  assert.match(log,/36方向と9サイズは次段階/);
+  assert.match(log,/地図上の橋へは未接続/);
+  assert.match(log,/testのみ/);
 });

@@ -8,9 +8,9 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(core){
   'use strict';
 
-  const VERSION='pixelmap-bridge-component-preview/2';
+  const VERSION='pixelmap-bridge-component-preview/3';
   const DEFAULT_STATE=Object.freeze({
-    angle:45,length:52,masonryWidth:22,roadWidth:14,debug:'none',detail:'auto',background:'water',
+    angle:45,length:48,masonryWidth:28,roadWidth:18,debug:'none',detail:'medium',background:'water',
   });
   const DEBUG_COLORS=Object.freeze([
     '#f06048','#f8d038','#58a8d8','#68b860','#b078d0','#e89050','#50c8b0','#d86890',
@@ -18,18 +18,20 @@
 
   const freeze=value=>Object.freeze(value);
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
-  const integer=(value,fallback)=>Number.isFinite(Number(value))?Math.round(Number(value)):fallback;
+  const integer=(value,fallback)=>value===null||value===undefined||value===''?fallback:
+    Number.isFinite(Number(value))?Math.round(Number(value)):fallback;
 
   function isRequested(search=''){
     return new URLSearchParams(String(search).replace(/^\?/, '')).get('render')==='bridge-components';
   }
 
   function normalizeState(input={}){
-    const rawAngle=Number(input.angle);
+    const rawAngle=input.angle===null||input.angle===undefined||input.angle===''?NaN:Number(input.angle);
     const angle=Number.isFinite(rawAngle)?core.quantizeAngle(rawAngle):DEFAULT_STATE.angle;
     const length=clamp(integer(input.length,DEFAULT_STATE.length),22,120);
     const masonryWidth=clamp(integer(input.masonryWidth,DEFAULT_STATE.masonryWidth),10,50);
-    const roadWidth=clamp(integer(input.roadWidth,DEFAULT_STATE.roadWidth),1,masonryWidth-6);
+    const roadGap=core.styles.stoneArchReference.parapetThickness*2;
+    const roadWidth=clamp(integer(input.roadWidth,DEFAULT_STATE.roadWidth),1,masonryWidth-roadGap);
     const debug=input.debug==='components'?'components':'none';
     const detail=['auto','small','medium','large'].includes(input.detail)?input.detail:DEFAULT_STATE.detail;
     const background=['water','ground','checker'].includes(input.background)?input.background:DEFAULT_STATE.background;
@@ -107,8 +109,8 @@
     return `
       <header class="bridge-component-header rpg-window">
         <p class="bridge-component-kicker">BRIDGE COMPONENT STUDY / TEST ONLY</p>
-        <h1>判読性優先 石造アーチ橋 V2</h1>
-        <p>透明なアーチ開口、張り出す橋脚、厚い笠石を、3段階LODと5°刻みの共通部品から組み立てます。</p>
+        <h1>地図立体感 基準石造アーチ橋 V3</h1>
+        <p>参照画像の大きな2連アーチ、横へ張り出す橋脚、厚い笠石、太い端柱を、地図と同じ立体感で組み直した45°基準形です。</p>
       </header>
       <section class="bridge-component-controls rpg-window" aria-label="橋の形状設定">
         <div class="bridge-angle-control">
@@ -125,24 +127,24 @@
       </section>
       <section class="bridge-component-hero rpg-window" aria-labelledby="bridgeComponentCurrentTitle">
         <div>
-          <p class="bridge-component-kicker">CURRENT COMPOSITION</p>
-          <h2 id="bridgeComponentCurrentTitle">選択中の橋</h2>
+          <p class="bridge-component-kicker">CANONICAL 45° / MAP DEPTH</p>
+          <h2 id="bridgeComponentCurrentTitle">地図配置用の基準橋</h2>
           <div id="bridgeComponentMain" class="bridge-component-main"></div>
           <pre id="bridgeComponentDiagnostics" aria-label="橋の診断値"></pre>
         </div>
         <figure class="bridge-component-reference">
           <img src="../assets/bridge-study/bridge-reference-pixel-art-v1.png" alt="デザイン参照元の石造アーチ橋">
-          <figcaption>参照目標：大きな2連アーチ・張り出し橋脚・厚い笠石・太い端柱</figcaption>
+          <figcaption>構造参照：大きな2連アーチ・張り出し橋脚・厚い笠石・太い端柱（投影は地図側）</figcaption>
         </figure>
       </section>
       <section class="bridge-component-section rpg-window" aria-labelledby="bridgeDirectionTitle">
-        <p class="bridge-component-kicker">36 DIRECTIONS / 5° STEP</p>
-        <h2 id="bridgeDirectionTitle">同じ部品から作る36方向</h2>
+        <p class="bridge-component-kicker">NEXT STAGE / 36 DIRECTIONS</p>
+        <h2 id="bridgeDirectionTitle">基準橋から展開する36方向（未承認）</h2>
         <div id="bridgeComponentDirections" class="bridge-component-grid bridge-direction-grid"></div>
       </section>
       <section class="bridge-component-section rpg-window" aria-labelledby="bridgeSizeTitle">
-        <p class="bridge-component-kicker">3 LENGTHS × 3 WIDTHS</p>
-        <h2 id="bridgeSizeTitle">同じ角度の9サイズ</h2>
+        <p class="bridge-component-kicker">NEXT STAGE / 3 LENGTHS × 3 WIDTHS</p>
+        <h2 id="bridgeSizeTitle">基準橋から展開する9サイズ（未承認）</h2>
         <div id="bridgeComponentSizes" class="bridge-component-grid bridge-size-grid"></div>
       </section>`;
   }
@@ -179,7 +181,8 @@
 
     const syncControls=()=>{
       for(const [key,control] of Object.entries(controls)) control.value=String(state[key]);
-      controls.roadWidth.max=String(state.masonryWidth-6);
+      controls.roadWidth.max=String(state.masonryWidth-
+        core.styles.stoneArchReference.parapetThickness*2);
     };
     const compositionFor=(input,seed)=>renderer.composeSafe({
       family:'stoneArch',material:'stone',carry:'road',crossing:'water',
@@ -188,7 +191,7 @@
     const renderDirections=()=>{
       directions.replaceChildren();
       for(const angle of core.angles){
-        const composition=compositionFor({screenAngle:angle,length:52,masonryWidth:22,roadWidth:14},'directions');
+        const composition=compositionFor({screenAngle:angle,length:48,masonryWidth:28,roadWidth:18},'directions');
         directions.append(canvasCard(document,`${String(angle).padStart(3,'0')}°`,composition,
           state.debug,2,state.background));
       }
@@ -221,7 +224,9 @@
         masonryWidth:state.masonryWidth,roadWidth:state.roadWidth,family:composition.model.family,
         material:composition.model.material,arches:composition.model.spans.length,lod:composition.stats.lod,
         openings:composition.stats.openingPixels,innerShadow:composition.stats.innerShadowPixels,
-        piers:composition.stats.pierPixels,capstones:composition.stats.capstonePixels,
+        piers:composition.stats.pierPixels,pierProjectionPixels:composition.stats.pierProjectionPixels,
+        abutmentProjectionPixels:composition.stats.abutmentProjectionPixels,
+        capstones:composition.stats.capstonePixels,
         exaggeration:composition.stats.exaggerationPixels,maxExaggeration:composition.stats.maxExaggeration,
         bounds:composition.bounds,details:composition.stats.details,
         suppressed:composition.diagnostics.suppressed,fallback:composition.diagnostics.fallback,

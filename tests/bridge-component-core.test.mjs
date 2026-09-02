@@ -5,8 +5,8 @@ import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const core=require('../assets/bridge-component-core.js');
 
-test('共有APIはV2・5度36方向・固定角度基底・石造橋style・9サイズを公開する',()=>{
-  assert.equal(core.version,'pixelmap-bridge-components/2');
+test('共有APIはV3基準橋・5度36方向・固定角度基底・石造橋style・9サイズを公開する',()=>{
+  assert.equal(core.version,'pixelmap-bridge-components/3');
   assert.deepEqual(core.angles,Array.from({length:36},(_,index)=>index*5));
   assert.equal(core.angleBases.length,36);
   for(const [index,basis] of core.angleBases.entries()){
@@ -18,6 +18,21 @@ test('共有APIはV2・5度36方向・固定角度基底・石造橋style・9サ
   assert.equal(core.presets.length,9);
   assert.ok(Object.isFrozen(core));
   assert.ok(Object.isFrozen(core.styles.stoneArchReference));
+});
+
+test('45度基準橋は地図投影のまま参照構造を作る寸法を持つ',()=>{
+  const model=core.createModel({
+    screenAngle:45,length:48,masonryWidth:28,roadWidth:18,spanCount:2,detailLevel:'medium',
+  });
+  assert.equal(model.spans.length,2);
+  assert.equal(model.style.pierWidth>=6,true);
+  assert.equal(model.style.pierProjection>=3,true);
+  assert.equal(model.style.archRingThickness>=2,true);
+  assert.equal(model.style.spandrelDepth>=3,true);
+  assert.equal(model.style.capstoneThickness>=2,true);
+  assert.equal(model.style.terminalPostWidth>=3,true);
+  assert.equal(model.style.abutmentProjection>=2,true);
+  assert.deepEqual(core.projectLocal(model,10,5,4),{x:4,y:7});
 });
 
 test('V2意味モデルは石造アーチ・用途・横断対象・径間・LODを正規化する',()=>{

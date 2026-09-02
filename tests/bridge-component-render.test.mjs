@@ -6,6 +6,10 @@ const require=createRequire(import.meta.url);
 const core=require('../assets/bridge-component-core.js');
 
 const standard={screenAngle:45,length:52,masonryWidth:22,roadWidth:14,patternSeed:'standard'};
+const canonical={
+  screenAngle:45,length:48,masonryWidth:28,roadWidth:18,spanCount:2,
+  detailLevel:'medium',patternSeed:'canonical-map-depth',
+};
 
 function allOperations(composition){
   return [...composition.underlay,...composition.surface,...composition.overlay];
@@ -34,7 +38,7 @@ test('投影は地面だけを回し高さと壁深さを画面垂直へ固定�
   assert.deepEqual(core.projectLocal(model,10,5,-9),{x:4,y:20});
   for(const angle of core.angles){
     const value=core.composeStrict({...standard,screenAngle:angle});
-    assert.deepEqual(value.stats.extrusion,{parapet:{x:0,y:-4},wall:{x:0,y:9}});
+    assert.deepEqual(value.stats.extrusion,{parapet:{x:0,y:-5},wall:{x:0,y:12}});
   }
 });
 
@@ -57,6 +61,22 @@ test('標準橋は透明開口・予約構造を含むV2描画命令を返す',(
     assert.ok(['underlay','surface','overlay'].includes(operation.layer));
     assert.equal(operation.lod,'medium');
   }
+});
+
+test('45度基準橋は厚い2連アーチと実際に横へ張り出す支持構造を持つ',()=>{
+  const composition=core.composeStrict(canonical);
+  assert.equal(composition.model.spans.length,2);
+  assert.ok(composition.stats.openingPixels>80);
+  assert.ok(composition.stats.details.voussoirPixels>composition.stats.innerShadowPixels);
+  assert.ok(composition.stats.pierProjectionPixels>0);
+  assert.ok(composition.stats.abutmentProjectionPixels>0);
+  assert.ok(composition.stats.details.capstoneJointPixels>0);
+  assert.ok(composition.stats.details.roadPavingPixels>0);
+  const kinds=new Set(allOperations(composition).map(operation=>operation.kind));
+  for(const kind of [
+    'pier-top','projecting-pier-front','pier-side','abutment-top','abutment-front',
+    'arch-ring-outer','arch-ring-inner','terminal-post','capstone-joint',
+  ]) assert.equal(kinds.has(kind),true,kind);
 });
 
 test('アーチ開口は全描画layerから除外され背景を透過する',()=>{
