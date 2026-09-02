@@ -13,13 +13,29 @@ test('橋研究はコピーした専用ページと専用moduleだけへ隔離�
   assert.match(study,/PixelMap｜橋デザイン研究・z\$\{TILE_ZOOM\}/);
   assert.match(study,/bridge-classifier\.js\?v=\d+/);
   assert.match(study,/bridge-renderer\.js\?v=\d+/);
+  assert.match(study,/bridge-component-core\.js\?v=\d+/);
+  assert.match(study,/bridge-component-preview\.js\?v=\d+/);
   assert.match(study,/dataset\.bridgeStudy='test-only'/);
   assert.match(study,/BRIDGE_CLASSIFIER\.analyzeLayers/);
   assert.match(study,/BRIDGE_RENDERER\.prepare/);
   assert.match(study,/bridgeStudy:\{/);
   for(const [name,html] of [['source',source],['index',index],['compare',compare],['four',four],['height',height]]){
-    assert.doesNotMatch(html,/bridge-classifier|bridge-renderer|map-08-bridge-study/,name);
+    assert.doesNotMatch(html,/bridge-classifier|bridge-renderer|bridge-component-core|bridge-component-preview|map-08-bridge-study/,name);
   }
+});
+
+test('橋単体modeは地図decoder・MVT分類・地図bootより前に分岐する',async()=>{
+  const study=await read('variants/map-08-bridge-study.html');
+  const branch=study.indexOf('const BRIDGE_COMPONENT_ONLY');
+  const previewBoot=study.indexOf('PixelMapBridgeComponentPreview.boot()');
+  const mapElse=study.indexOf('}else{',branch);
+  const pbf=study.indexOf('class Pbf');
+  const classifier=study.indexOf('BRIDGE_CLASSIFIER.analyzeLayers');
+  const mapBoot=study.lastIndexOf('boot().finally');
+  assert.ok(branch>=0&&previewBoot>branch&&mapElse>previewBoot&&pbf>mapElse&&classifier>pbf&&mapBoot>classifier,
+    {branch,previewBoot,mapElse,pbf,classifier,mapBoot});
+  assert.match(study,/render=bridge-components/);
+  assert.match(study,/id="bridgeComponentStudy"/);
 });
 
 test('橋体underlay・既存橋面・detail overlayの順で合成する',async()=>{
@@ -46,4 +62,14 @@ test('橋研究のtest-only範囲と検証を差分ログへ記録する',async(
   assert.match(log,/<strong>testのみ<\/strong>/);
   assert.match(log,/本番への影響<\/dt><dd>なし/);
   assert.match(log,/全自動テスト197件とビルドが成功/);
+});
+
+test('部品合成式橋単体modeの範囲を差分ログへ記録する',async()=>{
+  const log=await read('log.html');
+  assert.match(log,/部品合成式の石造アーチ橋単体モードを追加/);
+  assert.match(log,/5度刻みの36方向/);
+  assert.match(log,/長さ・石造部幅・路面幅/);
+  assert.match(log,/地図タイルとMVT橋分類を起動しない/);
+  assert.match(log,/<strong>testのみ<\/strong>/);
+  assert.match(log,/本番への影響<\/dt><dd>なし/);
 });

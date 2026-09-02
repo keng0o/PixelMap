@@ -598,9 +598,127 @@
   }
   body.capture-mode #captureBadge{ display:block; }
   @media (prefers-reduced-motion: reduce){ #msg .cursor{ animation:none; } }
+  #bridgeComponentStudy[hidden]{ display:none; }
+  html[data-bridge-study="test-only"]{
+    width:auto;
+    height:auto;
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+  body.bridge-component-mode{
+    display:block;
+    width:auto;
+    height:auto;
+    min-height:100vh;
+    min-height:100dvh;
+    padding:20px 12px 48px;
+    overflow-x:hidden;
+    overflow-y:auto;
+    background:
+      linear-gradient(90deg,#ffffff05 1px,transparent 1px),
+      linear-gradient(#ffffff05 1px,transparent 1px),
+      #181820;
+    background-size:16px 16px;
+  }
+  body.bridge-component-mode > :not(#bridgeComponentStudy):not(script){ display:none !important; }
+  .bridge-component-study{
+    width:min(1480px,calc(100vw - 24px));
+    margin:0 auto;
+    display:grid;
+    gap:20px;
+  }
+  .bridge-component-header h1{ margin:4px 0 7px; color:#f8d038; font-size:clamp(24px,4vw,42px); }
+  .bridge-component-header > p:last-child{ max-width:900px; color:#c8c0ac; line-height:1.7; }
+  .bridge-component-kicker{ color:#88c860; font-size:11px; letter-spacing:2px; }
+  .bridge-component-controls{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:end;
+    gap:12px 18px;
+  }
+  .bridge-component-controls label{ display:grid; gap:4px; color:#d8d0b8; font-size:12px; }
+  .bridge-component-controls input,.bridge-component-controls select,.bridge-component-controls button{
+    min-height:38px;
+    border:2px solid #f8f0d8;
+    border-radius:0;
+    background:#202028;
+    color:#f8f0d8;
+    padding:6px 9px;
+    font:14px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .bridge-component-controls button{ cursor:pointer; }
+  .bridge-component-controls button:hover,.bridge-component-controls button:focus-visible{ color:#f8d038; border-color:#f8d038; }
+  .bridge-angle-control{ display:flex; align-items:end; gap:7px; }
+  .bridge-component-hero{ display:grid; grid-template-columns:minmax(0,1.25fr) minmax(260px,.75fr); gap:20px; }
+  .bridge-component-hero h2,.bridge-component-section h2{ margin:4px 0 14px; color:#f8f0d8; font-size:22px; }
+  .bridge-component-main{ min-height:310px; display:grid; place-items:center; overflow:auto; }
+  .bridge-component-reference{ display:grid; align-content:start; gap:8px; }
+  .bridge-component-reference img{
+    display:block;
+    width:100%;
+    max-height:420px;
+    object-fit:contain;
+    border:2px solid #585848;
+    background:#78b850;
+    image-rendering:pixelated;
+  }
+  .bridge-component-reference figcaption,.bridge-component-card figcaption{ color:#aaa28e; font-size:10px; line-height:1.35; }
+  #bridgeComponentDiagnostics{
+    max-height:250px;
+    overflow:auto;
+    margin-top:10px;
+    padding:10px;
+    border:1px solid #484840;
+    background:#181820;
+    color:#b8d8f0;
+    font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .bridge-component-grid{ display:grid; gap:10px; align-items:stretch; }
+  .bridge-direction-grid{ grid-template-columns:repeat(6,minmax(130px,1fr)); }
+  .bridge-size-grid{ grid-template-columns:repeat(3,minmax(220px,1fr)); }
+  .bridge-component-card{
+    min-width:0;
+    margin:0;
+    display:grid;
+    place-items:center;
+    align-content:center;
+    gap:7px;
+    padding:8px;
+    border:1px solid #484840;
+    background:#181820;
+    overflow:hidden;
+  }
+  .bridge-component-card canvas{
+    display:block;
+    width:auto;
+    height:auto;
+    max-width:100%;
+    aspect-ratio:auto;
+    cursor:default;
+    touch-action:auto;
+    background-color:#fff;
+    background-image:linear-gradient(45deg,#dfe3e6 25%,transparent 25%),
+      linear-gradient(-45deg,#dfe3e6 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#dfe3e6 75%),
+      linear-gradient(-45deg,transparent 75%,#dfe3e6 75%);
+    background-size:16px 16px;
+    background-position:0 0,0 8px,8px -8px,-8px 0;
+    image-rendering:pixelated;
+  }
+  @media (max-width:1000px){
+    .bridge-direction-grid{ grid-template-columns:repeat(4,minmax(120px,1fr)); }
+    .bridge-size-grid{ grid-template-columns:repeat(2,minmax(200px,1fr)); }
+  }
+  @media (max-width:700px){
+    .bridge-component-hero{ grid-template-columns:1fr; }
+    .bridge-direction-grid{ grid-template-columns:repeat(2,minmax(120px,1fr)); }
+    .bridge-size-grid{ grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
+
+<main id="bridgeComponentStudy" data-study-query="render=bridge-components" hidden></main>
 
 <p id="mapPosition" hidden>OpenFreeMap z14 / 14549 / 6460 ─ 地理の読みやすさ</p>
 
@@ -787,6 +905,8 @@
 <script src="../assets/building-styles.js?v=4"></script>
 <script src="../assets/facility-site-rendering.js?v=3"></script>
 <script src="../assets/corridor-renderer.js?v=3"></script>
+<script src="../assets/bridge-component-core.js?v=1"></script>
+<script src="../assets/bridge-component-preview.js?v=1"></script>
 <script src="../assets/bridge-classifier.js?v=4"></script>
 <script src="../assets/bridge-renderer.js?v=3"></script>
 <script src="../assets/layer-assets.js?v=6"></script>
@@ -794,6 +914,10 @@
 <script src="../assets/map-bearing.js?v=2"></script>
 <script>
 'use strict';
+const BRIDGE_COMPONENT_ONLY=window.PixelMapBridgeComponentPreview.isRequested(location.search);
+if(BRIDGE_COMPONENT_ONLY){
+  window.PixelMapBridgeComponentPreview.boot();
+}else{
 document.documentElement.dataset.bridgeStudy='test-only';
 /* =====================================================
    1. MVTデコーダ（依存なし・前版と同一）
@@ -8236,6 +8360,7 @@ boot().finally(async () => {
     }, MESSAGE_ORIGIN);
   }
 });
+}
 </script>
 </body>
 </html>
