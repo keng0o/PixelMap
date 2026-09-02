@@ -168,7 +168,7 @@
             </tr>
             <tr>
               <th scope="row">橋デザイン研究</th>
-              <td><code>variants/map-08-bridge-study.html</code>だけで、橋を用途・交差対象・長さLODへ分類し、画面下方向の側壁、アーチ開口、橋脚、欄干ハイライトを合成する。通常のstandalone testは変更しない。</td>
+              <td><code>variants/map-08-bridge-study.html</code>だけで、地図用の用途・交差対象・長さLOD研究を維持する。橋単体<code>render=bridge-components</code>はV2へ更新し、背景が見える透明アーチ、張り出し橋脚、厚い笠石、画面上1〜2pxの構造誇張、S／M／Lの3段階LODを5度刻み36方向で合成する。橋単体V2は地図上の橋へは未接続で、通常のstandalone testも変更しない。</td>
               <td>変更なし。本番1・2・4マップと通常のstandalone testは新しい橋分類器・描画器を読み込まない。</td>
             </tr>
             <tr>
@@ -211,6 +211,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>判読性優先の石造アーチ橋V2へ更新</h3>
+          <time datetime="2026-09-02">2026-09-02 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>橋単体の共有rendererをV2へ更新。側壁を暗色で塗る方式から、背景が見える<strong>透明なアーチ開口</strong>へ変更し、開口外側の内周影、大きな迫石輪、張り出す中央橋脚、段階的な橋台、厚い笠石、太い端柱を共通部品として合成する。小・中・大の<strong>3段階LOD</strong>と、画面上<strong>1〜2px</strong>の構造誇張を導入。5度刻み36方向、可変長、可変幅、画面垂直押し出し、左上固定光源は維持する。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>variants/map-08-bridge-study.html?render=bridge-components</code>の橋単体モード。LODの自動／小／中／大と、水面／地面／透明確認背景をURLへ保存して切り替えられる。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。橋単体V2は<strong>地図上の橋へは未接続</strong>。地図用<code>bridge-classifier.js</code>、<code>bridge-renderer.js</code>、通常のstandalone test<code>variants/map-02-refined.html</code>、本番1・2・4マップを変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>全自動テスト244件、単一比較sheetの同期確認、ビルドが成功。ローカル実ブラウザで45°→50°→45°、LODの小／中／大／自動、水面／地面／透明確認背景、URL同期、透明開口、診断値、console errorなし、地図タイル・MVT未要求を確認した。45°基準・36方向・9サイズの最新スクリーンショットを参照画像と比較し、独立視覚レビューで3項目すべてPASS。参照画像と同種の石造橋として十分近く、方向間の孤立pixel・輪郭破綻と、サイズ間の部品不整合はないと判定した。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>部品合成式の石造アーチ橋単体モードを追加</h3>

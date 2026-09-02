@@ -38,6 +38,19 @@ test('橋単体modeは地図decoder・MVT分類・地図bootより前に分岐�
   assert.match(study,/id="bridgeComponentStudy"/);
 });
 
+test('橋単体modeはV2 core・previewとLOD・透明背景UIを使う',async()=>{
+  const [study,preview]=await Promise.all([
+    read('variants/map-08-bridge-study.html'),read('assets/bridge-component-preview.js'),
+  ]);
+  assert.match(study,/bridge-component-core\.js\?v=2/);
+  assert.match(study,/bridge-component-preview\.js\?v=2/);
+  for(const token of ['bridge-background-water','bridge-background-ground','bridge-background-checker'])
+    assert.match(study,new RegExp(token));
+  for(const token of [
+    'bridgeComponentDetail','bridgeComponentBackground','透明なアーチ開口','openingPixels','maxExaggeration',
+  ]) assert.match(preview,new RegExp(token),token);
+});
+
 test('橋体underlay・既存橋面・detail overlayの順で合成する',async()=>{
   const study=await read('variants/map-08-bridge-study.html');
   const underlay=study.indexOf('prepared.underlay');
@@ -72,4 +85,18 @@ test('部品合成式橋単体modeの範囲を差分ログへ記録する',async
   assert.match(log,/地図タイルとMVT橋分類を起動しない/);
   assert.match(log,/<strong>testのみ<\/strong>/);
   assert.match(log,/本番への影響<\/dt><dd>なし/);
+});
+
+test('石造アーチ橋V2のtest-only範囲を差分ログへ記録する',async()=>{
+  const log=await read('log.html');
+  assert.match(log,/判読性優先の石造アーチ橋V2へ更新/);
+  assert.match(log,/透明なアーチ開口/);
+  assert.match(log,/3段階LOD/);
+  assert.match(log,/1〜2px/);
+  assert.match(log,/地図上の橋へは未接続/);
+  assert.match(log,/<strong>testのみ<\/strong>/);
+  assert.match(log,/本番への影響<\/dt><dd>なし/);
+  assert.match(log,/全自動テスト244件/);
+  assert.match(log,/独立視覚レビューで3項目すべてPASS/);
+  assert.match(log,/地図タイル・MVT未要求/);
 });
