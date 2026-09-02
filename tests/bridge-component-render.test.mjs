@@ -38,12 +38,15 @@ test('投影は地面だけを回し高さと壁深さを画面垂直へ固定�
   }
 });
 
-test('標準橋はunderlay・surfaceMask・surface・overlayを部品ID付きで返す',()=>{
+test('標準橋は透明開口・予約構造を含むV2描画命令を返す',()=>{
   const composition=core.composeStrict(standard);
   assert.ok(composition.underlay.length>100);
   assert.ok(composition.surfaceMask.length>100);
   assert.ok(composition.surface.length>100);
   assert.ok(composition.overlay.length>100);
+  assert.ok(composition.openingMask.length>20);
+  assert.ok(composition.reservedStructureMask.length>20);
+  assert.equal(composition.stats.lod,'medium');
   assert.equal(composition.diagnostics.fallback,false);
   for(const operation of allOperations(composition)){
     assert.equal(Number.isInteger(operation.x),true);
@@ -52,6 +55,20 @@ test('標準橋はunderlay・surfaceMask・surface・overlayを部品ID付きで
     assert.equal(typeof operation.kind,'string');
     assert.equal(typeof operation.componentId,'string');
     assert.ok(['underlay','surface','overlay'].includes(operation.layer));
+    assert.equal(operation.lod,'medium');
+  }
+});
+
+test('アーチ開口は全描画layerから除外され背景を透過する',()=>{
+  for(const angle of [0,30,45,60,135]){
+    const composition=core.composeStrict({...standard,screenAngle:angle});
+    const openings=new Set(composition.openingMask.map(({x,y})=>`${x},${y}`));
+    assert.ok(openings.size>10,`${angle}: opening`);
+    for(const operation of allOperations(composition))
+      assert.equal(openings.has(`${operation.x},${operation.y}`),false,`${angle}:${operation.kind}`);
+    assert.ok(composition.stats.innerShadowPixels>0,`${angle}: inner shadow`);
+    assert.ok(composition.stats.pierPixels>0,`${angle}: pier`);
+    assert.ok(composition.stats.capstonePixels>0,`${angle}: capstone`);
   }
 });
 
@@ -66,7 +83,8 @@ test('全36方向と9サイズがbounds内の決定的な連続構造を作る',
       const operations=allOperations(first);
       assert.ok(operations.every(({x,y})=>x>=first.bounds.x&&y>=first.bounds.y&&
         x<first.bounds.x+first.bounds.width&&y<first.bounds.y+first.bounds.height));
-      assert.equal(isEightConnected(operations),true,`${angle}:${preset.id} が分断`);
+      assert.equal(isEightConnected(operations.filter(operation=>operation.kind!=='shadow')),true,
+        `${angle}:${preset.id} が分断`);
     }
   }
 });
@@ -86,23 +104,31 @@ test('近垂直の85度と95度は1pxの長辺sliverを端面へ統合する',()
   assert.ok(archPixels(100)>0);
 });
 
-test('参照橋の石積み・迫石・要石・橋脚・笠石・舗装細部を持つ',()=>{
-  for(const angle of [0,5,45,135,175]){
-    const details=core.composeStrict({...standard,screenAngle:angle}).stats.details;
-    assert.ok(details.masonryJointPixels>=6,`${angle}: masonry`);
-    assert.ok(details.voussoirPixels>=8,`${angle}: voussoir`);
-    assert.ok(details.keystonePixels>=1,`${angle}: keystone`);
-    assert.ok(details.pierDetailPixels>=2,`${angle}: pier`);
-    assert.ok(details.capstoneJointPixels>=6,`${angle}: capstone`);
-    assert.ok(details.roadPavingPixels>=12,`${angle}: road`);
-  }
+test('意味的LODは同じ構造を保ちながら細部を段階追加する',()=>{
+  const small=core.composeStrict({...standard,detailLevel:'small'});
+  const medium=core.composeStrict({...standard,detailLevel:'medium'});
+  const large=core.composeStrict({...standard,detailLevel:'large'});
+  assert.equal(small.stats.lod,'small');
+  assert.equal(medium.stats.lod,'medium');
+  assert.equal(large.stats.lod,'large');
+  assert.equal(small.stats.details.masonryJointPixels,0);
+  assert.equal(small.stats.details.roadPavingPixels,0);
+  assert.ok(medium.stats.details.voussoirPixels>0);
+  assert.ok(medium.stats.details.keystonePixels>0);
+  assert.ok(large.stats.details.masonryJointPixels>medium.stats.details.masonryJointPixels);
+  assert.ok(large.stats.details.roadPavingPixels>0);
+  assert.deepEqual(small.model.spans,medium.model.spans);
+  assert.deepEqual(medium.model.spans,large.model.spans);
+  assert.ok(small.stats.exaggerationPixels>0);
+  assert.ok(small.stats.maxExaggeration<=2);
 });
 
 test('0度と180度は同じ画素列になり模様seedだけが細部を変える',()=>{
-  const zero=core.composeStrict({...standard,screenAngle:0});
-  const half=core.composeStrict({...standard,screenAngle:180});
+  const zero=core.composeStrict({...standard,screenAngle:0,detailLevel:'large'});
+  const half=core.composeStrict({...standard,screenAngle:180,detailLevel:'large'});
   assert.deepEqual(half,zero);
-  const other=core.composeStrict({...standard,screenAngle:0,patternSeed:'other'});
-  assert.notDeepEqual(other.overlay,zero.overlay);
+  const other=core.composeStrict({...standard,screenAngle:0,detailLevel:'large',patternSeed:'other'});
+  assert.notDeepEqual(allOperations(other),allOperations(zero));
   assert.deepEqual(other.surfaceMask,zero.surfaceMask);
+  assert.deepEqual(other.openingMask,zero.openingMask);
 });

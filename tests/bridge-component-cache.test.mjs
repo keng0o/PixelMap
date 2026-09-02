@@ -18,6 +18,15 @@ test('rendererは同じ形状を再利用し画面上のidをcache keyに含め�
   assert.deepEqual(renderer.stats(),{limit:4,size:1,hits:1,misses:1,evictions:0});
 });
 
+test('V2 cache keyは意味モデル・径間・LODを区別する',()=>{
+  const renderer=core.createRenderer({cacheLimit:8});
+  renderer.composeStrict({...standard,carry:'road',detailLevel:'medium',spanCount:2});
+  renderer.composeStrict({...standard,carry:'rail',detailLevel:'medium',spanCount:2});
+  renderer.composeStrict({...standard,carry:'road',detailLevel:'large',spanCount:2});
+  renderer.composeStrict({...standard,carry:'road',detailLevel:'medium',spanCount:'auto'});
+  assert.deepEqual(renderer.stats(),{limit:8,size:4,hits:0,misses:4,evictions:0});
+});
+
 test('LRUは再参照を最新にし上限超過時に最古だけを破棄する',()=>{
   const renderer=core.createRenderer({cacheLimit:2});
   const a={...standard,screenAngle:0};
@@ -46,7 +55,12 @@ test('安全APIは不正入力を平坦橋へfallbackし理由を公開する',(
   const fallback=renderer.composeSafe({screenAngle:Infinity,length:8,masonryWidth:5,roadWidth:9,styleKey:'unknown'});
   assert.equal(fallback.diagnostics.fallback,true);
   assert.ok(fallback.diagnostics.issues.length>=3);
+  assert.equal(fallback.model.family,'generic');
+  assert.equal(fallback.model.material,'unknown');
+  assert.equal(fallback.model.classificationSource,'fallback');
+  assert.ok(fallback.diagnostics.suppressed.includes('stone-arch-structure'));
   assert.equal(fallback.stats.archPixels,0);
+  assert.equal(fallback.openingMask.length,0);
   assert.ok(fallback.surfaceMask.length>0);
   assert.ok(fallback.surface.length>0);
   assert.ok(fallback.overlay.some(operation=>operation.kind==='outer-outline'));
@@ -58,6 +72,10 @@ test('配置関数は平行移動し指定viewport外だけを安全に切り捨
   const all=[...placed.underlay,...placed.surface,...placed.overlay];
   assert.ok(all.length>0);
   assert.ok(all.every(operation=>operation.x>=0&&operation.y>=0&&operation.x<40&&operation.y<40));
+  assert.ok(placed.openingMask.every(point=>point.x>=0&&point.y>=0&&point.x<40&&point.y<40));
+  assert.ok(placed.reservedStructureMask.every(point=>point.x>=0&&point.y>=0&&point.x<40&&point.y<40));
+  const openings=new Set(placed.openingMask.map(({x,y})=>`${x},${y}`));
+  assert.ok(all.every(operation=>!openings.has(`${operation.x},${operation.y}`)));
   assert.deepEqual(placed.anchor,{x:20,y:30});
   assert.ok(placed.diagnostics.clippedPixels>0);
 });
