@@ -9,8 +9,8 @@ const PATTERNS = globalThis.PixelMapTopDownPatterns;
 const source = await readFile(new URL('../assets/top-down-game-patterns.js', import.meta.url), 'utf8');
 
 test('真上視点styleは参考画像1寄りの固定paletteとpattern catalogを公開する', () => {
-  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/1');
-  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v1');
+  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/2');
+  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v2');
   assert.equal(PATTERNS.palette.water, '#63c4c3');
   assert.equal(PATTERNS.palette.forest, '#3f704d');
   assert.equal(PATTERNS.palette.road, '#ead9ac');
@@ -18,8 +18,18 @@ test('真上視点styleは参考画像1寄りの固定paletteとpattern catalog�
   assert.equal(Object.isFrozen(PATTERNS.palette), true);
 });
 
-test('屋根・木・道路・水域・地表は複数のpatternを持つ', () => {
-  assert.ok(PATTERNS.catalogs.roof.length >= 6);
+test('普通建物は見た目の異なる5つのCanvas屋根patternを持つ', () => {
+  assert.deepEqual(PATTERNS.catalogs.roof.map(pattern => pattern.id), [
+    'building-cottage-gable',
+    'building-longhouse',
+    'building-hipped',
+    'building-flat-workshop',
+    'building-cross-gable',
+  ]);
+  assert.equal(new Set(PATTERNS.catalogs.roof.map(pattern => pattern.primitive)).size, 5);
+});
+
+test('木・道路・水域・地表は複数のpatternを持つ', () => {
   assert.ok(PATTERNS.catalogs.tree.length >= 5);
   assert.ok(PATTERNS.catalogs.road.length >= 4);
   assert.ok(PATTERNS.catalogs.water.length >= 4);
@@ -74,6 +84,29 @@ test('同じ地物は同じvariantを返しviewportや描画順に依存しな�
     ...input, key: `building|${index}|commercial|${index * 17},0,100,100`,
   }).pattern.id));
   assert.ok(ids.size >= 3, `expected roof variation, received ${[...ids].join(', ')}`);
+});
+
+test('普通建物の形状と安定seedから5つの屋根patternをすべて選べる', () => {
+  const ids = new Set();
+  for (let index = 0; index < 500; index += 1) {
+    const shape = index % 4;
+    ids.add(PATTERNS.selectPattern('roof', {
+      key: `ordinary-building-${index}`,
+      props: { class: shape === 3 ? 'commercial' : 'residential' },
+      metrics: {
+        area: shape === 2 ? 2200 : 420 + index,
+        aspect: shape === 1 ? 3.2 : 1.25 + shape * 0.25,
+        complexity: shape === 2 ? 18 : 6,
+      },
+    }).pattern.id);
+  }
+  assert.deepEqual([...ids].sort(), [
+    'building-cottage-gable',
+    'building-cross-gable',
+    'building-flat-workshop',
+    'building-hipped',
+    'building-longhouse',
+  ]);
 });
 
 test('道路classと未知分類は意味に合うfamilyまたはneutralへ決定的に縮退する', () => {

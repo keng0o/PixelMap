@@ -192,6 +192,12 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /<code>#888488<\/code>から<code>#747078<\/code>へ変更/);
   assert.match(log, /境界線なし、砂利模様なし、枕木なし、連続2本レール/);
   assert.match(log, /真上視点の手描きゲーム地図testを追加/);
+  assert.match(log, /普通建物を5種の手描きpixel Canvasへ更新/);
+  assert.match(log, /小型切妻、横長の長屋、寄棟、設備付き平屋根、複数棟線の複合棟/);
+  assert.match(log, /屋根面→細部→輪郭欠けの順へ固定/);
+  assert.match(log, /極小は屋根色と外周だけ、中小は棟線1本、中型以上だけ5種の全面表現/);
+  assert.match(log, /全自動テスト287件/);
+  assert.match(log, /小建物の白い点状ノイズを修正/);
   assert.match(log, /<code>variants\/map-09-top-down-game\.html<\/code>/);
   assert.match(log, /青緑の水、深い森林、青系屋根、砂色道路/);
   assert.match(log, /屋根7種、木5種、道路4種、水域4種、地表6種/);

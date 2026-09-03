@@ -30,7 +30,7 @@ const fixture = (overrides = {}) => ({
 });
 
 test('rendererは固定compositorとDOM非依存のscene APIを公開する', () => {
-  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/1');
+  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/2');
   assert.deepEqual(RENDERER.compositor, [
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -51,12 +51,14 @@ test('水・道路・地表は複数patternと参考画像1寄りの色を使う
   assert.ok(scene.stats.patternFamilies.ground >= 1);
 });
 
-test('建物は実polygonの屋根・棟線・短い影だけで壁面と高さ押し出しを持たない', () => {
+test('建物は実polygonの屋根・手描きpixel細部・短い影だけで壁面と高さ押し出しを持たない', () => {
   const scene = RENDERER.buildScene(fixture());
   const roofs = scene.commands.filter(command => command.layer === 'building-roof');
   assert.ok(roofs.length >= 4);
   assert.ok(roofs.some(command => command.kind === 'roof-fill'));
   assert.ok(roofs.some(command => command.kind === 'roof-detail'));
+  assert.ok(roofs.some(command => command.kind === 'roof-edge-pixels'));
+  assert.ok(roofs.filter(command => command.kind === 'roof-detail').every(command => command.hardEdge === true));
   assert.ok(scene.commands.some(command => command.layer === 'building-shadow'));
   assert.equal(scene.stats.buildingExtrusionEnabled, false);
   assert.equal(scene.stats.wallCommands, 0);
@@ -64,6 +66,60 @@ test('建物は実polygonの屋根・棟線・短い影だけで壁面と高さ�
   assert.ok(scene.stats.patternFamilies.roof >= 2);
   assert.equal(scene.stats.labelCount, 0);
   assert.equal(scene.stats.poiMarkerCount, 0);
+});
+
+test('普通建物5patternは別々のCanvas primitiveへ展開される', () => {
+  const buildings = Array.from({ length: 500 }, (_, index) => {
+    const column = index % 25;
+    const row = Math.floor(index / 25);
+    const width = index % 4 === 1 ? 26 : index % 4 === 2 ? 18 : 14;
+    const height = index % 4 === 1 ? 8 : index % 4 === 2 ? 18 : 12;
+    const x = 8 + column * 30;
+    const y = 8 + row * 24;
+    return polygon('building', index + 100, [[x, y], [x + width, y], [x + width, y + height], [x, y + height]], {
+      class: index % 4 === 3 ? 'commercial' : 'residential',
+    });
+  });
+  const scene = RENDERER.buildScene({
+    width: 800,
+    height: 520,
+    viewport: { centerX: 400, centerY: 260, scale: 1 },
+    features: buildings,
+  });
+  const details = scene.commands.filter(command => command.kind === 'roof-detail');
+  assert.deepEqual([...new Set(details.map(command => command.patternId))].sort(), [
+    'building-cottage-gable',
+    'building-cross-gable',
+    'building-flat-workshop',
+    'building-hipped',
+    'building-longhouse',
+  ]);
+  assert.equal(new Set(details.map(command => command.detailPrimitive)).size, 5);
+  assert.equal(scene.commands.filter(command => command.kind === 'roof-edge-pixels').length,
+    details.filter(command => command.detailLevel === 'full').length);
+  const firstRoofKey = details[0].sourceKey;
+  assert.deepEqual(scene.commands
+    .filter(command => command.layer === 'building-roof' && command.sourceKey === firstRoofKey)
+    .map(command => command.kind), ['roof-fill', 'roof-detail', 'roof-edge-pixels']);
+});
+
+test('小建物は白い点状ノイズを避け、短辺サイズに応じて屋根細部を段階化する', () => {
+  const scene = RENDERER.buildScene({
+    width: 140,
+    height: 80,
+    viewport: { centerX: 70, centerY: 40, scale: 1 },
+    features: [
+      polygon('building', 701, [[8, 8], [14, 8], [14, 10], [8, 10]], { class: 'residential' }),
+      polygon('building', 702, [[30, 8], [42, 8], [42, 12], [30, 12]], { class: 'residential' }),
+      polygon('building', 703, [[64, 8], [86, 8], [86, 20], [64, 20]], { class: 'residential' }),
+    ],
+  });
+  const commandsFor = id => scene.commands.filter(command => command.sourceId === id && command.layer === 'building-roof');
+  assert.deepEqual(commandsFor(701).map(command => command.kind), ['roof-fill']);
+  assert.deepEqual(commandsFor(702).map(command => command.kind), ['roof-fill', 'roof-detail']);
+  assert.equal(commandsFor(702).find(command => command.kind === 'roof-detail').detailLevel, 'ridge');
+  assert.deepEqual(commandsFor(703).map(command => command.kind), ['roof-fill', 'roof-detail', 'roof-edge-pixels']);
+  assert.equal(commandsFor(703).find(command => command.kind === 'roof-detail').detailLevel, 'full');
 });
 
 test('MVTで複数棟が一featureにまとまっても屋根patternを棟ごとに決め、中庭ringを同じ棟へ保つ', () => {

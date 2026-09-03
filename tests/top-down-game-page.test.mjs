@@ -37,7 +37,7 @@ test('mobile safe area・44px以上の操作・focus・reduced motionを持つ',
 
 test('Canvasは北上固定・名称なし・屋根中心の契約を説明する', () => {
   assert.match(page, /aria-label="実地理を真上から描いた、名称表示のないゲーム風地図。ドラッグで移動できます"/);
-  assert.match(page, /data-style="top-down-hand-drawn-game-v1"/);
+  assert.match(page, /data-style="top-down-hand-drawn-game-v2"/);
   assert.match(page, /data-bearing="0"/);
 });
 

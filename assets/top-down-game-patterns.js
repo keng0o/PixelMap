@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/1';
-  const styleId = 'top-down-hand-drawn-game-v1';
+  const version = 'pixelmap-top-down-patterns/2';
+  const styleId = 'top-down-hand-drawn-game-v2';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -36,7 +36,7 @@
     railBed: '#8a8b75',
     rail: '#34443f',
     roof: '#4f7893',
-    roofLight: '#7da4b8',
+    roofLight: '#7396a6',
     roofDark: '#2f5068',
     roofSlate: '#607784',
     roofStone: '#8b938c',
@@ -52,13 +52,11 @@
 
   const catalogs = freeze({
     roof: [
-      pattern('roof-short-gable', 'roof', 'clipped-ridge', { structure: 'gable', palette: 'blue' }),
-      pattern('roof-long-gable', 'roof', 'clipped-ridge', { structure: 'longhouse', palette: 'blue-dark' }),
-      pattern('roof-hipped', 'roof', 'clipped-ridge', { structure: 'hipped', palette: 'blue' }),
-      pattern('roof-flat-vents', 'roof', 'clipped-stamps', { structure: 'flat', palette: 'slate' }),
-      pattern('roof-compound', 'roof', 'clipped-ridges', { structure: 'compound', palette: 'blue-dark' }),
-      pattern('roof-landmark', 'roof', 'clipped-panels', { structure: 'landmark', palette: 'stone-blue' }),
-      pattern('roof-earth-accent', 'roof', 'clipped-ridge', { structure: 'gable', palette: 'earth' }),
+      pattern('building-cottage-gable', 'roof', 'stepped-gable', { structure: 'gable', palette: 'blue' }),
+      pattern('building-longhouse', 'roof', 'ribbed-long-ridge', { structure: 'longhouse', palette: 'blue-dark' }),
+      pattern('building-hipped', 'roof', 'four-slope', { structure: 'hipped', palette: 'blue' }),
+      pattern('building-flat-workshop', 'roof', 'inset-vents', { structure: 'flat', palette: 'slate' }),
+      pattern('building-cross-gable', 'roof', 'cross-ridges', { structure: 'compound', palette: 'blue-dark' }),
     ],
     tree: [
       pattern('tree-light-crown', 'tree', 'clustered-circles', { crown: 'light', radius: 7 }),
@@ -164,16 +162,18 @@
   function eligibleRoofPatterns(input) {
     const metrics = input.metrics || {};
     const type = normalizedClass(input.props);
-    if ((metrics.aspect || 1) >= 2.35) return [byId.get('roof-long-gable'), byId.get('roof-flat-vents')];
+    if ((metrics.aspect || 1) >= 2.35) {
+      return [byId.get('building-longhouse'), byId.get('building-cottage-gable'), byId.get('building-flat-workshop')];
+    }
     if ((metrics.area || 0) >= 1600 || (metrics.complexity || 0) >= 14) {
-      return [byId.get('roof-compound'), byId.get('roof-landmark'), byId.get('roof-flat-vents')];
+      return [byId.get('building-cross-gable'), byId.get('building-flat-workshop'), byId.get('building-hipped')];
     }
     if (['commercial', 'industrial', 'warehouse', 'retail'].includes(type)) {
-      return [byId.get('roof-flat-vents'), byId.get('roof-landmark'), byId.get('roof-compound')];
+      return [byId.get('building-flat-workshop'), byId.get('building-longhouse'), byId.get('building-cross-gable')];
     }
     return [
-      byId.get('roof-short-gable'), byId.get('roof-hipped'), byId.get('roof-flat-vents'),
-      byId.get('roof-earth-accent'),
+      byId.get('building-cottage-gable'), byId.get('building-hipped'), byId.get('building-cross-gable'),
+      byId.get('building-flat-workshop'),
     ];
   }
 
