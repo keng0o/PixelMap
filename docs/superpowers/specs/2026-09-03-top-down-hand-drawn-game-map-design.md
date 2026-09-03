@@ -262,7 +262,7 @@ Canvasはpointer dragを受け付ける。ドラッグ中は現在frameを移動
 3. 必要tileを取得して再描画する。
 4. 現在地を小さな高contrast記号として最前面へ描く。
 
-取得した座標はページruntime内だけで使い、networkへ送信せず、localStorageへ保存しない。位置情報が利用不能または拒否された場合は地図を維持し、短い状態messageを表示してボタンを再び操作可能に戻す。
+取得した緯度経度の生値はページruntime内だけで使い、telemetryまたは独自APIへ送信せず、localStorageへ保存しない。現在地周辺を描くため、緯度経度から導出したz14 tile番号はOpenFreeMapのtile requestへ現れる。この外部通信を帰属表示と同様に地図利用の前提として扱い、runtime diagnosticsへ位置の生値を常設しない。位置情報が利用不能または拒否された場合は地図を維持し、短い状態messageを表示してボタンを再び操作可能に戻す。
 
 ## 状態とエラー処理
 
