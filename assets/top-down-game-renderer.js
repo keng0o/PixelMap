@@ -24,6 +24,33 @@
     return feature.geometry.map(path => path.map(point => projectPoint(point, input)));
   }
 
+  function signedRingArea(ring = []) {
+    let area = 0;
+    for (let index = 0; index + 1 < ring.length; index += 1) {
+      area += ring[index][0] * ring[index + 1][1] - ring[index + 1][0] * ring[index][1];
+    }
+    return area / 2;
+  }
+
+  function polygonParts(geometry = []) {
+    const firstArea = geometry.map(signedRingArea).find(area => area !== 0) || 1;
+    const exteriorSign = Math.sign(firstArea);
+    const parts = [];
+    for (const ring of geometry) {
+      if (!parts.length || Math.sign(signedRingArea(ring) || firstArea) === exteriorSign) parts.push([ring]);
+      else parts[parts.length - 1].push(ring);
+    }
+    return parts;
+  }
+
+  function geometryVisible(geometry, input, padding = 18) {
+    const bounds = PATTERNS.geometryMetrics(geometry).bounds;
+    const topLeft = projectPoint([bounds.minX, bounds.minY], input);
+    const bottomRight = projectPoint([bounds.maxX, bounds.maxY], input);
+    return bottomRight[0] >= -padding && topLeft[0] <= input.width + padding &&
+      bottomRight[1] >= -padding && topLeft[1] <= input.height + padding;
+  }
+
   function boundsOfGeometry(geometry = []) {
     const metrics = PATTERNS.geometryMetrics(geometry);
     return metrics.bounds;
@@ -181,19 +208,28 @@
   }
 
   function pushRoof(commands, assignments, feature, input) {
-    const key = featureKey(feature);
-    const metrics = PATTERNS.geometryMetrics(feature.geometry);
-    const selected = PATTERNS.selectPattern('roof', { key, props: feature.props, metrics });
-    assignments.set(key, selected.pattern.id);
-    const paths = projectedPaths(feature, input);
-    const [fill, light, dark] = roofColors(selected.pattern.id, selected.seed);
-    commands.push({ layer: 'building-shadow', kind: 'roof-shadow', sourceId: feature.id, sourceKey: key,
-      patternId: selected.pattern.id, paths, fill: P.shadow, translate: [3, 3] });
-    commands.push({ layer: 'building-roof', kind: 'roof-fill', sourceId: feature.id, sourceKey: key,
-      patternId: selected.pattern.id, paths, fill, stroke: P.ink, lineWidth: 2.1 });
-    commands.push({ layer: 'building-roof', kind: 'roof-detail', sourceId: feature.id, sourceKey: key,
-      patternId: selected.pattern.id, paths, fill: light, stroke: dark, lineWidth: 1.35,
-      seed: selected.seed, axis: metrics.axis });
+    for (const geometry of polygonParts(feature.geometry)) {
+      if (!geometryVisible(geometry, input)) continue;
+      const part = { ...feature, geometry };
+      const key = featureKey(part);
+      const metrics = PATTERNS.geometryMetrics(part.geometry);
+      const selected = PATTERNS.selectPattern('roof', { key, props: feature.props, metrics });
+      assignments.set(key, selected.pattern.id);
+      const paths = projectedPaths(part, input);
+      const [fill, light, dark] = roofColors(selected.pattern.id, selected.seed);
+      const minScreenDimension = Math.min(metrics.width, metrics.height) * input.viewport.scale;
+      const maxScreenDimension = Math.max(metrics.width, metrics.height) * input.viewport.scale;
+      const outlineWidth = minScreenDimension < 6 ? 1.05 : minScreenDimension < 12 ? 1.5 : 2.1;
+      commands.push({ layer: 'building-shadow', kind: 'roof-shadow', sourceId: feature.id, sourceKey: key,
+        patternId: selected.pattern.id, paths, fill: P.shadow, translate: [3, 3] });
+      commands.push({ layer: 'building-roof', kind: 'roof-fill', sourceId: feature.id, sourceKey: key,
+        patternId: selected.pattern.id, paths, fill, stroke: P.ink, lineWidth: outlineWidth });
+      if (maxScreenDimension >= 8) {
+        commands.push({ layer: 'building-roof', kind: 'roof-detail', sourceId: feature.id, sourceKey: key,
+          patternId: selected.pattern.id, paths, fill: light, stroke: dark, lineWidth: Math.min(1.35, outlineWidth),
+          seed: selected.seed, axis: metrics.axis });
+      }
+    }
   }
 
   function treeEligibleAreas(features) {
@@ -296,10 +332,11 @@
     }
     commands.sort((a, b) => (layerRank.get(a.layer) - layerRank.get(b.layer)) ||
       String(a.sourceKey || '').localeCompare(String(b.sourceKey || '')) || String(a.kind).localeCompare(String(b.kind)));
-    const familySets = { ground: new Set(), water: new Set(), road: new Set(), roof: new Set(), tree: new Set() };
+    const familySets = { ground: new Set(), water: new Set(), road: new Set(), rail: new Set(), roof: new Set(), tree: new Set() };
     for (const command of commands) {
       const family = command.kind === 'tree' ? 'tree' : command.layer === 'building-roof' ? 'roof' :
-        command.layer === 'transport' || command.layer === 'bridge' ? 'road' :
+        command.patternId?.startsWith('rail-') ? 'rail' :
+          command.layer === 'transport' || command.layer === 'bridge' ? 'road' :
           command.layer === 'water' ? 'water' : command.layer === 'landcover' ? 'ground' : null;
       if (family && command.patternId) familySets[family].add(command.patternId);
     }

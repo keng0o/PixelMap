@@ -172,6 +172,11 @@
               <td>変更なし。本番1・2・4マップと通常のstandalone testは新しい橋分類器・描画器を読み込まない。</td>
             </tr>
             <tr>
+              <th scope="row">独立真上視点test</th>
+              <td><code>variants/map-09-top-down-game.html</code>で、実地理の連続座標を保つ北上固定の手描きゲーム表現を検証。青緑の水、深い森林、青系屋根、砂色道路を複数patternで描き、名称・浮いたPOI・壁面・高さ押し出しを表示しない。通常のstandalone testとは独立した専用rendererを使う。</td>
+              <td>変更なし。本番1・2・4マップは独立真上視点testのmoduleを読み込まず、既存のcell2／cell3描画を維持する。</td>
+            </tr>
+            <tr>
               <th scope="row">水面・公園・競技面</th>
               <td>意味分類を維持したまま原子セルへ直接ラスタライズし、単色セルを組み合わせた地表模様・水際・林縁・公園境界を描画。</td>
               <td>testと同じcell2/cell3地表描画を使用。</td>
@@ -211,6 +216,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>真上視点の手描きゲーム地図testを追加</h3>
+          <time datetime="2026-09-03">2026-09-03 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>新規の<code>variants/map-09-top-down-game.html</code>へ、実地理のMVT形状を連続座標のまま描く専用runtimeとCanvas rendererを追加。参考画像1寄りの青緑の水、深い森林、青系屋根、砂色道路を、屋根7種、木5種、道路4種、水域4種、地表6種の決定論的patternで描く。全画面表示、北上固定、ドラッグ移動、一回限りの現在地取得に対応する。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。新規の独立pageだけで有効。名称・浮いたPOI・壁面・高さ押し出しを表示しない屋根中心の表現であり、論理pixel／cell2／cell3へは接続しない。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常のstandalone test、mobileは変更しない。<code>variants/map-02-refined.html</code>へのprofileやquery分岐も追加しない。</dd></div>
+          <div><dt>確認内容</dt><dd>専用自動テスト35件、全自動テスト283件、64ファイルのビルドが成功。実ブラウザでOpenFreeMap MVT読込、全5系統の複数pattern、北上固定、名称・POIなし、ドラッグ後の再描画、console warning／errorなしを確認した。1280×720と390×844を撮影し、参考画像との独立視覚レビューで真上視点、配色、variation、屋根中心、不要要素なし、desktop／mobile UIの6項目すべてPASS。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>地図と同じ立体感の45°基準石造橋V3へ更新</h3>

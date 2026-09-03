@@ -191,6 +191,17 @@ test('差分ログは現行のcell描画契約と主要な変更履歴を記載�
   assert.match(log, /鉄道Aのレール色を濃い灰色へ変更/);
   assert.match(log, /<code>#888488<\/code>から<code>#747078<\/code>へ変更/);
   assert.match(log, /境界線なし、砂利模様なし、枕木なし、連続2本レール/);
+  assert.match(log, /真上視点の手描きゲーム地図testを追加/);
+  assert.match(log, /<code>variants\/map-09-top-down-game\.html<\/code>/);
+  assert.match(log, /青緑の水、深い森林、青系屋根、砂色道路/);
+  assert.match(log, /屋根7種、木5種、道路4種、水域4種、地表6種/);
+  assert.match(log, /<strong>testのみ<\/strong>。新規の独立page/);
+  assert.match(log, /名称・浮いたPOI・壁面・高さ押し出しを表示しない/);
+  assert.match(log, /本番1・2・4マップ、通常のstandalone test、mobileは変更しない/);
+  assert.match(log, /専用自動テスト35件/);
+  assert.match(log, /全自動テスト283件/);
+  assert.match(log, /64ファイルのビルドが成功/);
+  assert.match(log, /6項目すべてPASS/);
 });
 
 test('AGENTSはtest変更とログ更新を同じ変更の完了条件にする', () => {

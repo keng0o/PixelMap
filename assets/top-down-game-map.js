@@ -4,7 +4,7 @@
   const version = 'pixelmap-top-down-map/1';
   const tileZoom = 14;
   const worldTileExtent = 4096;
-  const displayTileSize = 512;
+  const displayTileSize = 1536;
   const defaultScale = displayTileSize / worldTileExtent;
   const bearing = 0;
   const bearingLocked = true;
@@ -15,8 +15,8 @@
   ]);
   const retainedLayerSet = new Set(retainedLayers);
   const defaultCenter = Object.freeze({
-    x: (14549.5) * worldTileExtent,
-    y: (6460.5) * worldTileExtent,
+    x: 14548.875 * worldTileExtent,
+    y: 6460.65 * worldTileExtent,
   });
   const textDecoder = new TextDecoder();
 
@@ -67,7 +67,8 @@
     }
 
     packedVarints() {
-      const end = this.position + this.varint();
+      const length = this.varint();
+      const end = this.position + length;
       const values = [];
       while (this.position < end) values.push(this.varint());
       return values;
@@ -83,7 +84,8 @@
   }
 
   function parseValue(reader) {
-    const end = reader.position + reader.varint();
+    const length = reader.varint();
+    const end = reader.position + length;
     let value = null;
     while (reader.position < end) {
       const tag = reader.varint();
@@ -148,7 +150,8 @@
         reader.skip(wireType);
         continue;
       }
-      const layerEnd = reader.position + reader.varint();
+      const layerLength = reader.varint();
+      const layerEnd = reader.position + layerLength;
       const layer = { name: '', extent: worldTileExtent, keys: [], values: [], ranges: [], features: [] };
       while (reader.position < layerEnd) {
         const layerTag = reader.varint();
@@ -267,22 +270,39 @@
   }
 
   function featureMergeKey(feature) {
-    if (feature.id !== null && feature.id !== undefined) return `${feature.layer}|id:${feature.id}`;
-    const first = feature.geometry[0]?.[0] || [0, 0];
-    const lastPath = feature.geometry[feature.geometry.length - 1] || [];
-    const last = lastPath[lastPath.length - 1] || first;
-    return `${feature.layer}|${feature.type}|${first[0].toFixed(3)},${first[1].toFixed(3)}|${last[0].toFixed(3)},${last[1].toFixed(3)}`;
+    const points = feature.geometry.flat();
+    const xs = points.map(point => point[0]);
+    const ys = points.map(point => point[1]);
+    const bounds = points.length
+      ? `${Math.min(...xs).toFixed(3)},${Math.min(...ys).toFixed(3)},${Math.max(...xs).toFixed(3)},${Math.max(...ys).toFixed(3)}`
+      : '0.000,0.000,0.000,0.000';
+    const identity = feature.id !== null && feature.id !== undefined ? `id:${feature.id}` : 'no-id';
+    return `${feature.layer}|${feature.type}|${identity}|${bounds}`;
   }
 
   function mergeFeatures(featureGroups) {
     const merged = new Map();
     for (const feature of featureGroups.flat()) {
       const key = featureMergeKey(feature);
-      const existing = merged.get(key);
-      if (existing) existing.geometry.push(...feature.geometry);
-      else merged.set(key, { ...feature, geometry: [...feature.geometry] });
+      if (!merged.has(key)) merged.set(key, { ...feature, geometry: [...feature.geometry] });
     }
     return [...merged.values()].map(feature => Object.freeze({ ...feature, geometry: Object.freeze(feature.geometry) }));
+  }
+
+  function featuresInViewport(features, { centerX, centerY, width, height, scale = defaultScale, buffer = 80 }) {
+    const halfWidth = (width / 2 + buffer) / scale;
+    const halfHeight = (height / 2 + buffer) / scale;
+    const left = centerX - halfWidth;
+    const right = centerX + halfWidth;
+    const top = centerY - halfHeight;
+    const bottom = centerY + halfHeight;
+    return features.filter(feature => {
+      const points = feature.geometry.flat();
+      if (!points.length) return false;
+      const xs = points.map(point => point[0]);
+      const ys = points.map(point => point[1]);
+      return Math.max(...xs) >= left && Math.min(...xs) <= right && Math.max(...ys) >= top && Math.min(...ys) <= bottom;
+    });
   }
 
   function parseInitialCoordinates(search = '') {
@@ -455,11 +475,23 @@
       root.dataset.buildingExtrusionEnabled = String(diagnostics.buildingExtrusionEnabled);
       root.dataset.renderCount = String(renderCount);
       root.dataset.patternFingerprint = diagnostics.patternFingerprint || '';
+      root.dataset.roofCount = String(diagnostics.roofCount);
+      root.dataset.treeCount = String(diagnostics.treeCount);
+      for (const [family, count] of Object.entries(diagnostics.patternFamilies)) {
+        root.dataset[`pattern${family[0].toUpperCase()}${family.slice(1)}`] = String(count);
+      }
     }
 
     function render(tiles = lastTiles, failedCount = 0) {
       const { width, height } = resizeCanvas();
-      const features = store.featuresFor(tiles);
+      const allFeatures = store.featuresFor(tiles);
+      const features = featuresInViewport(allFeatures, {
+        centerX: navigation.centerX,
+        centerY: navigation.centerY,
+        width,
+        height,
+        scale: navigation.scale,
+      });
       if (!features.length) return null;
       const scene = Renderer.buildScene({
         width,
@@ -562,6 +594,7 @@
       }
       const previousNavigation = navigation;
       const previousLocation = locationPoint;
+      const previousTiles = lastTiles;
       locateButton.disabled = true;
       setStatus('現在地を探しています…');
       try {
@@ -573,12 +606,14 @@
         if (!await loadViewport({ preserveMessage: true })) {
           navigation = previousNavigation;
           locationPoint = previousLocation;
+          lastTiles = previousTiles;
           render();
           setStatus('現在地は取得できましたが、地図を読み込めませんでした。', true);
         }
       } catch (error) {
         navigation = previousNavigation;
         locationPoint = previousLocation;
+        lastTiles = previousTiles;
         render();
         setStatus(geolocationErrorMessage(error));
       } finally {
@@ -614,6 +649,7 @@
     requiredTiles,
     normalizeTileLayers,
     mergeFeatures,
+    featuresInViewport,
     parseInitialCoordinates,
     createNavigationState,
     reduceNavigation,

@@ -66,6 +66,34 @@ test('建物は実polygonの屋根・棟線・短い影だけで壁面と高さ�
   assert.equal(scene.stats.poiMarkerCount, 0);
 });
 
+test('MVTで複数棟が一featureにまとまっても屋根patternを棟ごとに決め、中庭ringを同じ棟へ保つ', () => {
+  const grouped = {
+    layer: 'building', id: 30, type: 3, props: { class: 'residential' },
+    geometry: [
+      [[20, 20], [50, 20], [50, 42], [20, 42], [20, 20]],
+      [[26, 26], [26, 34], [40, 34], [40, 26], [26, 26]],
+      [[90, 60], [132, 60], [132, 92], [90, 92], [90, 60]],
+    ],
+  };
+  const scene = RENDERER.buildScene({ ...fixture(), features: [grouped] });
+  const roofs = scene.commands.filter(command => command.kind === 'roof-fill');
+  assert.equal(roofs.length, 2);
+  assert.equal(roofs[0].paths.length, 2);
+  assert.equal(new Set(roofs.map(command => command.sourceKey)).size, 2);
+});
+
+test('同じMVT feature内でもviewport外の棟は描画命令へ展開しない', () => {
+  const grouped = {
+    layer: 'building', id: 31, type: 3, props: {},
+    geometry: [
+      [[20, 20], [50, 20], [50, 42], [20, 42], [20, 20]],
+      [[2000, 2000], [2050, 2000], [2050, 2042], [2000, 2042], [2000, 2000]],
+    ],
+  };
+  const scene = RENDERER.buildScene({ ...fixture(), features: [grouped] });
+  assert.equal(scene.commands.filter(command => command.kind === 'roof-fill').length, 1);
+});
+
 test('植生は許可area内へ複数patternで置き道路・水域・建物を避ける', () => {
   const scene = RENDERER.buildScene(fixture());
   const trees = scene.commands.filter(command => command.kind === 'tree');
@@ -118,4 +146,12 @@ test('地物の基準座標を論理pixelやmap cellへ量子化しない', () =
   assert.deepEqual(primary.paths[0][0], [20.25, 130.5]);
   assert.deepEqual(primary.paths[0][1], [300.75, 112.25]);
   assert.doesNotMatch(source, /MAP_CELL|CELL_ONLY|logicalPixel|Math\.random\s*\(/);
+});
+
+test('現在地markerは名称なしでcompositor最前面へ置く', () => {
+  const scene = RENDERER.buildScene({ ...fixture(), location: [160.5, 120.25] });
+  const marker = scene.commands.at(-1);
+  assert.equal(marker.kind, 'location-marker');
+  assert.equal(marker.layer, 'location');
+  assert.equal(scene.stats.labelCount, 0);
 });
