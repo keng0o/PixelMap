@@ -79,6 +79,17 @@ test('植生は許可area内へ複数patternで置き道路・水域・建物を
   }
 });
 
+test('樹冠密度はworld単位ではなく表示縮尺に追従し、z14で過密化しない', () => {
+  const scene = RENDERER.buildScene({
+    width: 512,
+    height: 512,
+    viewport: { centerX: 2048, centerY: 2048, scale: 0.125 },
+    features: [polygon('landcover', 20, [[0, 0], [4096, 0], [4096, 4096], [0, 4096]], { class: 'forest' })],
+  });
+  assert.ok(scene.stats.treeCount > 200);
+  assert.ok(scene.stats.treeCount < 1600);
+});
+
 test('共通地理範囲のpattern fingerprintはviewport原点と入力順で変わらない', () => {
   const a = fixture();
   const b = fixture();

@@ -218,7 +218,8 @@
     for (const area of areas) {
       const areaKey = featureKey(area);
       const kind = semanticClass(area);
-      const step = ['forest', 'wood'].includes(kind) ? 19 : kind === 'grass' ? 34 : 27;
+      const stepScreen = ['forest', 'wood'].includes(kind) ? 19 : kind === 'grass' ? 34 : 27;
+      const step = stepScreen / input.viewport.scale;
       const bounds = boundsOfGeometry(area.geometry);
       const minX = Math.floor(bounds.minX / step) - 1;
       const maxX = Math.ceil(bounds.maxX / step) + 1;
@@ -237,7 +238,7 @@
           if (!pointInFeature(point, area)) continue;
           const selected = PATTERNS.selectPattern('tree', { key: `${areaKey}|${cellKey}`, props: area.props });
           const clearance = selected.pattern.radius + 4;
-          if (pointBlocked(point, blockers, clearance)) continue;
+          if (pointBlocked(point, blockers, clearance / input.viewport.scale)) continue;
           seen.add(cellKey);
           const screen = projectPoint(point, input);
           commands.push({
