@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/2';
-  const styleId = 'top-down-hand-drawn-game-v2';
+  const version = 'pixelmap-top-down-patterns/3';
+  const styleId = 'top-down-hand-drawn-game-v3';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -52,11 +52,21 @@
 
   const catalogs = freeze({
     roof: [
-      pattern('building-cottage-gable', 'roof', 'stepped-gable', { structure: 'gable', palette: 'blue' }),
-      pattern('building-longhouse', 'roof', 'ribbed-long-ridge', { structure: 'longhouse', palette: 'blue-dark' }),
-      pattern('building-hipped', 'roof', 'four-slope', { structure: 'hipped', palette: 'blue' }),
-      pattern('building-flat-workshop', 'roof', 'inset-vents', { structure: 'flat', palette: 'slate' }),
-      pattern('building-cross-gable', 'roof', 'cross-ridges', { structure: 'compound', palette: 'blue-dark' }),
+      pattern('building-cottage-gable', 'roof', 'broken-single-ridge', {
+        structure: 'gable', palette: 'blue', lineDirection: 'longest-edge-only', handDrawn: true,
+      }),
+      pattern('building-longhouse', 'roof', 'parallel-weatherboards', {
+        structure: 'longhouse', palette: 'blue-dark', lineDirection: 'longest-edge-only', handDrawn: true,
+      }),
+      pattern('building-hipped', 'roof', 'tapered-parallel-ridges', {
+        structure: 'hipped', palette: 'blue', lineDirection: 'longest-edge-only', handDrawn: true,
+      }),
+      pattern('building-flat-workshop', 'roof', 'offset-long-seams', {
+        structure: 'flat', palette: 'slate', lineDirection: 'longest-edge-only', handDrawn: true,
+      }),
+      pattern('building-weathered-gable', 'roof', 'weathered-long-strokes', {
+        structure: 'weathered-gable', palette: 'blue-dark', lineDirection: 'longest-edge-only', handDrawn: true,
+      }),
     ],
     tree: [
       pattern('tree-light-crown', 'tree', 'clustered-circles', { crown: 'light', radius: 7 }),
@@ -166,13 +176,13 @@
       return [byId.get('building-longhouse'), byId.get('building-cottage-gable'), byId.get('building-flat-workshop')];
     }
     if ((metrics.area || 0) >= 1600 || (metrics.complexity || 0) >= 14) {
-      return [byId.get('building-cross-gable'), byId.get('building-flat-workshop'), byId.get('building-hipped')];
+      return [byId.get('building-weathered-gable'), byId.get('building-flat-workshop'), byId.get('building-hipped')];
     }
     if (['commercial', 'industrial', 'warehouse', 'retail'].includes(type)) {
-      return [byId.get('building-flat-workshop'), byId.get('building-longhouse'), byId.get('building-cross-gable')];
+      return [byId.get('building-flat-workshop'), byId.get('building-longhouse'), byId.get('building-weathered-gable')];
     }
     return [
-      byId.get('building-cottage-gable'), byId.get('building-hipped'), byId.get('building-cross-gable'),
+      byId.get('building-cottage-gable'), byId.get('building-hipped'), byId.get('building-weathered-gable'),
       byId.get('building-flat-workshop'),
     ];
   }

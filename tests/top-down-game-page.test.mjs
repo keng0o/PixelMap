@@ -37,13 +37,16 @@ test('mobile safe area・44px以上の操作・focus・reduced motionを持つ',
 
 test('Canvasは北上固定・名称なし・屋根中心の契約を説明する', () => {
   assert.match(page, /aria-label="実地理を真上から描いた、名称表示のないゲーム風地図。ドラッグで移動できます"/);
-  assert.match(page, /data-style="top-down-hand-drawn-game-v2"/);
+  assert.match(page, /data-style="top-down-hand-drawn-game-v3"/);
   assert.match(page, /data-bearing="0"/);
 });
 
-test('既存testと本番入口は新style IDやmoduleを参照しない', async () => {
+test('map-02の明示profileだけが専用pageへ接続し、本番入口は新styleを参照しない', async () => {
+  const standalone = await readFile(new URL('../variants/map-02-refined.html', import.meta.url), 'utf8');
+  assert.match(standalone, /params\.get\('profile'\) !== 'topdown-game'/);
+  assert.match(standalone, /params\.get\('presentation'\) !== 'art'/);
+  assert.match(standalone, /new URL\('map-09-top-down-game\.html', location\.href\)/);
   for (const relative of [
-    '../variants/map-02-refined.html',
     '../index.html',
     '../compare.html',
     '../four-maps.html',

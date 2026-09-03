@@ -30,7 +30,7 @@ const fixture = (overrides = {}) => ({
 });
 
 test('rendererは固定compositorとDOM非依存のscene APIを公開する', () => {
-  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/2');
+  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/3');
   assert.deepEqual(RENDERER.compositor, [
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -57,8 +57,12 @@ test('建物は実polygonの屋根・手描きpixel細部・短い影だけで�
   assert.ok(roofs.length >= 4);
   assert.ok(roofs.some(command => command.kind === 'roof-fill'));
   assert.ok(roofs.some(command => command.kind === 'roof-detail'));
-  assert.ok(roofs.some(command => command.kind === 'roof-edge-pixels'));
+  assert.ok(roofs.some(command => command.kind === 'roof-outline-rough'));
   assert.ok(roofs.filter(command => command.kind === 'roof-detail').every(command => command.hardEdge === true));
+  assert.ok(roofs.filter(command => command.kind === 'roof-detail')
+    .every(command => command.lightDirection === 'upper-left' && command.shadowHalf === 'lower-right'));
+  assert.ok(roofs.filter(command => command.kind === 'roof-outline-rough')
+    .every(command => command.handDrawn === true));
   assert.ok(scene.commands.some(command => command.layer === 'building-shadow'));
   assert.equal(scene.stats.buildingExtrusionEnabled, false);
   assert.equal(scene.stats.wallCommands, 0);
@@ -89,18 +93,55 @@ test('普通建物5patternは別々のCanvas primitiveへ展開される', () =>
   const details = scene.commands.filter(command => command.kind === 'roof-detail');
   assert.deepEqual([...new Set(details.map(command => command.patternId))].sort(), [
     'building-cottage-gable',
-    'building-cross-gable',
     'building-flat-workshop',
     'building-hipped',
     'building-longhouse',
+    'building-weathered-gable',
   ]);
   assert.equal(new Set(details.map(command => command.detailPrimitive)).size, 5);
-  assert.equal(scene.commands.filter(command => command.kind === 'roof-edge-pixels').length,
+  assert.equal(scene.commands.filter(command => command.kind === 'roof-outline-rough').length,
     details.filter(command => command.detailLevel === 'full').length);
   const firstRoofKey = details[0].sourceKey;
   assert.deepEqual(scene.commands
     .filter(command => command.layer === 'building-roof' && command.sourceKey === firstRoofKey)
-    .map(command => command.kind), ['roof-fill', 'roof-detail', 'roof-edge-pixels']);
+    .map(command => command.kind), ['roof-fill', 'roof-detail', 'roof-outline-rough']);
+});
+
+test('屋根内の手描き線は5patternすべてで最長辺方向だけを使う', () => {
+  const paths = [[[12, 18], [88, 34], [82, 62], [6, 46], [12, 18]]];
+  const frame = RENDERER.roofFrame(paths);
+  assert.ok(frame);
+  for (const pattern of globalThis.PixelMapTopDownPatterns.catalogs.roof) {
+    const strokes = RENDERER.roofStrokePlan(frame, {
+      patternId: pattern.id,
+      seed: 4127,
+      detailLevel: 'full',
+    });
+    assert.ok(strokes.length >= 4, `${pattern.id} should use multiple broken strokes`);
+    for (const stroke of strokes) {
+      const dx = stroke.to[0] - stroke.from[0];
+      const dy = stroke.to[1] - stroke.from[1];
+      assert.ok(Math.abs(dx * frame.u[1] - dy * frame.u[0]) < 0.000001,
+        `${pattern.id} contains a line crossing the longest axis`);
+    }
+  }
+});
+
+test('半面影はseedでは反転せず、左上光源に対する画面右下側へ固定する', () => {
+  const horizontal = RENDERER.roofFrame([[[0, 0], [60, 0], [60, 20], [0, 20], [0, 0]]]);
+  const vertical = RENDERER.roofFrame([[[0, 0], [20, 0], [20, 60], [0, 60], [0, 0]]]);
+  assert.equal(RENDERER.roofShadowSide(horizontal), 1);
+  assert.equal(RENDERER.roofShadowSide(vertical), -1);
+  const scene = RENDERER.buildScene({
+    width: 120,
+    height: 80,
+    viewport: { centerX: 60, centerY: 40, scale: 1 },
+    features: [polygon('building', 880, [[20, 20], [100, 20], [100, 58], [20, 58]], { class: 'residential' })],
+  });
+  const detail = scene.commands.find(command => command.kind === 'roof-detail');
+  assert.ok(detail.shade);
+  assert.notEqual(detail.shade, scene.commands.find(command => command.kind === 'roof-fill').fill);
+  assert.equal(detail.lineDirection, 'longest-edge-only');
 });
 
 test('小建物は白い点状ノイズを避け、短辺サイズに応じて屋根細部を段階化する', () => {
@@ -118,7 +159,7 @@ test('小建物は白い点状ノイズを避け、短辺サイズに応じて�
   assert.deepEqual(commandsFor(701).map(command => command.kind), ['roof-fill']);
   assert.deepEqual(commandsFor(702).map(command => command.kind), ['roof-fill', 'roof-detail']);
   assert.equal(commandsFor(702).find(command => command.kind === 'roof-detail').detailLevel, 'ridge');
-  assert.deepEqual(commandsFor(703).map(command => command.kind), ['roof-fill', 'roof-detail', 'roof-edge-pixels']);
+  assert.deepEqual(commandsFor(703).map(command => command.kind), ['roof-fill', 'roof-detail', 'roof-outline-rough']);
   assert.equal(commandsFor(703).find(command => command.kind === 'roof-detail').detailLevel, 'full');
 });
 

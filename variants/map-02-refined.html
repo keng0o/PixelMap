@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PixelMap｜テスト用1マップ</title>
+<script>
+  (() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('profile') !== 'topdown-game' || params.get('presentation') !== 'art') return;
+    const target = new URL('map-09-top-down-game.html', location.href);
+    for (const key of ['lat', 'lon']) {
+      if (params.has(key)) target.searchParams.set(key, params.get(key));
+    }
+    location.replace(target.href);
+  })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <style>
   :root{ --ink:#181820; --pattern-accent:#2f6fed; --pattern-muted:#78828a; }

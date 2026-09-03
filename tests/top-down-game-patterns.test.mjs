@@ -9,8 +9,8 @@ const PATTERNS = globalThis.PixelMapTopDownPatterns;
 const source = await readFile(new URL('../assets/top-down-game-patterns.js', import.meta.url), 'utf8');
 
 test('真上視点styleは参考画像1寄りの固定paletteとpattern catalogを公開する', () => {
-  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/2');
-  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v2');
+  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/3');
+  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v3');
   assert.equal(PATTERNS.palette.water, '#63c4c3');
   assert.equal(PATTERNS.palette.forest, '#3f704d');
   assert.equal(PATTERNS.palette.road, '#ead9ac');
@@ -24,9 +24,11 @@ test('普通建物は見た目の異なる5つのCanvas屋根patternを持つ', 
     'building-longhouse',
     'building-hipped',
     'building-flat-workshop',
-    'building-cross-gable',
+    'building-weathered-gable',
   ]);
   assert.equal(new Set(PATTERNS.catalogs.roof.map(pattern => pattern.primitive)).size, 5);
+  assert.ok(PATTERNS.catalogs.roof.every(pattern => pattern.lineDirection === 'longest-edge-only'));
+  assert.ok(PATTERNS.catalogs.roof.every(pattern => pattern.handDrawn === true));
 });
 
 test('木・道路・水域・地表は複数のpatternを持つ', () => {
@@ -102,10 +104,10 @@ test('普通建物の形状と安定seedから5つの屋根patternをすべて�
   }
   assert.deepEqual([...ids].sort(), [
     'building-cottage-gable',
-    'building-cross-gable',
     'building-flat-workshop',
     'building-hipped',
     'building-longhouse',
+    'building-weathered-gable',
   ]);
 });
 

@@ -4,7 +4,7 @@
   const PATTERNS = global.PixelMapTopDownPatterns;
   if (!PATTERNS) throw new Error('PixelMapTopDownPatterns is required');
 
-  const version = 'pixelmap-top-down-renderer/2';
+  const version = 'pixelmap-top-down-renderer/3';
   const compositor = Object.freeze([
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -13,7 +13,7 @@
   const commandRank = new Map([
     ['roof-fill', 0],
     ['roof-detail', 1],
-    ['roof-edge-pixels', 2],
+    ['roof-outline-rough', 2],
   ]);
   const P = PATTERNS.palette;
 
@@ -204,13 +204,13 @@
   }
 
   function roofColors(patternId, seed) {
-    if (patternId === 'building-flat-workshop') return [P.roofSlate, '#83999d', '#405663'];
-    if (patternId === 'building-cross-gable') return ['#466f8e', '#7398a7', '#29485f'];
-    if (patternId === 'building-longhouse') return ['#3f6885', '#6f91a0', '#29495f'];
-    if (patternId === 'building-hipped') return ['#587f96', '#789aa6', '#34566a'];
+    if (patternId === 'building-flat-workshop') return ['#758a91', '#4a5f67', '#354b53', '#91a4a8'];
+    if (patternId === 'building-weathered-gable') return ['#698b9d', '#3a596d', '#284759', '#88a6af'];
+    if (patternId === 'building-longhouse') return ['#5e8398', '#344f63', '#253f51', '#7d9ca8'];
+    if (patternId === 'building-hipped') return ['#7899a5', '#486979', '#2e4c5d', '#94afb5'];
     return seed % 3 === 0
-      ? [P.roof, P.roofLight, P.roofDark]
-      : [seed % 3 === 1 ? '#416b88' : '#5d8097', '#7396a6', '#2e4b61'];
+      ? ['#7096a6', '#426479', '#294a5e', '#91afb8']
+      : [seed % 3 === 1 ? '#668da1' : '#799aa7', '#405f74', '#2e4b61', '#91acb5'];
   }
 
   function pushRoof(commands, assignments, feature, input) {
@@ -222,7 +222,7 @@
       const selected = PATTERNS.selectPattern('roof', { key, props: feature.props, metrics });
       assignments.set(key, selected.pattern.id);
       const paths = projectedPaths(part, input);
-      const [fill, light, dark] = roofColors(selected.pattern.id, selected.seed);
+      const [fill, shade, dark, highlight] = roofColors(selected.pattern.id, selected.seed);
       const minScreenDimension = Math.min(metrics.width, metrics.height) * input.viewport.scale;
       const maxScreenDimension = Math.max(metrics.width, metrics.height) * input.viewport.scale;
       const outlineWidth = minScreenDimension < 6 ? 1.05 : minScreenDimension < 12 ? 1.5 : 2.1;
@@ -235,13 +235,15 @@
         patternId: selected.pattern.id, paths, fill, stroke: P.ink, lineWidth: outlineWidth });
       if (detailLevel) {
         commands.push({ layer: 'building-roof', kind: 'roof-detail', sourceId: feature.id, sourceKey: key,
-          patternId: selected.pattern.id, paths, fill: light, stroke: dark, lineWidth: Math.min(1.35, outlineWidth),
-          seed: selected.seed, detailPrimitive: selected.pattern.primitive, detailLevel, hardEdge: true });
+          patternId: selected.pattern.id, paths, shade, stroke: dark, highlight,
+          lineWidth: Math.min(1.35, outlineWidth), seed: selected.seed,
+          detailPrimitive: selected.pattern.primitive, detailLevel, hardEdge: true,
+          lineDirection: selected.pattern.lineDirection, lightDirection: 'upper-left', shadowHalf: 'lower-right' });
       }
       if (detailLevel === 'full') {
-        commands.push({ layer: 'building-roof', kind: 'roof-edge-pixels', sourceId: feature.id, sourceKey: key,
-          patternId: selected.pattern.id, paths, fill: dark, highlight: light, seed: selected.seed,
-          hardEdge: true, minScreenDimension });
+        commands.push({ layer: 'building-roof', kind: 'roof-outline-rough', sourceId: feature.id, sourceKey: key,
+          patternId: selected.pattern.id, paths, stroke: dark, highlight, seed: selected.seed,
+          hardEdge: true, handDrawn: true, minScreenDimension });
       }
     }
   }
@@ -504,10 +506,79 @@
     ctx.closePath(); ctx.fill();
   }
 
+  function roofShadowSide(frame) {
+    const lowerRightProjection = frame.v[0] + frame.v[1];
+    if (Math.abs(lowerRightProjection) > 0.000001) return lowerRightProjection > 0 ? 1 : -1;
+    if (Math.abs(frame.v[1]) > 0.000001) return frame.v[1] > 0 ? 1 : -1;
+    return frame.v[0] > 0 ? 1 : -1;
+  }
+
+  function roofTrackDefinitions(patternId, detailLevel) {
+    if (detailLevel === 'ridge') return [{ across: 0, start: -.72, end: .72, thickness: 1, pieces: 2 }];
+    if (patternId === 'building-cottage-gable') return [
+      { across: 0, start: -.9, end: .9, thickness: 2, pieces: 3 },
+      { across: -.48, start: -.68, end: .24, thickness: 1, pieces: 2 },
+    ];
+    if (patternId === 'building-longhouse') return [
+      { across: -.54, start: -.88, end: .86, thickness: 1, pieces: 3 },
+      { across: -.17, start: -.92, end: .9, thickness: 2, pieces: 3 },
+      { across: .18, start: -.86, end: .92, thickness: 1, pieces: 3 },
+      { across: .54, start: -.82, end: .84, thickness: 1, pieces: 2 },
+    ];
+    if (patternId === 'building-hipped') return [
+      { across: 0, start: -.72, end: .72, thickness: 2, pieces: 3 },
+      { across: -.42, start: -.5, end: .48, thickness: 1, pieces: 2 },
+      { across: .42, start: -.48, end: .52, thickness: 1, pieces: 2 },
+    ];
+    if (patternId === 'building-flat-workshop') return [
+      { across: -.34, start: -.82, end: .86, thickness: 1, pieces: 3 },
+      { across: .34, start: -.86, end: .8, thickness: 1, pieces: 3 },
+    ];
+    return [
+      { across: -.5, start: -.78, end: .66, thickness: 1, pieces: 3 },
+      { across: -.12, start: -.9, end: .88, thickness: 2, pieces: 3 },
+      { across: .3, start: -.68, end: .82, thickness: 1, pieces: 3 },
+      { across: .62, start: -.52, end: .48, thickness: 1, pieces: 2 },
+    ];
+  }
+
+  function roofStrokePlan(frame, { patternId, seed = 0, detailLevel = 'full' } = {}) {
+    const tracks = roofTrackDefinitions(patternId, detailLevel);
+    const hu = Math.max(2, frame.halfU - 1);
+    const hv = Math.max(2, frame.halfV - 1);
+    const segments = [];
+    tracks.forEach((track, trackIndex) => {
+      const start = track.start * hu;
+      const end = track.end * hu;
+      const span = end - start;
+      const pieces = Math.max(1, track.pieces || 1);
+      const gap = Math.min(2.5, Math.max(.75, Math.abs(span) * .045));
+      const acrossJitter = (stableUnit(seed, 40 + trackIndex) - .5) * Math.min(.9, hv * .09);
+      for (let pieceIndex = 0; pieceIndex < pieces; pieceIndex += 1) {
+        const cellStart = start + span * pieceIndex / pieces;
+        const cellEnd = start + span * (pieceIndex + 1) / pieces;
+        const leadingJitter = (stableUnit(seed, 70 + trackIndex * 9 + pieceIndex) - .5) * .8;
+        const trailingJitter = (stableUnit(seed, 90 + trackIndex * 9 + pieceIndex) - .5) * .8;
+        const segmentStart = cellStart + (pieceIndex ? gap : 0) + leadingJitter;
+        const segmentEnd = cellEnd - (pieceIndex + 1 < pieces ? gap : 0) + trailingJitter;
+        if (segmentEnd <= segmentStart + .35) continue;
+        const across = track.across * hv + acrossJitter;
+        segments.push(Object.freeze({
+          from: Object.freeze(roofPoint(frame, segmentStart, across)),
+          to: Object.freeze(roofPoint(frame, segmentEnd, across)),
+          thickness: track.thickness,
+          salt: (seed + trackIndex * 3 + pieceIndex + 1) % 7,
+          trackIndex,
+        }));
+      }
+    });
+    return Object.freeze(segments);
+  }
+
   function paintRoofFlecks(ctx, command, frame) {
     const step = command.patternId === 'building-flat-workshop' ? 5 : 7;
-    ctx.fillStyle = command.fill;
-    ctx.globalAlpha = 0.7;
+    ctx.fillStyle = command.highlight;
+    ctx.globalAlpha = 0.42;
     for (let v = -frame.halfV + 2; v < frame.halfV - 1; v += step) {
       for (let u = -frame.halfU + 2; u < frame.halfU - 1; u += step) {
         const gridU = Math.round(u / step), gridV = Math.round(v / step);
@@ -524,56 +595,32 @@
     ctx.save(); tracePaths(ctx, command.paths); ctx.clip('evenodd');
     const frame = roofFrame(command.paths);
     if (!frame) { ctx.restore(); return; }
-    const hu = Math.max(2, frame.halfU - 1), hv = Math.max(2, frame.halfV - 1);
-    const ridgeFrom = roofPoint(frame, -hu, 0), ridgeTo = roofPoint(frame, hu, 0);
+    paintRoofFacet(ctx, frame, roofShadowSide(frame), command.shade);
+    const strokes = roofStrokePlan(frame, command);
+    for (const stroke of strokes) {
+      const color = stroke.trackIndex % 3 === 2 ? command.highlight : command.stroke;
+      paintPixelLine(ctx, stroke.from, stroke.to, color, stroke.thickness, stroke.salt);
+    }
+
     if (command.detailLevel === 'ridge') {
-      paintPixelLine(ctx, roofPoint(frame, -hu * .72, 0), roofPoint(frame, hu * .72, 0), command.stroke, 1);
       ctx.restore();
       return;
     }
-    paintRoofFacet(ctx, frame, command.seed % 2 ? -1 : 1, command.fill);
-
-    if (command.patternId === 'building-cottage-gable') {
-      paintPixelLine(ctx, ridgeFrom, ridgeTo, command.stroke, 2, command.seed);
-      paintPixelLine(ctx, roofPoint(frame, -hu * .7, -hv * .55), roofPoint(frame, hu * .2, -hv * .55), command.fill, 1);
-    } else if (command.patternId === 'building-longhouse') {
-      paintPixelLine(ctx, ridgeFrom, ridgeTo, command.stroke, 2, command.seed);
-      for (const position of [-.55, 0, .55]) {
-        paintPixelLine(ctx, roofPoint(frame, hu * position, -hv * .72), roofPoint(frame, hu * position, hv * .72), command.stroke, 1, command.seed + 2);
-      }
-    } else if (command.patternId === 'building-hipped') {
-      const center = roofPoint(frame, 0, 0);
-      for (const corner of [[-hu, 0], [hu, 0], [0, -hv], [0, hv]]) {
-        paintPixelLine(ctx, center, roofPoint(frame, corner[0], corner[1]), command.stroke, 1, command.seed + 3);
-      }
-      ctx.fillStyle = command.fill; ctx.fillRect(Math.round(center[0]) - 1, Math.round(center[1]) - 1, 3, 2);
-    } else if (command.patternId === 'building-flat-workshop') {
-      const insetU = hu * .72, insetV = hv * .62;
-      const corners = [
-        roofPoint(frame, -insetU, -insetV), roofPoint(frame, insetU, -insetV),
-        roofPoint(frame, insetU, insetV), roofPoint(frame, -insetU, insetV),
-      ];
-      for (let index = 0; index < corners.length; index += 1) {
-        paintPixelLine(ctx, corners[index], corners[(index + 1) % corners.length], command.stroke, 1, command.seed + index);
-      }
+    if (command.patternId === 'building-flat-workshop') {
+      const hu = Math.max(2, frame.halfU - 1);
       for (const position of [-.38, .28]) {
         const vent = roofPoint(frame, hu * position, 0);
         ctx.fillStyle = command.stroke;
         ctx.fillRect(Math.round(vent[0]) - 1, Math.round(vent[1]) - 1, 3, 3);
-        ctx.fillStyle = command.fill;
+        ctx.fillStyle = command.highlight;
         ctx.fillRect(Math.round(vent[0]), Math.round(vent[1]) - 1, 2, 1);
       }
-    } else if (command.patternId === 'building-cross-gable') {
-      paintPixelLine(ctx, ridgeFrom, ridgeTo, command.stroke, 2, command.seed);
-      paintPixelLine(ctx, roofPoint(frame, 0, -hv), roofPoint(frame, 0, hv), command.stroke, 2, command.seed + 1);
-      const center = roofPoint(frame, 0, 0);
-      ctx.fillStyle = command.fill; ctx.fillRect(Math.round(center[0]) - 2, Math.round(center[1]) - 2, 4, 3);
     }
     paintRoofFlecks(ctx, command, frame);
     ctx.restore();
   }
 
-  function paintRoofEdgePixels(ctx, command) {
+  function paintRoofOutlineRough(ctx, command) {
     if (command.minScreenDimension < 2.5) return;
     ctx.save(); tracePaths(ctx, command.paths); ctx.clip('evenodd');
     for (let pathIndex = 0; pathIndex < command.paths.length; pathIndex += 1) {
@@ -583,16 +630,21 @@
         const dx = to[0] - from[0], dy = to[1] - from[1];
         const length = Math.hypot(dx, dy);
         const segmentSeed = PATTERNS.hashString(`${command.seed}:edge:${pathIndex}:${index}`);
-        const spacing = 5 + segmentSeed % 4;
+        const spacing = 4 + segmentSeed % 5;
         const phase = segmentSeed % spacing;
         for (let distance = phase; distance < length; distance += spacing) {
           const x = Math.round(from[0] + dx * distance / Math.max(1, length));
           const y = Math.round(from[1] + dy * distance / Math.max(1, length));
-          ctx.fillStyle = (segmentSeed + distance) % 3 ? command.fill : command.highlight;
-          ctx.fillRect(x - 1, y - 1, 2, 2);
+          const variation = PATTERNS.hashString(`${segmentSeed}:${Math.floor(distance)}`);
+          ctx.globalAlpha = variation % 5 === 0 ? .58 : .92;
+          ctx.fillStyle = variation % 4 === 0 ? command.highlight : command.stroke;
+          const width = variation % 3 === 0 ? 2 : 1;
+          const height = variation % 7 === 0 ? 2 : 1;
+          ctx.fillRect(x - (width > 1 ? 1 : 0), y - (height > 1 ? 1 : 0), width, height);
         }
       }
     }
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 
@@ -628,7 +680,7 @@
       strokePaths(ctx, command); return;
     }
     if (command.kind === 'roof-detail') { paintRoofDetail(ctx, command); return; }
-    if (command.kind === 'roof-edge-pixels') { paintRoofEdgePixels(ctx, command); return; }
+    if (command.kind === 'roof-outline-rough') { paintRoofOutlineRough(ctx, command); return; }
     if (command.kind === 'tree') { paintTree(ctx, command); return; }
     if (command.kind === 'location-marker') {
       ctx.save(); ctx.translate(command.x, command.y);
@@ -647,5 +699,6 @@
 
   global.PixelMapTopDownRenderer = Object.freeze({
     version, compositor, buildScene, paintScene, patternAssignments, pointInFeature, distanceToFeature,
+    roofFrame, roofShadowSide, roofStrokePlan,
   });
 })(typeof window !== 'undefined' ? window : globalThis);
