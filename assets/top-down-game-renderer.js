@@ -6,7 +6,7 @@
   const MATERIALS = global.PixelMapTopDownMaterials;
   if (!MATERIALS) throw new Error('PixelMapTopDownMaterials is required');
 
-  const version = 'pixelmap-top-down-renderer/8';
+  const version = 'pixelmap-top-down-renderer/9';
   const compositor = Object.freeze([
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -652,6 +652,21 @@
     return distortion <= 1.45 && shouldUseReferenceRoof(frame, 'building-harbor-workshop-04');
   }
 
+  function shouldUseWeatheredGable(frame) {
+    if (!frame || !shouldUseReferenceRoof(frame, 'building-blue-weathered-05')) return false;
+    const asset = MATERIALS.catalog['building-blue-weathered-05'];
+    const width = frame.halfU * 2;
+    const height = frame.halfV * 2;
+    const shortEdge = Math.min(width, height);
+    const longEdge = Math.max(width, height);
+    const nativeWidth = asset.fitBounds.maxX - asset.fitBounds.minX;
+    const nativeHeight = asset.fitBounds.maxY - asset.fitBounds.minY;
+    const alongScale = width / nativeWidth;
+    const acrossScale = height / nativeHeight;
+    const distortion = Math.max(alongScale, acrossScale) / Math.max(.000001, Math.min(alongScale, acrossScale));
+    return shortEdge >= 8 && longEdge <= 52 && distortion <= 1.6;
+  }
+
   function paintPixelLine(ctx, from, to, color, size = 1, salt = 0) {
     const dx = to[0] - from[0], dy = to[1] - from[1];
     const length = Math.hypot(dx, dy);
@@ -789,6 +804,11 @@
       ctx.restore();
       return;
     }
+    if (command.patternId === 'building-weathered-gable' && shouldUseWeatheredGable(frame)) {
+      MATERIALS.paintRoofInFrame(ctx, 'building-blue-weathered-05', frame, { seed: command.seed });
+      ctx.restore();
+      return;
+    }
     paintRoofFacet(ctx, frame, roofShadowSide(frame), command.shade);
     const strokes = roofStrokePlan(frame, command);
     for (const stroke of strokes) {
@@ -900,6 +920,12 @@
       });
       return;
     }
+    if (command.patternId === 'tree-underbrush') {
+      MATERIALS.paintTreeAt(ctx, 'tree-underbrush-cluster-05', {
+        x: command.x, y: command.y, radius: r, seed: command.seed,
+      });
+      return;
+    }
     ctx.save();
     ctx.translate(command.x, command.y);
     const crowns = command.patternId === 'tree-multi-crown'
@@ -989,5 +1015,6 @@
   global.PixelMapTopDownRenderer = Object.freeze({
     version, compositor, buildScene, paintScene, patternAssignments, pointInFeature, distanceToFeature,
     roofFrame, roofShadowSide, roofStrokePlan, shouldUseReferenceRoof, shouldUseHarborWorkshop,
+    shouldUseWeatheredGable,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

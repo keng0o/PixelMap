@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/8';
-  const styleId = 'top-down-hand-drawn-game-v8';
+  const version = 'pixelmap-top-down-patterns/9';
+  const styleId = 'top-down-hand-drawn-game-v9';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -70,6 +70,7 @@
       }),
       pattern('building-weathered-gable', 'roof', 'weathered-long-strokes', {
         structure: 'weathered-gable', palette: 'blue-dark', lineDirection: 'longest-edge-only', handDrawn: true,
+        referenceAsset: 'building-blue-weathered-05',
       }),
     ],
     tree: [
@@ -85,7 +86,9 @@
       pattern('tree-multi-crown', 'tree', 'scalloped-layered-crown', {
         crown: 'multi', radius: 15, handDrawn: true, referenceAsset: 'tree-multi-crown-04',
       }),
-      pattern('tree-underbrush', 'tree', 'scalloped-layered-crown', { crown: 'underbrush', radius: 8, handDrawn: true }),
+      pattern('tree-underbrush', 'tree', 'scalloped-layered-crown', {
+        crown: 'underbrush', radius: 8, handDrawn: true, referenceAsset: 'tree-underbrush-cluster-05',
+      }),
     ],
     road: [
       pattern('road-sandy-local', 'road', 'layered-line', { classes: ['minor', 'service', 'residential', 'street'] }),

@@ -9,8 +9,8 @@ const PATTERNS = globalThis.PixelMapTopDownPatterns;
 const source = await readFile(new URL('../assets/top-down-game-patterns.js', import.meta.url), 'utf8');
 
 test('真上視点styleは参考画像1寄りの固定paletteとpattern catalogを公開する', () => {
-  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/8');
-  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v8');
+  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/9');
+  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v9');
   assert.equal(PATTERNS.palette.water, '#63c4c3');
   assert.equal(PATTERNS.palette.forest, '#3f704d');
   assert.equal(PATTERNS.palette.road, '#ead9ac');
@@ -72,6 +72,13 @@ test('円形タンク付き平屋根と複数樹冠は4巡目の参考素材へ�
     'building-harbor-workshop-04');
   assert.equal(PATTERNS.catalogs.tree.find(pattern => pattern.id === 'tree-multi-crown').referenceAsset,
     'tree-multi-crown-04');
+});
+
+test('傷んだ切妻屋根と低い下草は5巡目の参考素材へ接続する', () => {
+  assert.equal(PATTERNS.catalogs.roof.find(pattern => pattern.id === 'building-weathered-gable').referenceAsset,
+    'building-blue-weathered-05');
+  assert.equal(PATTERNS.catalogs.tree.find(pattern => pattern.id === 'tree-underbrush').referenceAsset,
+    'tree-underbrush-cluster-05');
 });
 
 test('feature keyはproperty順と配列indexではなく地物ID・意味・world boundsで安定する', () => {

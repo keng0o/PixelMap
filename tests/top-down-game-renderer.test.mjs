@@ -31,7 +31,7 @@ const fixture = (overrides = {}) => ({
 });
 
 test('rendererは固定compositorとDOM非依存のscene APIを公開する', () => {
-  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/8');
+  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/9');
   assert.deepEqual(RENDERER.compositor, [
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -90,6 +90,10 @@ test('参考画像から再構成した建物・樹冠素材を対応patternへ�
     'building-harbor-workshop-04');
   assert.equal(patterns.tree.find(pattern => pattern.id === 'tree-multi-crown').referenceAsset,
     'tree-multi-crown-04');
+  assert.equal(patterns.roof.find(pattern => pattern.id === 'building-weathered-gable').referenceAsset,
+    'building-blue-weathered-05');
+  assert.equal(patterns.tree.find(pattern => pattern.id === 'tree-underbrush').referenceAsset,
+    'tree-underbrush-cluster-05');
   assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-gable-01'/);
   assert.match(source, /paintTreeAt\(ctx, 'tree-round-crown-01'/);
   assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-hipped-02'/);
@@ -98,6 +102,8 @@ test('参考画像から再構成した建物・樹冠素材を対応patternへ�
   assert.match(source, /paintTreeAt\(ctx, 'tree-dark-crown-03'/);
   assert.match(source, /paintRoofInFrame\(ctx, 'building-harbor-workshop-04'/);
   assert.match(source, /paintTreeAt\(ctx, 'tree-multi-crown-04'/);
+  assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-weathered-05'/);
+  assert.match(source, /paintTreeAt\(ctx, 'tree-underbrush-cluster-05'/);
 });
 
 test('参考屋根素材は原寸比1.65倍以内だけへ適用し大型実建物を過度に引き伸ばさない', () => {
@@ -107,6 +113,8 @@ test('参考屋根素材は原寸比1.65倍以内だけへ適用し大型実建�
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 48, halfV: 34 }, 'building-blue-longhouse-03'), false);
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 28, halfV: 31 }, 'building-harbor-workshop-04'), true);
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 56, halfV: 48 }, 'building-harbor-workshop-04'), false);
+  assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 20, halfV: 17 }, 'building-blue-weathered-05'), true);
+  assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 38, halfV: 28 }, 'building-blue-weathered-05'), false);
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 28, halfV: 20 }, 'missing-asset'), false);
 });
 
@@ -117,6 +125,13 @@ test('港湾タンク屋根は工業・倉庫系の小中規模かつ原寸比�
   assert.equal(RENDERER.shouldUseHarborWorkshop({ halfU: 10, halfV: 5 }, 'industrial'), false);
   assert.equal(RENDERER.shouldUseHarborWorkshop({ halfU: 26, halfV: 20 }, 'industrial'), false);
   assert.equal(RENDERER.shouldUseHarborWorkshop({ halfU: 20, halfV: 7 }, 'industrial'), false);
+});
+
+test('傷んだ青屋根は小中規模かつ原寸の縦横比を保てる建物だけへ適用する', () => {
+  assert.equal(RENDERER.shouldUseWeatheredGable({ halfU: 20, halfV: 17 }), true);
+  assert.equal(RENDERER.shouldUseWeatheredGable({ halfU: 4, halfV: 3 }), false);
+  assert.equal(RENDERER.shouldUseWeatheredGable({ halfU: 30, halfV: 16 }), false);
+  assert.equal(RENDERER.shouldUseWeatheredGable({ halfU: 24, halfV: 8 }), false);
 });
 
 test('平屋根detailは建物種別を保持し住宅では港湾タンク素材を無効化する', () => {
