@@ -1,7 +1,7 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-illustrated-reference-materials/4';
+  const version = 'pixelmap-illustrated-reference-materials/5';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -136,6 +136,7 @@
       },
       referenceClipPath: 'polygon(17% 38%, 22% 23%, 31% 9%, 62% 8%, 73% 17%, 84% 31%, 87% 57%, 100% 67%, 100% 85%, 73% 91%, 37% 88%, 22% 72%)',
       fitBounds: { minX: 5, minY: 2, maxX: 36, maxY: 32 },
+      pixelHaloAlpha: .25,
       palette: {
         ink: '#14200e',
         inkDeep: '#030a00',
@@ -238,6 +239,144 @@
         '....................................',
         '....................................',
         '....................................',
+      ],
+    },
+    'building-gabled-side-wing-02': {
+      family: 'building',
+      structure: 'gabled-with-side-wing',
+      renderMode: 'pixel-runs',
+      nativeSize: [40, 52],
+      source: {
+        reference: 'image-1.jpg (d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa)',
+        imageSize: [736, 952],
+        crop: { x: 82, y: 420, width: 40, height: 52 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(0% 38%, 65% 11%, 76% 14%, 96% 33%, 96% 52%, 85% 58%, 85% 71%, 73% 79%, 58% 77%, 48% 71%, 30% 83%, 17% 77%, 7% 67%, 5% 54%, 0% 46%)',
+      fitBounds: { minX: 0, minY: 6, maxX: 39, maxY: 48 },
+      pixelHaloAlpha: .2,
+      pixelPalette: {
+        0: '#0f0500', 1: '#231002', 2: '#411604', 3: '#2a250e',
+        4: '#412f1a', 5: '#363c25', 6: '#5f2f1c', 7: '#464621',
+        8: '#4e4331', 9: '#56523a', A: '#784834', B: '#685c45',
+        C: '#707154', D: '#8f614f', E: '#828067', F: '#a2725c',
+        G: '#ad7c68', H: '#928f79', I: '#a2a284', J: '#c6907a',
+        K: '#e2916d', L: '#b1b08f', M: '#df9c7e', N: '#ef9875',
+        O: '#d6a58e', P: '#f29f86', Q: '#bfc09b', R: '#cfcfa9',
+        S: '#daddb2', T: '#e2e5ba', U: '#eaebc4', V: '#f6f3d8',
+      },
+      shadowPixelRows: [
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '..................................H.....',
+        '...............................30HQR....',
+        '............................62018HLQC...',
+        '.........................C800399IIIRQB..',
+        '....QL.................EB101BH55EHIQSRQ.',
+        '....RLQRH1..........0193005EHH83CHLLRSS.',
+        '....QQTQQB04D4...HHH80005CHHEHC5CLLQQB3.',
+        '....QQRQSQ80008EIEHIE85CC59HHHI84ILQ50..',
+        '....QQTTRRQB8BCHEBCHHHEHH95EHIL94QQE0E..',
+        '....RQTTTRRQIC53359ELIHIIH39ILQH7QSECQ..',
+        '....TRVRUTRQQEECBCEILIELIH5EQQRL7QSQCI..',
+        '....SRLCQUTRLEELHHQQLQ7CILEIRRSE9UTL1E..',
+        '.....R97SQHQSEIQQQQQRR34QI39STTCESUSC...',
+        '......QRU94RRRQQQQSRRT8CTE0CUVQ4IUTTS...',
+        '.......UTCCTSSRRSRRUTI5LU53LVU89RVT.....',
+        '........VUSTUSUSSUUQC5EVE0CUVC..........',
+        '................CIQIIRLI3...............',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+      ],
+      shadowAlphaRows: {
+        31: .08, 32: .12, 33: .18, 34: .24, 35: .3, 36: .32,
+        37: .34, 38: .34, 39: .32, 40: .3, 41: .27, 42: .24,
+        43: .2, 44: .16, 45: .12, 46: .08, 47: .05,
+      },
+      pixelRows: [
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '.........................UTS............',
+        '.......................01ISUVV..........',
+        '.....................16G22TULQS.........',
+        '...................02FJOF0HE05LT........',
+        '..................2DJOJOJ21053CSS.......',
+        '................09JOOOJMOD02EE7ITU......',
+        '..............16FMMMNNKPJMA1BE1BTU......',
+        '............01DGJMKKKKKKJMG2111HIER.....',
+        '..........12DOMMMMKNNKMMMMOB11LI15QS....',
+        '........11AJJOMMMMNPPNKMOMJD10IH09BLS...',
+        '......306GMPPPNNNNNNNKMMOJD211BH335LRR..',
+        '.....03EOOPMKPNNNNKNPNJMG61AE80EQILSRR..',
+        '...01BJOMMNNKNNKKNMPPMJA26DGGD13IRRRRR..',
+        '.313FJOOKMNNNNNNKNMMJG66DGGGFG809QRRRR..',
+        '81AJMMPNNNNKKKMKMPMJA2AFGFFGFGF41ERRRR..',
+        '17OJMMNPNNKNNNMMMMFAADFFFGGFFGGF13ISQR..',
+        'B1FOPNNNNNMMMMOOJGADGGFGGFFFFFGG609QRR..',
+        'Q12JKNPPNNKMMMGDAFFFGFFGFDFGGFFFD23IRL..',
+        'UH0AJMMPMMOOGAAAAGGFGFFFFGGFFFFGB03IRR..',
+        '.RA2FJPMMPJD62AGGGFGFA66AAADFGB410BLQT..',
+        '.SL14OOOJF626DGGFFGFA6AAA41484103CILLQ..',
+        '..SE1DOGA26DGGGGFFGGAAADFGB41008HHHIL...',
+        '..SQ44D12AFGGGFGGFGF6DF6DJJFD60BEHH.....',
+        '..VRH018DGGGGFGGFGGFAFFD6JJJMF03EH......',
+        '..IRQ30BGFFFFGFFFFGA6FFF6AJJJJ909E......',
+        '..5QLE13DFFGFGFGFFG66GFFD2FJMMH31E......',
+        '...TSQB08HGGFGGGFGF26GFFG62JOF930H......',
+        '...TQIQ41BFFJFGFGG61AGFFGF2662018H......',
+        '...RLLQC03FFJFGGDB108EEHEC800399II......',
+        '...SQLRQ40ADDGGG400009EEB101BH55EH......',
+        '....RLQRH10BFGB305C80193005EHH83C.......',
+        '.....QTQQB04D413BH..80005CHHEHC5........',
+        '......RQSQ80008EI....85CC59HHHI.........',
+        '.......TRRQB8BCH......EHH95EHI..........',
+        '........TRRQIC5.........................',
+        '.........TRQQE..........................',
+        '...........RL...........................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
+        '........................................',
       ],
     },
   });
@@ -386,14 +525,18 @@
     ctx.globalAlpha = 1;
   }
 
-  function paintTree(ctx, asset, mapper) {
+  function paintPixelMaterial(ctx, asset, mapper) {
     paintPixelRows(ctx, asset.shadowPixelRows, asset.pixelPalette, mapper, asset.shadowAlphaRows);
     ctx.save();
     ctx.filter = 'blur(.55px)';
-    ctx.globalAlpha = .25;
+    ctx.globalAlpha = asset.pixelHaloAlpha;
     paintPixelRows(ctx, asset.pixelRows, asset.pixelPalette, mapper);
     ctx.restore();
     paintPixelRows(ctx, asset.pixelRows, asset.pixelPalette, mapper);
+  }
+
+  function paintTree(ctx, asset, mapper) {
+    paintPixelMaterial(ctx, asset, mapper);
   }
 
   function paintAsset(ctx, assetId, { x = 0, y = 0, scale = 1 } = {}) {
@@ -401,8 +544,9 @@
     if (!asset) return false;
     const mapper = point => [x + point[0] * scale, y + point[1] * scale];
     ctx.save();
-    if (asset.family === 'building') paintBuilding(ctx, asset, mapper);
-    if (asset.family === 'tree') paintTree(ctx, asset, mapper);
+    if (asset.renderMode === 'pixel-runs') paintPixelMaterial(ctx, asset, mapper);
+    else if (asset.family === 'building') paintBuilding(ctx, asset, mapper);
+    else if (asset.family === 'tree') paintTree(ctx, asset, mapper);
     ctx.restore();
     return true;
   }

@@ -9,8 +9,12 @@ const MATERIALS = globalThis.PixelMapIllustratedReferenceMaterials;
 const source = await readFile(new URL('../assets/illustrated-reference-materials.js', import.meta.url), 'utf8');
 
 test('彩色地図の寄棟建物を添付画像の原寸cropと別カタログで公開する', () => {
-  assert.equal(MATERIALS.version, 'pixelmap-illustrated-reference-materials/4');
-  assert.deepEqual(Object.keys(MATERIALS.catalog), ['building-red-hipped-annex-01', 'tree-round-canopy-01']);
+  assert.equal(MATERIALS.version, 'pixelmap-illustrated-reference-materials/5');
+  assert.deepEqual(Object.keys(MATERIALS.catalog), [
+    'building-red-hipped-annex-01',
+    'tree-round-canopy-01',
+    'building-gabled-side-wing-02',
+  ]);
   const building = MATERIALS.catalog['building-red-hipped-annex-01'];
   assert.equal(building.family, 'building');
   assert.equal(building.structure, 'hipped-with-annex');
@@ -19,6 +23,21 @@ test('彩色地図の寄棟建物を添付画像の原寸cropと別カタログ�
   assert.deepEqual(building.source.crop, { x: 51, y: 498, width: 61, height: 52 });
   assert.match(building.source.reference, /d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa/);
   assert.equal(building.source.usage, 'local-visual-qa-only');
+});
+
+test('彩色地図の小型切妻建物を側面張り出しと影の別ランで公開する', () => {
+  const building = MATERIALS.catalog['building-gabled-side-wing-02'];
+  assert.equal(building.family, 'building');
+  assert.equal(building.structure, 'gabled-with-side-wing');
+  assert.equal(building.renderMode, 'pixel-runs');
+  assert.deepEqual(building.nativeSize, [40, 52]);
+  assert.deepEqual(building.source.crop, { x: 82, y: 420, width: 40, height: 52 });
+  assert.equal(building.pixelRows.length, 52);
+  assert.ok(building.pixelRows.every(row => row.length === 40));
+  assert.equal(building.shadowPixelRows.length, 52);
+  assert.ok(building.shadowPixelRows.every(row => row.length === 40));
+  assert.equal(Object.keys(building.pixelPalette).length, 32);
+  assert.equal(Object.keys(building.shadowAlphaRows).length, 17);
 });
 
 test('彩色地図の単木を原寸cropと多層の樹冠primitiveで公開する', () => {
@@ -67,6 +86,7 @@ test('素材描画はbitmap貼付けや外部画像へ依存せずCanvas primiti
   assert.match(source, /function paintBuilding/);
   assert.match(source, /function paintTree/);
   assert.match(source, /function paintPixelRows/);
+  assert.match(source, /function paintPixelMaterial/);
   assert.match(source, /function paintPolygon/);
   assert.match(source, /function paintAsset/);
 });

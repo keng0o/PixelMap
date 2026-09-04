@@ -230,6 +230,18 @@
       </article>
       <article class="entry">
         <div class="entry-header">
+          <h3>彩色地図crop実測の小型切妻建物素材を追加</h3>
+          <time datetime="2026-09-04">2026-09-04 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>添付の736×952px彩色地図から、左中央の側面張り出し付き小型切妻建物を<code>x=82, y=420, 40×52px</code>で切り出して実測。長い切妻面、右側の濃色面、前面張り出し、外周インクを32色の1px Canvas矩形ランで再構成し、地面影は別ランと17段階の行別透明度で減衰させた。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。彩色地図専用の素材比較labで<code>building-gabled-side-wing-02</code>を選択した時だけ有効。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常のstand-alone test、既存top-down game、cell2／cell3、mobileは変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>40×52pxの原寸crop／Canvas／50% overlayを実ブラウザで撮影。外形と位置、長い切妻面と棟線、右側の濃色面、前面／側面張り出し、外周インクと影、palette、原寸一致の独立視覚レビューが7項目すべてPASS。建物本体の最大残差は約1px、影端は約2px。Nodeテスト331件、68ファイルの静的ビルド、差分検査を完了。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>彩色地図crop実測の丸い単木素材を追加</h3>
           <time datetime="2026-09-04">2026-09-04 JST</time>
         </div>
