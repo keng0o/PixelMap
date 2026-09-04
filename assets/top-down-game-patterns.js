@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/9';
-  const styleId = 'top-down-hand-drawn-game-v9';
+  const version = 'pixelmap-top-down-patterns/10';
+  const styleId = 'top-down-hand-drawn-game-v10';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -91,13 +91,21 @@
       }),
     ],
     road: [
-      pattern('road-sandy-local', 'road', 'layered-line', { classes: ['minor', 'service', 'residential', 'street'] }),
+      pattern('road-sandy-local', 'road', 'layered-line', {
+        classes: ['minor', 'service', 'residential', 'street'],
+        handDrawn: true,
+        referenceAsset: 'road-sandy-local-06',
+      }),
       pattern('road-worn-regional', 'road', 'layered-line', { classes: ['secondary', 'tertiary'] }),
       pattern('road-cobbled-major', 'road', 'layered-line', { classes: ['motorway', 'trunk', 'primary'] }),
       pattern('road-narrow-path', 'road', 'layered-line', { classes: ['path', 'track', 'footway', 'cycleway', 'pedestrian'] }),
     ],
     water: [
-      pattern('water-open', 'water', 'area-ripples', { classes: ['ocean', 'lake', 'river'] }),
+      pattern('water-open', 'water', 'area-ripples', {
+        classes: ['ocean', 'lake'],
+        handDrawn: true,
+        referenceAsset: 'water-open-ripples-06',
+      }),
       pattern('water-current', 'water', 'corridor-ripples', { classes: ['river', 'canal'] }),
       pattern('water-shore-stones', 'water', 'edge-stamps', { classes: ['ocean', 'lake', 'river'] }),
       pattern('water-shallows', 'water', 'area-stamps', { classes: ['lake', 'river', 'pond'] }),
@@ -207,6 +215,13 @@
     return catalogs.road.find(item => item.classes.includes(type)) || byId.get('road-sandy-local');
   }
 
+  function waterPattern(props = {}) {
+    const type = normalizedClass(props);
+    if (['river', 'canal'].includes(type)) return byId.get('water-current');
+    if (type === 'pond') return byId.get('water-shallows');
+    return byId.get('water-open');
+  }
+
   function groundPattern(props = {}) {
     const type = normalizedClass(props);
     return catalogs.ground.find(item => item.classes.includes(type)) || groundFallback;
@@ -218,7 +233,7 @@
     if (family === 'roof') choices = eligibleRoofPatterns(input);
     else if (family === 'tree') choices = catalogs.tree;
     else if (family === 'road') return freeze({ pattern: roadPattern(input.props), seed, fallback: false, reason: null });
-    else if (family === 'water') choices = catalogs.water;
+    else if (family === 'water') return freeze({ pattern: waterPattern(input.props), seed, fallback: false, reason: null });
     else if (family === 'ground') return freeze({ pattern: groundPattern(input.props), seed, fallback: false, reason: null });
     else return freeze({ pattern: groundFallback, seed, fallback: true, reason: `unknown-family:${family}` });
     return freeze({ pattern: choose(choices, seed), seed, fallback: false, reason: null });

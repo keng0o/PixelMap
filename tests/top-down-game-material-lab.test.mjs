@@ -10,6 +10,7 @@ test('素材labは参考・Canvas・50%重ね合わせを原寸から同倍率�
   assert.match(page, /50%重ね合わせ/);
   assert.match(page, /image-rendering:\s*pixelated/);
   assert.match(page, /materials\.paintAsset/);
+  assert.match(page, /Math\.max\(2, Math\.min\(8/);
   assert.match(page, /params\.get\('asset'\)/);
   assert.match(page, /params\.get\('reference'\)/);
 });
@@ -19,5 +20,5 @@ test('参考cropはqueryでだけ読み込みrepo内bitmapへ依存しない', (
   assert.match(page, /reference\.src = referenceUrl/);
   assert.match(page, /reference\.style\.clipPath = asset\.referenceClipPath/);
   assert.match(page, /usage|ローカルQA/);
-  assert.match(page, /top-down-game-materials\.js\?v=reference-material-5/);
+  assert.match(page, /top-down-game-materials\.js\?v=reference-material-6b/);
 });

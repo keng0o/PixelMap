@@ -9,8 +9,8 @@ const PATTERNS = globalThis.PixelMapTopDownPatterns;
 const source = await readFile(new URL('../assets/top-down-game-patterns.js', import.meta.url), 'utf8');
 
 test('真上視点styleは参考画像1寄りの固定paletteとpattern catalogを公開する', () => {
-  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/9');
-  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v9');
+  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/10');
+  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v10');
   assert.equal(PATTERNS.palette.water, '#63c4c3');
   assert.equal(PATTERNS.palette.forest, '#3f704d');
   assert.equal(PATTERNS.palette.road, '#ead9ac');
@@ -153,6 +153,13 @@ test('道路classと未知分類は意味に合うfamilyまたはneutralへ決�
   assert.equal(fallback.pattern.id, 'ground-neutral-grass');
   assert.equal(fallback.fallback, true);
   assert.match(fallback.reason, /unknown-family/);
+});
+
+test('生活道路と外海水面patternは参考画像1から再構成したCanvas素材へ接続する', () => {
+  assert.equal(PATTERNS.catalogs.road.find(pattern => pattern.id === 'road-sandy-local').referenceAsset,
+    'road-sandy-local-06');
+  assert.equal(PATTERNS.catalogs.water.find(pattern => pattern.id === 'water-open').referenceAsset,
+    'water-open-ripples-06');
 });
 
 test('pattern選択は実行時乱数を使わない', () => {

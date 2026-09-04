@@ -31,7 +31,7 @@ const fixture = (overrides = {}) => ({
 });
 
 test('rendererは固定compositorとDOM非依存のscene APIを公開する', () => {
-  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/9');
+  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/10');
   assert.deepEqual(RENDERER.compositor, [
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -104,6 +104,39 @@ test('参考画像から再構成した建物・樹冠素材を対応patternへ�
   assert.match(source, /paintTreeAt\(ctx, 'tree-multi-crown-04'/);
   assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-weathered-05'/);
   assert.match(source, /paintTreeAt\(ctx, 'tree-underbrush-cluster-05'/);
+});
+
+test('参考画像から再構成した砂地道路と外海水面を実地理のpath・polygonへ接続する', () => {
+  const scene = RENDERER.buildScene(fixture({ features: [
+    polygon('water', 20, [[0, 0], [110, 0], [110, 240], [0, 240]], { class: 'ocean' }),
+    line('transportation', 30, [[20.25, 130.5], [300.75, 112.25]], { class: 'residential' }),
+  ] }));
+  const road = scene.commands.find(command => command.sourceId === 30 && command.kind === 'road-texture');
+  const water = scene.commands.find(command => command.sourceId === 20 && command.kind === 'water-ripples');
+  assert.equal(road.referenceAsset, 'road-sandy-local-06');
+  assert.equal(road.worldAnchored, true);
+  assert.ok(Array.isArray(road.textureOrigin));
+  assert.equal(water.referenceAsset, 'water-open-ripples-06');
+  assert.equal(water.worldAnchored, true);
+  assert.equal(water.sparseMotif, true);
+  assert.deepEqual(water.motifSpacing, [96, 88]);
+  assert.ok(Array.isArray(water.textureOrigin));
+  const waterFill = scene.commands.find(command => command.sourceId === 20 && command.kind === 'water-fill');
+  assert.equal(waterFill.roughOutline, false);
+  assert.equal(waterFill.stroke, null);
+  assert.equal(scene.commands.some(command => command.sourceId === 20 && command.kind === 'water-shore'), false);
+  assert.match(source, /function paintReferenceRoadTexture/);
+  assert.match(source, /function paintRoadSurfaceTexture/);
+  assert.match(source, /function paintReferenceWaterMaterial/);
+});
+
+test('全道路textureは中央dashではなく道路幅内の不規則な擦れと端寄り粒としてworld固定する', () => {
+  const commands = RENDERER.buildScene(fixture()).commands.filter(command => command.kind === 'road-texture');
+  assert.ok(commands.length >= 2);
+  assert.ok(commands.every(command => command.worldAnchored === true));
+  assert.ok(commands.every(command => command.roadWidth > 0));
+  assert.doesNotMatch(source, /\['road-edge', 'road-fill', 'road-texture'/);
+  assert.match(source, /paintRoadSurfaceTexture\(ctx, command/);
 });
 
 test('参考屋根素材は原寸比1.65倍以内だけへ適用し大型実建物を過度に引き伸ばさない', () => {

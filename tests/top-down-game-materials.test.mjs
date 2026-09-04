@@ -9,13 +9,15 @@ const MATERIALS = globalThis.PixelMapTopDownMaterials;
 const source = await readFile(new URL('../assets/top-down-game-materials.js', import.meta.url), 'utf8');
 
 test('参考画像1から実測した建物と樹冠を独立したCanvas素材として公開する', () => {
-  assert.equal(MATERIALS.version, 'pixelmap-top-down-materials/5');
+  assert.equal(MATERIALS.version, 'pixelmap-top-down-materials/6');
   assert.deepEqual(Object.keys(MATERIALS.catalog), [
     'building-blue-gable-01',
     'building-blue-hipped-02',
     'building-blue-longhouse-03',
     'building-harbor-workshop-04',
     'building-blue-weathered-05',
+    'road-sandy-local-06',
+    'water-open-ripples-06',
     'tree-round-crown-01',
     'tree-dark-crown-03',
     'tree-multi-crown-04',
@@ -27,6 +29,8 @@ test('参考画像1から実測した建物と樹冠を独立したCanvas素材�
   assert.deepEqual(MATERIALS.catalog['building-blue-longhouse-03'].nativeSize, [60, 50]);
   assert.deepEqual(MATERIALS.catalog['building-harbor-workshop-04'].nativeSize, [78, 78]);
   assert.deepEqual(MATERIALS.catalog['building-blue-weathered-05'].nativeSize, [58, 52]);
+  assert.deepEqual(MATERIALS.catalog['road-sandy-local-06'].nativeSize, [104, 60]);
+  assert.deepEqual(MATERIALS.catalog['water-open-ripples-06'].nativeSize, [120, 90]);
   assert.deepEqual(MATERIALS.catalog['tree-round-crown-01'].nativeSize, [48, 48]);
   assert.deepEqual(MATERIALS.catalog['tree-dark-crown-03'].nativeSize, [52, 50]);
   assert.deepEqual(MATERIALS.catalog['tree-multi-crown-04'].nativeSize, [76, 76]);
@@ -42,6 +46,10 @@ test('参考画像1から実測した建物と樹冠を独立したCanvas素材�
     { x: 500, y: 855, width: 78, height: 78 });
   assert.deepEqual(MATERIALS.catalog['building-blue-weathered-05'].source.crop,
     { x: 726, y: 500, width: 58, height: 52 });
+  assert.deepEqual(MATERIALS.catalog['road-sandy-local-06'].source.crop,
+    { x: 690, y: 445, width: 104, height: 60 });
+  assert.deepEqual(MATERIALS.catalog['water-open-ripples-06'].source.crop,
+    { x: 720, y: 850, width: 120, height: 90 });
   assert.equal(MATERIALS.catalog['tree-round-crown-01'].source.crop.x, 590);
   assert.equal(MATERIALS.catalog['tree-round-crown-01'].source.crop.y, 110);
   assert.deepEqual(MATERIALS.catalog['tree-dark-crown-03'].source.crop,
@@ -57,6 +65,33 @@ test('参考画像1から実測した建物と樹冠を独立したCanvas素材�
   assert.deepEqual(MATERIALS.catalog['building-blue-gable-01'].fitBounds,
     { minX: 12, minY: 2, maxX: 50, maxY: 25 });
   assert.deepEqual(MATERIALS.catalog['tree-round-crown-01'].center, [24, 29]);
+});
+
+test('砂地道路素材は参考cropの淡い面・進行方向の擦れ・横断線・外縁粒を独立primitiveで持つ', () => {
+  const road = MATERIALS.catalog['road-sandy-local-06'];
+  assert.equal(road.family, 'road');
+  assert.equal(road.orientation, 'vertical');
+  assert.ok(road.washes.length >= 4);
+  assert.ok(road.wearStrokes.length >= 6);
+  assert.ok(road.wearStrokes.filter(stroke => stroke.axis === 'along').length >= 4);
+  assert.ok(road.wearStrokes.some(stroke => stroke.axis === 'across'));
+  assert.ok(road.specks.length >= 18);
+  assert.ok(road.specks.some(speck => speck.edge === 'left'));
+  assert.ok(road.specks.some(speck => speck.edge === 'right'));
+  assert.ok(road.gravelClusters.length >= 8);
+  assert.ok(road.gravelClusters.every(cluster => cluster.marks.length >= 3));
+  assert.notEqual(road.palette.base, road.palette.wear);
+});
+
+test('外海水面素材は青緑の面むら・長い途切れ曲線・小さな流れ跡を独立primitiveで持つ', () => {
+  const water = MATERIALS.catalog['water-open-ripples-06'];
+  assert.equal(water.family, 'water');
+  assert.ok(water.washes.length >= 4);
+  assert.ok(water.rippleStrokes.length >= 5);
+  assert.ok(water.rippleStrokes.every(stroke => stroke.points.length >= 3));
+  assert.ok(water.rippleStrokes.some(stroke => stroke.parts?.length >= 2));
+  assert.ok(water.currentMarks.length >= 8);
+  assert.notEqual(water.palette.base, water.palette.ripple);
 });
 
 test('傷んだ青屋根素材は片面影・長辺方向だけの途切れ線・濃い汚れを別primitiveで持つ', () => {
@@ -181,6 +216,8 @@ test('素材描画はbitmap貼付けや外部画像へ依存せずCanvas primiti
   assert.doesNotMatch(source, /drawImage\s*\(/);
   assert.doesNotMatch(source, /new\s+Image\s*\(/);
   assert.match(source, /function paintAsset/);
+  assert.match(source, /function paintRoadMaterial/);
+  assert.match(source, /function paintWaterMaterial/);
   assert.match(source, /function paintRoofInFrame/);
   assert.match(source, /function paintTreeAt/);
   assert.match(source, /asset\.baseRadius \|\| 18/);

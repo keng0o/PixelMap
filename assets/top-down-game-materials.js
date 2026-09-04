@@ -1,7 +1,7 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-materials/5';
+  const version = 'pixelmap-top-down-materials/6';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -243,6 +243,159 @@
           parts: [[0, .37], [.53, 1]] },
         { axis: 'longest-edge', from: [38, 25.5], to: [43, 24], width: 1.9, role: 'weather-mark',
           parts: [[0, .44], [.6, 1]] },
+      ],
+    },
+    'road-sandy-local-06': {
+      family: 'road',
+      nativeSize: [104, 60],
+      source: {
+        reference: 'Photo 1.jpg',
+        crop: { x: 690, y: 445, width: 104, height: 60 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(4% 23%, 12% 13%, 27% 7%, 31% 2%, 48% 2%, 55% 22%, 59% 35%, 77% 38%, 88% 42%, 94% 48%, 100% 47%, 100% 98%, 0% 98%, 0% 33%)',
+      sampleMask: [[4, 14], [12, 8], [28, 4], [32, 1], [50, 1], [57, 13], [61, 21],
+        [80, 23], [92, 25], [98, 29], [104, 28], [104, 59], [0, 59], [0, 20]],
+      orientation: 'vertical',
+      palette: {
+        base: '#ede5d3',
+        light: '#f7efde',
+        wash: '#d7cdbb',
+        wear: '#b8aa91',
+        wearDark: '#958875',
+        edge: '#807663',
+      },
+      washes: [
+        { x: 18, y: 33, rx: 25, ry: 15, role: 'light', alpha: .34 },
+        { x: 52, y: 18, rx: 17, ry: 24, role: 'wash', alpha: .2 },
+        { x: 74, y: 42, rx: 31, ry: 16, role: 'light', alpha: .24 },
+        { x: 96, y: 23, rx: 15, ry: 20, role: 'wash', alpha: .18 },
+        { x: 84, y: 58, rx: 27, ry: 8, role: 'wearDark', alpha: .15 },
+        { x: 22, y: 58, rx: 23, ry: 7, role: 'wear', alpha: .1 },
+      ],
+      wearStrokes: [
+        { axis: 'along', role: 'wearDark', width: .72, alpha: .24,
+          points: [[18, 11], [16, 24], [20, 38], [17, 53]], parts: [[0, .27], [.42, .65], [.78, 1]] },
+        { axis: 'along', role: 'light', width: .82, alpha: .34,
+          points: [[27, 5], [29, 18], [26, 31], [30, 48]], parts: [[0, .35], [.51, .76], [.88, 1]] },
+        { axis: 'along', role: 'wear', width: 1.05, alpha: .34,
+          points: [[35, 2], [37, 17], [36, 33], [39, 58]], parts: [[0, .43], [.52, 1]] },
+        { axis: 'along', role: 'wear', width: .75, alpha: .25,
+          points: [[42, 1], [43, 15], [41, 29], [43, 56]], parts: [[0, .33], [.45, .72], [.82, 1]] },
+        { axis: 'along', role: 'light', width: 1.25, alpha: .4,
+          points: [[48, 3], [49, 19], [47, 37], [49, 60]], parts: [[0, .39], [.5, 1]] },
+        { axis: 'along', role: 'wear', width: .9, alpha: .28,
+          points: [[55, 6], [56, 21], [55, 38], [57, 59]], parts: [[0, .29], [.42, .78], [.87, 1]] },
+        { axis: 'along', role: 'light', width: .65, alpha: .38,
+          points: [[63, 18], [62, 30], [64, 46], [65, 60]], parts: [[0, .47], [.58, 1]] },
+        { axis: 'along', role: 'wearDark', width: .9, alpha: .3,
+          points: [[73, 3], [70, 16], [74, 32], [72, 51]], parts: [[0, .23], [.38, .7], [.86, 1]] },
+        { axis: 'along', role: 'light', width: .68, alpha: .31,
+          points: [[88, 18], [91, 29], [87, 42], [90, 57]], parts: [[0, .31], [.47, .69], [.82, 1]] },
+        { axis: 'across', role: 'wearDark', width: 1.05, alpha: .31,
+          points: [[24, 29], [45, 30], [68, 29], [91, 31]], parts: [[0, .44], [.53, 1]] },
+        { axis: 'across', role: 'light', width: 1, alpha: .38,
+          points: [[18, 34], [42, 35], [64, 34], [88, 35]], parts: [[0, .38], [.5, .75], [.84, 1]] },
+        { axis: 'across', role: 'wearDark', width: .8, alpha: .28,
+          points: [[12, 41], [34, 40], [59, 42], [82, 41]], parts: [[0, .25], [.39, .58], [.72, 1]] },
+      ],
+      specks: [
+        { x: 5, y: 24, w: 2, h: 1, edge: 'left' }, { x: 10, y: 29, w: 1, h: 2, edge: 'left' },
+        { x: 3, y: 37, w: 1, h: 1, edge: 'left' }, { x: 14, y: 42, w: 2, h: 1, edge: 'left' },
+        { x: 7, y: 49, w: 1, h: 2, edge: 'left' }, { x: 18, y: 55, w: 2, h: 1, edge: 'left' },
+        { x: 23, y: 50, w: 1, h: 1, edge: 'left' }, { x: 28, y: 57, w: 1, h: 1, edge: 'left' },
+        { x: 82, y: 27, w: 1, h: 2, edge: 'right' }, { x: 91, y: 31, w: 2, h: 1, edge: 'right' },
+        { x: 99, y: 37, w: 1, h: 2, edge: 'right' }, { x: 88, y: 42, w: 1, h: 1, edge: 'right' },
+        { x: 96, y: 48, w: 2, h: 1, edge: 'right' }, { x: 78, y: 52, w: 1, h: 1, edge: 'right' },
+        { x: 86, y: 57, w: 1, h: 2, edge: 'right' }, { x: 101, y: 55, w: 1, h: 1, edge: 'right' },
+        { x: 31, y: 41, w: 1, h: 1, edge: 'left' }, { x: 72, y: 38, w: 1, h: 1, edge: 'right' },
+        { x: 24, y: 22, w: 1, h: 1, edge: 'left' }, { x: 75, y: 31, w: 2, h: 1, edge: 'right' },
+        { x: 61, y: 55, w: 2, h: 1, edge: 'right' }, { x: 66, y: 58, w: 1, h: 1, edge: 'right' },
+        { x: 71, y: 53, w: 1, h: 2, edge: 'right' }, { x: 76, y: 57, w: 2, h: 1, edge: 'right' },
+        { x: 81, y: 54, w: 2, h: 2, edge: 'right' }, { x: 88, y: 56, w: 2, h: 1, edge: 'right' },
+        { x: 93, y: 53, w: 1, h: 2, edge: 'right' }, { x: 98, y: 58, w: 2, h: 1, edge: 'right' },
+      ],
+      gravelClusters: [
+        { x: 5, y: 55, marks: [
+          { dx: 0, dy: 0, rx: 1.5, ry: .7 }, { dx: 3, dy: -1, rx: .8, ry: .8 },
+          { dx: 5, dy: 1, rx: 1.1, ry: .55 }, { dx: 7, dy: -2, rx: .65, ry: .5 },
+        ] },
+        { x: 16, y: 58, marks: [
+          { dx: 0, dy: -1, rx: 1.1, ry: .6 }, { dx: 2, dy: -3, rx: .7, ry: .7 },
+          { dx: 4, dy: 0, rx: 1.5, ry: .6 },
+        ] },
+        { x: 29, y: 55, marks: [
+          { dx: 0, dy: 1, rx: 1.4, ry: .7 }, { dx: 2, dy: -1, rx: .65, ry: .5 },
+          { dx: 5, dy: 0, rx: .9, ry: .8 }, { dx: 7, dy: 2, rx: .7, ry: .5 },
+        ] },
+        { x: 43, y: 58, marks: [
+          { dx: 0, dy: -2, rx: .8, ry: .6 }, { dx: 2, dy: 0, rx: 1.5, ry: .6 },
+          { dx: 5, dy: -1, rx: .7, ry: .8 },
+        ] },
+        { x: 57, y: 55, marks: [
+          { dx: 0, dy: 1, rx: 1.2, ry: .6 }, { dx: 3, dy: -1, rx: .7, ry: .55 },
+          { dx: 5, dy: 1, rx: 1.5, ry: .7 }, { dx: 8, dy: -2, rx: .7, ry: .5 },
+        ] },
+        { x: 71, y: 58, marks: [
+          { dx: 0, dy: -1, rx: 1.4, ry: .65 }, { dx: 3, dy: -3, rx: .8, ry: .7 },
+          { dx: 5, dy: 0, rx: 1, ry: .55 },
+        ] },
+        { x: 83, y: 55, marks: [
+          { dx: 0, dy: 1, rx: .8, ry: .7 }, { dx: 2, dy: -1, rx: 1.4, ry: .6 },
+          { dx: 5, dy: 1, rx: .7, ry: .55 }, { dx: 7, dy: -2, rx: 1.1, ry: .7 },
+        ] },
+        { x: 96, y: 58, marks: [
+          { dx: 0, dy: -2, rx: 1.4, ry: .7 }, { dx: 2, dy: 0, rx: .75, ry: .65 },
+          { dx: 5, dy: -1, rx: 1.1, ry: .55 },
+        ] },
+      ],
+    },
+    'water-open-ripples-06': {
+      family: 'water',
+      nativeSize: [120, 90],
+      source: {
+        reference: 'Photo 1.jpg',
+        crop: { x: 720, y: 850, width: 120, height: 90 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'inset(0)',
+      palette: {
+        base: '#80c9c5',
+        light: '#9dd8d2',
+        wash: '#69b9b7',
+        ripple: '#397f7d',
+        current: '#2f7372',
+      },
+      washes: [
+        { x: 19, y: 22, rx: 27, ry: 18, role: 'light', alpha: .08 },
+        { x: 55, y: 18, rx: 21, ry: 31, role: 'wash', alpha: .02 },
+        { x: 89, y: 38, rx: 34, ry: 22, role: 'light', alpha: .07 },
+        { x: 42, y: 71, rx: 38, ry: 17, role: 'wash', alpha: .06 },
+      ],
+      rippleStrokes: [
+        { role: 'ripple', width: 1.15, alpha: .3,
+          points: [[18, 0], [13, 17], [2, 31], [17, 44]], parts: [[0, .43], [.54, 1]] },
+        { role: 'ripple', width: .8, alpha: .17,
+          points: [[29, 2], [27, 17], [22, 29], [38, 41]], parts: [[0, .32], [.45, .72], [.82, 1]] },
+        { role: 'ripple', width: 1.05, alpha: .12,
+          points: [[70, 0], [66, 18], [66, 36], [72, 53]], parts: [[0, .38], [.52, 1]] },
+        { role: 'ripple', width: .65, alpha: .08,
+          points: [[79, 4], [76, 20], [76, 38], [81, 52]], parts: [[0, .31], [.46, .72], [.84, 1]] },
+        { role: 'ripple', width: 1.55, alpha: .52,
+          points: [[118, 0], [114, 18], [112, 34], [119, 48]], parts: [[0, .45], [.57, 1]] },
+        { role: 'light', width: .7, alpha: .23,
+          points: [[43, 4], [38, 18], [39, 31], [48, 43]], parts: [[0, .36], [.49, .7], [.82, 1]] },
+      ],
+      currentMarks: [
+        { x: 2, y: 19, dx: 4, dy: -2, width: .8, alpha: .2 },
+        { x: 9, y: 25, dx: 4, dy: -3, width: 1, alpha: .25 },
+        { x: 18, y: 19, dx: 2, dy: -5, width: .8, alpha: .2 },
+        { x: 61, y: 4, dx: 0, dy: 9, width: 1.5, alpha: .42 },
+        { x: 53, y: 34, dx: -7, dy: 10, width: 1.4, alpha: .45 },
+        { x: 4, y: 58, dx: 1, dy: 3, width: .8, alpha: .18 },
+        { x: 35, y: 49, dx: 3, dy: -2, width: .8, alpha: .16 },
+        { x: 117, y: 14, dx: -2, dy: 11, width: 1, alpha: .25 },
+        { x: 90, y: 62, dx: 1, dy: 3, width: .8, alpha: .12 },
       ],
     },
     'tree-round-crown-01': {
@@ -709,13 +862,128 @@
     ctx.globalAlpha = 1;
   }
 
+  function mappedLength(mapper, length) {
+    const origin = mapper([0, 0]);
+    const mapped = mapper([length, 0]);
+    return Math.max(.4, Math.hypot(mapped[0] - origin[0], mapped[1] - origin[1]));
+  }
+
+  function paintMaterialWash(ctx, wash, palette, mapper) {
+    const center = mapper([wash.x, wash.y]);
+    const radiusX = mappedLength(mapper, wash.rx);
+    const origin = mapper([0, 0]);
+    const vertical = mapper([0, wash.ry]);
+    const radiusY = Math.max(.4, Math.hypot(vertical[0] - origin[0], vertical[1] - origin[1]));
+    ctx.beginPath();
+    ctx.ellipse(center[0], center[1], radiusX, radiusY, 0, 0, Math.PI * 2);
+    ctx.fillStyle = palette[wash.role] || palette.wash;
+    ctx.globalAlpha = wash.alpha;
+    ctx.fill();
+  }
+
+  function traceMaterialStroke(ctx, stroke, mapper) {
+    const points = stroke.points.map(mapper);
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    if (points.length === 4) {
+      ctx.bezierCurveTo(points[1][0], points[1][1], points[2][0], points[2][1], points[3][0], points[3][1]);
+      return;
+    }
+    for (let index = 1; index < points.length - 1; index += 1) {
+      const point = points[index];
+      const next = points[index + 1];
+      ctx.quadraticCurveTo(point[0], point[1], (point[0] + next[0]) / 2, (point[1] + next[1]) / 2);
+    }
+    const last = points.at(-1);
+    ctx.lineTo(last[0], last[1]);
+  }
+
+  function paintMaterialStroke(ctx, stroke, palette, mapper) {
+    traceMaterialStroke(ctx, stroke, mapper);
+    ctx.strokeStyle = palette[stroke.role] || palette.wear || palette.ripple;
+    ctx.lineWidth = mappedLength(mapper, stroke.width || 1);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = stroke.alpha ?? .35;
+    ctx.setLineDash(stroke.parts ? [mappedLength(mapper, 11), mappedLength(mapper, 2.5),
+      mappedLength(mapper, 3), mappedLength(mapper, 4)] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function paintRoadMaterial(ctx, asset, mapper) {
+    const palette = asset.palette;
+    tracePolygon(ctx, asset.sampleMask, mapper);
+    ctx.save();
+    ctx.clip();
+    const topLeft = mapper([0, 0]);
+    const bottomRight = mapper(asset.nativeSize);
+    ctx.fillStyle = palette.base;
+    ctx.fillRect(topLeft[0], topLeft[1], bottomRight[0] - topLeft[0], bottomRight[1] - topLeft[1]);
+    for (const wash of asset.washes) paintMaterialWash(ctx, wash, palette, mapper);
+    for (const stroke of asset.wearStrokes) paintMaterialStroke(ctx, stroke, palette, mapper);
+    for (const [clusterIndex, cluster] of asset.gravelClusters.entries()) {
+      for (const [markIndex, mark] of cluster.marks.entries()) {
+        const center = mapper([cluster.x + mark.dx, cluster.y + mark.dy]);
+        const radiusX = mappedLength(mapper, mark.rx);
+        const origin = mapper([0, 0]);
+        const vertical = mapper([0, mark.ry]);
+        const radiusY = Math.max(.35, Math.hypot(vertical[0] - origin[0], vertical[1] - origin[1]));
+        ctx.beginPath();
+        ctx.ellipse(center[0], center[1], radiusX, radiusY,
+          (clusterIndex + markIndex) % 3 === 0 ? -.18 : .12, 0, Math.PI * 2);
+        ctx.fillStyle = markIndex % 3 === 0 ? palette.edge : palette.wearDark;
+        ctx.globalAlpha = mark.alpha ?? (.35 + ((clusterIndex + markIndex) % 3) * .08);
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = palette.wearDark;
+    for (const speck of asset.specks) {
+      const point = mapper([speck.x, speck.y]);
+      ctx.globalAlpha = speck.edge === 'right' ? .37 : .31;
+      ctx.fillRect(point[0], point[1], mappedLength(mapper, speck.w), mappedLength(mapper, speck.h));
+    }
+    ctx.restore();
+    tracePolygon(ctx, asset.sampleMask, mapper);
+    ctx.strokeStyle = palette.edge;
+    ctx.lineWidth = mappedLength(mapper, .7);
+    ctx.globalAlpha = .32;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  function paintWaterMaterial(ctx, asset, mapper) {
+    const palette = asset.palette;
+    const topLeft = mapper([0, 0]);
+    const bottomRight = mapper(asset.nativeSize);
+    ctx.fillStyle = palette.base;
+    ctx.fillRect(topLeft[0], topLeft[1], bottomRight[0] - topLeft[0], bottomRight[1] - topLeft[1]);
+    for (const wash of asset.washes) paintMaterialWash(ctx, wash, palette, mapper);
+    for (const stroke of asset.rippleStrokes) paintMaterialStroke(ctx, stroke, palette, mapper);
+    ctx.strokeStyle = palette.current;
+    ctx.lineCap = 'round';
+    for (const mark of asset.currentMarks) {
+      const from = mapper([mark.x, mark.y]);
+      const to = mapper([mark.x + mark.dx, mark.y + mark.dy]);
+      ctx.beginPath();
+      ctx.moveTo(from[0], from[1]);
+      ctx.lineTo(to[0], to[1]);
+      ctx.lineWidth = mappedLength(mapper, mark.width || .8);
+      ctx.globalAlpha = mark.alpha ?? .25;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function paintAsset(ctx, assetId, { x = 0, y = 0, scale = 1, seed = 0 } = {}) {
     const asset = catalog[assetId];
     if (!asset) return false;
     ctx.save();
     const mapper = point => [x + point[0] * scale, y + point[1] * scale];
     if (asset.family === 'building') paintBuilding(ctx, asset, mapper, seed);
-    else paintTree(ctx, asset, mapper, seed);
+    else if (asset.family === 'tree') paintTree(ctx, asset, mapper, seed);
+    else if (asset.family === 'road') paintRoadMaterial(ctx, asset, mapper, seed);
+    else if (asset.family === 'water') paintWaterMaterial(ctx, asset, mapper, seed);
     ctx.restore();
     return true;
   }

@@ -6,7 +6,7 @@
   const MATERIALS = global.PixelMapTopDownMaterials;
   if (!MATERIALS) throw new Error('PixelMapTopDownMaterials is required');
 
-  const version = 'pixelmap-top-down-renderer/9';
+  const version = 'pixelmap-top-down-renderer/10';
   const compositor = Object.freeze([
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -175,18 +175,29 @@
     const selected = PATTERNS.selectPattern('water', { key, props: feature.props });
     assignments.set(key, selected.pattern.id);
     const paths = projectedPaths(feature, input);
+    const referenceAsset = selected.pattern.referenceAsset;
+    const material = referenceAsset ? MATERIALS.catalog[referenceAsset] : null;
+    const colors = material?.palette;
+    const openReferenceWater = selected.pattern.id === 'water-open' && material?.family === 'water';
     if (feature.type === 3) {
       commands.push({ layer: 'water', kind: 'water-fill', sourceId: feature.id, sourceKey: key,
-        patternId: selected.pattern.id, paths, fill: P.water, stroke: P.waterDark,
-        roughStroke: P.ink, lineWidth: 2.2, roughOutline: true,
+        patternId: selected.pattern.id, referenceAsset, paths, fill: colors?.base || P.water,
+        stroke: openReferenceWater ? null : (colors?.ripple || P.waterDark),
+        roughStroke: P.ink, lineWidth: 2.2, roughOutline: !openReferenceWater,
         roughMode: 'jittered-contour', seed: selected.seed });
-      commands.push({ layer: 'water', kind: 'water-shore', sourceId: feature.id, sourceKey: key,
-        patternId: 'water-shore-stones', paths, stroke: P.waterLight, roughStroke: P.waterDark,
-        lineWidth: 4.5, inset: true, roughOutline: true,
-        roughMode: 'jittered-contour', seed: selected.seed });
+      if (!openReferenceWater) {
+        commands.push({ layer: 'water', kind: 'water-shore', sourceId: feature.id, sourceKey: key,
+          patternId: 'water-shore-stones', paths, stroke: colors?.light || P.waterLight,
+          roughStroke: colors?.ripple || P.waterDark,
+          lineWidth: 4.5, inset: true, roughOutline: true,
+          roughMode: 'jittered-contour', seed: selected.seed });
+      }
       commands.push({ layer: 'water', kind: 'water-ripples', sourceId: feature.id, sourceKey: key,
-        patternId: selected.pattern.id, paths, fill: P.waterLight, seed: selected.seed,
-        textureOrigin: projectPoint([0, 0], input) });
+        patternId: selected.pattern.id, referenceAsset, paths,
+        fill: colors?.light || P.waterLight, stroke: colors?.ripple || P.waterDark,
+        seed: selected.seed, textureOrigin: projectPoint([0, 0], input),
+        worldAnchored: Boolean(referenceAsset), sparseMotif: openReferenceWater,
+        motifSpacing: openReferenceWater ? [96, 88] : undefined });
     } else {
       commands.push({ layer: 'water', kind: 'waterway-edge', sourceId: feature.id, sourceKey: key,
         patternId: selected.pattern.id, paths, stroke: P.waterDark, lineWidth: 8 });
@@ -199,19 +210,28 @@
     const key = featureKey(feature);
     const selected = PATTERNS.selectPattern('road', { key, props: feature.props });
     assignments.set(key, selected.pattern.id);
+    const referenceAsset = selected.pattern.referenceAsset;
+    const material = referenceAsset ? MATERIALS.catalog[referenceAsset] : null;
+    const colors = material?.palette;
     const width = roadWidth(feature);
     const paths = projectedPaths(feature, input);
     const layer = isBridge(feature) ? 'bridge' : 'transport';
     commands.push({ layer, kind: 'road-edge', sourceId: feature.id, sourceKey: key,
-      patternId: selected.pattern.id, paths, stroke: P.roadDark, roughStroke: P.inkSoft,
+      patternId: selected.pattern.id, referenceAsset, paths,
+      stroke: colors?.edge || P.roadDark, roughStroke: P.inkSoft,
       lineWidth: width + 3.2, roughOutline: true,
       roughMode: 'jittered-contour', seed: selected.seed });
     commands.push({ layer, kind: 'road-fill', sourceId: feature.id, sourceKey: key,
-      patternId: selected.pattern.id, paths, stroke: P.road, lineWidth: width });
+      patternId: selected.pattern.id, referenceAsset, paths,
+      stroke: colors?.base || P.road, lineWidth: width });
     commands.push({ layer, kind: 'road-texture', sourceId: feature.id, sourceKey: key,
-      patternId: selected.pattern.id, paths, stroke: P.roadLight, lineWidth: Math.max(1, width * 0.13),
+      patternId: selected.pattern.id, referenceAsset, paths,
+      stroke: colors?.light || P.roadLight, lineWidth: Math.max(1, width * 0.13),
+      roadWidth: width,
       dash: selected.pattern.id === 'road-cobbled-major' ? [2, 6] :
-        selected.pattern.id === 'road-narrow-path' ? [3, 5] : [1, 8], dashOffset: selected.seed % 11 });
+        selected.pattern.id === 'road-narrow-path' ? [3, 5] : [1, 8],
+      dashOffset: selected.seed % 11, seed: selected.seed,
+      textureOrigin: projectPoint([0, 0], input), worldAnchored: true });
   }
 
   function pushRail(commands, assignments, feature, input) {
@@ -561,7 +581,209 @@
     ctx.restore();
   }
 
+  function traceReferenceStroke(ctx, stroke, offsetX, offsetY, scaleX = 1, scaleY = 1) {
+    const points = stroke.points.map(point => [point[0] * scaleX + offsetX, point[1] * scaleY + offsetY]);
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    if (points.length === 4) {
+      ctx.bezierCurveTo(points[1][0], points[1][1], points[2][0], points[2][1], points[3][0], points[3][1]);
+      return;
+    }
+    for (let index = 1; index < points.length - 1; index += 1) {
+      const point = points[index];
+      const next = points[index + 1];
+      ctx.quadraticCurveTo(point[0], point[1], (point[0] + next[0]) / 2, (point[1] + next[1]) / 2);
+    }
+    const last = points.at(-1);
+    ctx.lineTo(last[0], last[1]);
+  }
+
+  function paintReferenceWaterMaterial(ctx, command, asset) {
+    ctx.save();
+    tracePaths(ctx, command.paths);
+    ctx.clip('evenodd');
+    const points = command.paths.flat();
+    if (!points.length) { ctx.restore(); return; }
+    const xs = points.map(point => point[0]);
+    const ys = points.map(point => point[1]);
+    const [spacingX, spacingY] = command.motifSpacing || [96, 88];
+    const originX = command.textureOrigin?.[0] || 0;
+    const originY = command.textureOrigin?.[1] || 0;
+    const firstX = originX + Math.floor((Math.min(...xs) - originX) / spacingX) * spacingX;
+    const firstY = originY + Math.floor((Math.min(...ys) - originY) / spacingY) * spacingY;
+    for (let cellY = firstY; cellY <= Math.max(...ys); cellY += spacingY) {
+      for (let cellX = firstX; cellX <= Math.max(...xs); cellX += spacingX) {
+        const gridX = Math.round((cellX - originX) / spacingX);
+        const gridY = Math.round((cellY - originY) / spacingY);
+        const seed = PATTERNS.hashString(`${command.seed}:water-material:${gridX}:${gridY}`);
+        if (seed % 5 !== 0) continue;
+        const mode = (seed >>> 4) % 5;
+        const anchorX = cellX + (stableUnit(seed, 1) * .9 + .05) * spacingX;
+        const anchorY = cellY + (stableUnit(seed, 2) * .9 + .05) * spacingY;
+        if (mode === 3) {
+          const wash = asset.washes[(seed >>> 8) % asset.washes.length];
+          ctx.beginPath();
+          ctx.ellipse(anchorX, anchorY,
+            wash.rx * (.55 + stableUnit(seed, 3) * .5),
+            wash.ry * (.55 + stableUnit(seed, 4) * .5),
+            (stableUnit(seed, 5) - .5) * .34, 0, Math.PI * 2);
+          ctx.fillStyle = asset.palette[wash.role] || asset.palette.wash;
+          ctx.globalAlpha = wash.alpha * (.35 + stableUnit(seed, 6) * .5);
+          ctx.fill();
+        }
+        if (mode === 0 || mode === 4) {
+          const stroke = asset.rippleStrokes[(seed >>> 7) % asset.rippleStrokes.length];
+          const flipX = (seed >>> 11) & 1 ? -1 : 1;
+          const scaleX = .65 + stableUnit(seed, 7) * .8;
+          const scaleY = .65 + stableUnit(seed, 8) * .75;
+          const centerX = stroke.points.reduce((sum, point) => sum + point[0], 0) / stroke.points.length;
+          const centerY = stroke.points.reduce((sum, point) => sum + point[1], 0) / stroke.points.length;
+          ctx.save();
+          ctx.translate(anchorX, anchorY);
+          ctx.rotate((stableUnit(seed, 9) - .5) * .48);
+          traceReferenceStroke(ctx, stroke, -centerX * flipX * scaleX, -centerY * scaleY,
+            flipX * scaleX, scaleY);
+          ctx.strokeStyle = asset.palette[stroke.role] || asset.palette.ripple;
+          ctx.lineWidth = stroke.width * (.78 + stableUnit(seed, 10) * .45);
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.setLineDash(stroke.parts ? [9 + stableUnit(seed, 11) * 5, 3, 2, 5] : []);
+          ctx.globalAlpha = stroke.alpha * (.32 + stableUnit(seed, 12) * .58);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.setLineDash([]);
+        if (mode === 1 || mode === 4) {
+          const mark = asset.currentMarks[(seed >>> 8) % asset.currentMarks.length];
+          const x = anchorX + (stableUnit(seed, 31) - .5) * 18;
+          const y = anchorY + (stableUnit(seed, 32) - .5) * 14;
+          ctx.strokeStyle = asset.palette.current;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + mark.dx, y + mark.dy);
+          ctx.lineWidth = mark.width || .8;
+          ctx.globalAlpha = (mark.alpha ?? .25) * (.42 + stableUnit(seed, 33) * .45);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function offsetPolyline(path, distance) {
+    return path.map((point, index) => {
+      const previous = path[Math.max(0, index - 1)];
+      const next = path[Math.min(path.length - 1, index + 1)];
+      const dx = next[0] - previous[0];
+      const dy = next[1] - previous[1];
+      const length = Math.hypot(dx, dy) || 1;
+      return [point[0] - dy / length * distance, point[1] + dx / length * distance];
+    });
+  }
+
+  function pointAlongPolyline(path, targetDistance) {
+    let walked = 0;
+    for (let index = 0; index + 1 < path.length; index += 1) {
+      const from = path[index];
+      const to = path[index + 1];
+      const dx = to[0] - from[0];
+      const dy = to[1] - from[1];
+      const length = Math.hypot(dx, dy);
+      if (!length) continue;
+      if (walked + length >= targetDistance) {
+        const t = (targetDistance - walked) / length;
+        return { x: from[0] + dx * t, y: from[1] + dy * t,
+          tx: dx / length, ty: dy / length, nx: -dy / length, ny: dx / length };
+      }
+      walked += length;
+    }
+    return null;
+  }
+
+  function polylineLength(path) {
+    let length = 0;
+    for (let index = 0; index + 1 < path.length; index += 1) {
+      length += Math.hypot(path[index + 1][0] - path[index][0], path[index + 1][1] - path[index][1]);
+    }
+    return length;
+  }
+
+  function paintRoadSurfaceTexture(ctx, command, asset = null) {
+    ctx.save();
+    const roadWidth = command.roadWidth || 6.5;
+    const palette = asset?.palette || { light: P.roadLight, wear: P.roadDark, wearDark: P.inkSoft };
+    const originX = command.textureOrigin?.[0] || 0;
+    const originY = command.textureOrigin?.[1] || 0;
+    for (const [pathIndex, path] of command.paths.entries()) {
+      if (path.length < 2) continue;
+      const length = polylineLength(path);
+      let candidate = 0;
+      let distance = 4 + stableUnit(command.seed, pathIndex + 1) * 15;
+      while (distance < length) {
+        const point = pointAlongPolyline(path, distance);
+        if (!point) break;
+        const worldX = Math.round(point.x - originX);
+        const worldY = Math.round(point.y - originY);
+        const markSeed = PATTERNS.hashString(`${command.seed}:road-wear:${worldX}:${worldY}:${candidate}`);
+        if (markSeed % 9 >= 4) {
+          const side = (markSeed >>> 4) & 1 ? 1 : -1;
+          const awayFromCenter = .15 + stableUnit(markSeed, 1) * .22;
+          const offset = side * roadWidth * awayFromCenter;
+          const segmentLength = 4.5 + stableUnit(markSeed, 2) * Math.min(11, roadWidth * 1.15);
+          const x = point.x + point.nx * offset;
+          const y = point.y + point.ny * offset;
+          const bend = (stableUnit(markSeed, 3) - .5) * 2.2;
+          ctx.beginPath();
+          ctx.moveTo(x - point.tx * segmentLength * .5, y - point.ty * segmentLength * .5);
+          ctx.quadraticCurveTo(x + point.nx * bend, y + point.ny * bend,
+            x + point.tx * segmentLength * .5, y + point.ty * segmentLength * .5);
+          ctx.strokeStyle = (markSeed >>> 8) & 1 ? palette.wear : palette.light;
+          ctx.lineWidth = .55 + stableUnit(markSeed, 4) * .65;
+          ctx.lineCap = 'round';
+          ctx.globalAlpha = .18 + stableUnit(markSeed, 5) * .24;
+          ctx.stroke();
+
+          if ((markSeed >>> 10) % 4 === 0) {
+            const across = Math.min(roadWidth * .28, 3 + stableUnit(markSeed, 6) * 3);
+            ctx.beginPath();
+            ctx.moveTo(x - point.nx * across, y - point.ny * across);
+            ctx.lineTo(x + point.nx * across * .7, y + point.ny * across * .7);
+            ctx.strokeStyle = palette.wearDark;
+            ctx.lineWidth = .55;
+            ctx.globalAlpha = .16 + stableUnit(markSeed, 7) * .14;
+            ctx.stroke();
+          }
+        }
+        if ((markSeed >>> 13) % 3 === 0) {
+          const edgeSide = (markSeed >>> 17) & 1 ? 1 : -1;
+          const edgeOffset = edgeSide * roadWidth * (.32 + stableUnit(markSeed, 8) * .1);
+          const grainX = point.x + point.nx * edgeOffset + point.tx * (stableUnit(markSeed, 9) - .5) * 5;
+          const grainY = point.y + point.ny * edgeOffset + point.ty * (stableUnit(markSeed, 9) - .5) * 5;
+          ctx.fillStyle = palette.wearDark;
+          ctx.globalAlpha = .2 + stableUnit(markSeed, 10) * .19;
+          ctx.fillRect(Math.round(grainX), Math.round(grainY), 1 + (markSeed % 7 === 0 ? 1 : 0), 1);
+        }
+        distance += 18 + stableUnit(markSeed, 11) * 14;
+        candidate += 1;
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  function paintReferenceRoadTexture(ctx, command, asset) {
+    paintRoadSurfaceTexture(ctx, command, asset);
+  }
+
   function paintWaterRipples(ctx, command) {
+    const reference = command.referenceAsset ? MATERIALS.catalog[command.referenceAsset] : null;
+    if (reference?.family === 'water') {
+      paintReferenceWaterMaterial(ctx, command, reference);
+      return;
+    }
     ctx.save(); tracePaths(ctx, command.paths); ctx.clip('evenodd');
     const points = command.paths.flat();
     if (!points.length) { ctx.restore(); return; }
@@ -991,7 +1213,13 @@
       ctx.save(); tracePaths(ctx, command.paths); ctx.clip('evenodd'); strokePaths(ctx, command); ctx.restore(); return;
     }
     if (command.kind === 'rail-lines') { strokePaths(ctx, command, -command.railOffset); strokePaths(ctx, command, command.railOffset); return; }
-    if (['road-edge', 'road-fill', 'road-texture', 'rail-bed', 'waterway-edge', 'waterway-fill'].includes(command.kind)) {
+    if (command.kind === 'road-texture') {
+      const reference = command.referenceAsset ? MATERIALS.catalog[command.referenceAsset] : null;
+      if (reference?.family === 'road') paintReferenceRoadTexture(ctx, command, reference);
+      else paintRoadSurfaceTexture(ctx, command);
+      return;
+    }
+    if (['road-edge', 'road-fill', 'rail-bed', 'waterway-edge', 'waterway-fill'].includes(command.kind)) {
       strokePaths(ctx, command); return;
     }
     if (command.kind === 'roof-detail') { paintRoofDetail(ctx, command); return; }
