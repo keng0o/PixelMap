@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/11';
-  const styleId = 'top-down-hand-drawn-game-v11';
+  const version = 'pixelmap-top-down-patterns/12';
+  const styleId = 'top-down-semantic-miniature-v12';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -41,6 +41,22 @@
     roofSlate: '#607784',
     roofStone: '#8b938c',
     roofEarth: '#8e6956',
+    cottageRoof: '#9a6945',
+    cottageRoofLight: '#c38a58',
+    cottageRoofDark: '#604936',
+    cottageWall: '#fff4d6',
+    cottageWallShade: '#d7c38f',
+    windowLight: '#d7eff0',
+    route: '#fff1cf',
+    routeShadow: '#a65f4d',
+    landmark: '#e6853f',
+    landmarkRoof: '#c9783e',
+    landmarkRoofDark: '#75472f',
+    landmarkFlag: '#e85b46',
+    landmarkFlagLight: '#ffd86b',
+    travelerCoat: '#c74836',
+    travelerFace: '#f4c79f',
+    travelerHair: '#3d3029',
     shadow: '#72896c',
     location: '#ffef78',
     locationDark: '#263a35',

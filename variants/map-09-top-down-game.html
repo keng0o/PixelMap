@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ja" data-style="top-down-hand-drawn-game-v11" data-bearing="0">
+<html lang="ja" data-style="top-down-semantic-miniature-v12" data-bearing="0">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#3f704d">
-  <title>真上視点の手描きゲーム地図 — PixelMap test</title>
+  <title>歩けるピクセル箱庭地図 — PixelMap test</title>
   <style>
     :root {
       color-scheme: light;
@@ -32,6 +32,8 @@
       cursor: grab;
       touch-action: none;
       transform-origin: 0 0;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
       background: #91bb70;
     }
 
@@ -124,7 +126,7 @@
 <body>
   <canvas
     data-top-down-map
-    aria-label="実地理を真上から描いた、名称表示のないゲーム風地図。ドラッグで移動できます"
+    aria-label="実地理を歩ける箱庭へ整理した、名称表示のないピクセルゲーム地図。ドラッグで移動できます"
     aria-describedby="map-status map-attribution"
   ></canvas>
 
@@ -141,9 +143,10 @@
     · <a href="https://openmaptiles.org/">OpenMapTiles</a>
   </small>
 
-  <script src="../assets/top-down-game-patterns.js?v=material-hierarchy-7"></script>
-  <script src="../assets/top-down-game-materials.js?v=material-hierarchy-7"></script>
-  <script src="../assets/top-down-game-renderer.js?v=material-hierarchy-7"></script>
-  <script src="../assets/top-down-game-map.js?v=material-hierarchy-7"></script>
+  <script src="../assets/top-down-game-patterns.js?v=semantic-miniature-1"></script>
+  <script src="../assets/top-down-game-materials.js?v=semantic-miniature-1"></script>
+  <script src="../assets/top-down-game-composer.js?v=semantic-miniature-1"></script>
+  <script src="../assets/top-down-game-renderer.js?v=semantic-miniature-1"></script>
+  <script src="../assets/top-down-game-map.js?v=semantic-miniature-1"></script>
 </body>
 </html>

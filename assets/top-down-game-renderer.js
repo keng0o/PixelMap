@@ -5,11 +5,14 @@
   if (!PATTERNS) throw new Error('PixelMapTopDownPatterns is required');
   const MATERIALS = global.PixelMapTopDownMaterials;
   if (!MATERIALS) throw new Error('PixelMapTopDownMaterials is required');
+  const COMPOSER = global.PixelMapTopDownComposer;
+  if (!COMPOSER) throw new Error('PixelMapTopDownComposer is required');
 
-  const version = 'pixelmap-top-down-renderer/11';
+  const version = 'pixelmap-top-down-renderer/12';
   const compositor = Object.freeze([
     'ground', 'landcover', 'water', 'transport', 'bridge',
-    'vegetation', 'building-shadow', 'building-roof', 'location',
+    'story-route', 'vegetation', 'building-shadow', 'building-roof',
+    'structure', 'traveler', 'location',
   ]);
   const layerRank = new Map(compositor.map((layer, index) => [layer, index]));
   const commandRank = new Map([
@@ -18,9 +21,13 @@
     ['road-fill', 2],
     ['road-texture', 3],
     ['rail-lines', 4],
+    ['story-route', 0],
     ['roof-fill', 0],
     ['roof-detail', 1],
     ['roof-outline-rough', 2],
+    ['settlement-house', 0],
+    ['landmark-house', 0],
+    ['traveler', 0],
   ]);
   const P = PATTERNS.palette;
 
@@ -212,29 +219,31 @@
     }
   }
 
-  function pushRoad(commands, assignments, feature, input) {
+  function pushRoad(commands, assignments, feature, input, { subdued = false } = {}) {
     const key = featureKey(feature);
     const selected = PATTERNS.selectPattern('road', { key, props: feature.props });
     assignments.set(key, selected.pattern.id);
     const referenceAsset = selected.pattern.referenceAsset;
     const material = referenceAsset ? MATERIALS.catalog[referenceAsset] : null;
     const colors = material?.palette;
-    const width = roadWidth(feature);
+    const baseWidth = roadWidth(feature);
+    const width = subdued ? Math.max(3, baseWidth * .56) : baseWidth;
     const paths = projectedPaths(feature, input);
     const layer = isBridge(feature) ? 'bridge' : 'transport';
     commands.push({ layer, kind: 'road-edge', sourceId: feature.id, sourceKey: key,
       patternId: selected.pattern.id, referenceAsset, paths,
       stroke: colors?.wear || P.roadDark, lineWidth: width + 2.2,
-      alpha: .5, edgeTexture: 'soft-broken-verge', roadWidth: width,
+      alpha: subdued ? .2 : .5, edgeTexture: 'soft-broken-verge', roadWidth: width,
+      subdued,
       roughOutline: false, seed: selected.seed,
       textureOrigin: projectPoint([0, 0], input), worldAnchored: true });
     commands.push({ layer, kind: 'road-fill', sourceId: feature.id, sourceKey: key,
       patternId: selected.pattern.id, referenceAsset, paths,
-      stroke: colors?.base || P.road, lineWidth: width });
+      stroke: colors?.base || P.road, lineWidth: width, alpha: subdued ? .46 : 1, subdued });
     commands.push({ layer, kind: 'road-texture', sourceId: feature.id, sourceKey: key,
       patternId: selected.pattern.id, referenceAsset, paths,
       stroke: colors?.light || P.roadLight, lineWidth: Math.max(1, width * 0.13),
-      roadWidth: width,
+      roadWidth: width, subdued,
       surfaceWear: 'edge-gravel-clusters',
       dash: selected.pattern.id === 'road-cobbled-major' ? [2, 6] :
         selected.pattern.id === 'road-narrow-path' ? [3, 5] : [1, 8],
@@ -330,7 +339,12 @@
     return false;
   }
 
-  function pushVegetation(commands, assignments, features, input) {
+  function pointBlockedBySettlements(point, settlements, clearance, input) {
+    const clusterClearance = (32 + clearance) / input.viewport.scale;
+    return settlements.some(cluster => Math.hypot(point[0] - cluster.worldX, point[1] - cluster.worldY) <= clusterClearance);
+  }
+
+  function pushVegetation(commands, assignments, features, input, settlements = []) {
     const areas = treeEligibleAreas(features);
     const blockers = features.filter(feature => feature.layer === 'water' || feature.layer === 'building' ||
       feature.layer === 'transportation' || feature.layer === 'transportation_name');
@@ -358,7 +372,8 @@
           if (!pointInFeature(point, area)) continue;
           const selected = PATTERNS.selectPattern('tree', { key: `${areaKey}|${cellKey}`, props: area.props });
           const clearance = selected.pattern.radius + 4;
-          if (pointBlocked(point, blockers, clearance / input.viewport.scale)) continue;
+          if (pointBlocked(point, blockers, clearance / input.viewport.scale) ||
+              pointBlockedBySettlements(point, settlements, clearance, input)) continue;
           seen.add(cellKey);
           const screen = projectPoint(point, input);
           commands.push({
@@ -392,6 +407,61 @@
     return Object.freeze(Object.fromEntries([...assignments].sort(([a], [b]) => a.localeCompare(b))));
   }
 
+  const cottageOffsets = Object.freeze([
+    Object.freeze([0, 0]), Object.freeze([-16, 10]), Object.freeze([16, 12]), Object.freeze([-4, -12]),
+  ]);
+
+  function pushCottageCluster(commands, assignments, cluster, landmark = false) {
+    const houseCount = Math.max(landmark ? 3 : 1, Math.min(4, cluster.houseCount || 1));
+    for (let index = 0; index < houseCount; index += 1) {
+      const offset = cottageOffsets[index];
+      const seed = PATTERNS.hashString(`${cluster.key}|cottage|${index}`);
+      const primary = landmark && index === 0;
+      const width = primary ? 28 : 16 + (seed % 2) * 4;
+      const height = primary ? 24 : 12 + ((seed >> 2) % 2) * 4;
+      commands.push({
+        layer: 'structure',
+        kind: primary ? 'landmark-house' : 'settlement-house',
+        sourceKey: cluster.sourceKeys?.[Math.min(index, cluster.sourceKeys.length - 1)] || cluster.key,
+        sourceId: cluster.sourceIds?.[Math.min(index, cluster.sourceIds.length - 1)] || null,
+        clusterKey: cluster.key,
+        sourceX: cluster.sourceX ?? cluster.x,
+        sourceY: cluster.sourceY ?? cluster.y,
+        x: cluster.x + offset[0],
+        y: cluster.y + offset[1],
+        width,
+        height,
+        seed,
+        sortY: cluster.y + offset[1],
+        patternId: primary ? 'landmark-village' : 'settlement-cottage',
+        primary,
+      });
+    }
+    assignments.set(`settlement|${cluster.key}`, landmark ? 'landmark-village' : 'settlement-cottage');
+  }
+
+  function pushSemanticComposition(commands, assignments, composition) {
+    if (composition.storyRoute) {
+      commands.push({
+        layer: 'story-route', kind: 'story-route', patternId: 'story-stepping-stones',
+        sourceId: composition.storyRoute.sourceId, sourceKey: composition.storyRoute.sourceKey,
+        paths: composition.storyRoute.paths, stroke: P.route, shadow: P.routeShadow,
+      });
+      assignments.set(`story-route|${composition.storyRoute.sourceKey}`, 'story-stepping-stones');
+    }
+    for (const cluster of composition.settlements) pushCottageCluster(commands, assignments, cluster, false);
+    for (const landmark of composition.landmarks) pushCottageCluster(commands, assignments, landmark, true);
+    if (composition.traveler) {
+      commands.push({
+        layer: 'traveler', kind: 'traveler', patternId: 'traveler-scout',
+        sourceKey: composition.traveler.sourceKey,
+        x: composition.traveler.x, y: composition.traveler.y,
+        source: composition.traveler.source,
+      });
+      assignments.set(`traveler|${composition.traveler.sourceKey}`, 'traveler-scout');
+    }
+  }
+
   function buildScene(input) {
     const commands = [
       { layer: 'ground', kind: 'background', fill: P.ground, width: input.width, height: input.height },
@@ -403,7 +473,9 @@
         textureOrigin: projectPoint([0, 0], input), worldAnchored: true, sparse: true },
     ];
     const assignments = new Map();
-    const features = [...input.features].sort((a, b) => featureKey(a).localeCompare(featureKey(b)));
+    const sourceFeatures = [...input.features].sort((a, b) => featureKey(a).localeCompare(featureKey(b)));
+    const composition = input.semanticMode ? COMPOSER.compose(input) : null;
+    const features = composition ? [...composition.renderFeatures] : sourceFeatures;
     for (const feature of features) {
       if ((feature.layer === 'landcover' || feature.layer === 'landuse' || feature.layer === 'park') && feature.type === 3) {
         pushGround(commands, assignments, feature, input);
@@ -415,35 +487,47 @@
     for (const feature of features) {
       if (feature.layer !== 'transportation' || feature.type !== 2) continue;
       if (String(feature.props?.class || '').toLowerCase() === 'rail') pushRail(commands, assignments, feature, input);
-      else pushRoad(commands, assignments, feature, input);
+      else pushRoad(commands, assignments, feature, input, {
+        subdued: Boolean(composition && featureKey(feature) !== composition.storyRoute?.sourceKey),
+      });
     }
-    pushVegetation(commands, assignments, features, input);
-    for (const feature of features) if (feature.layer === 'building' && feature.type === 3) pushRoof(commands, assignments, feature, input);
-    if (input.location) {
+    const semanticSettlements = composition ? [...composition.settlements, ...composition.landmarks] : [];
+    pushVegetation(commands, assignments, features, input, semanticSettlements);
+    if (composition) pushSemanticComposition(commands, assignments, composition);
+    else for (const feature of features) if (feature.layer === 'building' && feature.type === 3) pushRoof(commands, assignments, feature, input);
+    if (input.location && !composition) {
       const [x, y] = projectPoint(input.location, input);
       commands.push({ layer: 'location', kind: 'location-marker', x, y, radius: 7 });
     }
     commands.sort((a, b) => (layerRank.get(a.layer) - layerRank.get(b.layer)) ||
       ((commandRank.get(a.kind) ?? 50) - (commandRank.get(b.kind) ?? 50)) ||
+      ((a.sortY ?? 0) - (b.sortY ?? 0)) ||
       String(a.sourceKey || '').localeCompare(String(b.sourceKey || '')) || String(a.kind).localeCompare(String(b.kind)));
     const familySets = { ground: new Set(), water: new Set(), road: new Set(), rail: new Set(), roof: new Set(), tree: new Set() };
     for (const command of commands) {
-      const family = command.kind === 'tree' ? 'tree' : command.layer === 'building-roof' ? 'roof' :
+      const family = command.kind === 'tree' ? 'tree' :
+        ['building-roof', 'structure'].includes(command.layer) ? 'roof' :
         command.patternId?.startsWith('rail-') ? 'rail' :
           command.layer === 'transport' || command.layer === 'bridge' ? 'road' :
           command.layer === 'water' ? 'water' : command.layer === 'landcover' ? 'ground' : null;
       if (family && command.patternId) familySets[family].add(command.patternId);
     }
     const sortedAssignments = [...assignments].sort(([a], [b]) => a.localeCompare(b));
+    const semanticHouses = commands.filter(command =>
+      command.kind === 'settlement-house' || command.kind === 'landmark-house');
     return Object.freeze({
       version, commands: Object.freeze(commands),
-      patternFingerprint: PATTERNS.hashString(sortedAssignments.map(entry => entry.join('=')).join('|')).toString(16),
+      patternFingerprint: PATTERNS.hashString(`${composition?.fingerprint || 'raw'}|${sortedAssignments.map(entry => entry.join('=')).join('|')}`).toString(16),
       assignments: Object.freeze(Object.fromEntries(sortedAssignments)),
       stats: Object.freeze({
         patternFamilies: Object.freeze(Object.fromEntries(Object.entries(familySets).map(([key, set]) => [key, set.size]))),
-        labelCount: 0, poiMarkerCount: 0, buildingExtrusionEnabled: false, wallCommands: 0, windowCommands: 0,
+        labelCount: 0, poiMarkerCount: 0,
+        buildingExtrusionEnabled: semanticHouses.length > 0,
+        wallCommands: semanticHouses.length,
+        windowCommands: semanticHouses.filter(command => command.width >= 16).length * 2,
         treeCount: commands.filter(command => command.kind === 'tree').length,
-        roofCount: commands.filter(command => command.kind === 'roof-fill').length,
+        roofCount: composition?.stats.renderedHouseCount ?? commands.filter(command => command.kind === 'roof-fill').length,
+        ...(composition?.stats || {}),
       }),
     });
   }
@@ -1454,6 +1538,150 @@
     ctx.restore();
   }
 
+  function routeSamples(paths, spacing = 18) {
+    const samples = [];
+    for (const path of paths || []) {
+      let carry = 0;
+      for (let index = 0; index + 1 < path.length; index += 1) {
+        const from = path[index];
+        const to = path[index + 1];
+        const dx = to[0] - from[0];
+        const dy = to[1] - from[1];
+        const length = Math.hypot(dx, dy);
+        if (!length) continue;
+        for (let distance = carry ? spacing - carry : 0; distance <= length; distance += spacing) {
+          const ratio = distance / length;
+          samples.push([from[0] + dx * ratio, from[1] + dy * ratio]);
+        }
+        carry = (carry + length) % spacing;
+      }
+    }
+    return samples;
+  }
+
+  function paintStoryRoute(ctx, command) {
+    const samples = routeSamples(command.paths, 18);
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = command.shadow;
+    ctx.globalAlpha = .58;
+    ctx.lineWidth = 8;
+    tracePaths(ctx, command.paths);
+    ctx.stroke();
+    ctx.strokeStyle = command.stroke;
+    ctx.globalAlpha = .38;
+    ctx.lineWidth = 4;
+    tracePaths(ctx, command.paths);
+    ctx.stroke();
+    for (let index = 0; index < samples.length; index += 1) {
+      const [x, y] = samples[index];
+      const seed = PATTERNS.hashString(`${command.sourceKey}:step:${index}`);
+      const width = seed % 3 === 0 ? 12 : 8;
+      const height = seed % 4 === 0 ? 8 : 4;
+      const px = Math.round(x / 2) * 2;
+      const py = Math.round(y / 2) * 2;
+      ctx.globalAlpha = .72;
+      ctx.fillStyle = command.shadow;
+      ctx.fillRect(px - width / 2 + 2, py - height / 2 + 2, width, height);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = command.stroke;
+      ctx.fillRect(px - width / 2, py - height / 2, width, height);
+      if (seed % 5 === 0) {
+        ctx.fillStyle = P.groundLight;
+        ctx.fillRect(px - width / 2 + 2, py - height / 2, 2, 2);
+      }
+    }
+    ctx.restore();
+  }
+
+  function paintCottage(ctx, command) {
+    const x = Math.round(command.x / 2) * 2;
+    const y = Math.round(command.y / 2) * 2;
+    const width = Math.max(12, Math.round(command.width / 2) * 2);
+    const height = Math.max(12, Math.round(command.height / 2) * 2);
+    const primary = command.kind === 'landmark-house';
+    const wallTop = y - Math.round(height * .16);
+    const wallHeight = Math.max(6, Math.round(height * .38 / 2) * 2);
+    const roofTop = y - height;
+    const roofBottom = wallTop + 2;
+    const roofOverhang = primary ? 4 : 2;
+    const ridgeX = x + (command.seed % 3 - 1) * 2;
+    ctx.save();
+    ctx.fillStyle = P.shadow;
+    ctx.globalAlpha = .48;
+    ctx.fillRect(x - width / 2 + 4, y - wallHeight + 4, width + 2, wallHeight + 4);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = P.cottageWall;
+    ctx.fillRect(x - width / 2, wallTop, width, wallHeight);
+    ctx.strokeStyle = P.ink;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x - width / 2, wallTop, width, wallHeight);
+
+    ctx.beginPath();
+    ctx.moveTo(x - width / 2 - roofOverhang, roofBottom);
+    ctx.lineTo(ridgeX, roofTop);
+    ctx.lineTo(x + width / 2 + roofOverhang, roofBottom);
+    ctx.closePath();
+    ctx.fillStyle = primary ? P.landmarkRoof : P.cottageRoof;
+    ctx.fill();
+    ctx.strokeStyle = P.ink;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(ridgeX, roofTop);
+    ctx.lineTo(x + width / 2 + roofOverhang, roofBottom);
+    ctx.lineTo(x + 2, roofBottom);
+    ctx.closePath();
+    ctx.fillStyle = primary ? P.landmarkRoofDark : P.cottageRoofDark;
+    ctx.globalAlpha = .72;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = P.ink;
+    ctx.fillRect(x - 2, y - 6, 4, 6);
+    if (width >= 16) {
+      ctx.fillStyle = P.windowLight;
+      ctx.fillRect(x - width / 2 + 4, wallTop + 4, 4, 4);
+      ctx.fillRect(x + width / 2 - 8, wallTop + 4, 4, 4);
+    }
+    if (primary) {
+      ctx.fillStyle = P.ink;
+      ctx.fillRect(x + width / 2 - 2, roofTop - 12, 2, 14);
+      ctx.fillStyle = P.landmarkFlag;
+      ctx.fillRect(x + width / 2, roofTop - 12, 10, 6);
+      ctx.fillStyle = P.landmarkFlagLight;
+      ctx.fillRect(x + width / 2, roofTop - 12, 4, 2);
+    }
+    ctx.restore();
+  }
+
+  function paintTraveler(ctx, command) {
+    const x = Math.round(command.x / 2) * 2;
+    const y = Math.round(command.y / 2) * 2;
+    ctx.save();
+    ctx.fillStyle = P.shadow;
+    ctx.globalAlpha = .52;
+    ctx.fillRect(x - 8, y + 2, 18, 6);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = P.ink;
+    ctx.fillRect(x - 6, y - 22, 12, 18);
+    ctx.fillRect(x - 6, y - 4, 4, 8);
+    ctx.fillRect(x + 2, y - 4, 4, 8);
+    ctx.fillStyle = P.travelerCoat;
+    ctx.fillRect(x - 4, y - 16, 8, 12);
+    ctx.fillRect(x - 6, y - 14, 2, 8);
+    ctx.fillRect(x + 4, y - 14, 2, 8);
+    ctx.fillStyle = P.travelerFace;
+    ctx.fillRect(x - 4, y - 24, 8, 8);
+    ctx.fillStyle = P.travelerHair;
+    ctx.fillRect(x - 6, y - 26, 12, 6);
+    ctx.fillRect(x - 6, y - 22, 2, 4);
+    ctx.fillStyle = P.windowLight;
+    ctx.fillRect(x + 2, y - 14, 2, 4);
+    ctx.restore();
+  }
+
   function paintCommand(ctx, command) {
     if (command.kind === 'background') { ctx.fillStyle = command.fill; ctx.fillRect(0, 0, command.width, command.height); return; }
     if (command.kind === 'ground-wash' || command.kind === 'area-wash') { paintSurfaceWash(ctx, command); return; }
@@ -1472,6 +1700,7 @@
       paintSoftRoadEdge(ctx, command); return;
     }
     if (command.kind === 'road-texture') {
+      if (command.subdued) return;
       const reference = command.referenceAsset ? MATERIALS.catalog[command.referenceAsset] : null;
       if (reference?.family === 'road') paintReferenceRoadTexture(ctx, command, reference);
       else paintRoadSurfaceTexture(ctx, command);
@@ -1483,6 +1712,11 @@
     if (command.kind === 'roof-detail') { paintRoofDetail(ctx, command); return; }
     if (command.kind === 'roof-outline-rough') { paintRoofOutlineRough(ctx, command); return; }
     if (command.kind === 'tree') { paintTree(ctx, command); return; }
+    if (command.kind === 'story-route') { paintStoryRoute(ctx, command); return; }
+    if (command.kind === 'settlement-house' || command.kind === 'landmark-house') {
+      paintCottage(ctx, command); return;
+    }
+    if (command.kind === 'traveler') { paintTraveler(ctx, command); return; }
     if (command.kind === 'location-marker') {
       ctx.save(); ctx.translate(command.x, command.y);
       ctx.fillStyle = P.locationDark; ctx.beginPath(); ctx.arc(0, 0, command.radius + 3, 0, Math.PI * 2); ctx.fill();
@@ -1499,7 +1733,7 @@
   }
 
   global.PixelMapTopDownRenderer = Object.freeze({
-    version, compositor, buildScene, paintScene, patternAssignments, pointInFeature, distanceToFeature,
+    version, compositor, buildScene, paintScene, paintCommand, patternAssignments, pointInFeature, distanceToFeature,
     roofFrame, roofShadowSide, roofStrokePlan, shouldUseReferenceRoof, shouldUseHarborWorkshop,
     shouldUseWeatheredGable,
   });

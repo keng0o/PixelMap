@@ -1,11 +1,12 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-map/2';
+  const version = 'pixelmap-top-down-map/3';
   const tileZoom = 14;
   const worldTileExtent = 4096;
   const displayTileSize = 2560;
   const defaultScale = displayTileSize / worldTileExtent;
+  const artPixelSize = 2;
   const bearing = 0;
   const bearingLocked = true;
   const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
@@ -317,6 +318,14 @@
     return Object.freeze({ latitude, longitude });
   }
 
+  function artCanvasSize(width, height) {
+    return Object.freeze({
+      width: Math.ceil(Math.max(1, Number(width) || 1) / artPixelSize),
+      height: Math.ceil(Math.max(1, Number(height) || 1) / artPixelSize),
+      transform: 1 / artPixelSize,
+    });
+  }
+
   function createNavigationState({ centerX = defaultCenter.x, centerY = defaultCenter.y, scale = defaultScale } = {}) {
     return Object.freeze({ centerX, centerY, scale, bearing, bearingLocked, drag: null, preview: Object.freeze({ x: 0, y: 0 }) });
   }
@@ -386,7 +395,8 @@
     if (typeof document === 'undefined') return null;
     const Renderer = global.PixelMapTopDownRenderer;
     const Patterns = global.PixelMapTopDownPatterns;
-    if (!Renderer || !Patterns) throw new Error('Top-down renderer modules are required');
+    const Composer = global.PixelMapTopDownComposer;
+    if (!Renderer || !Patterns || !Composer) throw new Error('Top-down scene modules are required');
 
     const root = document.documentElement;
     const canvas = document.querySelector('[data-top-down-map]');
@@ -435,13 +445,13 @@
     function resizeCanvas() {
       const width = Math.max(1, Math.round(canvas.clientWidth || global.innerWidth || 1));
       const height = Math.max(1, Math.round(canvas.clientHeight || global.innerHeight || 1));
-      const ratio = Math.min(2, Math.max(1, global.devicePixelRatio || 1));
-      if (canvas.width !== Math.round(width * ratio) || canvas.height !== Math.round(height * ratio)) {
-        canvas.width = Math.round(width * ratio);
-        canvas.height = Math.round(height * ratio);
+      const art = artCanvasSize(width, height);
+      if (canvas.width !== art.width || canvas.height !== art.height) {
+        canvas.width = art.width;
+        canvas.height = art.height;
       }
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      return { width, height, ratio };
+      context.setTransform(art.transform, 0, 0, art.transform, 0, 0);
+      return { width, height, ratio: art.transform, artWidth: art.width, artHeight: art.height };
     }
 
     function publishDiagnostics(scene, tiles, failedCount = 0) {
@@ -459,6 +469,31 @@
         patternFingerprint: scene?.patternFingerprint || null,
         roofCount: stats.roofCount || 0,
         treeCount: stats.treeCount || 0,
+        sourceBuildingCount: stats.sourceBuildingCount || 0,
+        sourceBuildingFeatureCount: stats.sourceBuildingFeatureCount || 0,
+        renderedHouseCount: stats.renderedHouseCount || 0,
+        settlementClusterCount: stats.settlementClusterCount || 0,
+        landmarkCount: stats.landmarkCount || 0,
+        storyRouteCount: stats.storyRouteCount || 0,
+        travelerCount: stats.travelerCount || 0,
+        sourceMajorRoadCount: stats.sourceMajorRoadCount || 0,
+        retainedMajorRoadCount: stats.retainedMajorRoadCount || 0,
+        sourceMinorRoadCount: stats.sourceMinorRoadCount || 0,
+        retainedMinorRoadCount: stats.retainedMinorRoadCount || 0,
+        sourceWaterCount: stats.sourceWaterCount || 0,
+        retainedWaterCount: stats.retainedWaterCount || 0,
+        routeStartX: stats.routeStartX ?? null,
+        routeStartY: stats.routeStartY ?? null,
+        routeDestinationX: stats.routeDestinationX ?? null,
+        routeDestinationY: stats.routeDestinationY ?? null,
+        routeSpanY: stats.routeSpanY || 0,
+        travelerX: stats.travelerX ?? null,
+        travelerY: stats.travelerY ?? null,
+        landmarkX: stats.landmarkX ?? null,
+        landmarkY: stats.landmarkY ?? null,
+        artPixelSize,
+        artWidth: canvas.width,
+        artHeight: canvas.height,
         tileCount: tiles.length,
         cachedTileCount: store.cache.size,
         failedTileCount: failedCount,
@@ -477,6 +512,13 @@
       root.dataset.patternFingerprint = diagnostics.patternFingerprint || '';
       root.dataset.roofCount = String(diagnostics.roofCount);
       root.dataset.treeCount = String(diagnostics.treeCount);
+      for (const key of [
+        'sourceBuildingCount', 'sourceBuildingFeatureCount', 'renderedHouseCount', 'settlementClusterCount', 'landmarkCount',
+        'storyRouteCount', 'travelerCount', 'sourceMajorRoadCount', 'retainedMajorRoadCount',
+        'sourceMinorRoadCount', 'retainedMinorRoadCount', 'sourceWaterCount', 'retainedWaterCount',
+        'routeStartX', 'routeStartY', 'routeDestinationX', 'routeDestinationY', 'routeSpanY',
+        'travelerX', 'travelerY', 'landmarkX', 'landmarkY', 'artPixelSize', 'artWidth', 'artHeight',
+      ]) root.dataset[key] = String(diagnostics[key]);
       for (const [family, count] of Object.entries(diagnostics.patternFamilies)) {
         root.dataset[`pattern${family[0].toUpperCase()}${family.slice(1)}`] = String(count);
       }
@@ -499,6 +541,7 @@
         viewport: { centerX: navigation.centerX, centerY: navigation.centerY, scale: navigation.scale },
         features,
         location: locationPoint ? [locationPoint.x, locationPoint.y] : null,
+        semanticMode: true,
       });
       context.clearRect(0, 0, width, height);
       Renderer.paintScene(context, scene);
@@ -637,6 +680,8 @@
     tileZoom,
     worldTileExtent,
     defaultScale,
+    artPixelSize,
+    artCanvasSize,
     defaultCenter,
     bearing,
     bearingLocked,

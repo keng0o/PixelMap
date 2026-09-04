@@ -9,12 +9,14 @@ const PATTERNS = globalThis.PixelMapTopDownPatterns;
 const source = await readFile(new URL('../assets/top-down-game-patterns.js', import.meta.url), 'utf8');
 
 test('真上視点styleは参考画像1寄りの固定paletteとpattern catalogを公開する', () => {
-  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/11');
-  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v11');
+  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/12');
+  assert.equal(PATTERNS.styleId, 'top-down-semantic-miniature-v12');
   assert.equal(PATTERNS.palette.water, '#63c4c3');
   assert.equal(PATTERNS.palette.forest, '#3f704d');
   assert.equal(PATTERNS.palette.road, '#ead9ac');
   assert.equal(PATTERNS.palette.roof, '#4f7893');
+  assert.equal(PATTERNS.palette.cottageWall, '#fff4d6');
+  assert.equal(PATTERNS.palette.cottageRoof, '#9a6945');
   assert.equal(Object.isFrozen(PATTERNS.palette), true);
 });
 

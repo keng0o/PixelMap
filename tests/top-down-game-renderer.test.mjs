@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 globalThis.window = globalThis;
 await import('../assets/top-down-game-patterns.js');
 await import('../assets/top-down-game-materials.js');
+await import('../assets/top-down-game-composer.js');
 await import('../assets/top-down-game-renderer.js');
 
 const RENDERER = globalThis.PixelMapTopDownRenderer;
@@ -31,15 +32,91 @@ const fixture = (overrides = {}) => ({
 });
 
 test('rendererは固定compositorとDOM非依存のscene APIを公開する', () => {
-  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/11');
+  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/12');
   assert.deepEqual(RENDERER.compositor, [
     'ground', 'landcover', 'water', 'transport', 'bridge',
-    'vegetation', 'building-shadow', 'building-roof', 'location',
+    'story-route', 'vegetation', 'building-shadow', 'building-roof',
+    'structure', 'traveler', 'location',
   ]);
   const scene = RENDERER.buildScene(fixture());
   assert.ok(scene.commands.length > 0);
   const ranks = scene.commands.map(command => RENDERER.compositor.indexOf(command.layer));
   assert.deepEqual(ranks, [...ranks].sort((a, b) => a - b));
+});
+
+test('semantic modeは全地物の等価描画をやめ、経路・集落・目的地・旅人の構図へ変換する', () => {
+  const buildings = [];
+  for (let row = 0; row < 10; row += 1) {
+    for (let column = 0; column < 8; column += 1) {
+      buildings.push(polygon('building', 1000 + row * 8 + column, [
+        [18 + column * 48, 28 + row * 78],
+        [38 + column * 48, 28 + row * 78],
+        [38 + column * 48, 43 + row * 78],
+        [18 + column * 48, 43 + row * 78],
+      ], { class: 'residential' }));
+    }
+  }
+  const minorRoads = Array.from({ length: 20 }, (_, index) =>
+    line('transportation', 2000 + index, [[10, 35 + index * 36], [380, 52 + index * 36]], {
+      class: index % 2 ? 'residential' : 'service',
+    }));
+  const scene = RENDERER.buildScene({
+    width: 390,
+    height: 844,
+    viewport: { centerX: 195, centerY: 422, scale: 1 },
+    semanticMode: true,
+    features: [
+      polygon('landcover', 1, [[0, 0], [390, 0], [390, 844], [0, 844]], { class: 'grass' }),
+      line('transportation', 2, [[25, 820], [175, 610], [245, 390], [342, 45]], { class: 'secondary' }),
+      ...minorRoads,
+      ...buildings,
+    ],
+  });
+  assert.ok(scene.commands.some(command => command.kind === 'story-route'));
+  assert.ok(scene.commands.some(command => command.kind === 'settlement-house'));
+  assert.ok(scene.commands.some(command => command.kind === 'landmark-house'));
+  assert.ok(scene.commands.some(command => command.kind === 'traveler'));
+  assert.equal(scene.commands.some(command => command.kind === 'roof-fill'), false);
+  assert.equal(scene.stats.sourceBuildingCount, 80);
+  assert.ok(scene.stats.renderedHouseCount <= 170);
+  assert.ok(scene.stats.retainedMinorRoadCount / scene.stats.sourceMinorRoadCount <= .35);
+  assert.ok(scene.stats.settlementClusterCount >= 8 && scene.stats.settlementClusterCount <= 24);
+  assert.ok(scene.stats.landmarkCount >= 1 && scene.stats.landmarkCount <= 3);
+  assert.equal(scene.stats.storyRouteCount, 1);
+  assert.equal(scene.stats.travelerCount, 1);
+  assert.equal(scene.stats.buildingExtrusionEnabled, true);
+  assert.ok(scene.stats.wallCommands > 0);
+  assert.ok(scene.stats.windowCommands > 0);
+});
+
+test('semantic commandはpaint分岐まで到達し、未定義色や無描画で終わらない', () => {
+  const operations = [];
+  const context = new Proxy({}, {
+    get(target, property) {
+      if (property in target) return target[property];
+      if (property === 'canvas') return { width: 195, height: 422 };
+      return (...args) => { operations.push([property, ...args]); };
+    },
+    set(target, property, value) {
+      assert.notEqual(value, undefined, `${String(property)} must not be undefined`);
+      target[property] = value;
+      operations.push([`set:${String(property)}`, value]);
+      return true;
+    },
+  });
+  const commands = [
+    { kind: 'story-route', sourceKey: 'route', paths: [[[20, 200], [80, 80]]], stroke: '#fff1cf', shadow: '#a65f4d' },
+    { kind: 'settlement-house', sourceKey: 'home', x: 80, y: 120, width: 16, height: 12, seed: 1 },
+    { kind: 'landmark-house', sourceKey: 'goal', x: 120, y: 80, width: 28, height: 24, seed: 2 },
+    { kind: 'traveler', sourceKey: 'traveler', x: 24, y: 196 },
+  ];
+  for (const command of commands) {
+    const before = operations.length;
+    RENDERER.paintCommand(context, command);
+    assert.ok(operations.length > before, `${command.kind} must paint`);
+  }
+  assert.ok(operations.some(([name]) => name === 'fillRect'));
+  assert.ok(operations.some(([name]) => name === 'stroke'));
 });
 
 test('水・道路・地表は複数patternと参考画像1寄りの色を使う', () => {
