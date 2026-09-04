@@ -23,6 +23,7 @@ test('彩色地図素材labは参考・Canvas・50%重ね合わせを同じ原�
   assert.match(page, /rejected-non-local/);
   assert.match(page, /fetch\(sinkUrl, \{ method: 'POST', body: blob \}\)/);
   assert.match(page, /reviewContext\.drawImage\(image, crop\.x, crop\.y, width, height/);
+  assert.match(page, /paintReference\(width \* 2\)/);
   assert.match(page, /document\.body\.dataset\.reviewSheet = 'ready'/);
 });
 
@@ -30,5 +31,5 @@ test('参考画像はqueryからだけ読み込み、公開repo内bitmapへ依�
   assert.doesNotMatch(page, /d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa|image-1\.jpg/);
   assert.match(page, /image\.src = referenceUrl/);
   assert.match(page, /usage|ローカルQA/);
-  assert.match(page, /illustrated-reference-materials\.js\?v=illustrated-reference-3/);
+  assert.match(page, /illustrated-reference-materials\.js\?v=illustrated-reference-4/);
 });

@@ -1,7 +1,7 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-illustrated-reference-materials/3';
+  const version = 'pixelmap-illustrated-reference-materials/4';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -123,6 +123,122 @@
         outer: [[7, 20], [12, 19], [14, 21], [14, 26], [8, 26], [7, 24]],
         inner: [[9, 21], [12, 21], [12, 25], [9, 25]],
       },
+    },
+    'tree-round-canopy-01': {
+      family: 'tree',
+      structure: 'round-irregular-canopy',
+      nativeSize: [36, 34],
+      source: {
+        reference: 'image-1.jpg (d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa)',
+        imageSize: [736, 952],
+        crop: { x: 195, y: 539, width: 36, height: 34 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(17% 38%, 22% 23%, 31% 9%, 62% 8%, 73% 17%, 84% 31%, 87% 57%, 100% 67%, 100% 85%, 73% 91%, 37% 88%, 22% 72%)',
+      fitBounds: { minX: 5, minY: 2, maxX: 36, maxY: 32 },
+      palette: {
+        ink: '#14200e',
+        inkDeep: '#030a00',
+        inkSoft: '#303d25',
+        crown: '#8baa82',
+        crownLight: '#aac79e',
+        crownPale: '#adc99f',
+        crownMid: '#7f9e78',
+        crownShade: '#5f7657',
+        crownDark: '#394b31',
+        shadow: '#8a927a',
+        shadowLight: '#adb095',
+        shadowDark: '#68705c',
+      },
+      crownOutline: [[9, 9], [11, 5], [14, 3], [18, 3], [20, 4], [22, 3], [24, 6],
+        [27, 6], [29, 9], [30, 13], [30, 18], [28, 21], [27, 24], [24, 26],
+        [20, 28], [14, 27], [11, 25], [8, 23], [7, 19], [7, 14]],
+      pixelPalette: {
+        0: '#040e00', 1: '#121a03', 2: '#212d09', 3: '#353512',
+        4: '#273a1b', 5: '#36472a', 6: '#484323', 7: '#3d5834',
+        8: '#55502e', 9: '#545d40', A: '#516f48', B: '#63644e',
+        C: '#647958', D: '#727551', E: '#768a67', F: '#8c886b',
+        G: '#859473', H: '#7d9f78', I: '#979b78', J: '#a5a581',
+        K: '#94b289', L: '#afb38f', M: '#a7c59c', N: '#bebe97',
+        O: '#b5d3ab', P: '#cacaa0', Q: '#d1d2ad', R: '#ddd8aa',
+        S: '#dbe1b4', T: '#e8ddb8', U: '#e5e9b9', V: '#efecc5',
+      },
+      shadowPixelRows: [
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '..............................JINRS.',
+        '..............................JINQRS',
+        '..............................JINSSS',
+        '..............................JJPSSS',
+        '.............................KMLNVRT',
+        '.............................LMMPSV.',
+        '.............................NPNTT..',
+        '............................LNQJP...',
+        '............................MMSG....',
+        '...........................KOMS.....',
+        '..........................EGPI......',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+      ],
+      shadowAlphaRows: {
+        18: .1, 19: .14, 20: .2, 21: .26, 22: .3, 23: .27,
+        24: .23, 25: .19, 26: .15, 27: .1, 28: .06,
+      },
+      pixelRows: [
+        '....................................',
+        '....................................',
+        '....................................',
+        '...........LLNDB6JTF86..............',
+        '..........E623151550209.............',
+        '..........0DJ25OF41BN2B.............',
+        '.........F0EOKKMMKKMM7154...........',
+        '........B04JOMKEAKEKHA2522..........',
+        '.......J19IOC5AAE27KAAKOMA0.........',
+        '.......I1DMO57HMMAKMEAACKE2.........',
+        '........E0COE5KOMOMMKCA4GE40........',
+        '........C0AL91HMMMKHKKK7HKC0........',
+        '........07KE5KKOMKM7EM74KM90........',
+        '.......0EMMKOMMMMMMEAHA7EE11........',
+        '.......1HMMACMKKKCE77E55GG25J.......',
+        '........HOA0797MH422CKEGGC47GL......',
+        '........4KECC05MHC5GGBBE5119FE......',
+        '........0EKOK574HKGG5195049DFF......',
+        '........0855EE7AKA0725C91BGFFI......',
+        '.........3207KHHH4215GGE14EGEF......',
+        '..........41HHHKHHCCEEE507GGE.......',
+        '..........414CHEEH72A9404EGGI.......',
+        '..........I911C54B110119EIGG........',
+        '............B10100599CEEEGGG........',
+        '............LB6DD8FFFFFFIFII........',
+        '.............JFIIFFFFFFFIFF.........',
+        '..............IEEIEGGGGGGG..........',
+        '..............GIGGGGEEGGG...........',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+        '....................................',
+      ],
     },
   });
 
@@ -250,12 +366,43 @@
     paintPolygon(ctx, asset.equipment.inner, mapper, palette.equipmentLight, palette.equipment, .6);
   }
 
+  function paintPixelRows(ctx, rows, palette, mapper, rowAlphas = null) {
+    rows.forEach((row, rowIndex) => {
+      ctx.globalAlpha = rowAlphas?.[rowIndex] ?? 1;
+      let runStart = 0;
+      while (runStart < row.length) {
+        const symbol = row[runStart];
+        let runEnd = runStart + 1;
+        while (runEnd < row.length && row[runEnd] === symbol) runEnd += 1;
+        if (symbol !== '.') {
+          const from = mapper([runStart, rowIndex]);
+          const to = mapper([runEnd, rowIndex + 1]);
+          ctx.fillStyle = palette[symbol];
+          ctx.fillRect(from[0], from[1], to[0] - from[0], to[1] - from[1]);
+        }
+        runStart = runEnd;
+      }
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function paintTree(ctx, asset, mapper) {
+    paintPixelRows(ctx, asset.shadowPixelRows, asset.pixelPalette, mapper, asset.shadowAlphaRows);
+    ctx.save();
+    ctx.filter = 'blur(.55px)';
+    ctx.globalAlpha = .25;
+    paintPixelRows(ctx, asset.pixelRows, asset.pixelPalette, mapper);
+    ctx.restore();
+    paintPixelRows(ctx, asset.pixelRows, asset.pixelPalette, mapper);
+  }
+
   function paintAsset(ctx, assetId, { x = 0, y = 0, scale = 1 } = {}) {
     const asset = catalog[assetId];
     if (!asset) return false;
     const mapper = point => [x + point[0] * scale, y + point[1] * scale];
     ctx.save();
     if (asset.family === 'building') paintBuilding(ctx, asset, mapper);
+    if (asset.family === 'tree') paintTree(ctx, asset, mapper);
     ctx.restore();
     return true;
   }

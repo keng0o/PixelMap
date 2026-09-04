@@ -92,7 +92,7 @@
     </section>
     <img data-review-sheet alt="" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
   </main>
-  <script src="../assets/illustrated-reference-materials.js?v=illustrated-reference-3"></script>
+  <script src="../assets/illustrated-reference-materials.js?v=illustrated-reference-4"></script>
   <script>
     (() => {
       'use strict';
@@ -137,9 +137,14 @@
               const reviewContext = review.getContext('2d');
               const rendered = document.querySelector('[data-render]');
               const crop = asset.source.crop;
-              reviewContext.drawImage(image, crop.x, crop.y, width, height, 0, 0, width, height);
+              reviewContext.fillStyle = '#e8e9c2';
+              reviewContext.fillRect(0, 0, review.width, review.height);
+              const paintReference = offsetX => {
+                reviewContext.drawImage(image, crop.x, crop.y, width, height, offsetX, 0, width, height);
+              };
+              paintReference(0);
               reviewContext.drawImage(rendered, width, 0);
-              reviewContext.drawImage(image, crop.x, crop.y, width, height, width * 2, 0, width, height);
+              paintReference(width * 2);
               reviewContext.globalAlpha = .5;
               reviewContext.drawImage(rendered, width * 2, 0);
               const reviewUrl = review.toDataURL('image/png');
