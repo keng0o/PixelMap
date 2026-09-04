@@ -9,11 +9,12 @@ const MATERIALS = globalThis.PixelMapIllustratedReferenceMaterials;
 const source = await readFile(new URL('../assets/illustrated-reference-materials.js', import.meta.url), 'utf8');
 
 test('彩色地図の寄棟建物を添付画像の原寸cropと別カタログで公開する', () => {
-  assert.equal(MATERIALS.version, 'pixelmap-illustrated-reference-materials/5');
+  assert.equal(MATERIALS.version, 'pixelmap-illustrated-reference-materials/6');
   assert.deepEqual(Object.keys(MATERIALS.catalog), [
     'building-red-hipped-annex-01',
     'tree-round-canopy-01',
     'building-gabled-side-wing-02',
+    'tree-overlapping-trio-02',
   ]);
   const building = MATERIALS.catalog['building-red-hipped-annex-01'];
   assert.equal(building.family, 'building');
@@ -23,6 +24,21 @@ test('彩色地図の寄棟建物を添付画像の原寸cropと別カタログ�
   assert.deepEqual(building.source.crop, { x: 51, y: 498, width: 61, height: 52 });
   assert.match(building.source.reference, /d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa/);
   assert.equal(building.source.usage, 'local-visual-qa-only');
+});
+
+test('大小3つの樹冠が重なる樹木群を共通影と別ランで公開する', () => {
+  const trees = MATERIALS.catalog['tree-overlapping-trio-02'];
+  assert.equal(trees.family, 'tree');
+  assert.equal(trees.structure, 'overlapping-trio');
+  assert.equal(trees.renderMode, 'pixel-runs');
+  assert.deepEqual(trees.nativeSize, [54, 50]);
+  assert.deepEqual(trees.source.crop, { x: 345, y: 112, width: 54, height: 50 });
+  assert.equal(trees.pixelRows.length, 50);
+  assert.ok(trees.pixelRows.every(row => row.length === 54));
+  assert.equal(trees.shadowPixelRows.length, 50);
+  assert.ok(trees.shadowPixelRows.every(row => row.length === 54));
+  assert.equal(Object.keys(trees.pixelPalette).length, 32);
+  assert.equal(Object.keys(trees.shadowAlphaRows).length, 25);
 });
 
 test('彩色地図の小型切妻建物を側面張り出しと影の別ランで公開する', () => {

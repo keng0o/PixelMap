@@ -31,5 +31,5 @@ test('参考画像はqueryからだけ読み込み、公開repo内bitmapへ依�
   assert.doesNotMatch(page, /d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa|image-1\.jpg/);
   assert.match(page, /image\.src = referenceUrl/);
   assert.match(page, /usage|ローカルQA/);
-  assert.match(page, /illustrated-reference-materials\.js\?v=illustrated-reference-5/);
+  assert.match(page, /illustrated-reference-materials\.js\?v=illustrated-reference-6/);
 });
