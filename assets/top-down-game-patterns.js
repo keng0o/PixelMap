@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/5';
-  const styleId = 'top-down-hand-drawn-game-v5';
+  const version = 'pixelmap-top-down-patterns/6';
+  const styleId = 'top-down-hand-drawn-game-v6';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -61,6 +61,7 @@
       }),
       pattern('building-hipped', 'roof', 'tapered-parallel-ridges', {
         structure: 'hipped', palette: 'blue', lineDirection: 'longest-edge-only', handDrawn: true,
+        referenceAsset: 'building-blue-hipped-02',
       }),
       pattern('building-flat-workshop', 'roof', 'offset-long-seams', {
         structure: 'flat', palette: 'slate', lineDirection: 'longest-edge-only', handDrawn: true,
@@ -74,7 +75,9 @@
         crown: 'light', radius: 13, handDrawn: true, referenceAsset: 'tree-round-crown-01',
       }),
       pattern('tree-dark-crown', 'tree', 'scalloped-layered-crown', { crown: 'dark', radius: 14, handDrawn: true }),
-      pattern('tree-small', 'tree', 'scalloped-layered-crown', { crown: 'small', radius: 9, handDrawn: true }),
+      pattern('tree-small', 'tree', 'scalloped-layered-crown', {
+        crown: 'small', radius: 9, handDrawn: true, referenceAsset: 'tree-small-crown-02',
+      }),
       pattern('tree-multi-crown', 'tree', 'scalloped-layered-crown', { crown: 'multi', radius: 15, handDrawn: true }),
       pattern('tree-underbrush', 'tree', 'scalloped-layered-crown', { crown: 'underbrush', radius: 8, handDrawn: true }),
     ],

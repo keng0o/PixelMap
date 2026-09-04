@@ -1,7 +1,7 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-materials/1';
+  const version = 'pixelmap-top-down-materials/2';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -48,6 +48,48 @@
         { axis: 'longest-edge', from: [21, 22], to: [28, 20.5], width: .85, role: 'highlight' },
       ],
     },
+    'building-blue-hipped-02': {
+      family: 'building',
+      nativeSize: [72, 64],
+      source: {
+        reference: 'Photo 1.jpg',
+        crop: { x: 510, y: 592, width: 72, height: 64 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(22% 27%, 74% 19%, 85% 33%, 82% 61%, 92% 68%, 86% 81%, 71% 77%, 25% 83%, 14% 63%)',
+      fitBounds: { minX: 10, minY: 12, maxX: 66, maxY: 53 },
+      palette: {
+        ink: '#233747',
+        inkSoft: '#40596a',
+        shade: '#425f79',
+        shadeDark: '#2b455e',
+        light: '#5a89a6',
+        highlight: '#8d9fa3',
+        shadow: '#344b43',
+      },
+      silhouette: [[16, 17], [53, 12], [61, 21], [59, 39], [66, 43], [62, 51],
+        [51, 49], [18, 53], [10, 40]],
+      facets: [
+        { role: 'highlight', points: [[16, 17], [53, 12], [57, 21], [15, 28]] },
+        { role: 'shadeDark', points: [[15, 28], [57, 21], [59, 39], [18, 46], [10, 40]] },
+        { role: 'light', points: [[18, 46], [59, 39], [66, 43], [62, 51], [51, 49], [18, 53], [10, 40]] },
+        { role: 'shade', points: [[53, 12], [61, 21], [59, 39], [57, 21]] },
+      ],
+      shadowHalf: 'lower-right',
+      inkSegments: [
+        { axis: 'longest-edge', from: [15, 28], to: [57, 21], width: 2.1, role: 'ridge',
+          parts: [[0, .4], [.49, 1]] },
+        { axis: 'longest-edge', from: [21, 22], to: [49, 17], width: 1, role: 'shade-seam',
+          parts: [[0, .55], [.67, 1]] },
+        { axis: 'longest-edge', from: [23, 32], to: [49, 28], width: .9, role: 'shade-seam',
+          parts: [[0, .37], [.49, .73], [.82, 1]] },
+        { axis: 'longest-edge', from: [19, 38], to: [50, 33], width: 1.1, role: 'weather-mark',
+          parts: [[0, .46], [.57, 1]] },
+        { axis: 'longest-edge', from: [22, 48], to: [48, 44], width: 1, role: 'light-seam',
+          parts: [[0, .62], [.74, 1]] },
+        { axis: 'longest-edge', from: [54, 44], to: [63, 45], width: .9, role: 'highlight' },
+      ],
+    },
     'tree-round-crown-01': {
       family: 'tree',
       nativeSize: [48, 48],
@@ -89,6 +131,48 @@
         [[14, 18], [18, 16]], [[29, 17], [33, 20]], [[13, 29], [17, 32]],
         [[30, 34], [34, 31]], [[22, 25], [25, 23]], [[20, 35], [23, 36]],
       ],
+    },
+    'tree-small-crown-02': {
+      family: 'tree',
+      nativeSize: [48, 48],
+      source: {
+        reference: 'Photo 1.jpg',
+        crop: { x: 270, y: 344, width: 48, height: 48 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(48% 10%, 65% 14%, 79% 25%, 89% 42%, 91% 58%, 83% 75%, 67% 87%, 49% 92%, 31% 85%, 16% 77%, 9% 62%, 11% 45%, 20% 28%, 33% 17%)',
+      center: [24, 25],
+      outline: [[23, 5], [31, 7], [38, 12], [42, 18], [44, 25], [41, 32], [37, 38],
+        [31, 42], [24, 44], [17, 41], [10, 37], [6, 30], [5, 23], [9, 16], [15, 9]],
+      palette: {
+        ink: '#2b4038',
+        shadow: '#31493c',
+        dark: '#415940',
+        main: '#637a50',
+        light: '#81945d',
+        highlight: '#9dab6c',
+        detailDark: '#354e3b',
+      },
+      crowns: [
+        { role: 'shadow', x: 26, y: 28, rx: 17, ry: 15, seed: 102 },
+        { role: 'main', x: 23, y: 24, rx: 19, ry: 18, seed: 111 },
+        { role: 'main', x: 29, y: 26, rx: 11, ry: 12, seed: 112 },
+        { role: 'dark', x: 14, y: 24, rx: 6, ry: 6, seed: 121 },
+        { role: 'dark', x: 22, y: 12, rx: 5, ry: 4, seed: 122 },
+        { role: 'dark', x: 35, y: 26, rx: 6, ry: 7, seed: 123 },
+        { role: 'dark', x: 26, y: 37, rx: 5, ry: 5, seed: 124 },
+        { role: 'highlight', x: 23, y: 24, rx: 10, ry: 9, seed: 131 },
+        { role: 'highlight', x: 14, y: 15, rx: 5, ry: 5, seed: 132 },
+        { role: 'highlight', x: 31, y: 15, rx: 5, ry: 4, seed: 133 },
+        { role: 'highlight', x: 12, y: 32, rx: 4, ry: 5, seed: 134 },
+        { role: 'detail', x: 19, y: 23, rx: 3, ry: 3, seed: 141 },
+        { role: 'detail', x: 28, y: 27, rx: 3, ry: 4, seed: 142 },
+      ],
+      inkMarks: [
+        [[10, 18], [14, 15]], [[30, 10], [34, 13]], [[37, 23], [40, 27]],
+        [[12, 34], [17, 37]], [[23, 26], [27, 24]],
+      ],
+      glint: [14.5, 13],
     },
   });
 
@@ -159,7 +243,7 @@
     ctx.fill();
     for (const facet of asset.facets) {
       tracePolygon(ctx, facet.points, mapper);
-      ctx.fillStyle = facet.role === 'light' ? palette.light : palette.shade;
+      ctx.fillStyle = palette[facet.role] || (facet.role === 'light' ? palette.light : palette.shade);
       ctx.fill();
     }
 
@@ -178,17 +262,24 @@
 
     for (let index = 0; index < asset.inkSegments.length; index += 1) {
       const segment = asset.inkSegments[index];
-      const from = mapper(segment.from);
-      const to = mapper(segment.to);
-      ctx.beginPath();
-      ctx.moveTo(from[0], from[1]);
-      ctx.lineTo(to[0], to[1]);
-      ctx.strokeStyle = segment.role === 'highlight' ? palette.highlight :
-        segment.role === 'weather-mark' ? palette.ink : palette.shadeDark;
-      ctx.lineWidth = segment.width;
-      ctx.lineCap = 'round';
-      ctx.globalAlpha = segment.role === 'highlight' ? .82 : .9;
-      ctx.stroke();
+      const parts = segment.parts || [[0, 1]];
+      for (const [start, end] of parts) {
+        const interpolate = ratio => [
+          segment.from[0] + (segment.to[0] - segment.from[0]) * ratio,
+          segment.from[1] + (segment.to[1] - segment.from[1]) * ratio,
+        ];
+        const from = mapper(interpolate(start));
+        const to = mapper(interpolate(end));
+        ctx.beginPath();
+        ctx.moveTo(from[0], from[1]);
+        ctx.lineTo(to[0], to[1]);
+        ctx.strokeStyle = segment.role === 'highlight' ? palette.highlight :
+          segment.role === 'weather-mark' ? palette.ink : palette.shadeDark;
+        ctx.lineWidth = segment.width;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = segment.role === 'highlight' ? .82 : .9;
+        ctx.stroke();
+      }
     }
     ctx.globalAlpha = 1;
   }
@@ -232,7 +323,7 @@
       ctx.lineTo(to[0], to[1]);
       ctx.stroke();
     }
-    const glint = mapper([18.5, 20]);
+    const glint = mapper(asset.glint || [18.5, 20]);
     const glintRadius = Math.max(.65, Math.hypot(...mapper([1, 0]).map((value, index) => value - mapper([0, 0])[index])) * 1.1);
     ctx.fillStyle = palette.highlight;
     ctx.globalAlpha = .65;

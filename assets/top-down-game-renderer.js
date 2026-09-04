@@ -6,7 +6,7 @@
   const MATERIALS = global.PixelMapTopDownMaterials;
   if (!MATERIALS) throw new Error('PixelMapTopDownMaterials is required');
 
-  const version = 'pixelmap-top-down-renderer/5';
+  const version = 'pixelmap-top-down-renderer/6';
   const compositor = Object.freeze([
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -607,6 +607,18 @@
     ];
   }
 
+  function shouldUseReferenceRoof(frame, assetId, maxScale = 1.65) {
+    const asset = MATERIALS.catalog[assetId];
+    if (!frame || !asset?.fitBounds) return false;
+    const nativeWidth = asset.fitBounds.maxX - asset.fitBounds.minX;
+    const nativeHeight = asset.fitBounds.maxY - asset.fitBounds.minY;
+    if (!(nativeWidth > 0) || !(nativeHeight > 0)) return false;
+    const alongScale = frame.halfU * 2 / nativeWidth;
+    const acrossScale = frame.halfV * 2 / nativeHeight;
+    return Number.isFinite(alongScale) && Number.isFinite(acrossScale) &&
+      Math.max(alongScale, acrossScale) <= maxScale;
+  }
+
   function paintPixelLine(ctx, from, to, color, size = 1, salt = 0) {
     const dx = to[0] - from[0], dy = to[1] - from[1];
     const length = Math.hypot(dx, dy);
@@ -726,6 +738,12 @@
       ctx.restore();
       return;
     }
+    if (command.patternId === 'building-hipped' &&
+        shouldUseReferenceRoof(frame, 'building-blue-hipped-02')) {
+      MATERIALS.paintRoofInFrame(ctx, 'building-blue-hipped-02', frame, { seed: command.seed });
+      ctx.restore();
+      return;
+    }
     paintRoofFacet(ctx, frame, roofShadowSide(frame), command.shade);
     const strokes = roofStrokePlan(frame, command);
     for (const stroke of strokes) {
@@ -819,6 +837,12 @@
       });
       return;
     }
+    if (command.patternId === 'tree-small') {
+      MATERIALS.paintTreeAt(ctx, 'tree-small-crown-02', {
+        x: command.x, y: command.y, radius: r, seed: command.seed,
+      });
+      return;
+    }
     ctx.save();
     ctx.translate(command.x, command.y);
     const crowns = command.patternId === 'tree-multi-crown'
@@ -907,6 +931,6 @@
 
   global.PixelMapTopDownRenderer = Object.freeze({
     version, compositor, buildScene, paintScene, patternAssignments, pointInFeature, distanceToFeature,
-    roofFrame, roofShadowSide, roofStrokePlan,
+    roofFrame, roofShadowSide, roofStrokePlan, shouldUseReferenceRoof,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

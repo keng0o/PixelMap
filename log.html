@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">独立真上視点test</th>
-              <td><code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>から<code>variants/map-09-top-down-game.html</code>へ接続し、実地理の連続座標を保つ北上固定の手描きゲーム表現を検証。参考画像1から実測した青い屋根と単独樹冠を独立Canvas素材へ再構成し、切妻屋根・明るい樹冠patternへ接続。普通建物5種、右下側の屋根半面影、長辺方向だけの途切れ線、凹凸樹冠、地表色むら、道路・水際・屋根の揺れる二重輪郭を描く。名称・浮いたPOI・壁面・高さ押し出しは表示しない。</td>
+              <td><code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>から<code>variants/map-09-top-down-game.html</code>へ接続し、実地理の連続座標を保つ北上固定の手描きゲーム表現を検証。参考画像1から実測した切妻・寄棟風の青い屋根2点と、明るい単独樹冠・小型樹冠2点を独立Canvas素材へ再構成し、対応patternへ接続。寄棟素材は原寸比1.65倍以内だけへ適用し、大型実建物の形状は既存表現で維持する。普通建物5種、右下側の屋根半面影、長辺方向だけの途切れ線、凹凸樹冠、地表色むら、道路・水際・屋根の揺れる二重輪郭を描く。名称・浮いたPOI・壁面・高さ押し出しは表示しない。</td>
               <td>変更なし。本番1・2・4マップは独立真上視点testのmoduleを読み込まず、既存のcell2／cell3描画を維持する。</td>
             </tr>
             <tr>
@@ -216,6 +216,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>参考crop実測の寄棟風屋根・小型樹冠素材を追加</h3>
+          <time datetime="2026-09-04">2026-09-04 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>参考画像1の中央部から寄棟風の青い屋根を72×64px、小型樹冠を48×48pxで切り出して実測。屋根の張り出しを含む外形、灰青の上面、濃い中央影面、青い下側面、長辺方向だけの分断線をCanvas primitiveへ再構成した。樹冠は不整形外周、明るい中心、周縁の4つ以上の暗斑、小さなハイライトへ分解。既存5種の<code>building-hipped</code>と<code>tree-small</code>へ接続し、参考屋根を原寸比1.65倍以内だけへ適用する縮尺ガードで大型実建物の過剰変形を防いだ。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>variants/map-09-top-down-game.html</code>、明示profileの<code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>、素材比較labだけで有効。参考cropはローカルQA時だけ読み込み、GitHub Pagesへは公開しない。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常のstandalone test、cell2／cell3、mobileは変更しない。実地理の連続座標、北上固定、名称・浮いたPOI・壁面・高さ押し出しなしの契約を維持する。</dd></div>
+          <div><dt>確認内容</dt><dd>参考座標・原寸サイズ・3面以上の屋根陰影・長辺線・4つ以上の樹冠暗斑・pattern接続・1.65倍の縮尺ガードを専用テストで確認。原寸／拡大／50% overlay、川崎の大型建物、鎌倉の住宅・森林を実ブラウザで撮影し、独立視覚レビューで全項目PASS。全Nodeテスト303件、66ファイルのビルド、差分検査を完了。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>参考crop実測の建物・樹冠Canvas素材を追加</h3>
