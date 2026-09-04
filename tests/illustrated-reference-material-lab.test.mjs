@@ -4,26 +4,43 @@ import { readFile } from 'node:fs/promises';
 
 const page = await readFile(new URL('../variants/map-11-illustrated-reference-material-lab.html', import.meta.url), 'utf8');
 
-test('彩色地図素材labは参考・Canvas・50%重ね合わせを同じ原寸cropから比較する', () => {
+test('彩色地図素材labは全カタログを参考・Canvas・50%重ね合わせの比較カードにする', () => {
   assert.match(page, /切り抜いた参考素材/);
   assert.match(page, /Canvas primitive/);
   assert.match(page, /50%重ね合わせ/);
   assert.match(page, /image-rendering:\s*pixelated/);
   assert.match(page, /materials\.paintAsset/);
-  assert.match(page, /params\.get\('asset'\)/);
+  assert.match(page, /Object\.entries\(materials\.catalog\)/);
+  assert.match(page, /data-asset-template/);
+  assert.match(page, /data-asset-catalog/);
+  assert.match(page, /data-asset-card/);
+  assert.match(page, /catalogRoot\.append\(card\)/);
+  assert.match(page, /document\.body\.dataset\.assetCount = String\(assetEntries\.length\)/);
+  assert.doesNotMatch(page, /const asset = materials\.catalog\[assetId\] \|\|/);
+});
+
+test('asset queryは単一表示へ絞らず該当カードの強調表示だけに使う', () => {
+  assert.match(page, /const selectedAssetId = params\.get\('asset'\)/);
+  assert.match(page, /card\.dataset\.selected = 'true'/);
+  assert.match(page, /selectedCard\.scrollIntoView/);
+  assert.doesNotMatch(page, /filter\([^\n]*selectedAssetId/);
+});
+
+test('各比較カードは素材ごとの原寸crop・Canvas・レビュー画像を独立生成する', () => {
   assert.match(page, /params\.get\('reference'\)/);
   assert.match(page, /asset\.source\.crop\.x/);
   assert.match(page, /asset\.source\.crop\.y/);
   assert.match(page, /asset\.referenceClipPath/);
   assert.match(page, /data-review-sheet/);
   assert.match(page, /data-download-review/);
-  assert.match(page, /download="illustrated-reference-review\.png"/);
+  assert.match(page, /download = `illustrated-reference-review-\$\{assetId\}\.png`/);
   assert.match(page, /params\.get\('reviewSink'\)/);
   assert.match(page, /sinkUrl\.hostname === '127\.0\.0\.1'/);
   assert.match(page, /rejected-non-local/);
   assert.match(page, /fetch\(sinkUrl, \{ method: 'POST', body: blob \}\)/);
   assert.match(page, /reviewContext\.drawImage\(image, crop\.x, crop\.y, width, height/);
   assert.match(page, /paintReference\(width \* 2\)/);
+  assert.match(page, /card\.dataset\.reviewSheet = 'ready'/);
   assert.match(page, /document\.body\.dataset\.reviewSheet = 'ready'/);
 });
 

@@ -15,9 +15,17 @@
     body { margin: 0; min-width: 320px; background: #17211d; }
     main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 48px; }
     h1 { margin: 0 0 8px; font-size: 20px; }
-    p { margin: 0 0 24px; color: #bac4aa; font-size: 12px; line-height: 1.6; }
+    h2 { margin: 0; font-size: 15px; }
+    p { margin: 0; color: #bac4aa; font-size: 12px; line-height: 1.6; }
     code { color: #f6b49d; }
-    .review-download { display: inline-block; margin: -10px 0 22px; color: #f6b49d; font-size: 12px; }
+    .page-intro { margin-bottom: 26px; }
+    .asset-catalog { display: grid; gap: 30px; }
+    .asset-card { padding: 16px; border: 1px solid #637064; background: #1b2721; scroll-margin-top: 18px; }
+    .asset-card[data-selected="true"] { border-color: #f6b49d; box-shadow: 0 0 0 2px #f6b49d55; }
+    .asset-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+    .asset-meta { display: grid; gap: 4px; }
+    .asset-id { font-size: 10px; }
+    .review-download { display: inline-block; color: #f6b49d; font-size: 11px; white-space: nowrap; }
     .review-download:not([href]) { color: #778278; pointer-events: none; }
     .comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
     figure { min-width: 0; margin: 0; padding: 14px; border: 1px solid #637064; background: #202d27; }
@@ -26,7 +34,7 @@
       position: relative;
       display: grid;
       place-items: center;
-      min-height: 330px;
+      min-height: 260px;
       overflow: hidden;
       background-color: #d9d7c3;
       background-image:
@@ -66,31 +74,44 @@
     .overlay canvas { opacity: .5; }
     [data-reference-missing] { color: #5d6659; font-size: 11px; text-align: center; }
     @media (max-width: 760px) {
+      main { width: min(100% - 20px, 560px); padding-top: 20px; }
+      .asset-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
       .comparison { grid-template-columns: 1fr; }
-      .stage { min-height: 260px; }
+      .stage { min-height: 240px; }
     }
   </style>
 </head>
 <body>
   <main>
-    <h1>彩色地図の参考cropとCanvas primitiveの原寸比較</h1>
-    <p>参考画像は<code>reference</code> queryからローカルQA時だけ読み込みます。Canvas側はbitmapを貼らず、輪郭と構造をフラットカラーで描画します。素材本体はノイズ・グラデーションなしです。</p>
-    <a class="review-download" data-download-review download="illustrated-reference-review.png">QAレビュー画像を保存</a>
-    <section class="comparison" aria-label="彩色地図素材比較">
-      <figure>
-        <figcaption>切り抜いた参考素材</figcaption>
-        <div class="stage"><div class="crop-frame" data-reference-frame></div><span data-reference-missing hidden>reference queryなし</span></div>
-      </figure>
-      <figure>
-        <figcaption>Canvas primitive</figcaption>
-        <div class="stage"><canvas data-render aria-label="Canvasで再構成した素材"></canvas></div>
-      </figure>
-      <figure>
-        <figcaption>50%重ね合わせ</figcaption>
-        <div class="stage"><div class="overlay" data-overlay><div class="crop-frame" data-overlay-reference></div><canvas data-overlay-render></canvas></div></div>
-      </figure>
-    </section>
-    <img data-review-sheet alt="" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+    <h1>彩色地図の全素材 Canvas比較</h1>
+    <p class="page-intro">カタログ内の全素材を一覧表示します。参考画像は<code>reference</code> queryからローカルQA時だけ読み込みます。Canvas側はbitmapを貼らず、輪郭と構造をフラットカラーで描画します。素材本体はノイズ・グラデーションなしです。</p>
+    <section class="asset-catalog" data-asset-catalog aria-label="彩色地図の全素材比較"></section>
+    <template data-asset-template>
+      <article class="asset-card" data-asset-card>
+        <header class="asset-heading">
+          <div class="asset-meta">
+            <h2 data-asset-title></h2>
+            <code class="asset-id" data-asset-id></code>
+          </div>
+          <a class="review-download" data-download-review>QAレビュー画像を保存</a>
+        </header>
+        <section class="comparison" aria-label="素材比較">
+          <figure>
+            <figcaption>切り抜いた参考素材</figcaption>
+            <div class="stage"><div class="crop-frame" data-reference-frame></div><span data-reference-missing hidden>reference queryなし</span></div>
+          </figure>
+          <figure>
+            <figcaption>Canvas primitive</figcaption>
+            <div class="stage"><canvas data-render aria-label="Canvasで再構成した素材"></canvas></div>
+          </figure>
+          <figure>
+            <figcaption>50%重ね合わせ</figcaption>
+            <div class="stage"><div class="overlay" data-overlay><div class="crop-frame" data-overlay-reference></div><canvas data-overlay-render></canvas></div></div>
+          </figure>
+        </section>
+        <img data-review-sheet alt="" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+      </article>
+    </template>
   </main>
   <script src="../assets/illustrated-reference-materials.js?v=illustrated-reference-7"></script>
   <script>
@@ -98,89 +119,136 @@
       'use strict';
       const materials = window.PixelMapIllustratedReferenceMaterials;
       const params = new URLSearchParams(location.search);
-      const defaultAssetId = 'building-red-hipped-annex-01';
-      const assetId = params.get('asset') || defaultAssetId;
-      const asset = materials.catalog[assetId] || materials.catalog[defaultAssetId];
-      const [width, height] = asset.nativeSize;
-      const [sourceWidth, sourceHeight] = asset.source.imageSize;
-      const scale = Math.max(3, Math.min(10, Math.floor(300 / Math.max(width, height))));
-      const root = document.documentElement.style;
-      root.setProperty('--preview-scale', scale);
-      root.setProperty('--native-width', `${width}px`);
-      root.setProperty('--native-height', `${height}px`);
-      root.setProperty('--source-width', `${sourceWidth}px`);
-      root.setProperty('--source-height', `${sourceHeight}px`);
-      root.setProperty('--crop-x', `${asset.source.crop.x}px`);
-      root.setProperty('--crop-y', `${asset.source.crop.y}px`);
-      root.setProperty('--reference-clip', asset.referenceClipPath);
+      const selectedAssetId = params.get('asset');
+      const referenceUrl = params.get('reference');
+      const reviewSink = params.get('reviewSink');
+      const assetEntries = Object.entries(materials.catalog);
+      const catalogRoot = document.querySelector('[data-asset-catalog]');
+      const template = document.querySelector('[data-asset-template]');
+      const selectedExists = Boolean(selectedAssetId && materials.catalog[selectedAssetId]);
+      const sinkAssetId = selectedExists ? selectedAssetId : assetEntries[0][0];
+      const assetTitles = {
+        'building-red-hipped-annex-01': '赤い寄棟屋根と付属棟',
+        'tree-round-canopy-01': '丸い単木',
+        'building-gabled-side-wing-02': '側面張り出し付き切妻建物',
+        'tree-overlapping-trio-02': '大小3樹冠の重なり',
+      };
+      let readyReviewCount = 0;
+      let selectedCard = null;
 
-      for (const canvas of document.querySelectorAll('canvas')) {
-        canvas.width = width;
-        canvas.height = height;
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        materials.paintAsset(canvas.getContext('2d'), assetId);
+      function setAssetVariables(card, asset) {
+        const [width, height] = asset.nativeSize;
+        const [sourceWidth, sourceHeight] = asset.source.imageSize;
+        const scale = Math.max(3, Math.min(7, Math.floor(230 / Math.max(width, height))));
+        card.style.setProperty('--preview-scale', scale);
+        card.style.setProperty('--native-width', `${width}px`);
+        card.style.setProperty('--native-height', `${height}px`);
+        card.style.setProperty('--source-width', `${sourceWidth}px`);
+        card.style.setProperty('--source-height', `${sourceHeight}px`);
+        card.style.setProperty('--crop-x', `${asset.source.crop.x}px`);
+        card.style.setProperty('--crop-y', `${asset.source.crop.y}px`);
+        card.style.setProperty('--reference-clip', asset.referenceClipPath);
       }
 
-      const referenceUrl = params.get('reference');
-      const referenceFrames = [...document.querySelectorAll('[data-reference-frame], [data-overlay-reference]')];
-      if (referenceUrl) {
+      function paintCanvases(card, assetId, asset) {
+        const [width, height] = asset.nativeSize;
+        for (const canvas of card.querySelectorAll('canvas')) {
+          canvas.width = width;
+          canvas.height = height;
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+          materials.paintAsset(canvas.getContext('2d'), assetId);
+        }
+      }
+
+      function exportReviewIfRequested(review, assetId) {
+        if (!reviewSink || assetId !== sinkAssetId) return;
+        const sinkUrl = new URL(reviewSink, location.href);
+        const isLocalSink = sinkUrl.protocol === 'http:' &&
+          (sinkUrl.hostname === '127.0.0.1' || sinkUrl.hostname === 'localhost');
+        if (isLocalSink) {
+          review.toBlob(blob => {
+            fetch(sinkUrl, { method: 'POST', body: blob })
+              .then(response => {
+                document.body.dataset.reviewExport = response.ok ? 'saved' : 'failed';
+              })
+              .catch(() => { document.body.dataset.reviewExport = 'failed'; });
+          }, 'image/png');
+        } else {
+          document.body.dataset.reviewExport = 'rejected-non-local';
+        }
+      }
+
+      function makeReviewSheet(card, image, assetId, asset) {
+        const [width, height] = asset.nativeSize;
+        const review = document.createElement('canvas');
+        review.width = width * 3;
+        review.height = height;
+        const reviewContext = review.getContext('2d');
+        const rendered = card.querySelector('[data-render]');
+        const crop = asset.source.crop;
+        reviewContext.fillStyle = '#e8e9c2';
+        reviewContext.fillRect(0, 0, review.width, review.height);
+        const paintReference = offsetX => {
+          reviewContext.drawImage(image, crop.x, crop.y, width, height, offsetX, 0, width, height);
+        };
+        paintReference(0);
+        reviewContext.drawImage(rendered, width, 0);
+        paintReference(width * 2);
+        reviewContext.globalAlpha = .5;
+        reviewContext.drawImage(rendered, width * 2, 0);
+        const reviewUrl = review.toDataURL('image/png');
+        card.querySelector('[data-review-sheet]').src = reviewUrl;
+        const downloadLink = card.querySelector('[data-download-review]');
+        downloadLink.href = reviewUrl;
+        downloadLink.download = `illustrated-reference-review-${assetId}.png`;
+        card.dataset.reviewSheet = 'ready';
+        readyReviewCount += 1;
+        if (readyReviewCount === assetEntries.length) document.body.dataset.reviewSheet = 'ready';
+        exportReviewIfRequested(review, assetId);
+      }
+
+      function populateReference(card, assetId, asset) {
+        const referenceFrames = [...card.querySelectorAll('[data-reference-frame], [data-overlay-reference]')];
+        if (!referenceUrl) {
+          for (const frame of referenceFrames) frame.hidden = true;
+          card.querySelector('[data-reference-missing]').hidden = false;
+          return;
+        }
         referenceFrames.forEach((frame, index) => {
           const image = new Image();
           image.alt = '';
           image.crossOrigin = 'anonymous';
           if (index === 0) {
-            image.addEventListener('load', () => {
-              const review = document.createElement('canvas');
-              review.width = width * 3;
-              review.height = height;
-              const reviewContext = review.getContext('2d');
-              const rendered = document.querySelector('[data-render]');
-              const crop = asset.source.crop;
-              reviewContext.fillStyle = '#e8e9c2';
-              reviewContext.fillRect(0, 0, review.width, review.height);
-              const paintReference = offsetX => {
-                reviewContext.drawImage(image, crop.x, crop.y, width, height, offsetX, 0, width, height);
-              };
-              paintReference(0);
-              reviewContext.drawImage(rendered, width, 0);
-              paintReference(width * 2);
-              reviewContext.globalAlpha = .5;
-              reviewContext.drawImage(rendered, width * 2, 0);
-              const reviewUrl = review.toDataURL('image/png');
-              document.querySelector('[data-review-sheet]').src = reviewUrl;
-              document.querySelector('[data-download-review]').href = reviewUrl;
-              document.body.dataset.reviewSheet = 'ready';
-              const reviewSink = params.get('reviewSink');
-              if (reviewSink) {
-                const sinkUrl = new URL(reviewSink, location.href);
-                const isLocalSink = sinkUrl.protocol === 'http:' &&
-                  (sinkUrl.hostname === '127.0.0.1' || sinkUrl.hostname === 'localhost');
-                if (isLocalSink) {
-                  review.toBlob(blob => {
-                    fetch(sinkUrl, { method: 'POST', body: blob })
-                      .then(response => {
-                        document.body.dataset.reviewExport = response.ok ? 'saved' : 'failed';
-                      })
-                      .catch(() => { document.body.dataset.reviewExport = 'failed'; });
-                  }, 'image/png');
-                } else {
-                  document.body.dataset.reviewExport = 'rejected-non-local';
-                }
-              }
-            }, { once: true });
+            image.addEventListener('load', () => makeReviewSheet(card, image, assetId, asset), { once: true });
           }
           image.src = referenceUrl;
           frame.append(image);
         });
-      } else {
-        for (const frame of referenceFrames) frame.hidden = true;
-        document.querySelector('[data-reference-missing]').hidden = false;
       }
 
-      document.body.dataset.asset = assetId;
+      for (const [assetId, asset] of assetEntries) {
+        const card = template.content.firstElementChild.cloneNode(true);
+        card.dataset.assetId = assetId;
+        card.querySelector('[data-asset-title]').textContent = assetTitles[assetId] || assetId;
+        card.querySelector('[data-asset-id]').textContent = assetId;
+        card.querySelector('.comparison').setAttribute('aria-label', `${assetTitles[assetId] || assetId}の素材比較`);
+        card.dataset.sourceCrop = `${asset.source.crop.x},${asset.source.crop.y},${asset.nativeSize[0]},${asset.nativeSize[1]}`;
+        if (assetId === selectedAssetId) {
+          card.dataset.selected = 'true';
+          selectedCard = card;
+        }
+        setAssetVariables(card, asset);
+        paintCanvases(card, assetId, asset);
+        populateReference(card, assetId, asset);
+        catalogRoot.append(card);
+      }
+
+      if (selectedCard) requestAnimationFrame(() => selectedCard.scrollIntoView({ block: 'start' }));
+      if (!referenceUrl) document.body.dataset.reviewSheet = 'reference-missing';
+      document.body.dataset.asset = selectedExists ? selectedAssetId : 'all';
+      document.body.dataset.assetCount = String(assetEntries.length);
       document.body.dataset.materialVersion = materials.version;
-      document.body.dataset.sourceCrop = `${asset.source.crop.x},${asset.source.crop.y},${width},${height}`;
     })();
   </script>
 </body>
