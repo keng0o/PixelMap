@@ -74,7 +74,7 @@
 <body>
   <main>
     <h1>彩色地図の参考cropとCanvas primitiveの原寸比較</h1>
-    <p>参考画像は<code>reference</code> queryからローカルQA時だけ読み込みます。Canvas側はbitmapを貼らず、輪郭・屋根面・棟線・付属棟・設備・影を個別に描画します。</p>
+    <p>参考画像は<code>reference</code> queryからローカルQA時だけ読み込みます。Canvas側はbitmapを貼らず、輪郭と構造をフラットカラーで描画します。素材本体はノイズ・グラデーションなしです。</p>
     <a class="review-download" data-download-review download="illustrated-reference-review.png">QAレビュー画像を保存</a>
     <section class="comparison" aria-label="彩色地図素材比較">
       <figure>
@@ -92,7 +92,7 @@
     </section>
     <img data-review-sheet alt="" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
   </main>
-  <script src="../assets/illustrated-reference-materials.js?v=illustrated-reference-6"></script>
+  <script src="../assets/illustrated-reference-materials.js?v=illustrated-reference-7"></script>
   <script>
     (() => {
       'use strict';

@@ -9,7 +9,7 @@ const MATERIALS = globalThis.PixelMapIllustratedReferenceMaterials;
 const source = await readFile(new URL('../assets/illustrated-reference-materials.js', import.meta.url), 'utf8');
 
 test('彩色地図の寄棟建物を添付画像の原寸cropと別カタログで公開する', () => {
-  assert.equal(MATERIALS.version, 'pixelmap-illustrated-reference-materials/6');
+  assert.equal(MATERIALS.version, 'pixelmap-illustrated-reference-materials/7');
   assert.deepEqual(Object.keys(MATERIALS.catalog), [
     'building-red-hipped-annex-01',
     'tree-round-canopy-01',
@@ -26,37 +26,43 @@ test('彩色地図の寄棟建物を添付画像の原寸cropと別カタログ�
   assert.equal(building.source.usage, 'local-visual-qa-only');
 });
 
-test('大小3つの樹冠が重なる樹木群を共通影と別ランで公開する', () => {
+test('大小3つの樹冠が重なる樹木群を輪郭maskとフラットな3樹冠で公開する', () => {
   const trees = MATERIALS.catalog['tree-overlapping-trio-02'];
   assert.equal(trees.family, 'tree');
   assert.equal(trees.structure, 'overlapping-trio');
-  assert.equal(trees.renderMode, 'pixel-runs');
+  assert.equal(trees.renderMode, 'flat-mask');
   assert.deepEqual(trees.nativeSize, [54, 50]);
   assert.deepEqual(trees.source.crop, { x: 345, y: 112, width: 54, height: 50 });
   assert.equal(trees.pixelRows.length, 50);
   assert.ok(trees.pixelRows.every(row => row.length === 54));
   assert.equal(trees.shadowPixelRows.length, 50);
   assert.ok(trees.shadowPixelRows.every(row => row.length === 54));
-  assert.equal(Object.keys(trees.pixelPalette).length, 32);
-  assert.equal(Object.keys(trees.shadowAlphaRows).length, 25);
+  assert.equal(Object.keys(trees.flatPalette).length, 5);
+  assert.equal(trees.flatFacets.length, 3);
+  assert.equal(trees.flatFacets.filter(facet => facet.stroke).length, 3);
+  assert.equal(trees.shadowAlphaRows, undefined);
+  assert.equal(trees.pixelHaloAlpha, undefined);
 });
 
-test('彩色地図の小型切妻建物を側面張り出しと影の別ランで公開する', () => {
+test('彩色地図の小型切妻建物を輪郭maskとフラットな屋根面で公開する', () => {
   const building = MATERIALS.catalog['building-gabled-side-wing-02'];
   assert.equal(building.family, 'building');
   assert.equal(building.structure, 'gabled-with-side-wing');
-  assert.equal(building.renderMode, 'pixel-runs');
+  assert.equal(building.renderMode, 'flat-mask');
   assert.deepEqual(building.nativeSize, [40, 52]);
   assert.deepEqual(building.source.crop, { x: 82, y: 420, width: 40, height: 52 });
   assert.equal(building.pixelRows.length, 52);
   assert.ok(building.pixelRows.every(row => row.length === 40));
   assert.equal(building.shadowPixelRows.length, 52);
   assert.ok(building.shadowPixelRows.every(row => row.length === 40));
-  assert.equal(Object.keys(building.pixelPalette).length, 32);
-  assert.equal(Object.keys(building.shadowAlphaRows).length, 17);
+  assert.equal(Object.keys(building.flatPalette).length, 5);
+  assert.ok(building.flatFacets.length >= 4);
+  assert.ok(building.flatLines.length >= 3);
+  assert.equal(building.shadowAlphaRows, undefined);
+  assert.equal(building.pixelHaloAlpha, undefined);
 });
 
-test('彩色地図の単木を原寸cropと多層の樹冠primitiveで公開する', () => {
+test('彩色地図の単木を原寸cropとフラットな樹冠面で公開する', () => {
   const tree = MATERIALS.catalog['tree-round-canopy-01'];
   assert.equal(tree.family, 'tree');
   assert.equal(tree.structure, 'round-irregular-canopy');
@@ -67,13 +73,15 @@ test('彩色地図の単木を原寸cropと多層の樹冠primitiveで公開す�
   assert.equal(tree.shadowPixelRows.length, 34);
   assert.ok(tree.shadowPixelRows.every(row => row.length === 36));
   assert.ok(tree.shadowPixelRows.join('').replaceAll('.', '').length >= 50);
-  assert.equal(Object.keys(tree.shadowAlphaRows).length, 11);
   assert.equal(tree.pixelRows.length, 34);
   assert.ok(tree.pixelRows.every(row => row.length === 36));
-  assert.equal(Object.keys(tree.pixelPalette).length, 32);
   assert.ok(tree.pixelRows.join('').replaceAll('.', '').length >= 440);
-  assert.equal(tree.palette.inkDeep, '#030a00');
-  assert.notEqual(tree.palette.crownLight, tree.palette.crownShade);
+  assert.equal(tree.renderMode, 'flat-mask');
+  assert.equal(Object.keys(tree.flatPalette).length, 5);
+  assert.equal(tree.flatFacets.length, 2);
+  assert.notEqual(tree.flatPalette.light, tree.flatPalette.shade);
+  assert.equal(tree.shadowAlphaRows, undefined);
+  assert.equal(tree.pixelHaloAlpha, undefined);
 });
 
 test('寄棟建物は主屋根4面・付属棟2面・棟線・四隅線・設備・影色を独立primitiveで持つ', () => {
@@ -85,24 +93,26 @@ test('寄棟建物は主屋根4面・付属棟2面・棟線・四隅線・設備
   assert.equal(building.ridgeSegments.filter(segment => segment.role === 'hip').length, 4);
   assert.ok(building.ridgeSegments.some(segment => segment.role === 'annex-ridge'));
   assert.ok(building.equipment.outer.length >= 5);
-  assert.ok(building.shadowShapes.length >= 3);
-  assert.ok(building.shadowMarks.length >= 8);
+  assert.equal(building.shadowShapes.length, 2);
+  assert.ok(building.shadowShapes.every(shape => !('alpha' in shape) && !('blur' in shape)));
   assert.notEqual(building.palette.upper, building.palette.lower);
   assert.equal(building.palette.upper, '#ee9a7a');
   assert.equal(building.palette.lower, '#b1816c');
   assert.equal(building.palette.inkDeep, '#110300');
-  assert.ok(building.washes.length >= 4);
-  assert.ok(building.textureMarks.length >= 6);
-  assert.ok(building.grainMarks.length >= 8);
+  assert.equal(building.washes, undefined);
+  assert.equal(building.textureMarks, undefined);
+  assert.equal(building.grainMarks, undefined);
 });
 
-test('素材描画はbitmap貼付けや外部画像へ依存せずCanvas primitiveだけを使う', () => {
+test('素材描画はbitmap・半透明・ぼかし・グラデーションなしのフラットなCanvas primitiveだけを使う', () => {
   assert.doesNotMatch(source, /drawImage\s*\(/);
   assert.doesNotMatch(source, /new\s+Image\s*\(/);
+  assert.doesNotMatch(source, /globalAlpha|\.filter\s*=|create(?:Linear|Radial)Gradient|paintWash|grainMarks|textureMarks|pixelHaloAlpha|shadowAlphaRows/);
   assert.match(source, /function paintBuilding/);
   assert.match(source, /function paintTree/);
-  assert.match(source, /function paintPixelRows/);
-  assert.match(source, /function paintPixelMaterial/);
+  assert.match(source, /function paintPixelMask/);
+  assert.match(source, /function paintFlatPixelMaterial/);
+  assert.match(source, /function paintPixelOutline/);
   assert.match(source, /function paintPolygon/);
   assert.match(source, /function paintAsset/);
 });

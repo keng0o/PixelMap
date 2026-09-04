@@ -218,6 +218,18 @@
       </div>
       <article class="entry">
         <div class="entry-header">
+          <h3>彩色地図Canvas素材をノイズなしのフラットカラーへ整理</h3>
+          <time datetime="2026-09-04">2026-09-04 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>彩色地図cropから再構成した建物2点・樹木2点について、細かな色斑、粒状線、半透明wash、ぼかしhalo、行別の影濃度変化を削除。元cropに合わせた1px輪郭maskと、寄棟・切妻・付属棟・3樹冠の構造は維持し、内部をbase／light／shadeの大きな単色面、外周を単色outline、影を硬い単色面へ置き換えた。素材描画はbitmap・半透明・blur・Canvas gradientへ依存しない。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>variants/map-11-illustrated-reference-material-lab.html</code>の4素材だけで有効。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常のstandalone test、独立top-down game、cell2／cell3、mobileは変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>4素材の参考crop／Canvas／50% overlayを実ブラウザで撮影。ノイズ・斑点・グラデーション・ぼかしの除去、輪郭と配置、建物構造、樹冠の重なり、単色影を独立視覚レビューし、4素材すべてPASS。Nodeテスト333件、68ファイルの静的ビルド、差分検査を完了。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>色面優先の手描き素材階層へ調整</h3>
           <time datetime="2026-09-04">2026-09-04 JST</time>
         </div>

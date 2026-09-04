@@ -1,7 +1,7 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-illustrated-reference-materials/6';
+  const version = 'pixelmap-illustrated-reference-materials/7';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -31,12 +31,7 @@
         inkDeep: '#110300',
         inkSoft: '#623a28',
         upper: '#ee9a7a',
-        upperLight: '#e79f77',
-        upperHighlight: '#e7b28e',
-        upperWash: '#e69776',
         lower: '#b1816c',
-        lowerShade: '#a47763',
-        lowerLight: '#ca8669',
         left: '#ca8669',
         right: '#a47763',
         annexLeft: '#e09370',
@@ -44,26 +39,12 @@
         equipment: '#62614c',
         equipmentLight: '#93977c',
         shadow: '#7f806a',
-        shadowLight: '#93977c',
-        shadowDark: '#4a4732',
       },
       shadowShapes: [
-        { role: 'shadowLight', alpha: .7, blur: 1.05,
+        { role: 'shadow',
           points: [[3, 37], [11, 41], [29, 41], [48, 44], [43, 47], [35, 46], [29, 48], [18, 46], [9, 47], [1, 41]] },
-        { role: 'shadow', alpha: .66, blur: 1.25,
+        { role: 'shadow',
           points: [[53, 7], [59, 9], [61, 16], [60, 37], [56, 44], [53, 39], [57, 30]] },
-        { role: 'shadowDark', alpha: .28, blur: .8,
-          points: [[7, 40], [42, 40], [48, 43], [38, 44], [9, 43]] },
-      ],
-      shadowMarks: [
-        { x: 7, y: 43, w: 4, h: 2, role: 'shadowDark', alpha: .28 },
-        { x: 14, y: 45, w: 3, h: 1.4, role: 'shadow', alpha: .52 },
-        { x: 21, y: 43, w: 4, h: 2, role: 'shadowDark', alpha: .24 },
-        { x: 29, y: 46, w: 3, h: 1.3, role: 'shadow', alpha: .5 },
-        { x: 36, y: 44, w: 4, h: 1.5, role: 'shadowDark', alpha: .24 },
-        { x: 56, y: 14, w: 3, h: 3, role: 'shadowDark', alpha: .33 },
-        { x: 58, y: 23, w: 3, h: 2, role: 'shadowLight', alpha: .52 },
-        { x: 56, y: 34, w: 4, h: 3, role: 'shadowDark', alpha: .3 },
       ],
       mainOutline: [[2, 5], [53, 5], [57, 10], [57, 34], [52, 40], [49, 42],
         [7, 42], [2, 36], [1, 10]],
@@ -92,33 +73,6 @@
         { role: 'annex-ridge', from: [44, 33], to: [45, 48], width: .85,
           points: [[44, 33], [44.7, 39], [45, 48]] },
       ],
-      washes: [
-        { role: 'upperHighlight', x: 26, y: 12, rx: 21, ry: 5, alpha: .24 },
-        { role: 'upperWash', x: 40, y: 18, rx: 11, ry: 4, alpha: .18 },
-        { role: 'lowerLight', x: 19, y: 31, rx: 12, ry: 7, alpha: .14 },
-        { role: 'lowerShade', x: 38, y: 34, rx: 10, ry: 5, alpha: .17 },
-        { role: 'equipmentLight', x: 55, y: 18, rx: 4, ry: 9, alpha: .12 },
-      ],
-      textureMarks: [
-        { from: [18, 11], to: [34, 11], role: 'upperLight', alpha: .28, width: .55 },
-        { from: [31, 16], to: [45, 16], role: 'upperWash', alpha: .24, width: .65 },
-        { from: [14, 28], to: [25, 29], role: 'lowerLight', alpha: .22, width: .7 },
-        { from: [29, 34], to: [42, 34], role: 'lowerShade', alpha: .17, width: .65 },
-        { from: [6, 17], to: [7, 28], role: 'upperLight', alpha: .22, width: .65 },
-        { from: [54, 16], to: [55, 28], role: 'inkSoft', alpha: .18, width: .7 },
-      ],
-      grainMarks: [
-        { x: 13, y: 8, w: 7, h: 1.2, role: 'upperHighlight', alpha: .18 },
-        { x: 24, y: 10, w: 12, h: 1.1, role: 'upperHighlight', alpha: .14 },
-        { x: 39, y: 8, w: 8, h: 1.3, role: 'upperWash', alpha: .13 },
-        { x: 17, y: 16, w: 9, h: 1, role: 'upperWash', alpha: .12 },
-        { x: 31, y: 19, w: 10, h: 1.2, role: 'upperHighlight', alpha: .13 },
-        { x: 12, y: 27, w: 8, h: 1.2, role: 'lowerLight', alpha: .13 },
-        { x: 23, y: 31, w: 12, h: 1, role: 'lowerShade', alpha: .12 },
-        { x: 35, y: 37, w: 8, h: 1.2, role: 'lowerLight', alpha: .1 },
-        { x: 5, y: 15, w: 1.2, h: 7, role: 'upperHighlight', alpha: .12 },
-        { x: 55, y: 13, w: 1.2, h: 7, role: 'equipmentLight', alpha: .13 },
-      ],
       equipment: {
         outer: [[7, 20], [12, 19], [14, 21], [14, 26], [8, 26], [7, 24]],
         inner: [[9, 21], [12, 21], [12, 25], [9, 25]],
@@ -127,6 +81,7 @@
     'tree-round-canopy-01': {
       family: 'tree',
       structure: 'round-irregular-canopy',
+      renderMode: 'flat-mask',
       nativeSize: [36, 34],
       source: {
         reference: 'image-1.jpg (d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa)',
@@ -136,34 +91,20 @@
       },
       referenceClipPath: 'polygon(17% 38%, 22% 23%, 31% 9%, 62% 8%, 73% 17%, 84% 31%, 87% 57%, 100% 67%, 100% 85%, 73% 91%, 37% 88%, 22% 72%)',
       fitBounds: { minX: 5, minY: 2, maxX: 36, maxY: 32 },
-      pixelHaloAlpha: .25,
-      palette: {
-        ink: '#14200e',
-        inkDeep: '#030a00',
-        inkSoft: '#303d25',
-        crown: '#8baa82',
-        crownLight: '#aac79e',
-        crownPale: '#adc99f',
-        crownMid: '#7f9e78',
-        crownShade: '#5f7657',
-        crownDark: '#394b31',
+      flatPalette: {
+        outline: '#14200e',
+        base: '#7f9e78',
+        light: '#aac79e',
+        shade: '#5f7657',
         shadow: '#8a927a',
-        shadowLight: '#adb095',
-        shadowDark: '#68705c',
       },
+      flatFacets: [
+        { role: 'light', points: [[8, 14], [11, 6], [17, 3], [24, 5], [29, 11], [26, 16], [19, 15], [13, 19]] },
+        { role: 'shade', points: [[15, 18], [24, 15], [30, 18], [26, 25], [20, 28], [12, 25], [10, 22]] },
+      ],
       crownOutline: [[9, 9], [11, 5], [14, 3], [18, 3], [20, 4], [22, 3], [24, 6],
         [27, 6], [29, 9], [30, 13], [30, 18], [28, 21], [27, 24], [24, 26],
         [20, 28], [14, 27], [11, 25], [8, 23], [7, 19], [7, 14]],
-      pixelPalette: {
-        0: '#040e00', 1: '#121a03', 2: '#212d09', 3: '#353512',
-        4: '#273a1b', 5: '#36472a', 6: '#484323', 7: '#3d5834',
-        8: '#55502e', 9: '#545d40', A: '#516f48', B: '#63644e',
-        C: '#647958', D: '#727551', E: '#768a67', F: '#8c886b',
-        G: '#859473', H: '#7d9f78', I: '#979b78', J: '#a5a581',
-        K: '#94b289', L: '#afb38f', M: '#a7c59c', N: '#bebe97',
-        O: '#b5d3ab', P: '#cacaa0', Q: '#d1d2ad', R: '#ddd8aa',
-        S: '#dbe1b4', T: '#e8ddb8', U: '#e5e9b9', V: '#efecc5',
-      },
       shadowPixelRows: [
         '....................................',
         '....................................',
@@ -200,10 +141,6 @@
         '....................................',
         '....................................',
       ],
-      shadowAlphaRows: {
-        18: .1, 19: .14, 20: .2, 21: .26, 22: .3, 23: .27,
-        24: .23, 25: .19, 26: .15, 27: .1, 28: .06,
-      },
       pixelRows: [
         '....................................',
         '....................................',
@@ -244,7 +181,7 @@
     'building-gabled-side-wing-02': {
       family: 'building',
       structure: 'gabled-with-side-wing',
-      renderMode: 'pixel-runs',
+      renderMode: 'flat-mask',
       nativeSize: [40, 52],
       source: {
         reference: 'image-1.jpg (d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa)',
@@ -254,17 +191,26 @@
       },
       referenceClipPath: 'polygon(0% 38%, 65% 11%, 76% 14%, 96% 33%, 96% 52%, 85% 58%, 85% 71%, 73% 79%, 58% 77%, 48% 71%, 30% 83%, 17% 77%, 7% 67%, 5% 54%, 0% 46%)',
       fitBounds: { minX: 0, minY: 6, maxX: 39, maxY: 48 },
-      pixelHaloAlpha: .2,
-      pixelPalette: {
-        0: '#0f0500', 1: '#231002', 2: '#411604', 3: '#2a250e',
-        4: '#412f1a', 5: '#363c25', 6: '#5f2f1c', 7: '#464621',
-        8: '#4e4331', 9: '#56523a', A: '#784834', B: '#685c45',
-        C: '#707154', D: '#8f614f', E: '#828067', F: '#a2725c',
-        G: '#ad7c68', H: '#928f79', I: '#a2a284', J: '#c6907a',
-        K: '#e2916d', L: '#b1b08f', M: '#df9c7e', N: '#ef9875',
-        O: '#d6a58e', P: '#f29f86', Q: '#bfc09b', R: '#cfcfa9',
-        S: '#daddb2', T: '#e2e5ba', U: '#eaebc4', V: '#f6f3d8',
+      flatPalette: {
+        outline: '#231002',
+        base: '#c98b72',
+        light: '#ef9f82',
+        shade: '#ad7563',
+        shadow: '#8a8d73',
       },
+      flatFacets: [
+        { role: 'light', points: [[0, 18], [26, 6], [37, 15], [17, 28], [4, 25]] },
+        { role: 'shade', points: [[4, 25], [17, 28], [20, 39], [13, 44], [6, 39], [2, 31]] },
+        { role: 'base', points: [[17, 28], [37, 15], [39, 29], [29, 33], [25, 39], [20, 39]] },
+        { role: 'light', points: [[25, 30], [34, 31], [36, 37], [29, 40], [25, 37]] },
+        { role: 'shade', points: [[18, 29], [26, 34], [26, 42], [22, 44], [19, 39]] },
+      ],
+      flatLines: [
+        { role: 'outline', points: [[0, 18], [26, 6], [37, 15]], width: 1 },
+        { role: 'outline', points: [[17, 28], [37, 15]], width: 1 },
+        { role: 'outline', points: [[17, 28], [26, 34], [34, 31]], width: 1 },
+        { role: 'outline', points: [[26, 34], [26, 42]], width: 1 },
+      ],
       shadowPixelRows: [
         '........................................',
         '........................................',
@@ -319,11 +265,6 @@
         '........................................',
         '........................................',
       ],
-      shadowAlphaRows: {
-        31: .08, 32: .12, 33: .18, 34: .24, 35: .3, 36: .32,
-        37: .34, 38: .34, 39: .32, 40: .3, 41: .27, 42: .24,
-        43: .2, 44: .16, 45: .12, 46: .08, 47: .05,
-      },
       pixelRows: [
         '........................................',
         '........................................',
@@ -382,7 +323,7 @@
     'tree-overlapping-trio-02': {
       family: 'tree',
       structure: 'overlapping-trio',
-      renderMode: 'pixel-runs',
+      renderMode: 'flat-mask',
       nativeSize: [54, 50],
       source: {
         reference: 'image-1.jpg (d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa)',
@@ -392,17 +333,18 @@
       },
       referenceClipPath: 'polygon(50% 14%, 72% 14%, 85% 24%, 89% 36%, 87% 48%, 81% 54%, 87% 62%, 87% 72%, 80% 78%, 69% 78%, 61% 70%, 57% 58%, 50% 60%, 37% 60%, 28% 54%, 24% 44%, 28% 36%, 39% 30%, 43% 20%)',
       fitBounds: { minX: 13, minY: 7, maxX: 51, maxY: 43 },
-      pixelHaloAlpha: .25,
-      pixelPalette: {
-        0: '#030e00', 1: '#0a1b02', 2: '#1b2308', 3: '#1a3b15',
-        4: '#273015', 5: '#363e1e', 6: '#2a4d24', 7: '#424b2c',
-        8: '#42563c', 9: '#555c36', A: '#446d39', B: '#556547',
-        C: '#686e4a', D: '#5b7e53', E: '#6e7f64', F: '#7a805c',
-        G: '#74976c', H: '#868d6f', I: '#859d7c', J: '#989f7c',
-        K: '#8db783', L: '#a8b089', M: '#96b992', N: '#b8bf97',
-        O: '#a6ce9b', P: '#c5cca4', Q: '#aedbb5', R: '#d0d7ae',
-        S: '#d6dbbc', T: '#dce3b5', U: '#e5e9c5', V: '#efedd5',
+      flatPalette: {
+        outline: '#14200e',
+        base: '#7f9e78',
+        light: '#aac79e',
+        shade: '#5f7657',
+        shadow: '#8a927a',
       },
+      flatFacets: [
+        { role: 'base', stroke: true, points: [[13, 18], [18, 14], [26, 15], [30, 21], [27, 28], [22, 31], [16, 27]] },
+        { role: 'light', stroke: true, points: [[25, 14], [28, 8], [39, 7], [47, 13], [49, 23], [44, 30], [35, 29], [29, 24]] },
+        { role: 'shade', stroke: true, points: [[29, 27], [37, 24], [46, 28], [49, 36], [43, 43], [36, 43], [30, 37]] },
+      ],
       shadowPixelRows: [
         '......................................................',
         '......................................................',
@@ -455,12 +397,6 @@
         '......................................................',
         '......................................................',
       ],
-      shadowAlphaRows: {
-        18: .08, 19: .1, 20: .14, 21: .18, 22: .22, 23: .26,
-        24: .28, 25: .3, 26: .3, 27: .3, 28: .28, 29: .27,
-        30: .26, 31: .24, 32: .22, 33: .2, 34: .18, 35: .16,
-        36: .14, 37: .12, 38: .1, 39: .08, 40: .06, 41: .04, 42: .03,
-      },
       pixelRows: [
         '......................................................',
         '......................................................',
@@ -539,62 +475,17 @@
     ctx.stroke();
   }
 
-  function paintWash(ctx, wash, mapper, palette) {
-    const center = mapper([wash.x, wash.y]);
-    const edgeX = mapper([wash.x + wash.rx, wash.y]);
-    const edgeY = mapper([wash.x, wash.y + wash.ry]);
-    ctx.beginPath();
-    ctx.ellipse(center[0], center[1], Math.abs(edgeX[0] - center[0]), Math.abs(edgeY[1] - center[1]), 0, 0, Math.PI * 2);
-    ctx.fillStyle = palette[wash.role];
-    ctx.globalAlpha = wash.alpha;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-
   function paintBuilding(ctx, asset, mapper) {
     const palette = asset.palette;
     for (const shadow of asset.shadowShapes) {
-      ctx.save();
-      ctx.filter = `blur(${shadow.blur}px)`;
-      ctx.globalAlpha = shadow.alpha;
       paintPolygon(ctx, shadow.points, mapper, palette[shadow.role]);
-      ctx.restore();
     }
-    for (const mark of asset.shadowMarks) {
-      const point = mapper([mark.x, mark.y]);
-      const size = mapper([mark.x + mark.w, mark.y + mark.h]);
-      ctx.fillStyle = palette[mark.role];
-      ctx.globalAlpha = mark.alpha;
-      ctx.fillRect(point[0], point[1], size[0] - point[0], size[1] - point[1]);
-    }
-    ctx.globalAlpha = 1;
 
     paintPolygon(ctx, asset.mainOutline, mapper, palette.lower, palette.inkDeep, 2.35);
     ctx.save();
     tracePolygon(ctx, asset.mainOutline, mapper);
     ctx.clip();
     for (const facet of asset.mainFacets) paintPolygon(ctx, facet.points, mapper, palette[facet.role]);
-    for (const wash of asset.washes) paintWash(ctx, wash, mapper, palette);
-    for (const mark of asset.textureMarks) {
-      const from = mapper(mark.from);
-      const to = mapper(mark.to);
-      ctx.beginPath();
-      ctx.moveTo(from[0], from[1]);
-      ctx.lineTo(to[0], to[1]);
-      ctx.strokeStyle = palette[mark.role];
-      ctx.lineWidth = mark.width;
-      ctx.globalAlpha = mark.alpha;
-      ctx.lineCap = 'round';
-      ctx.stroke();
-    }
-    for (const grain of asset.grainMarks) {
-      const point = mapper([grain.x, grain.y]);
-      const size = mapper([grain.x + grain.w, grain.y + grain.h]);
-      ctx.fillStyle = palette[grain.role];
-      ctx.globalAlpha = grain.alpha;
-      ctx.fillRect(point[0], point[1], size[0] - point[0], size[1] - point[1]);
-    }
-    ctx.globalAlpha = 1;
     ctx.restore();
 
     tracePolygon(ctx, asset.mainOutline, mapper);
@@ -640,38 +531,82 @@
     paintPolygon(ctx, asset.equipment.inner, mapper, palette.equipmentLight, palette.equipment, .6);
   }
 
-  function paintPixelRows(ctx, rows, palette, mapper, rowAlphas = null) {
+  function forEachMaskRun(rows, callback) {
     rows.forEach((row, rowIndex) => {
-      ctx.globalAlpha = rowAlphas?.[rowIndex] ?? 1;
       let runStart = 0;
       while (runStart < row.length) {
-        const symbol = row[runStart];
+        while (runStart < row.length && row[runStart] === '.') runStart += 1;
+        if (runStart === row.length) break;
         let runEnd = runStart + 1;
-        while (runEnd < row.length && row[runEnd] === symbol) runEnd += 1;
-        if (symbol !== '.') {
-          const from = mapper([runStart, rowIndex]);
-          const to = mapper([runEnd, rowIndex + 1]);
-          ctx.fillStyle = palette[symbol];
-          ctx.fillRect(from[0], from[1], to[0] - from[0], to[1] - from[1]);
-        }
+        while (runEnd < row.length && row[runEnd] !== '.') runEnd += 1;
+        callback(runStart, runEnd, rowIndex);
         runStart = runEnd;
       }
     });
-    ctx.globalAlpha = 1;
   }
 
-  function paintPixelMaterial(ctx, asset, mapper) {
-    paintPixelRows(ctx, asset.shadowPixelRows, asset.pixelPalette, mapper, asset.shadowAlphaRows);
+  function tracePixelMask(ctx, rows, mapper) {
+    ctx.beginPath();
+    forEachMaskRun(rows, (runStart, runEnd, rowIndex) => {
+      const from = mapper([runStart, rowIndex]);
+      const to = mapper([runEnd, rowIndex + 1]);
+      ctx.rect(from[0], from[1], to[0] - from[0], to[1] - from[1]);
+    });
+  }
+
+  function paintPixelMask(ctx, rows, fill, mapper) {
+    tracePixelMask(ctx, rows, mapper);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+
+  function paintPixelOutline(ctx, rows, fill, mapper) {
+    ctx.fillStyle = fill;
+    rows.forEach((row, rowIndex) => {
+      for (let column = 0; column < row.length; column += 1) {
+        if (row[column] === '.') continue;
+        const outside = rowIndex === 0 || rowIndex === rows.length - 1 || column === 0 || column === row.length - 1 ||
+          rows[rowIndex - 1][column] === '.' || rows[rowIndex + 1][column] === '.' ||
+          row[column - 1] === '.' || row[column + 1] === '.';
+        if (!outside) continue;
+        const from = mapper([column, rowIndex]);
+        const to = mapper([column + 1, rowIndex + 1]);
+        ctx.fillRect(from[0], from[1], to[0] - from[0], to[1] - from[1]);
+      }
+    });
+  }
+
+  function paintFlatLine(ctx, line, mapper, palette) {
+    const points = line.points.map(mapper);
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let index = 1; index < points.length; index += 1) {
+      ctx.lineTo(points[index][0], points[index][1]);
+    }
+    ctx.strokeStyle = palette[line.role];
+    ctx.lineWidth = line.width;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  function paintFlatPixelMaterial(ctx, asset, mapper) {
+    const palette = asset.flatPalette;
+    paintPixelMask(ctx, asset.shadowPixelRows, palette.shadow, mapper);
     ctx.save();
-    ctx.filter = 'blur(.55px)';
-    ctx.globalAlpha = asset.pixelHaloAlpha;
-    paintPixelRows(ctx, asset.pixelRows, asset.pixelPalette, mapper);
+    tracePixelMask(ctx, asset.pixelRows, mapper);
+    ctx.clip();
+    paintPixelMask(ctx, asset.pixelRows, palette.base, mapper);
+    for (const facet of asset.flatFacets) {
+      paintPolygon(ctx, facet.points, mapper, palette[facet.role], facet.stroke ? palette.outline : null, facet.stroke ? 1.1 : 1);
+    }
+    for (const line of asset.flatLines || []) paintFlatLine(ctx, line, mapper, palette);
     ctx.restore();
-    paintPixelRows(ctx, asset.pixelRows, asset.pixelPalette, mapper);
+    paintPixelOutline(ctx, asset.pixelRows, palette.outline, mapper);
   }
 
   function paintTree(ctx, asset, mapper) {
-    paintPixelMaterial(ctx, asset, mapper);
+    paintFlatPixelMaterial(ctx, asset, mapper);
   }
 
   function paintAsset(ctx, assetId, { x = 0, y = 0, scale = 1 } = {}) {
@@ -679,7 +614,7 @@
     if (!asset) return false;
     const mapper = point => [x + point[0] * scale, y + point[1] * scale];
     ctx.save();
-    if (asset.renderMode === 'pixel-runs') paintPixelMaterial(ctx, asset, mapper);
+    if (asset.renderMode === 'flat-mask') paintFlatPixelMaterial(ctx, asset, mapper);
     else if (asset.family === 'building') paintBuilding(ctx, asset, mapper);
     else if (asset.family === 'tree') paintTree(ctx, asset, mapper);
     ctx.restore();
