@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">独立真上視点test</th>
-              <td><code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>から<code>variants/map-09-top-down-game.html</code>へ接続し、実地理の連続座標を保つ北上固定の手描きゲーム表現を検証。参考画像1から実測した青い屋根5点、単独・複数・低い下草を含む樹冠5点、砂地道路1点、外海水面1点を独立Canvas素材へ再構成し、対応patternへ接続。寄棟・長屋風・傷んだ切妻の屋根素材は原寸比を保てる小中規模、港湾平屋根素材はさらに工業・倉庫系だけへ適用し、住宅・極小・大型実建物は既存表現で維持する。道路は中央線に見える周期dashを使わず、道路幅内へ不規則な擦れと端寄りの粒をworld固定で配置。外海水面は疎な曲線・流れ跡をworld座標へ固定し、MVT継ぎ目と行列状反復を出さない。普通建物5種、右下側の屋根半面影、長辺方向だけの途切れ線、凹凸樹冠、地表色むら、道路・屋根の揺れる二重輪郭を描く。名称・浮いたPOI・壁面・高さ押し出しは表示しない。</td>
+              <td><code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>から<code>variants/map-09-top-down-game.html</code>へ接続し、実地理の連続座標を保つ北上固定の手描きゲーム表現を検証。参考画像1から実測した青い屋根5点、単独・複数・低い下草を含む樹冠5点、砂地道路1点、外海水面1点を独立Canvas素材へ再構成し、対応patternへ接続。寄棟・長屋風・傷んだ切妻の屋根素材は原寸比を保てる小中規模、港湾平屋根素材はさらに工業・倉庫系だけへ適用し、住宅・極小・大型実建物は既存表現で維持する。道路は中央線に見える周期dashを使わず、道路幅内へ不規則な擦れと端寄りの砂利群をworld固定で配置。大屋根は非対称の3面以上、小屋根は段階LODで内部線を抑え、地表・道路境界・鉄道は低コントラストへ後退させる。外海水面は疎な曲線・流れ跡をworld座標へ固定し、MVT継ぎ目と行列状反復を出さない。普通建物5種、右下側の屋根半面影、長辺方向だけの途切れ線、凹凸樹冠、地表色むら、道路・屋根の揺れる輪郭を描く。名称・浮いたPOI・壁面・高さ押し出しは表示しない。</td>
               <td>変更なし。本番1・2・4マップは独立真上視点testのmoduleを読み込まず、既存のcell2／cell3描画を維持する。</td>
             </tr>
             <tr>
@@ -216,6 +216,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>色面優先の手描き素材階層へ調整</h3>
+          <time datetime="2026-09-04">2026-09-04 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>参考画像1との差を8項目へ分解し、3回の撮影・分析・修正を実施。地表と道路境界を淡くし、大屋根を一枚板から非対称の3面以上と疎な長辺線へ分け、小屋根は大きさに応じて輪郭・内部線・影を抑える。道路には中央線状の反復を作らず、幅内へ不規則な擦れ、広い淡色むら、端寄りの砂利群をworld固定で重ねる。線路は実形状を保った細い低彩度の二本線へ後退させ、地表へ疎なworld固定の色むらを加えた。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>variants/map-09-top-down-game.html</code>、明示profileの<code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>、素材比較labだけで有効。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常のstandalone test、cell2／cell3、mobileは変更しない。実地理の連続座標、北上固定、名称・浮いたPOI・壁面・高さ押し出しなしの契約を維持する。</dd></div>
+          <div><dt>確認内容</dt><dd>川崎駅周辺を同一座標で3回撮影し、色面、大屋根、小屋根、道路、鉄道、反復、素材統一、不要要素の8項目を独立視覚レビュー。第3反復は6.5／8点（81.25%）で完成基準80%以上を確認。全Nodeテスト324件、66ファイルのビルド、console warning／errorなし、差分検査を完了。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>参考crop実測の砂地道路・外海水面素材を追加</h3>

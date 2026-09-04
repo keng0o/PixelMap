@@ -20,5 +20,5 @@ test('参考cropはqueryでだけ読み込みrepo内bitmapへ依存しない', (
   assert.match(page, /reference\.src = referenceUrl/);
   assert.match(page, /reference\.style\.clipPath = asset\.referenceClipPath/);
   assert.match(page, /usage|ローカルQA/);
-  assert.match(page, /top-down-game-materials\.js\?v=reference-material-6b/);
+  assert.match(page, /top-down-game-materials\.js\?v=material-hierarchy-7/);
 });

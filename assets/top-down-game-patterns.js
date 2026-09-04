@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/10';
-  const styleId = 'top-down-hand-drawn-game-v10';
+  const version = 'pixelmap-top-down-patterns/11';
+  const styleId = 'top-down-hand-drawn-game-v11';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -15,33 +15,33 @@
   }
 
   const palette = freeze({
-    ink: '#263a35',
-    inkSoft: '#466052',
-    ground: '#91bb70',
-    groundLight: '#b1cf83',
-    groundDark: '#6f995d',
+    ink: '#354c43',
+    inkSoft: '#657663',
+    ground: '#a3c57d',
+    groundLight: '#bfd68f',
+    groundDark: '#809f68',
     forest: '#3f704d',
     forestDark: '#294d3a',
     forestLight: '#79a85f',
-    park: '#9bc77a',
-    field: '#aecb78',
-    soil: '#c9b985',
-    plaza: '#dfce9f',
+    park: '#a9cb83',
+    field: '#b8ce86',
+    soil: '#d0c091',
+    plaza: '#e4d5ad',
     water: '#63c4c3',
     waterLight: '#a6ded4',
     waterDark: '#397f80',
     road: '#ead9ac',
     roadLight: '#f5e9c6',
-    roadDark: '#9a8767',
-    railBed: '#8a8b75',
-    rail: '#34443f',
+    roadDark: '#b4a488',
+    railBed: '#9ea68c',
+    rail: '#687469',
     roof: '#4f7893',
     roofLight: '#7396a6',
     roofDark: '#2f5068',
     roofSlate: '#607784',
     roofStone: '#8b938c',
     roofEarth: '#8e6956',
-    shadow: '#49664f',
+    shadow: '#72896c',
     location: '#ffef78',
     locationDark: '#263a35',
   });

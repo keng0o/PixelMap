@@ -6,13 +6,18 @@
   const MATERIALS = global.PixelMapTopDownMaterials;
   if (!MATERIALS) throw new Error('PixelMapTopDownMaterials is required');
 
-  const version = 'pixelmap-top-down-renderer/10';
+  const version = 'pixelmap-top-down-renderer/11';
   const compositor = Object.freeze([
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
   ]);
   const layerRank = new Map(compositor.map((layer, index) => [layer, index]));
   const commandRank = new Map([
+    ['rail-bed', 0],
+    ['road-edge', 1],
+    ['road-fill', 2],
+    ['road-texture', 3],
+    ['rail-lines', 4],
     ['roof-fill', 0],
     ['roof-detail', 1],
     ['roof-outline-rough', 2],
@@ -154,8 +159,9 @@
     commands.push({
       layer: 'landcover', kind: 'area-fill', sourceId: feature.id, sourceKey: key,
       patternId: selected.pattern.id, paths: projectedPaths(feature, input), fill: groundFill(feature),
-      stroke: P.inkSoft, roughStroke: P.ink, lineWidth: 1.1,
-      roughOutline: true, roughMode: 'jittered-contour', seed: selected.seed,
+      stroke: P.groundDark, strokeAlpha: .24, roughStroke: P.inkSoft, roughAlpha: .32, lineWidth: .8,
+      roughOutline: ['ground-deep-undergrowth', 'ground-field-furrows'].includes(selected.pattern.id),
+      roughMode: 'jittered-contour', seed: selected.seed,
     });
     commands.push({
       layer: 'landcover', kind: 'area-texture', sourceId: feature.id, sourceKey: key,
@@ -218,9 +224,10 @@
     const layer = isBridge(feature) ? 'bridge' : 'transport';
     commands.push({ layer, kind: 'road-edge', sourceId: feature.id, sourceKey: key,
       patternId: selected.pattern.id, referenceAsset, paths,
-      stroke: colors?.edge || P.roadDark, roughStroke: P.inkSoft,
-      lineWidth: width + 3.2, roughOutline: true,
-      roughMode: 'jittered-contour', seed: selected.seed });
+      stroke: colors?.wear || P.roadDark, lineWidth: width + 2.2,
+      alpha: .5, edgeTexture: 'soft-broken-verge', roadWidth: width,
+      roughOutline: false, seed: selected.seed,
+      textureOrigin: projectPoint([0, 0], input), worldAnchored: true });
     commands.push({ layer, kind: 'road-fill', sourceId: feature.id, sourceKey: key,
       patternId: selected.pattern.id, referenceAsset, paths,
       stroke: colors?.base || P.road, lineWidth: width });
@@ -228,6 +235,7 @@
       patternId: selected.pattern.id, referenceAsset, paths,
       stroke: colors?.light || P.roadLight, lineWidth: Math.max(1, width * 0.13),
       roadWidth: width,
+      surfaceWear: 'edge-gravel-clusters',
       dash: selected.pattern.id === 'road-cobbled-major' ? [2, 6] :
         selected.pattern.id === 'road-narrow-path' ? [3, 5] : [1, 8],
       dashOffset: selected.seed % 11, seed: selected.seed,
@@ -240,19 +248,19 @@
     const paths = projectedPaths(feature, input);
     const layer = isBridge(feature) ? 'bridge' : 'transport';
     commands.push({ layer, kind: 'rail-bed', sourceId: feature.id, sourceKey: key,
-      patternId: 'rail-double-line', paths, stroke: P.railBed, lineWidth: 8 });
+      patternId: 'rail-double-line', paths, stroke: P.railBed, lineWidth: 6.4, alpha: .7 });
     commands.push({ layer, kind: 'rail-lines', sourceId: feature.id, sourceKey: key,
-      patternId: 'rail-double-line', paths, stroke: P.rail, lineWidth: 1.3, railOffset: 2.2 });
+      patternId: 'rail-double-line', paths, stroke: P.rail, lineWidth: .9, railOffset: 1.8, alpha: .68 });
   }
 
   function roofColors(patternId, seed) {
-    if (patternId === 'building-flat-workshop') return ['#758a91', '#4a5f67', '#354b53', '#91a4a8'];
-    if (patternId === 'building-weathered-gable') return ['#698b9d', '#3a596d', '#284759', '#88a6af'];
-    if (patternId === 'building-longhouse') return ['#5e8398', '#344f63', '#253f51', '#7d9ca8'];
-    if (patternId === 'building-hipped') return ['#7899a5', '#486979', '#2e4c5d', '#94afb5'];
+    if (patternId === 'building-flat-workshop') return ['#6f909e', '#4c6876', '#3a5664', '#93aeb4'];
+    if (patternId === 'building-weathered-gable') return ['#7396a6', '#496a7c', '#35566a', '#94b0b7'];
+    if (patternId === 'building-longhouse') return ['#6c91a4', '#45657a', '#34546a', '#8dabb5'];
+    if (patternId === 'building-hipped') return ['#82a3ad', '#567785', '#3d5d6c', '#a0b9bd'];
     return seed % 3 === 0
-      ? ['#7096a6', '#426479', '#294a5e', '#91afb8']
-      : [seed % 3 === 1 ? '#668da1' : '#799aa7', '#405f74', '#2e4b61', '#91acb5'];
+      ? ['#789dab', '#4d6d80', '#36566a', '#9ab5bb']
+      : [seed % 3 === 1 ? '#7397a8' : '#83a3ad', '#4b6a7b', '#3a596b', '#9ab3ba'];
   }
 
   function pushRoof(commands, assignments, feature, input) {
@@ -267,31 +275,43 @@
       const [fill, shade, dark, highlight] = roofColors(selected.pattern.id, selected.seed);
       const minScreenDimension = Math.min(metrics.width, metrics.height) * input.viewport.scale;
       const maxScreenDimension = Math.max(metrics.width, metrics.height) * input.viewport.scale;
-      const outlineWidth = minScreenDimension < 6 ? 1.05 : minScreenDimension < 12 ? 1.5 : 2.1;
-      const detailLevel = minScreenDimension >= 6 && maxScreenDimension >= 12
+      const displayFill = minScreenDimension < 5 ? highlight : fill;
+      const outlineWidth = minScreenDimension < 5 ? .65 : minScreenDimension < 10 ? .95 : 1.3;
+      const strokeAlpha = minScreenDimension < 3 ? .26 : minScreenDimension < 5 ? .36 :
+        minScreenDimension < 9 ? .5 : maxScreenDimension >= 48 ? .56 : .66;
+      const detailLevel = minScreenDimension >= 10.5 && maxScreenDimension >= 18
         ? 'full'
-        : minScreenDimension >= 4 && maxScreenDimension >= 8 ? 'ridge' : null;
+        : minScreenDimension >= 7 && maxScreenDimension >= 12 ? 'ridge' : null;
+      const largeRoof = minScreenDimension >= 18 && maxScreenDimension >= 48;
+      const roofPlaneCount = largeRoof ? Math.max(3, Math.min(4, Math.round(maxScreenDimension / 72) + 2)) : 2;
       const usage = buildingUsage(feature.props);
       const referenceDetailEligible = selected.pattern.id !== 'building-flat-workshop' ||
         shouldUseHarborWorkshop(roofFrame(paths), usage);
       commands.push({ layer: 'building-shadow', kind: 'roof-shadow', sourceId: feature.id, sourceKey: key,
-        patternId: selected.pattern.id, paths, fill: P.shadow, translate: [3, 3] });
+        patternId: selected.pattern.id, paths, fill: P.shadow, fillAlpha: minScreenDimension < 3 ? .06 :
+          minScreenDimension < 5 ? .12 : .4,
+        translate: minScreenDimension < 5 ? [1.2, 1.2] : [2.2, 2.2] });
       commands.push({ layer: 'building-roof', kind: 'roof-fill', sourceId: feature.id, sourceKey: key,
-        patternId: selected.pattern.id, paths, fill, stroke: P.ink, roughStroke: dark,
-        lineWidth: outlineWidth, roughOutline: minScreenDimension >= 4,
+        patternId: selected.pattern.id, paths, fill: displayFill, stroke: minScreenDimension < 9 ? dark : P.ink, roughStroke: dark,
+        lineWidth: outlineWidth, strokeAlpha, roughAlpha: .42,
+        brokenOutline: minScreenDimension < 5 || largeRoof,
+        roughOutline: minScreenDimension >= 9,
         roughMode: 'jittered-contour', seed: selected.seed });
       if (detailLevel) {
         commands.push({ layer: 'building-roof', kind: 'roof-detail', sourceId: feature.id, sourceKey: key,
-          patternId: selected.pattern.id, paths, shade, stroke: dark, highlight,
+          patternId: selected.pattern.id, paths, baseFill: displayFill, shade, stroke: dark, highlight,
           lineWidth: Math.min(1.35, outlineWidth), seed: selected.seed,
           detailPrimitive: selected.pattern.primitive, detailLevel, hardEdge: true,
           lineDirection: selected.pattern.lineDirection, lightDirection: 'upper-left', shadowHalf: 'lower-right',
-          buildingUsage: usage, referenceDetailEligible });
+          buildingUsage: usage, referenceDetailEligible, largeRoof, roofPlaneCount,
+          textureDensity: largeRoof ? 'sparse' : detailLevel,
+          planeLayout: largeRoof ? 'asymmetric-jagged' : 'half-shadow' });
       }
       if (detailLevel === 'full') {
         commands.push({ layer: 'building-roof', kind: 'roof-outline-rough', sourceId: feature.id, sourceKey: key,
           patternId: selected.pattern.id, paths, stroke: dark, highlight, seed: selected.seed,
-          hardEdge: true, handDrawn: true, minScreenDimension });
+          hardEdge: true, handDrawn: true, minScreenDimension, largeRoof,
+          outlineAlpha: largeRoof ? .52 : .72 });
       }
     }
   }
@@ -378,6 +398,9 @@
       { layer: 'ground', kind: 'ground-wash', width: input.width, height: input.height,
         light: P.groundLight, dark: P.groundDark, seed: PATTERNS.hashString('ground-wash'),
         textureOrigin: projectPoint([0, 0], input), worldAnchored: true },
+      { layer: 'ground', kind: 'ground-texture', width: input.width, height: input.height,
+        light: P.groundLight, dark: P.groundDark, seed: PATTERNS.hashString('ground-texture'),
+        textureOrigin: projectPoint([0, 0], input), worldAnchored: true, sparse: true },
     ];
     const assignments = new Map();
     const features = [...input.features].sort((a, b) => featureKey(a).localeCompare(featureKey(b)));
@@ -401,8 +424,8 @@
       commands.push({ layer: 'location', kind: 'location-marker', x, y, radius: 7 });
     }
     commands.sort((a, b) => (layerRank.get(a.layer) - layerRank.get(b.layer)) ||
-      String(a.sourceKey || '').localeCompare(String(b.sourceKey || '')) ||
-      ((commandRank.get(a.kind) ?? 50) - (commandRank.get(b.kind) ?? 50)) || String(a.kind).localeCompare(String(b.kind)));
+      ((commandRank.get(a.kind) ?? 50) - (commandRank.get(b.kind) ?? 50)) ||
+      String(a.sourceKey || '').localeCompare(String(b.sourceKey || '')) || String(a.kind).localeCompare(String(b.kind)));
     const familySets = { ground: new Set(), water: new Set(), road: new Set(), rail: new Set(), roof: new Set(), tree: new Set() };
     for (const command of commands) {
       const family = command.kind === 'tree' ? 'tree' : command.layer === 'building-roof' ? 'roof' :
@@ -434,13 +457,48 @@
     }
   }
 
+  function paintBrokenPolygonOutline(ctx, command) {
+    ctx.save();
+    ctx.strokeStyle = command.stroke;
+    ctx.lineWidth = command.lineWidth || .7;
+    ctx.lineCap = 'round';
+    for (let pathIndex = 0; pathIndex < command.paths.length; pathIndex += 1) {
+      const path = command.paths[pathIndex];
+      for (let index = 0; index + 1 < path.length; index += 1) {
+        const seed = PATTERNS.hashString(`${command.seed}:small-roof-edge:${pathIndex}:${index}`);
+        if (seed % 4 === 0) continue;
+        const from = path[index];
+        const to = path[index + 1];
+        const start = .06 + stableUnit(seed, 1) * .24;
+        const end = Math.min(.94, start + .32 + stableUnit(seed, 2) * .38);
+        ctx.beginPath();
+        ctx.moveTo(from[0] + (to[0] - from[0]) * start, from[1] + (to[1] - from[1]) * start);
+        ctx.lineTo(from[0] + (to[0] - from[0]) * end, from[1] + (to[1] - from[1]) * end);
+        ctx.globalAlpha = (command.strokeAlpha ?? .4) * (.72 + stableUnit(seed, 3) * .28);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
   function fillPolygon(ctx, command) {
     tracePaths(ctx, command.paths);
-    if (command.fill) { ctx.fillStyle = command.fill; ctx.fill('evenodd'); }
-    if (command.stroke) {
-      ctx.strokeStyle = command.stroke; ctx.lineWidth = command.lineWidth || 1;
-      ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+    if (command.fill) {
+      ctx.save();
+      ctx.fillStyle = command.fill;
+      ctx.globalAlpha = command.fillAlpha ?? 1;
+      ctx.fill('evenodd');
+      ctx.restore();
     }
+    if (command.stroke && !command.brokenOutline) {
+      ctx.save();
+      ctx.strokeStyle = command.stroke; ctx.lineWidth = command.lineWidth || 1;
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.globalAlpha = command.strokeAlpha ?? 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (command.stroke && command.brokenOutline) paintBrokenPolygonOutline(ctx, command);
     if (command.roughOutline) paintRoughPath(ctx, command);
   }
 
@@ -487,7 +545,7 @@
       ctx.lineWidth = Math.max(.75, (command.lineWidth || 1) + (pass ? .9 : .35));
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      ctx.globalAlpha = pass ? .17 : .24;
+      ctx.globalAlpha = (pass ? .17 : .24) * (command.roughAlpha ?? 1);
       ctx.stroke();
       ctx.restore();
     }
@@ -502,6 +560,7 @@
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     ctx.setLineDash(command.dash || []);
     ctx.lineDashOffset = command.dashOffset || 0;
+    ctx.globalAlpha = command.alpha ?? 1;
     ctx.stroke();
     ctx.restore();
     if (command.roughOutline) paintRoughPath(ctx, command, offset);
@@ -539,7 +598,7 @@
     }
     const originX = command.textureOrigin?.[0] || 0;
     const originY = command.textureOrigin?.[1] || 0;
-    const step = command.kind === 'ground-wash' ? 62 : 50;
+    const step = command.kind === 'ground-wash' ? 86 : 64;
     const firstX = originX + Math.floor((minX - originX) / step) * step;
     const firstY = originY + Math.floor((minY - originY) / step) * step;
     for (let y = firstY; y <= maxY; y += step) {
@@ -547,12 +606,47 @@
         const gridX = Math.round((x - originX) / step);
         const gridY = Math.round((y - originY) / step);
         const seed = PATTERNS.hashString(`${command.seed}:wash:${gridX}:${gridY}`);
-        if (seed % 3 === 0) continue;
-        const centerX = x + (stableUnit(seed, 2) - .5) * step * .72;
-        const centerY = y + (stableUnit(seed, 3) - .5) * step * .72;
-        const radius = 15 + stableUnit(seed, 4) * 17;
+        if (seed % 5 < 2) continue;
+        const centerX = x + (stableUnit(seed, 2) - .5) * step * .9;
+        const centerY = y + (stableUnit(seed, 3) - .5) * step * .9;
+        const radius = 24 + stableUnit(seed, 4) * 30;
         const color = seed % 2 ? command.light : command.dark;
-        paintWashBlob(ctx, centerX, centerY, radius, seed, color, .1 + stableUnit(seed, 5) * .08);
+        paintWashBlob(ctx, centerX, centerY, radius, seed, color, .045 + stableUnit(seed, 5) * .055);
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function paintGroundTexture(ctx, command) {
+    ctx.save();
+    const originX = command.textureOrigin?.[0] || 0;
+    const originY = command.textureOrigin?.[1] || 0;
+    const step = 27;
+    const firstX = originX + Math.floor(-originX / step) * step;
+    const firstY = originY + Math.floor(-originY / step) * step;
+    for (let y = firstY; y <= command.height + step; y += step) {
+      for (let x = firstX; x <= command.width + step; x += step) {
+        const gridX = Math.round((x - originX) / step);
+        const gridY = Math.round((y - originY) / step);
+        const seed = PATTERNS.hashString(`${command.seed}:ground-mark:${gridX}:${gridY}`);
+        if (seed % 7 !== 0) continue;
+        const px = x + stableUnit(seed, 1) * step;
+        const py = y + stableUnit(seed, 2) * step;
+        const length = 2 + stableUnit(seed, 3) * 4;
+        const angle = -.65 + stableUnit(seed, 4) * 1.3;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + Math.cos(angle) * length, py + Math.sin(angle) * length);
+        if ((seed >>> 6) % 3 === 0) {
+          ctx.moveTo(px + 1, py + 1);
+          ctx.lineTo(px + Math.cos(angle + .75) * length * .65, py + Math.sin(angle + .75) * length * .65);
+        }
+        ctx.strokeStyle = seed & 1 ? command.light : command.dark;
+        ctx.globalAlpha = .12 + stableUnit(seed, 5) * .12;
+        ctx.lineWidth = .65 + stableUnit(seed, 6) * .45;
+        ctx.lineCap = 'round';
+        ctx.stroke();
       }
     }
     ctx.globalAlpha = 1;
@@ -567,17 +661,30 @@
     const xs = points.map(point => point[0]), ys = points.map(point => point[1]);
     const originX = command.textureOrigin?.[0] || 0;
     const originY = command.textureOrigin?.[1] || 0;
-    const minX = originX + Math.floor((Math.min(...xs) - originX) / 14) * 14;
+    const step = command.patternId === 'ground-field-furrows' ? 20 : 18;
+    const minX = originX + Math.floor((Math.min(...xs) - originX) / step) * step;
     const maxX = Math.max(...xs);
-    const minY = originY + Math.floor((Math.min(...ys) - originY) / 14) * 14;
+    const minY = originY + Math.floor((Math.min(...ys) - originY) / step) * step;
     const maxY = Math.max(...ys);
-    ctx.fillStyle = command.fill;
-    for (let y = minY; y <= maxY; y += 14) for (let x = minX; x <= maxX; x += 14) {
-      const gridX = Math.round((x - originX) / 14);
-      const gridY = Math.round((y - originY) / 14);
+    for (let y = minY; y <= maxY; y += step) for (let x = minX; x <= maxX; x += step) {
+      const gridX = Math.round((x - originX) / step);
+      const gridY = Math.round((y - originY) / step);
       const seed = PATTERNS.hashString(`${command.seed}:${gridX}:${gridY}`);
-      if (seed % 3 === 0) ctx.fillRect(x + seed % 5, y + (seed >>> 4) % 5, 2, 1);
+      if (seed % 5 > 1) continue;
+      const px = x + stableUnit(seed, 1) * step;
+      const py = y + stableUnit(seed, 2) * step;
+      ctx.strokeStyle = command.fill;
+      ctx.globalAlpha = .16 + stableUnit(seed, 3) * .14;
+      ctx.lineWidth = .65;
+      ctx.lineCap = 'round';
+      const length = command.patternId === 'ground-field-furrows' ? 5 + stableUnit(seed, 4) * 6 : 2 + stableUnit(seed, 4) * 3;
+      const angle = command.patternId === 'ground-field-furrows' ? -.18 : (stableUnit(seed, 5) - .5) * 1.5;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + Math.cos(angle) * length, py + Math.sin(angle) * length);
+      ctx.stroke();
     }
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 
@@ -710,6 +817,81 @@
     return length;
   }
 
+  function paintSoftRoadEdge(ctx, command) {
+    strokePaths(ctx, command);
+    const roadWidth = command.roadWidth || 6.5;
+    for (const [pathIndex, path] of command.paths.entries()) {
+      if (path.length < 2) continue;
+      const length = polylineLength(path);
+      let distance = 8 + stableUnit(command.seed, pathIndex + 90) * 18;
+      let candidate = 0;
+      while (distance < length) {
+        const point = pointAlongPolyline(path, distance);
+        if (!point) break;
+        const markSeed = PATTERNS.hashString(`${command.seed}:road-verge:${pathIndex}:${candidate}`);
+        if (markSeed % 5 < 2) {
+          const side = (markSeed >>> 5) & 1 ? 1 : -1;
+          const offset = side * roadWidth * (.5 + stableUnit(markSeed, 1) * .08);
+          const segmentLength = 5 + stableUnit(markSeed, 2) * 9;
+          const x = point.x + point.nx * offset;
+          const y = point.y + point.ny * offset;
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(x - point.tx * segmentLength * .5, y - point.ty * segmentLength * .5);
+          ctx.quadraticCurveTo(x + point.nx * (stableUnit(markSeed, 3) - .5) * 2.5,
+            y + point.ny * (stableUnit(markSeed, 3) - .5) * 2.5,
+            x + point.tx * segmentLength * .5, y + point.ty * segmentLength * .5);
+          ctx.strokeStyle = command.stroke;
+          ctx.globalAlpha = .2 + stableUnit(markSeed, 4) * .18;
+          ctx.lineWidth = .65 + stableUnit(markSeed, 5) * .55;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+          ctx.restore();
+        }
+        distance += 19 + stableUnit(markSeed, 6) * 18;
+        candidate += 1;
+      }
+    }
+  }
+
+  function paintRailLines(ctx, command) {
+    ctx.save();
+    ctx.strokeStyle = command.stroke;
+    ctx.lineWidth = command.lineWidth || 1;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = command.alpha ?? 1;
+    for (const path of command.paths) {
+      if (path.length < 2) continue;
+      for (const offset of [-command.railOffset, command.railOffset]) {
+        tracePaths(ctx, [offsetPolyline(path, offset)]);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function paintRoadGravelCluster(ctx, point, side, roadWidth, seed, color) {
+    const edgeOffset = side * roadWidth * (.38 + stableUnit(seed, 1) * .1);
+    const centerX = point.x + point.nx * edgeOffset;
+    const centerY = point.y + point.ny * edgeOffset;
+    const count = 4 + seed % 4;
+    ctx.fillStyle = color;
+    for (let index = 0; index < count; index += 1) {
+      const markSeed = PATTERNS.hashString(`${seed}:gravel:${index}`);
+      const along = (stableUnit(markSeed, 1) - .5) * (5 + roadWidth * .35);
+      const across = (stableUnit(markSeed, 2) - .5) * 2.8;
+      const x = centerX + point.tx * along + point.nx * across;
+      const y = centerY + point.ty * along + point.ny * across;
+      const radiusX = .45 + stableUnit(markSeed, 3) * .85;
+      const radiusY = .35 + stableUnit(markSeed, 4) * .5;
+      ctx.beginPath();
+      ctx.ellipse(x, y, radiusX, radiusY, (stableUnit(markSeed, 5) - .5) * .7, 0, Math.PI * 2);
+      ctx.globalAlpha = .31 + stableUnit(markSeed, 6) * .23;
+      ctx.fill();
+    }
+  }
+
   function paintRoadSurfaceTexture(ctx, command, asset = null) {
     ctx.save();
     const roadWidth = command.roadWidth || 6.5;
@@ -740,9 +922,9 @@
           ctx.quadraticCurveTo(x + point.nx * bend, y + point.ny * bend,
             x + point.tx * segmentLength * .5, y + point.ty * segmentLength * .5);
           ctx.strokeStyle = (markSeed >>> 8) & 1 ? palette.wear : palette.light;
-          ctx.lineWidth = .55 + stableUnit(markSeed, 4) * .65;
+          ctx.lineWidth = .7 + stableUnit(markSeed, 4) * .7;
           ctx.lineCap = 'round';
-          ctx.globalAlpha = .18 + stableUnit(markSeed, 5) * .24;
+          ctx.globalAlpha = .28 + stableUnit(markSeed, 5) * .27;
           ctx.stroke();
 
           if ((markSeed >>> 10) % 4 === 0) {
@@ -756,14 +938,23 @@
             ctx.stroke();
           }
         }
-        if ((markSeed >>> 13) % 3 === 0) {
+        if ((markSeed >>> 12) % 5 === 0) {
+          ctx.beginPath();
+          const washOffset = (stableUnit(markSeed, 12) - .5) * roadWidth * .28;
+          const washLength = 8 + stableUnit(markSeed, 13) * 15;
+          const washX = point.x + point.nx * washOffset;
+          const washY = point.y + point.ny * washOffset;
+          ctx.moveTo(washX - point.tx * washLength * .5, washY - point.ty * washLength * .5);
+          ctx.lineTo(washX + point.tx * washLength * .5, washY + point.ty * washLength * .5);
+          ctx.strokeStyle = palette.wear;
+          ctx.lineWidth = Math.max(1.4, roadWidth * (.28 + stableUnit(markSeed, 14) * .18));
+          ctx.globalAlpha = .09 + stableUnit(markSeed, 15) * .06;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+        if ((markSeed >>> 13) % 2 === 0) {
           const edgeSide = (markSeed >>> 17) & 1 ? 1 : -1;
-          const edgeOffset = edgeSide * roadWidth * (.32 + stableUnit(markSeed, 8) * .1);
-          const grainX = point.x + point.nx * edgeOffset + point.tx * (stableUnit(markSeed, 9) - .5) * 5;
-          const grainY = point.y + point.ny * edgeOffset + point.ty * (stableUnit(markSeed, 9) - .5) * 5;
-          ctx.fillStyle = palette.wearDark;
-          ctx.globalAlpha = .2 + stableUnit(markSeed, 10) * .19;
-          ctx.fillRect(Math.round(grainX), Math.round(grainY), 1 + (markSeed % 7 === 0 ? 1 : 0), 1);
+          paintRoadGravelCluster(ctx, point, edgeSide, roadWidth, markSeed, palette.wearDark);
         }
         distance += 18 + stableUnit(markSeed, 11) * 14;
         candidate += 1;
@@ -914,6 +1105,59 @@
     ctx.closePath(); ctx.fill();
   }
 
+  function paintLargeRoofPlanes(ctx, command, frame) {
+    const minU = -frame.halfU - 2;
+    const maxU = frame.halfU + 2;
+    const minV = -frame.halfV - 2;
+    const maxV = frame.halfV + 2;
+    const ridgeLeft = (stableUnit(command.seed, 201) - .5) * frame.halfV * .22;
+    const ridgeRight = (stableUnit(command.seed, 202) - .5) * frame.halfV * .22;
+    const ridgeMiddle = (stableUnit(command.seed, 205) - .5) * frame.halfV * .34;
+    const brightSide = (command.seed >>> 3) & 1 ? 1 : -1;
+    const upper = [roofPoint(frame, minU, minV), roofPoint(frame, maxU, minV),
+      roofPoint(frame, maxU, ridgeRight), roofPoint(frame, 0, ridgeMiddle), roofPoint(frame, minU, ridgeLeft)];
+    const lower = [roofPoint(frame, minU, ridgeLeft), roofPoint(frame, 0, ridgeMiddle), roofPoint(frame, maxU, ridgeRight),
+      roofPoint(frame, maxU, maxV), roofPoint(frame, minU, maxV)];
+    for (const [index, points] of [upper, lower].entries()) {
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let pointIndex = 1; pointIndex < points.length; pointIndex += 1) {
+        ctx.lineTo(points[pointIndex][0], points[pointIndex][1]);
+      }
+      ctx.closePath();
+      ctx.fillStyle = index === (roofShadowSide(frame) > 0 ? 1 : 0) ? command.shade : command.highlight;
+      ctx.globalAlpha = index === (roofShadowSide(frame) > 0 ? 1 : 0) ? .4 : .1;
+      ctx.fill();
+    }
+
+    const capStart = brightSide < 0
+      ? minU + (maxU - minU) * (.16 + stableUnit(command.seed, 203) * .11)
+      : maxU - (maxU - minU) * (.18 + stableUnit(command.seed, 203) * .13);
+    const capInner = brightSide < 0 ? capStart : capStart;
+    const capOuter = brightSide < 0 ? minU : maxU;
+    const skew = (stableUnit(command.seed, 204) - .5) * frame.halfV * .25;
+    const cap = [roofPoint(frame, capOuter, minV), roofPoint(frame, capInner, minV + skew),
+      roofPoint(frame, capInner, maxV - skew), roofPoint(frame, capOuter, maxV)];
+    ctx.beginPath();
+    ctx.moveTo(cap[0][0], cap[0][1]);
+    for (let index = 1; index < cap.length; index += 1) ctx.lineTo(cap[index][0], cap[index][1]);
+    ctx.closePath();
+    ctx.fillStyle = brightSide < 0 ? command.highlight : command.shade;
+    ctx.globalAlpha = .16;
+    ctx.fill();
+
+    for (let index = 0; index < 2; index += 1) {
+      const washSeed = PATTERNS.hashString(`${command.seed}:large-roof-wash:${index}`);
+      const washPoint = roofPoint(frame,
+        (stableUnit(washSeed, 1) - .5) * frame.halfU * 1.35,
+        (stableUnit(washSeed, 2) - .5) * frame.halfV * 1.15);
+      const washRadius = Math.max(10, Math.min(frame.halfU, frame.halfV) * (.42 + stableUnit(washSeed, 3) * .38));
+      paintWashBlob(ctx, washPoint[0], washPoint[1], washRadius, washSeed,
+        index ? command.shade : command.highlight, .055 + stableUnit(washSeed, 4) * .04);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function roofShadowSide(frame) {
     const lowerRightProjection = frame.v[0] + frame.v[1];
     if (Math.abs(lowerRightProjection) > 0.000001) return lowerRightProjection > 0 ? 1 : -1;
@@ -950,8 +1194,13 @@
     ];
   }
 
-  function roofStrokePlan(frame, { patternId, seed = 0, detailLevel = 'full' } = {}) {
-    const tracks = roofTrackDefinitions(patternId, detailLevel);
+  function roofStrokePlan(frame, { patternId, seed = 0, detailLevel = 'full', largeRoof = false } = {}) {
+    const tracks = largeRoof ? [
+      { across: -.52 + stableUnit(seed, 210) * .32, start: -.88 + stableUnit(seed, 211) * .18,
+        end: .52 + stableUnit(seed, 212) * .35, thickness: 1, pieces: 2 },
+      { across: .18 + stableUnit(seed, 213) * .42, start: -.64 + stableUnit(seed, 214) * .22,
+        end: .7 + stableUnit(seed, 215) * .2, thickness: 1, pieces: 2 },
+    ] : roofTrackDefinitions(patternId, detailLevel);
     const hu = Math.max(2, frame.halfU - 1);
     const hv = Math.max(2, frame.halfV - 1);
     const segments = [];
@@ -984,14 +1233,14 @@
   }
 
   function paintRoofFlecks(ctx, command, frame) {
-    const step = command.patternId === 'building-flat-workshop' ? 5 : 7;
+    const step = command.largeRoof ? 15 : command.patternId === 'building-flat-workshop' ? 5 : 7;
     ctx.fillStyle = command.highlight;
-    ctx.globalAlpha = 0.42;
+    ctx.globalAlpha = command.largeRoof ? .2 : .42;
     for (let v = -frame.halfV + 2; v < frame.halfV - 1; v += step) {
       for (let u = -frame.halfU + 2; u < frame.halfU - 1; u += step) {
         const gridU = Math.round(u / step), gridV = Math.round(v / step);
         const seed = PATTERNS.hashString(`${command.seed}:roof:${gridU}:${gridV}`);
-        if (seed % 4 !== 0) continue;
+        if (seed % (command.largeRoof ? 7 : 4) !== 0) continue;
         const point = roofPoint(frame, u + seed % 2, v + (seed >>> 3) % 2);
         ctx.fillRect(Math.round(point[0]), Math.round(point[1]), seed % 3 === 0 ? 2 : 1, 1);
       }
@@ -1003,40 +1252,45 @@
     ctx.save(); tracePaths(ctx, command.paths); ctx.clip('evenodd');
     const frame = roofFrame(command.paths);
     if (!frame) { ctx.restore(); return; }
-    if (command.patternId === 'building-cottage-gable') {
+    if (command.largeRoof) {
+      paintLargeRoofPlanes(ctx, command, frame);
+    }
+    if (!command.largeRoof && command.patternId === 'building-cottage-gable') {
       MATERIALS.paintRoofInFrame(ctx, 'building-blue-gable-01', frame, { seed: command.seed });
       ctx.restore();
       return;
     }
-    if (command.patternId === 'building-longhouse' &&
+    if (!command.largeRoof && command.patternId === 'building-longhouse' &&
         shouldUseReferenceRoof(frame, 'building-blue-longhouse-03')) {
       MATERIALS.paintRoofInFrame(ctx, 'building-blue-longhouse-03', frame, { seed: command.seed });
       ctx.restore();
       return;
     }
-    if (command.patternId === 'building-hipped' &&
+    if (!command.largeRoof && command.patternId === 'building-hipped' &&
         shouldUseReferenceRoof(frame, 'building-blue-hipped-02')) {
       MATERIALS.paintRoofInFrame(ctx, 'building-blue-hipped-02', frame, { seed: command.seed });
       ctx.restore();
       return;
     }
-    if (command.patternId === 'building-flat-workshop' && command.referenceDetailEligible &&
+    if (!command.largeRoof && command.patternId === 'building-flat-workshop' && command.referenceDetailEligible &&
         shouldUseReferenceRoof(frame, 'building-harbor-workshop-04')) {
       MATERIALS.paintRoofInFrame(ctx, 'building-harbor-workshop-04', frame, { seed: command.seed });
       ctx.restore();
       return;
     }
-    if (command.patternId === 'building-weathered-gable' && shouldUseWeatheredGable(frame)) {
+    if (!command.largeRoof && command.patternId === 'building-weathered-gable' && shouldUseWeatheredGable(frame)) {
       MATERIALS.paintRoofInFrame(ctx, 'building-blue-weathered-05', frame, { seed: command.seed });
       ctx.restore();
       return;
     }
-    paintRoofFacet(ctx, frame, roofShadowSide(frame), command.shade);
+    if (!command.largeRoof) paintRoofFacet(ctx, frame, roofShadowSide(frame), command.shade);
     const strokes = roofStrokePlan(frame, command);
+    ctx.globalAlpha = command.largeRoof ? .52 : .82;
     for (const stroke of strokes) {
       const color = stroke.trackIndex % 3 === 2 ? command.highlight : command.stroke;
       paintPixelLine(ctx, stroke.from, stroke.to, color, stroke.thickness, stroke.salt);
     }
+    ctx.globalAlpha = 1;
 
     if (command.detailLevel === 'ridge') {
       ctx.restore();
@@ -1080,7 +1334,7 @@
             from[1] + dy * start + normal[1] * normalJitter);
           ctx.lineTo(from[0] + dx * end + normal[0] * normalJitter,
             from[1] + dy * end + normal[1] * normalJitter);
-          ctx.globalAlpha = variation % 5 === 0 ? .45 : .82;
+          ctx.globalAlpha = (variation % 5 === 0 ? .45 : .82) * (command.outlineAlpha ?? 1);
           ctx.strokeStyle = variation % 6 === 0 ? command.highlight : command.stroke;
           ctx.lineWidth = variation % 4 === 0 ? 1.6 : .85;
           ctx.lineCap = 'round';
@@ -1203,6 +1457,7 @@
   function paintCommand(ctx, command) {
     if (command.kind === 'background') { ctx.fillStyle = command.fill; ctx.fillRect(0, 0, command.width, command.height); return; }
     if (command.kind === 'ground-wash' || command.kind === 'area-wash') { paintSurfaceWash(ctx, command); return; }
+    if (command.kind === 'ground-texture') { paintGroundTexture(ctx, command); return; }
     if (command.kind === 'area-fill' || command.kind === 'water-fill' || command.kind === 'roof-fill') { fillPolygon(ctx, command); return; }
     if (command.kind === 'roof-shadow') {
       ctx.save(); ctx.translate(...command.translate); fillPolygon(ctx, command); ctx.restore(); return;
@@ -1212,7 +1467,10 @@
     if (command.kind === 'water-shore') {
       ctx.save(); tracePaths(ctx, command.paths); ctx.clip('evenodd'); strokePaths(ctx, command); ctx.restore(); return;
     }
-    if (command.kind === 'rail-lines') { strokePaths(ctx, command, -command.railOffset); strokePaths(ctx, command, command.railOffset); return; }
+    if (command.kind === 'rail-lines') { paintRailLines(ctx, command); return; }
+    if (command.kind === 'road-edge' && command.edgeTexture === 'soft-broken-verge') {
+      paintSoftRoadEdge(ctx, command); return;
+    }
     if (command.kind === 'road-texture') {
       const reference = command.referenceAsset ? MATERIALS.catalog[command.referenceAsset] : null;
       if (reference?.family === 'road') paintReferenceRoadTexture(ctx, command, reference);

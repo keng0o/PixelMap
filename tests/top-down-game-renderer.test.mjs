@@ -31,7 +31,7 @@ const fixture = (overrides = {}) => ({
 });
 
 test('rendererは固定compositorとDOM非依存のscene APIを公開する', () => {
-  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/10');
+  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/11');
   assert.deepEqual(RENDERER.compositor, [
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -52,13 +52,17 @@ test('水・道路・地表は複数patternと参考画像1寄りの色を使う
   assert.ok(scene.stats.patternFamilies.ground >= 1);
 });
 
-test('地表の色むらと道路・水際・建物の二重手描き輪郭を描画命令に持つ', () => {
+test('地表は疎なworld固定素材を持ち、道路と土地境界は濃い連続二重線を避ける', () => {
   const scene = RENDERER.buildScene(fixture());
   assert.ok(scene.commands.some(command => command.kind === 'ground-wash' && command.worldAnchored === true));
+  assert.ok(scene.commands.some(command => command.kind === 'ground-texture' && command.worldAnchored === true &&
+    command.sparse === true));
   assert.ok(scene.commands.some(command => command.kind === 'area-wash' && command.worldAnchored === true));
-  assert.ok(scene.commands.some(command => command.kind === 'area-fill' && command.roughOutline === true));
+  assert.ok(scene.commands.filter(command => command.kind === 'area-fill')
+    .every(command => command.strokeAlpha <= .3));
   assert.ok(scene.commands.some(command => command.kind === 'water-fill' && command.roughOutline === true));
-  assert.ok(scene.commands.some(command => command.kind === 'road-edge' && command.roughOutline === true));
+  assert.ok(scene.commands.filter(command => command.kind === 'road-edge')
+    .every(command => command.edgeTexture === 'soft-broken-verge' && command.alpha <= .6 && !command.roughOutline));
   assert.ok(scene.commands.some(command => command.kind === 'roof-fill' && command.roughOutline === true));
   assert.ok(scene.commands.filter(command => command.roughOutline)
     .every(command => command.roughMode === 'jittered-contour'));
@@ -135,8 +139,37 @@ test('全道路textureは中央dashではなく道路幅内の不規則な擦れ
   assert.ok(commands.length >= 2);
   assert.ok(commands.every(command => command.worldAnchored === true));
   assert.ok(commands.every(command => command.roadWidth > 0));
+  assert.ok(commands.every(command => command.surfaceWear === 'edge-gravel-clusters'));
   assert.doesNotMatch(source, /\['road-edge', 'road-fill', 'road-texture'/);
   assert.match(source, /paintRoadSurfaceTexture\(ctx, command/);
+  assert.match(source, /function paintRoadGravelCluster/);
+});
+
+test('交差点は全道路の柔らかい外縁を先に描いてから面と擦れを重ねる', () => {
+  const scene = RENDERER.buildScene(fixture({ features: [
+    line('transportation', 31, [[20, 100], [300, 100]], { class: 'residential' }),
+    line('transportation', 32, [[160, 20], [160, 220]], { class: 'secondary' }),
+  ] }));
+  const kinds = scene.commands.filter(command => command.layer === 'transport').map(command => command.kind);
+  const lastEdge = kinds.lastIndexOf('road-edge');
+  const firstFill = kinds.indexOf('road-fill');
+  const lastFill = kinds.lastIndexOf('road-fill');
+  const firstTexture = kinds.indexOf('road-texture');
+  assert.ok(lastEdge < firstFill);
+  assert.ok(lastFill < firstTexture);
+});
+
+test('鉄道は実線形状を保ちながら道路や屋根より低コントラストの細い二本線にする', () => {
+  const scene = RENDERER.buildScene(fixture({ features: [
+    line('transportation', 40, [[20, 30], [300, 210]], { class: 'rail' }),
+  ] }));
+  const bed = scene.commands.find(command => command.kind === 'rail-bed');
+  const rails = scene.commands.find(command => command.kind === 'rail-lines');
+  assert.ok(bed.alpha <= .75);
+  assert.ok(rails.alpha <= .72);
+  assert.ok(rails.lineWidth <= 1);
+  assert.ok(rails.railOffset <= 1.9);
+  assert.match(source, /function paintRailLines/);
 });
 
 test('参考屋根素材は原寸比1.65倍以内だけへ適用し大型実建物を過度に引き伸ばさない', () => {
@@ -235,7 +268,7 @@ test('普通建物5patternは別々のCanvas primitiveへ展開される', () =>
   assert.equal(new Set(details.map(command => command.detailPrimitive)).size, 5);
   assert.equal(scene.commands.filter(command => command.kind === 'roof-outline-rough').length,
     details.filter(command => command.detailLevel === 'full').length);
-  const firstRoofKey = details[0].sourceKey;
+  const firstRoofKey = details.find(command => command.detailLevel === 'full').sourceKey;
   assert.deepEqual(scene.commands
     .filter(command => command.layer === 'building-roof' && command.sourceKey === firstRoofKey)
     .map(command => command.kind), ['roof-fill', 'roof-detail', 'roof-outline-rough']);
@@ -278,23 +311,46 @@ test('半面影はseedでは反転せず、左上光源に対する画面右下�
   assert.equal(detail.lineDirection, 'longest-edge-only');
 });
 
-test('小建物は白い点状ノイズを避け、短辺サイズに応じて屋根細部を段階化する', () => {
+test('小建物は輪郭と内部線を抑え、中型以上だけ屋根細部を段階化する', () => {
   const scene = RENDERER.buildScene({
-    width: 140,
+    width: 180,
     height: 80,
-    viewport: { centerX: 70, centerY: 40, scale: 1 },
+    viewport: { centerX: 90, centerY: 40, scale: 1 },
     features: [
       polygon('building', 701, [[8, 8], [14, 8], [14, 10], [8, 10]], { class: 'residential' }),
       polygon('building', 702, [[30, 8], [42, 8], [42, 12], [30, 12]], { class: 'residential' }),
-      polygon('building', 703, [[64, 8], [86, 8], [86, 20], [64, 20]], { class: 'residential' }),
+      polygon('building', 703, [[62, 8], [78, 8], [78, 14], [62, 14]], { class: 'residential' }),
+      polygon('building', 704, [[94, 8], [112, 8], [112, 16], [94, 16]], { class: 'residential' }),
+      polygon('building', 705, [[132, 8], [158, 8], [158, 20], [132, 20]], { class: 'residential' }),
     ],
   });
   const commandsFor = id => scene.commands.filter(command => command.sourceId === id && command.layer === 'building-roof');
   assert.deepEqual(commandsFor(701).map(command => command.kind), ['roof-fill']);
-  assert.deepEqual(commandsFor(702).map(command => command.kind), ['roof-fill', 'roof-detail']);
-  assert.equal(commandsFor(702).find(command => command.kind === 'roof-detail').detailLevel, 'ridge');
-  assert.deepEqual(commandsFor(703).map(command => command.kind), ['roof-fill', 'roof-detail', 'roof-outline-rough']);
-  assert.equal(commandsFor(703).find(command => command.kind === 'roof-detail').detailLevel, 'full');
+  assert.deepEqual(commandsFor(702).map(command => command.kind), ['roof-fill']);
+  assert.equal(commandsFor(701)[0].brokenOutline, true);
+  assert.equal(commandsFor(702)[0].brokenOutline, true);
+  assert.ok(commandsFor(701)[0].strokeAlpha <= .3);
+  assert.ok(commandsFor(702)[0].strokeAlpha <= .38);
+  assert.deepEqual(commandsFor(703).map(command => command.kind), ['roof-fill']);
+  assert.deepEqual(commandsFor(704).map(command => command.kind), ['roof-fill', 'roof-detail']);
+  assert.equal(commandsFor(704).find(command => command.kind === 'roof-detail').detailLevel, 'ridge');
+  assert.deepEqual(commandsFor(705).map(command => command.kind), ['roof-fill', 'roof-detail', 'roof-outline-rough']);
+  assert.equal(commandsFor(705).find(command => command.kind === 'roof-detail').detailLevel, 'full');
+});
+
+test('大型屋根は一枚板ではなく3面以上の広い色面と疎な長辺線へ分ける', () => {
+  const scene = RENDERER.buildScene({
+    width: 320, height: 180, viewport: { centerX: 160, centerY: 90, scale: 1 },
+    features: [polygon('building', 950, [[30, 30], [290, 30], [290, 150], [30, 150]], { class: 'commercial' })],
+  });
+  const fill = scene.commands.find(command => command.kind === 'roof-fill');
+  const detail = scene.commands.find(command => command.kind === 'roof-detail');
+  assert.equal(detail.largeRoof, true);
+  assert.ok(detail.roofPlaneCount >= 3);
+  assert.equal(detail.planeLayout, 'asymmetric-jagged');
+  assert.equal(detail.textureDensity, 'sparse');
+  assert.ok(fill.strokeAlpha <= .6);
+  assert.match(source, /function paintLargeRoofPlanes/);
 });
 
 test('MVTで複数棟が一featureにまとまっても屋根patternを棟ごとに決め、中庭ringを同じ棟へ保つ', () => {
@@ -364,7 +420,7 @@ test('地表と水面textureはscreenではなくworld座標へ固定される',
   const moved = RENDERER.buildScene(fixture({
     viewport: { centerX: 196.25, centerY: 141.5, scale: 1 },
   }));
-  for (const kind of ['area-texture', 'water-ripples']) {
+  for (const kind of ['ground-texture', 'area-texture', 'water-ripples']) {
     const before = original.commands.find(command => command.kind === kind);
     const after = moved.commands.find(command => command.kind === kind);
     assert.deepEqual(after.textureOrigin, [before.textureOrigin[0] - 36.25, before.textureOrigin[1] - 21.5]);
