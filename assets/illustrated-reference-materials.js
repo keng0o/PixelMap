@@ -1,7 +1,7 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-illustrated-reference-materials/7';
+  const version = 'pixelmap-illustrated-reference-materials/8';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -450,6 +450,102 @@
         '......................................................',
       ],
     },
+    'tree-lobed-canopy-03': {
+      family: 'tree',
+      structure: 'lobed-canopy',
+      renderMode: 'flat-shape',
+      nativeSize: [100, 108],
+      source: {
+        reference: 'image-1.png (e8132791-4e96-4494-9bc4-92e9e18f59cd)',
+        imageSize: [100, 108],
+        crop: { x: 0, y: 0, width: 100, height: 108 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(37% 19%, 45% 20%, 50% 25%, 56% 21%, 65% 21%, 70% 26%, 77% 28%, 78% 34%, 84% 38%, 83% 44%, 88% 49%, 86% 56%, 89% 62%, 85% 68%, 82% 74%, 76% 76%, 73% 82%, 64% 82%, 59% 88%, 51% 85%, 45% 87%, 40% 82%, 32% 84%, 27% 80%, 20% 79%, 18% 73%, 12% 69%, 13% 63%, 9% 57%, 12% 51%, 15% 47%, 15% 40%, 21% 37%, 23% 31%, 30% 29%, 31% 23%)',
+      fitBounds: { minX: 9, minY: 21, maxX: 89, maxY: 95 },
+      outlineWidth: 3.4,
+      flatPalette: {
+        outline: '#17230f',
+        base: '#8fbd7d',
+        light: '#b7d7a3',
+        shade: '#638b58',
+      },
+      crownOutline: [[37, 21], [45, 22], [50, 27], [56, 23], [65, 23], [70, 28],
+        [77, 30], [78, 37], [84, 41], [83, 48], [88, 53], [86, 60], [89, 67],
+        [85, 73], [82, 80], [76, 82], [73, 89], [64, 89], [59, 95], [51, 92],
+        [45, 94], [40, 89], [32, 91], [27, 86], [20, 85], [18, 79], [12, 75],
+        [13, 68], [9, 62], [12, 55], [15, 51], [15, 43], [21, 40], [23, 33],
+        [30, 31], [31, 25]],
+      flatFacets: [
+        { role: 'light', points: [[21, 51], [25, 39], [35, 30], [49, 27], [61, 31],
+          [68, 41], [63, 53], [53, 59], [40, 58], [29, 63], [21, 58]] },
+        { role: 'shade', points: [[42, 63], [54, 55], [68, 49], [80, 53], [85, 64],
+          [80, 76], [70, 86], [57, 91], [46, 84], [39, 73]] },
+      ],
+    },
+    'tree-muted-canopy-04': {
+      family: 'tree',
+      structure: 'muted-canopy',
+      renderMode: 'flat-shape',
+      nativeSize: [88, 94],
+      source: {
+        reference: 'image-2.png (e8132791-4e96-4494-9bc4-92e9e18f59cd)',
+        imageSize: [88, 94],
+        crop: { x: 0, y: 0, width: 88, height: 94 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(42% 19%, 50% 19%, 56% 23%, 63% 22%, 68% 29%, 76% 27%, 82% 32%, 81% 38%, 86% 43%, 84% 50%, 89% 55%, 85% 62%, 89% 67%, 84% 73%, 77% 74%, 75% 81%, 67% 79%, 61% 84%, 53% 81%, 48% 85%, 41% 81%, 33% 81%, 31% 74%, 24% 72%, 25% 66%, 20% 62%, 23% 55%, 19% 50%, 24% 45%, 23% 37%, 30% 33%, 32% 27%, 39% 26%)',
+      fitBounds: { minX: 17, minY: 18, maxX: 78, maxY: 80 },
+      outlineWidth: 3.1,
+      flatPalette: {
+        outline: '#172116',
+        base: '#8ca587',
+        light: '#b2c8ad',
+        shade: '#627662',
+      },
+      crownOutline: [[37, 18], [44, 18], [49, 22], [55, 21], [60, 27], [67, 25],
+        [72, 30], [71, 36], [76, 40], [74, 47], [78, 52], [75, 58], [78, 63],
+        [74, 69], [68, 70], [66, 76], [59, 74], [54, 79], [47, 76], [42, 80],
+        [36, 76], [29, 76], [27, 70], [21, 68], [22, 62], [18, 58], [20, 52],
+        [17, 47], [21, 42], [20, 35], [26, 31], [28, 25], [34, 24]],
+      flatFacets: [
+        { role: 'light', points: [[25, 44], [28, 31], [39, 23], [52, 24], [62, 32],
+          [66, 43], [58, 51], [46, 53], [35, 57], [26, 52]] },
+        { role: 'shade', points: [[39, 55], [51, 49], [64, 47], [74, 54], [74, 65],
+          [65, 73], [53, 76], [42, 72], [34, 65]] },
+      ],
+    },
+    'tree-compact-canopy-05': {
+      family: 'tree',
+      structure: 'compact-canopy',
+      renderMode: 'flat-shape',
+      nativeSize: [58, 58],
+      source: {
+        reference: 'image-3.png (e8132791-4e96-4494-9bc4-92e9e18f59cd)',
+        imageSize: [58, 58],
+        crop: { x: 0, y: 0, width: 58, height: 58 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(33% 12%, 47% 12%, 53% 17%, 62% 16%, 67% 22%, 74% 24%, 74% 33%, 81% 38%, 78% 47%, 84% 53%, 79% 60%, 78% 71%, 69% 72%, 64% 81%, 53% 78%, 47% 83%, 38% 78%, 28% 78%, 24% 71%, 16% 67%, 17% 59%, 10% 53%, 14% 45%, 10% 38%, 17% 33%, 19% 24%, 28% 24%)',
+      fitBounds: { minX: 6, minY: 7, maxX: 49, maxY: 48 },
+      outlineWidth: 2.6,
+      flatPalette: {
+        outline: '#132019',
+        base: '#72998a',
+        light: '#a4bdad',
+        shade: '#4f7165',
+      },
+      crownOutline: [[19, 7], [27, 7], [31, 10], [36, 9], [39, 13], [43, 14], [43, 19],
+        [47, 22], [45, 27], [49, 31], [46, 35], [45, 41], [40, 42], [37, 47],
+        [31, 45], [27, 48], [22, 45], [16, 45], [14, 41], [9, 39], [10, 34],
+        [6, 31], [8, 26], [6, 22], [10, 19], [11, 14], [16, 14]],
+      flatFacets: [
+        { role: 'light', points: [[11, 27], [14, 17], [23, 10], [33, 12], [40, 18],
+          [41, 27], [35, 32], [27, 31], [20, 35], [13, 33]] },
+        { role: 'shade', points: [[23, 33], [31, 28], [41, 27], [47, 33], [43, 41],
+          [36, 45], [27, 45], [20, 40]] },
+      ],
+    },
   });
 
   function tracePolygon(ctx, points, mapper) {
@@ -605,6 +701,24 @@
     paintPixelOutline(ctx, asset.pixelRows, palette.outline, mapper);
   }
 
+  function paintFlatShapeMaterial(ctx, asset, mapper) {
+    const palette = asset.flatPalette;
+    paintPolygon(ctx, asset.crownOutline, mapper, palette.base);
+    ctx.save();
+    tracePolygon(ctx, asset.crownOutline, mapper);
+    ctx.clip();
+    for (const facet of asset.flatFacets) {
+      paintPolygon(ctx, facet.points, mapper, palette[facet.role]);
+    }
+    ctx.restore();
+    tracePolygon(ctx, asset.crownOutline, mapper);
+    ctx.strokeStyle = palette.outline;
+    ctx.lineWidth = asset.outlineWidth;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
   function paintTree(ctx, asset, mapper) {
     paintFlatPixelMaterial(ctx, asset, mapper);
   }
@@ -615,6 +729,7 @@
     const mapper = point => [x + point[0] * scale, y + point[1] * scale];
     ctx.save();
     if (asset.renderMode === 'flat-mask') paintFlatPixelMaterial(ctx, asset, mapper);
+    else if (asset.renderMode === 'flat-shape') paintFlatShapeMaterial(ctx, asset, mapper);
     else if (asset.family === 'building') paintBuilding(ctx, asset, mapper);
     else if (asset.family === 'tree') paintTree(ctx, asset, mapper);
     ctx.restore();

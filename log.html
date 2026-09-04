@@ -218,6 +218,18 @@
       </div>
       <article class="entry">
         <div class="entry-header">
+          <h3>添付3種類の樹冠を輪郭維持のフラットCanvas素材へ追加</h3>
+          <time datetime="2026-09-05">2026-09-05 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>添付された単木3点を、それぞれ<code>tree-lobed-canopy-03</code>（100×108px）、<code>tree-muted-canopy-04</code>（88×94px）、<code>tree-compact-canopy-05</code>（58×58px）として彩色地図Canvas素材カタログへ追加。各cropの波形・不整形・小型青緑の樹冠輪郭を24点以上の閉じたCanvas pathで実測し、内部はbase／light／shadeの大きな不透明単色面、外周は単色outlineだけで再構成した。粒状ノイズ、色むら、半透明wash、ぼかし、グラデーション、段階的な影、bitmap貼付けは使用しない。素材比較ラボは共通<code>reference</code>に加えて<code>reference-素材ID</code> queryを受け取り、別々の参考画像を同一ページで比較できる。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>variants/map-11-illustrated-reference-material-lab.html</code>の素材一覧を4点から7点へ拡張し、新しい3素材だけを追加。大きいcropはカード内へ収まる倍率へ自動調整する。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常のstandalone test、独立top-down game、cell2／cell3、mobileは変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>3素材ごとに参考crop／Canvas／50% overlayを実ブラウザで撮影。全7カード、素材別参照画像、原寸Canvas、横はみ出しなし、レビュー画像生成をDOM検査した。独立視覚レビューは3素材すべて輪郭・寸法・位置・フラット化PASS。Nodeテスト337件、68ファイルの静的ビルド、差分検査を完了。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>彩色地図Canvas素材ラボを全4素材の一覧比較へ変更</h3>
           <time datetime="2026-09-04">2026-09-04 JST</time>
         </div>

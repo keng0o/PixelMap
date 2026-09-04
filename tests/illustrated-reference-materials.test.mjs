@@ -9,12 +9,15 @@ const MATERIALS = globalThis.PixelMapIllustratedReferenceMaterials;
 const source = await readFile(new URL('../assets/illustrated-reference-materials.js', import.meta.url), 'utf8');
 
 test('彩色地図の寄棟建物を添付画像の原寸cropと別カタログで公開する', () => {
-  assert.equal(MATERIALS.version, 'pixelmap-illustrated-reference-materials/7');
+  assert.equal(MATERIALS.version, 'pixelmap-illustrated-reference-materials/8');
   assert.deepEqual(Object.keys(MATERIALS.catalog), [
     'building-red-hipped-annex-01',
     'tree-round-canopy-01',
     'building-gabled-side-wing-02',
     'tree-overlapping-trio-02',
+    'tree-lobed-canopy-03',
+    'tree-muted-canopy-04',
+    'tree-compact-canopy-05',
   ]);
   const building = MATERIALS.catalog['building-red-hipped-annex-01'];
   assert.equal(building.family, 'building');
@@ -24,6 +27,36 @@ test('彩色地図の寄棟建物を添付画像の原寸cropと別カタログ�
   assert.deepEqual(building.source.crop, { x: 51, y: 498, width: 61, height: 52 });
   assert.match(building.source.reference, /d34c3fa1-cdfc-4de4-b96b-c0e7dcb67aaa/);
   assert.equal(building.source.usage, 'local-visual-qa-only');
+});
+
+test('添付された3種類の単木を原寸輪郭のフラットカラー素材として公開する', () => {
+  const expected = [
+    ['tree-lobed-canopy-03', 'lobed-canopy', [100, 108], 'image-1.png'],
+    ['tree-muted-canopy-04', 'muted-canopy', [88, 94], 'image-2.png'],
+    ['tree-compact-canopy-05', 'compact-canopy', [58, 58], 'image-3.png'],
+  ];
+
+  for (const [assetId, structure, nativeSize, reference] of expected) {
+    const tree = MATERIALS.catalog[assetId];
+    assert.equal(tree.family, 'tree');
+    assert.equal(tree.structure, structure);
+    assert.equal(tree.renderMode, 'flat-shape');
+    assert.deepEqual(tree.nativeSize, nativeSize);
+    assert.deepEqual(tree.source.imageSize, nativeSize);
+    assert.deepEqual(tree.source.crop, { x: 0, y: 0, width: nativeSize[0], height: nativeSize[1] });
+    assert.match(tree.source.reference, new RegExp(reference.replace('.', '\\.')));
+    assert.match(tree.source.reference, /e8132791-4e96-4494-9bc4-92e9e18f59cd/);
+    assert.equal(tree.source.usage, 'local-visual-qa-only');
+    assert.ok(tree.crownOutline.length >= 24);
+    assert.ok(tree.flatFacets.length >= 2);
+    assert.deepEqual(Object.keys(tree.flatPalette), ['outline', 'base', 'light', 'shade']);
+    assert.equal(tree.shadowShapes, undefined);
+    assert.equal(tree.shadowPixelRows, undefined);
+    assert.equal(tree.pixelRows, undefined);
+    assert.equal(tree.washes, undefined);
+    assert.equal(tree.textureMarks, undefined);
+    assert.equal(tree.grainMarks, undefined);
+  }
 });
 
 test('大小3つの樹冠が重なる樹木群を輪郭maskとフラットな3樹冠で公開する', () => {
@@ -112,6 +145,7 @@ test('素材描画はbitmap・半透明・ぼかし・グラデーションな�
   assert.match(source, /function paintTree/);
   assert.match(source, /function paintPixelMask/);
   assert.match(source, /function paintFlatPixelMaterial/);
+  assert.match(source, /function paintFlatShapeMaterial/);
   assert.match(source, /function paintPixelOutline/);
   assert.match(source, /function paintPolygon/);
   assert.match(source, /function paintAsset/);
