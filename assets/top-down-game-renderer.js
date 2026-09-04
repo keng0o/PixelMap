@@ -6,7 +6,7 @@
   const MATERIALS = global.PixelMapTopDownMaterials;
   if (!MATERIALS) throw new Error('PixelMapTopDownMaterials is required');
 
-  const version = 'pixelmap-top-down-renderer/6';
+  const version = 'pixelmap-top-down-renderer/7';
   const compositor = Object.freeze([
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -738,6 +738,12 @@
       ctx.restore();
       return;
     }
+    if (command.patternId === 'building-longhouse' &&
+        shouldUseReferenceRoof(frame, 'building-blue-longhouse-03')) {
+      MATERIALS.paintRoofInFrame(ctx, 'building-blue-longhouse-03', frame, { seed: command.seed });
+      ctx.restore();
+      return;
+    }
     if (command.patternId === 'building-hipped' &&
         shouldUseReferenceRoof(frame, 'building-blue-hipped-02')) {
       MATERIALS.paintRoofInFrame(ctx, 'building-blue-hipped-02', frame, { seed: command.seed });
@@ -833,6 +839,12 @@
     const r = command.radius;
     if (command.patternId === 'tree-light-crown') {
       MATERIALS.paintTreeAt(ctx, 'tree-round-crown-01', {
+        x: command.x, y: command.y, radius: r, seed: command.seed,
+      });
+      return;
+    }
+    if (command.patternId === 'tree-dark-crown') {
+      MATERIALS.paintTreeAt(ctx, 'tree-dark-crown-03', {
         x: command.x, y: command.y, radius: r, seed: command.seed,
       });
       return;

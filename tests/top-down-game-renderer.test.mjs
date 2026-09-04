@@ -31,7 +31,7 @@ const fixture = (overrides = {}) => ({
 });
 
 test('rendererは固定compositorとDOM非依存のscene APIを公開する', () => {
-  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/6');
+  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/7');
   assert.deepEqual(RENDERER.compositor, [
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -82,15 +82,23 @@ test('参考画像から再構成した建物・樹冠素材を対応patternへ�
     'building-blue-hipped-02');
   assert.equal(patterns.tree.find(pattern => pattern.id === 'tree-small').referenceAsset,
     'tree-small-crown-02');
+  assert.equal(patterns.roof.find(pattern => pattern.id === 'building-longhouse').referenceAsset,
+    'building-blue-longhouse-03');
+  assert.equal(patterns.tree.find(pattern => pattern.id === 'tree-dark-crown').referenceAsset,
+    'tree-dark-crown-03');
   assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-gable-01'/);
   assert.match(source, /paintTreeAt\(ctx, 'tree-round-crown-01'/);
   assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-hipped-02'/);
   assert.match(source, /paintTreeAt\(ctx, 'tree-small-crown-02'/);
+  assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-longhouse-03'/);
+  assert.match(source, /paintTreeAt\(ctx, 'tree-dark-crown-03'/);
 });
 
 test('参考屋根素材は原寸比1.65倍以内だけへ適用し大型実建物を過度に引き伸ばさない', () => {
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 28, halfV: 20 }, 'building-blue-hipped-02'), true);
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 48, halfV: 34 }, 'building-blue-hipped-02'), false);
+  assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 23, halfV: 17 }, 'building-blue-longhouse-03'), true);
+  assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 48, halfV: 34 }, 'building-blue-longhouse-03'), false);
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 28, halfV: 20 }, 'missing-asset'), false);
 });
 

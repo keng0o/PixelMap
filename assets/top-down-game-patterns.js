@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/6';
-  const styleId = 'top-down-hand-drawn-game-v6';
+  const version = 'pixelmap-top-down-patterns/7';
+  const styleId = 'top-down-hand-drawn-game-v7';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -58,6 +58,7 @@
       }),
       pattern('building-longhouse', 'roof', 'parallel-weatherboards', {
         structure: 'longhouse', palette: 'blue-dark', lineDirection: 'longest-edge-only', handDrawn: true,
+        referenceAsset: 'building-blue-longhouse-03',
       }),
       pattern('building-hipped', 'roof', 'tapered-parallel-ridges', {
         structure: 'hipped', palette: 'blue', lineDirection: 'longest-edge-only', handDrawn: true,
@@ -74,7 +75,9 @@
       pattern('tree-light-crown', 'tree', 'scalloped-layered-crown', {
         crown: 'light', radius: 13, handDrawn: true, referenceAsset: 'tree-round-crown-01',
       }),
-      pattern('tree-dark-crown', 'tree', 'scalloped-layered-crown', { crown: 'dark', radius: 14, handDrawn: true }),
+      pattern('tree-dark-crown', 'tree', 'scalloped-layered-crown', {
+        crown: 'dark', radius: 14, handDrawn: true, referenceAsset: 'tree-dark-crown-03',
+      }),
       pattern('tree-small', 'tree', 'scalloped-layered-crown', {
         crown: 'small', radius: 9, handDrawn: true, referenceAsset: 'tree-small-crown-02',
       }),

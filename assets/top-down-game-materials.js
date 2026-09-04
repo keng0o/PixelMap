@@ -1,7 +1,7 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-materials/2';
+  const version = 'pixelmap-top-down-materials/3';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -90,6 +90,46 @@
         { axis: 'longest-edge', from: [54, 44], to: [63, 45], width: .9, role: 'highlight' },
       ],
     },
+    'building-blue-longhouse-03': {
+      family: 'building',
+      nativeSize: [60, 50],
+      source: {
+        reference: 'Photo 1.jpg',
+        crop: { x: 728, y: 490, width: 60, height: 50 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(10% 54%, 70% 30%, 83% 40%, 82% 78%, 23% 94%, 12% 78%)',
+      fitBounds: { minX: 6, minY: 15, maxX: 50, maxY: 47 },
+      palette: {
+        ink: '#203543',
+        inkSoft: '#3b5265',
+        shade: '#455b78',
+        shadeDark: '#293d59',
+        light: '#5790b7',
+        highlight: '#8eb3c5',
+        shadow: '#2c443c',
+      },
+      silhouette: [[6, 27], [42, 15], [50, 20], [49, 39], [14, 47], [7, 39]],
+      facets: [
+        { role: 'shade', points: [[6, 27], [42, 15], [47, 21], [10, 33]] },
+        { role: 'light', points: [[10, 33], [47, 21], [50, 20], [49, 39], [14, 47], [7, 39]] },
+      ],
+      shadowHalf: 'lower-right',
+      inkSegments: [
+        { axis: 'longest-edge', from: [10, 33], to: [47, 21], width: 2.15, role: 'ridge',
+          parts: [[0, .43], [.51, 1]] },
+        { axis: 'longest-edge', from: [11, 28], to: [40, 18], width: .9, role: 'shade-seam-soft',
+          parts: [[0, .32], [.43, .73], [.81, 1]] },
+        { axis: 'longest-edge', from: [20, 24], to: [37, 18], width: .75, role: 'highlight',
+          parts: [[0, .56], [.69, 1]] },
+        { axis: 'longest-edge', from: [13, 37], to: [46, 27], width: .8, role: 'light-seam-soft',
+          parts: [[0, .2], [.43, .56], [.82, 1]] },
+        { axis: 'longest-edge', from: [15, 43], to: [44, 35], width: .75, role: 'highlight',
+          parts: [[0, .3], [.72, .91]] },
+        { axis: 'longest-edge', from: [27, 34], to: [37, 31], width: 1.9, role: 'weather-mark',
+          parts: [[0, .34], [.48, 1]] },
+      ],
+    },
     'tree-round-crown-01': {
       family: 'tree',
       nativeSize: [48, 48],
@@ -131,6 +171,53 @@
         [[14, 18], [18, 16]], [[29, 17], [33, 20]], [[13, 29], [17, 32]],
         [[30, 34], [34, 31]], [[22, 25], [25, 23]], [[20, 35], [23, 36]],
       ],
+    },
+    'tree-dark-crown-03': {
+      family: 'tree',
+      nativeSize: [52, 50],
+      source: {
+        reference: 'Photo 1.jpg',
+        crop: { x: 528, y: 342, width: 52, height: 50 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(25% 20%, 40% 12%, 58% 14%, 75% 20%, 88% 32%, 92% 50%, 79% 62%, 70% 68%, 55% 76%, 40% 74%, 26% 68%, 21% 58%, 23% 42%)',
+      center: [28, 25],
+      outline: [[13, 10], [20, 6], [30, 7], [39, 10], [46, 16], [48, 25], [44, 31], [41, 34],
+        [36, 35], [29, 38], [21, 37], [14, 34], [11, 29], [12, 21]],
+      palette: {
+        ink: '#293d35',
+        shadow: '#304a39',
+        dark: '#3a573d',
+        main: '#55764c',
+        light: '#7c955f',
+        highlight: '#97a96b',
+        detailDark: '#38563c',
+      },
+      crowns: [
+        { role: 'shadow', x: 28, y: 27, rx: 20, ry: 18, seed: 201 },
+        { role: 'dark', x: 14, y: 24, rx: 8, ry: 12, seed: 211, stroke: false },
+        { role: 'dark', x: 22, y: 13, rx: 11, ry: 8, seed: 212, stroke: false },
+        { role: 'dark', x: 37, y: 16, rx: 10, ry: 9, seed: 213, stroke: false },
+        { role: 'dark', x: 43, y: 27, rx: 7, ry: 11, seed: 214, stroke: false },
+        { role: 'dark', x: 34, y: 39, rx: 11, ry: 7, seed: 215, stroke: false },
+        { role: 'dark', x: 18, y: 37, rx: 9, ry: 8, seed: 216, stroke: false },
+        { role: 'main', x: 22, y: 23, rx: 11, ry: 11, seed: 221, stroke: false },
+        { role: 'main', x: 34, y: 20, rx: 12, ry: 10, seed: 222, stroke: false },
+        { role: 'main', x: 39, y: 29, rx: 9, ry: 10, seed: 223, stroke: false },
+        { role: 'main', x: 30, y: 34, rx: 12, ry: 9, seed: 224, stroke: false },
+        { role: 'highlight', x: 30, y: 19, rx: 8, ry: 6, seed: 231 },
+        { role: 'highlight', x: 38, y: 26, rx: 6, ry: 5, seed: 232 },
+        { role: 'detail', x: 18, y: 26, rx: 5, ry: 7, seed: 241 },
+        { role: 'detail', x: 33, y: 34, rx: 5, ry: 4, seed: 242 },
+        { role: 'detail', x: 27, y: 39, rx: 4, ry: 3, seed: 243 },
+        { role: 'detail', x: 41, y: 22, rx: 3, ry: 5, seed: 244 },
+      ],
+      inkMarks: [
+        [[13, 19], [17, 16]], [[31, 10], [35, 13]], [[42, 19], [46, 23]],
+        [[42, 33], [38, 36]], [[26, 40], [30, 42]], [[13, 33], [18, 36]],
+        [[21, 26], [25, 30]],
+      ],
+      glint: false,
     },
     'tree-small-crown-02': {
       family: 'tree',
@@ -273,11 +360,12 @@
         ctx.beginPath();
         ctx.moveTo(from[0], from[1]);
         ctx.lineTo(to[0], to[1]);
+        const soft = segment.role.endsWith('-soft');
         ctx.strokeStyle = segment.role === 'highlight' ? palette.highlight :
-          segment.role === 'weather-mark' ? palette.ink : palette.shadeDark;
+          segment.role === 'weather-mark' ? palette.ink : soft ? palette.inkSoft : palette.shadeDark;
         ctx.lineWidth = segment.width;
         ctx.lineCap = 'round';
-        ctx.globalAlpha = segment.role === 'highlight' ? .82 : .9;
+        ctx.globalAlpha = segment.role === 'highlight' ? .72 : soft ? .58 : .9;
         ctx.stroke();
       }
     }
@@ -304,7 +392,7 @@
       ctx.fillStyle = colors[crown.role];
       ctx.globalAlpha = crown.role === 'shadow' ? .82 : crown.role === 'highlight' ? .9 : 1;
       ctx.fill();
-      if (crown.role === 'dark' || crown.role === 'main') {
+      if (crown.stroke !== false && (crown.role === 'dark' || crown.role === 'main')) {
         ctx.strokeStyle = palette.ink;
         ctx.lineWidth = crown.role === 'main' ? 1.15 : .8;
         ctx.globalAlpha = .74;
@@ -323,13 +411,15 @@
       ctx.lineTo(to[0], to[1]);
       ctx.stroke();
     }
-    const glint = mapper(asset.glint || [18.5, 20]);
-    const glintRadius = Math.max(.65, Math.hypot(...mapper([1, 0]).map((value, index) => value - mapper([0, 0])[index])) * 1.1);
-    ctx.fillStyle = palette.highlight;
-    ctx.globalAlpha = .65;
-    ctx.beginPath();
-    ctx.arc(glint[0], glint[1], glintRadius, 0, Math.PI * 2);
-    ctx.fill();
+    if (asset.glint !== false) {
+      const glint = mapper(asset.glint || [18.5, 20]);
+      const glintRadius = Math.max(.65, Math.hypot(...mapper([1, 0]).map((value, index) => value - mapper([0, 0])[index])) * 1.1);
+      ctx.fillStyle = palette.highlight;
+      ctx.globalAlpha = .65;
+      ctx.beginPath();
+      ctx.arc(glint[0], glint[1], glintRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.globalAlpha = 1;
     ctx.restore();
     tracePolygon(ctx, asset.outline, mapper);

@@ -9,23 +9,31 @@ const MATERIALS = globalThis.PixelMapTopDownMaterials;
 const source = await readFile(new URL('../assets/top-down-game-materials.js', import.meta.url), 'utf8');
 
 test('参考画像1から実測した建物と樹冠を独立したCanvas素材として公開する', () => {
-  assert.equal(MATERIALS.version, 'pixelmap-top-down-materials/2');
+  assert.equal(MATERIALS.version, 'pixelmap-top-down-materials/3');
   assert.deepEqual(Object.keys(MATERIALS.catalog), [
     'building-blue-gable-01',
     'building-blue-hipped-02',
+    'building-blue-longhouse-03',
     'tree-round-crown-01',
+    'tree-dark-crown-03',
     'tree-small-crown-02',
   ]);
   assert.deepEqual(MATERIALS.catalog['building-blue-gable-01'].nativeSize, [50, 32]);
   assert.deepEqual(MATERIALS.catalog['building-blue-hipped-02'].nativeSize, [72, 64]);
+  assert.deepEqual(MATERIALS.catalog['building-blue-longhouse-03'].nativeSize, [60, 50]);
   assert.deepEqual(MATERIALS.catalog['tree-round-crown-01'].nativeSize, [48, 48]);
+  assert.deepEqual(MATERIALS.catalog['tree-dark-crown-03'].nativeSize, [52, 50]);
   assert.deepEqual(MATERIALS.catalog['tree-small-crown-02'].nativeSize, [48, 48]);
   assert.equal(MATERIALS.catalog['building-blue-gable-01'].source.crop.x, 584);
   assert.equal(MATERIALS.catalog['building-blue-gable-01'].source.crop.y, 702);
   assert.deepEqual(MATERIALS.catalog['building-blue-hipped-02'].source.crop,
     { x: 510, y: 592, width: 72, height: 64 });
+  assert.deepEqual(MATERIALS.catalog['building-blue-longhouse-03'].source.crop,
+    { x: 728, y: 490, width: 60, height: 50 });
   assert.equal(MATERIALS.catalog['tree-round-crown-01'].source.crop.x, 590);
   assert.equal(MATERIALS.catalog['tree-round-crown-01'].source.crop.y, 110);
+  assert.deepEqual(MATERIALS.catalog['tree-dark-crown-03'].source.crop,
+    { x: 528, y: 342, width: 52, height: 50 });
   assert.deepEqual(MATERIALS.catalog['tree-small-crown-02'].source.crop,
     { x: 270, y: 344, width: 48, height: 48 });
   assert.ok(Object.values(MATERIALS.catalog).every(asset => asset.source.reference === 'Photo 1.jpg'));
@@ -33,6 +41,18 @@ test('参考画像1から実測した建物と樹冠を独立したCanvas素材�
   assert.deepEqual(MATERIALS.catalog['building-blue-gable-01'].fitBounds,
     { minX: 12, minY: 2, maxX: 50, maxY: 25 });
   assert.deepEqual(MATERIALS.catalog['tree-round-crown-01'].center, [24, 29]);
+});
+
+test('長い青屋根素材は斜めの六角輪郭・明暗2面・長辺方向だけの途切れ線を持つ', () => {
+  const building = MATERIALS.catalog['building-blue-longhouse-03'];
+  assert.equal(building.silhouette.length, 6);
+  assert.equal(building.facets.length, 2);
+  assert.ok(building.inkSegments.length >= 6);
+  assert.ok(building.inkSegments.every(segment => segment.axis === 'longest-edge'));
+  assert.ok(building.inkSegments.filter(segment => segment.parts?.length >= 2).length >= 3);
+  assert.equal(building.shadowHalf, 'lower-right');
+  assert.ok(building.palette.light !== building.palette.shade);
+  assert.deepEqual(building.fitBounds, { minX: 6, minY: 15, maxX: 50, maxY: 47 });
 });
 
 test('寄棟風屋根素材は張り出しを含む輪郭・3面以上の陰影・長辺線だけを持つ', () => {
@@ -74,6 +94,17 @@ test('小型樹冠素材は明るい外葉と濃い中心部を別primitiveで�
   assert.ok(tree.crowns.filter(crown => crown.role === 'dark').length >= 4);
   assert.ok(tree.inkMarks.length >= 4);
   assert.deepEqual(tree.center, [24, 25]);
+});
+
+test('濃色樹冠素材は暗い外周葉・中央の限定的な明部・不整形外周を別primitiveで持つ', () => {
+  const tree = MATERIALS.catalog['tree-dark-crown-03'];
+  assert.ok(tree.outline.length >= 14);
+  assert.ok(tree.crowns.length >= 10);
+  assert.ok(tree.crowns.filter(crown => crown.role === 'dark').length >= 5);
+  assert.ok(tree.crowns.filter(crown => crown.role === 'highlight').length <= 3);
+  assert.ok(tree.crowns.some(crown => crown.role === 'shadow'));
+  assert.ok(tree.inkMarks.length >= 6);
+  assert.deepEqual(tree.center, [28, 25]);
 });
 
 test('素材描画はbitmap貼付けや外部画像へ依存せずCanvas primitiveだけを使う', () => {
