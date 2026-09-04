@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>彩色地図素材 Canvas比較 — PixelMap test</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: #17211d;
+      color: #edf0d8;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: #17211d; }
+    main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 48px; }
+    h1 { margin: 0 0 8px; font-size: 20px; }
+    p { margin: 0 0 24px; color: #bac4aa; font-size: 12px; line-height: 1.6; }
+    code { color: #f6b49d; }
+    .review-download { display: inline-block; margin: -10px 0 22px; color: #f6b49d; font-size: 12px; }
+    .review-download:not([href]) { color: #778278; pointer-events: none; }
+    .comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    figure { min-width: 0; margin: 0; padding: 14px; border: 1px solid #637064; background: #202d27; }
+    figcaption { margin-bottom: 10px; color: #dce6c9; font-size: 11px; }
+    .stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 330px;
+      overflow: hidden;
+      background-color: #d9d7c3;
+      background-image:
+        linear-gradient(45deg, #c7c6b4 25%, transparent 25%),
+        linear-gradient(-45deg, #c7c6b4 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #c7c6b4 75%),
+        linear-gradient(-45deg, transparent 75%, #c7c6b4 75%);
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      background-size: 16px 16px;
+    }
+    canvas, .crop-frame {
+      display: block;
+      width: var(--native-width);
+      height: var(--native-height);
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      transform: scale(var(--preview-scale));
+    }
+    .crop-frame { position: relative; overflow: hidden; clip-path: var(--reference-clip); }
+    .crop-frame img {
+      position: absolute;
+      left: calc(-1 * var(--crop-x));
+      top: calc(-1 * var(--crop-y));
+      width: var(--source-width);
+      height: var(--source-height);
+      max-width: none;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .overlay {
+      position: relative;
+      width: var(--native-width);
+      height: var(--native-height);
+      transform: scale(var(--preview-scale));
+    }
+    .overlay .crop-frame, .overlay canvas { position: absolute; inset: 0; transform: none; }
+    .overlay canvas { opacity: .5; }
+    [data-reference-missing] { color: #5d6659; font-size: 11px; text-align: center; }
+    @media (max-width: 760px) {
+      .comparison { grid-template-columns: 1fr; }
+      .stage { min-height: 260px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>彩色地図の参考cropとCanvas primitiveの原寸比較</h1>
+    <p>参考画像は<code>reference</code> queryからローカルQA時だけ読み込みます。Canvas側はbitmapを貼らず、輪郭・屋根面・棟線・付属棟・設備・影を個別に描画します。</p>
+    <a class="review-download" data-download-review download="illustrated-reference-review.png">QAレビュー画像を保存</a>
+    <section class="comparison" aria-label="彩色地図素材比較">
+      <figure>
+        <figcaption>切り抜いた参考素材</figcaption>
+        <div class="stage"><div class="crop-frame" data-reference-frame></div><span data-reference-missing hidden>reference queryなし</span></div>
+      </figure>
+      <figure>
+        <figcaption>Canvas primitive</figcaption>
+        <div class="stage"><canvas data-render aria-label="Canvasで再構成した素材"></canvas></div>
+      </figure>
+      <figure>
+        <figcaption>50%重ね合わせ</figcaption>
+        <div class="stage"><div class="overlay" data-overlay><div class="crop-frame" data-overlay-reference></div><canvas data-overlay-render></canvas></div></div>
+      </figure>
+    </section>
+    <img data-review-sheet alt="" aria-hidden="true" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+  </main>
+  <script src="../assets/illustrated-reference-materials.js?v=illustrated-reference-3"></script>
+  <script>
+    (() => {
+      'use strict';
+      const materials = window.PixelMapIllustratedReferenceMaterials;
+      const params = new URLSearchParams(location.search);
+      const defaultAssetId = 'building-red-hipped-annex-01';
+      const assetId = params.get('asset') || defaultAssetId;
+      const asset = materials.catalog[assetId] || materials.catalog[defaultAssetId];
+      const [width, height] = asset.nativeSize;
+      const [sourceWidth, sourceHeight] = asset.source.imageSize;
+      const scale = Math.max(3, Math.min(10, Math.floor(300 / Math.max(width, height))));
+      const root = document.documentElement.style;
+      root.setProperty('--preview-scale', scale);
+      root.setProperty('--native-width', `${width}px`);
+      root.setProperty('--native-height', `${height}px`);
+      root.setProperty('--source-width', `${sourceWidth}px`);
+      root.setProperty('--source-height', `${sourceHeight}px`);
+      root.setProperty('--crop-x', `${asset.source.crop.x}px`);
+      root.setProperty('--crop-y', `${asset.source.crop.y}px`);
+      root.setProperty('--reference-clip', asset.referenceClipPath);
+
+      for (const canvas of document.querySelectorAll('canvas')) {
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        materials.paintAsset(canvas.getContext('2d'), assetId);
+      }
+
+      const referenceUrl = params.get('reference');
+      const referenceFrames = [...document.querySelectorAll('[data-reference-frame], [data-overlay-reference]')];
+      if (referenceUrl) {
+        referenceFrames.forEach((frame, index) => {
+          const image = new Image();
+          image.alt = '';
+          image.crossOrigin = 'anonymous';
+          if (index === 0) {
+            image.addEventListener('load', () => {
+              const review = document.createElement('canvas');
+              review.width = width * 3;
+              review.height = height;
+              const reviewContext = review.getContext('2d');
+              const rendered = document.querySelector('[data-render]');
+              const crop = asset.source.crop;
+              reviewContext.drawImage(image, crop.x, crop.y, width, height, 0, 0, width, height);
+              reviewContext.drawImage(rendered, width, 0);
+              reviewContext.drawImage(image, crop.x, crop.y, width, height, width * 2, 0, width, height);
+              reviewContext.globalAlpha = .5;
+              reviewContext.drawImage(rendered, width * 2, 0);
+              const reviewUrl = review.toDataURL('image/png');
+              document.querySelector('[data-review-sheet]').src = reviewUrl;
+              document.querySelector('[data-download-review]').href = reviewUrl;
+              document.body.dataset.reviewSheet = 'ready';
+              const reviewSink = params.get('reviewSink');
+              if (reviewSink) {
+                const sinkUrl = new URL(reviewSink, location.href);
+                const isLocalSink = sinkUrl.protocol === 'http:' &&
+                  (sinkUrl.hostname === '127.0.0.1' || sinkUrl.hostname === 'localhost');
+                if (isLocalSink) {
+                  review.toBlob(blob => {
+                    fetch(sinkUrl, { method: 'POST', body: blob })
+                      .then(response => {
+                        document.body.dataset.reviewExport = response.ok ? 'saved' : 'failed';
+                      })
+                      .catch(() => { document.body.dataset.reviewExport = 'failed'; });
+                  }, 'image/png');
+                } else {
+                  document.body.dataset.reviewExport = 'rejected-non-local';
+                }
+              }
+            }, { once: true });
+          }
+          image.src = referenceUrl;
+          frame.append(image);
+        });
+      } else {
+        for (const frame of referenceFrames) frame.hidden = true;
+        document.querySelector('[data-reference-missing]').hidden = false;
+      }
+
+      document.body.dataset.asset = assetId;
+      document.body.dataset.materialVersion = materials.version;
+      document.body.dataset.sourceCrop = `${asset.source.crop.x},${asset.source.crop.y},${width},${height}`;
+    })();
+  </script>
+</body>
+</html>

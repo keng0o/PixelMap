@@ -230,6 +230,18 @@
       </article>
       <article class="entry">
         <div class="entry-header">
+          <h3>彩色地図crop実測の赤い寄棟屋根素材を追加</h3>
+          <time datetime="2026-09-04">2026-09-04 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>添付の736×952px彩色地図から、左中央の赤い寄棟屋根を<code>x=51, y=498, 61×52px</code>で切り出して実測。主屋根を上・下・左・右の4面、付属棟を2面へ分け、中央棟線、4本の隅棟線、付属棟の棟線、小型屋根設備、地面影、色むらをbitmap非依存のCanvas primitiveとして<code>illustrated-reference-materials.js</code>へ再構成した。新しい<code>map-11-illustrated-reference-material-lab.html</code>は元の736×952px画像をqueryでだけ読み込み、素材座標で原寸cropし、Canvasと50%重ね合わせできる。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。彩色地図専用の素材比較labだけで有効。参考画像はローカルQA時だけ読み込み、GitHub Pagesへは公開しない。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常のstandalone test、既存top-down game、cell2／cell3、mobileは変更しない。</dd></div>
+          <div><dt>確認内容</dt><dd>原寸crop座標、4面の寄棟、付属棟、中央棟線と4本の隅棟線、設備、抽出palette、bitmap非依存、localhostに限定したQA画像出力を専用テストで確認。原寸crop／Canvas／50% overlayを実ブラウザで撮影し、外形、主棟、4本の隅棟、付属棟、設備、影、色面の独立視覚レビューが7項目すべてPASS。Nodeテスト329件、68ファイルの静的ビルド、差分検査を完了。</dd></div>
+        </dl>
+      </article>
+      <article class="entry">
+        <div class="entry-header">
           <h3>参考crop実測の砂地道路・外海水面素材を追加</h3>
           <time datetime="2026-09-04">2026-09-04 JST</time>
         </div>
