@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>参考素材 Canvas比較 — PixelMap test</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: #17211d;
+      color: #edf0d8;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: #17211d; }
+    main { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 48px; }
+    h1 { margin: 0 0 8px; font-size: 20px; }
+    p { margin: 0 0 24px; color: #bac4aa; font-size: 12px; line-height: 1.6; }
+    .comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    figure { min-width: 0; margin: 0; padding: 14px; border: 1px solid #637064; background: #202d27; }
+    figcaption { margin-bottom: 10px; color: #dce6c9; font-size: 11px; }
+    .stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 330px;
+      overflow: hidden;
+      background-color: #d9d7c3;
+      background-image:
+        linear-gradient(45deg, #c7c6b4 25%, transparent 25%),
+        linear-gradient(-45deg, #c7c6b4 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #c7c6b4 75%),
+        linear-gradient(-45deg, transparent 75%, #c7c6b4 75%);
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      background-size: 16px 16px;
+    }
+    img, canvas {
+      display: block;
+      max-width: none;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .reference, .render { transform: scale(var(--preview-scale)); }
+    .overlay { position: relative; width: var(--native-width); height: var(--native-height); transform: scale(var(--preview-scale)); }
+    .overlay img, .overlay canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .overlay canvas { opacity: .5; }
+    [data-reference-missing] { color: #5d6659; font-size: 11px; text-align: center; }
+    @media (max-width: 760px) {
+      .comparison { grid-template-columns: 1fr; }
+      .stage { min-height: 260px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>参考素材とCanvas primitiveの原寸比較</h1>
+    <p>参考画像はローカルQA時だけ読み込みます。Canvas側はbitmapを使わず、輪郭・面・線・樹冠を個別に描画します。</p>
+    <section class="comparison" aria-label="参考素材比較">
+      <figure>
+        <figcaption>切り抜いた参考素材</figcaption>
+        <div class="stage"><img class="reference" data-reference alt="参考画像から切り抜いた素材"><span data-reference-missing hidden>reference queryなし</span></div>
+      </figure>
+      <figure>
+        <figcaption>Canvas primitive</figcaption>
+        <div class="stage"><canvas class="render" data-render aria-label="Canvasで再構成した素材"></canvas></div>
+      </figure>
+      <figure>
+        <figcaption>50%重ね合わせ</figcaption>
+        <div class="stage"><div class="overlay" data-overlay><img data-overlay-reference alt=""><canvas data-overlay-render></canvas></div></div>
+      </figure>
+    </section>
+  </main>
+  <script src="../assets/top-down-game-materials.js?v=reference-material-1"></script>
+  <script>
+    (() => {
+      'use strict';
+      const materials = window.PixelMapTopDownMaterials;
+      const params = new URLSearchParams(location.search);
+      const assetId = params.get('asset') || 'building-blue-gable-01';
+      const asset = materials.catalog[assetId] || materials.catalog['building-blue-gable-01'];
+      const [width, height] = asset.nativeSize;
+      const scale = Math.max(4, Math.min(8, Math.floor(280 / Math.max(width, height))));
+      document.documentElement.style.setProperty('--preview-scale', scale);
+      document.documentElement.style.setProperty('--native-width', `${width}px`);
+      document.documentElement.style.setProperty('--native-height', `${height}px`);
+      for (const canvas of document.querySelectorAll('canvas')) {
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        materials.paintAsset(canvas.getContext('2d'), assetId, { seed: 1409 });
+      }
+      const referenceUrl = params.get('reference');
+      const reference = document.querySelector('[data-reference]');
+      const overlayReference = document.querySelector('[data-overlay-reference]');
+      if (referenceUrl) {
+        reference.src = referenceUrl;
+        overlayReference.src = referenceUrl;
+        reference.width = width;
+        reference.height = height;
+        reference.style.clipPath = asset.referenceClipPath;
+        overlayReference.style.clipPath = asset.referenceClipPath;
+      } else {
+        reference.hidden = true;
+        overlayReference.hidden = true;
+        document.querySelector('[data-reference-missing]').hidden = false;
+      }
+      document.body.dataset.asset = assetId;
+      document.body.dataset.materialVersion = materials.version;
+    })();
+  </script>
+</body>
+</html>

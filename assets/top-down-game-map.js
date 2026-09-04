@@ -1,10 +1,10 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-map/1';
+  const version = 'pixelmap-top-down-map/2';
   const tileZoom = 14;
   const worldTileExtent = 4096;
-  const displayTileSize = 1536;
+  const displayTileSize = 2560;
   const defaultScale = displayTileSize / worldTileExtent;
   const bearing = 0;
   const bearingLocked = true;

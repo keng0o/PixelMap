@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 globalThis.window = globalThis;
 await import('../assets/top-down-game-patterns.js');
+await import('../assets/top-down-game-materials.js');
 await import('../assets/top-down-game-renderer.js');
 
 const RENDERER = globalThis.PixelMapTopDownRenderer;
@@ -30,7 +31,7 @@ const fixture = (overrides = {}) => ({
 });
 
 test('rendererは固定compositorとDOM非依存のscene APIを公開する', () => {
-  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/3');
+  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/5');
   assert.deepEqual(RENDERER.compositor, [
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -49,6 +50,36 @@ test('水・道路・地表は複数patternと参考画像1寄りの色を使う
   assert.ok(scene.stats.patternFamilies.water >= 1);
   assert.ok(scene.stats.patternFamilies.road >= 2);
   assert.ok(scene.stats.patternFamilies.ground >= 1);
+});
+
+test('地表の色むらと道路・水際・建物の二重手描き輪郭を描画命令に持つ', () => {
+  const scene = RENDERER.buildScene(fixture());
+  assert.ok(scene.commands.some(command => command.kind === 'ground-wash' && command.worldAnchored === true));
+  assert.ok(scene.commands.some(command => command.kind === 'area-wash' && command.worldAnchored === true));
+  assert.ok(scene.commands.some(command => command.kind === 'area-fill' && command.roughOutline === true));
+  assert.ok(scene.commands.some(command => command.kind === 'water-fill' && command.roughOutline === true));
+  assert.ok(scene.commands.some(command => command.kind === 'road-edge' && command.roughOutline === true));
+  assert.ok(scene.commands.some(command => command.kind === 'roof-fill' && command.roughOutline === true));
+  assert.ok(scene.commands.filter(command => command.roughOutline)
+    .every(command => command.roughMode === 'jittered-contour'));
+});
+
+test('樹木は道路・建物回避を維持した多層の凹凸樹冠として描く', () => {
+  const trees = RENDERER.buildScene(fixture()).commands.filter(command => command.kind === 'tree');
+  assert.ok(trees.length > 5);
+  assert.ok(trees.every(command => command.crownPrimitive === 'scalloped-layered-crown'));
+  assert.ok(trees.every(command => command.handDrawn === true));
+  assert.ok(trees.every(command => command.crownLayers === 3));
+});
+
+test('参考画像から再構成した建物・樹冠素材を対応patternへ接続する', () => {
+  const patterns = globalThis.PixelMapTopDownPatterns.catalogs;
+  assert.equal(patterns.roof.find(pattern => pattern.id === 'building-cottage-gable').referenceAsset,
+    'building-blue-gable-01');
+  assert.equal(patterns.tree.find(pattern => pattern.id === 'tree-light-crown').referenceAsset,
+    'tree-round-crown-01');
+  assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-gable-01'/);
+  assert.match(source, /paintTreeAt\(ctx, 'tree-round-crown-01'/);
 });
 
 test('建物は実polygonの屋根・手描きpixel細部・短い影だけで壁面と高さ押し出しを持たない', () => {

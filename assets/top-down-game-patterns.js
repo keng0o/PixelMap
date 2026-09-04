@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/3';
-  const styleId = 'top-down-hand-drawn-game-v3';
+  const version = 'pixelmap-top-down-patterns/5';
+  const styleId = 'top-down-hand-drawn-game-v5';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -54,6 +54,7 @@
     roof: [
       pattern('building-cottage-gable', 'roof', 'broken-single-ridge', {
         structure: 'gable', palette: 'blue', lineDirection: 'longest-edge-only', handDrawn: true,
+        referenceAsset: 'building-blue-gable-01',
       }),
       pattern('building-longhouse', 'roof', 'parallel-weatherboards', {
         structure: 'longhouse', palette: 'blue-dark', lineDirection: 'longest-edge-only', handDrawn: true,
@@ -69,11 +70,13 @@
       }),
     ],
     tree: [
-      pattern('tree-light-crown', 'tree', 'clustered-circles', { crown: 'light', radius: 7 }),
-      pattern('tree-dark-crown', 'tree', 'clustered-circles', { crown: 'dark', radius: 8 }),
-      pattern('tree-small', 'tree', 'clustered-circles', { crown: 'small', radius: 5 }),
-      pattern('tree-multi-crown', 'tree', 'clustered-circles', { crown: 'multi', radius: 9 }),
-      pattern('tree-underbrush', 'tree', 'clustered-circles', { crown: 'underbrush', radius: 4 }),
+      pattern('tree-light-crown', 'tree', 'scalloped-layered-crown', {
+        crown: 'light', radius: 13, handDrawn: true, referenceAsset: 'tree-round-crown-01',
+      }),
+      pattern('tree-dark-crown', 'tree', 'scalloped-layered-crown', { crown: 'dark', radius: 14, handDrawn: true }),
+      pattern('tree-small', 'tree', 'scalloped-layered-crown', { crown: 'small', radius: 9, handDrawn: true }),
+      pattern('tree-multi-crown', 'tree', 'scalloped-layered-crown', { crown: 'multi', radius: 15, handDrawn: true }),
+      pattern('tree-underbrush', 'tree', 'scalloped-layered-crown', { crown: 'underbrush', radius: 8, handDrawn: true }),
     ],
     road: [
       pattern('road-sandy-local', 'road', 'layered-line', { classes: ['minor', 'service', 'residential', 'street'] }),

@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 globalThis.window = globalThis;
 await import('../assets/top-down-game-patterns.js');
+await import('../assets/top-down-game-materials.js');
 await import('../assets/top-down-game-renderer.js');
 await import('../assets/top-down-game-map.js');
 
@@ -46,9 +47,9 @@ function tinyBuildingTile() {
 }
 
 test('runtimeはz14・北上固定・必要layerだけの公開契約を持つ', () => {
-  assert.equal(MAP.version, 'pixelmap-top-down-map/1');
+  assert.equal(MAP.version, 'pixelmap-top-down-map/2');
   assert.equal(MAP.tileZoom, 14);
-  assert.equal(MAP.defaultScale, 0.375);
+  assert.equal(MAP.defaultScale, 0.625);
   assert.equal(MAP.bearing, 0);
   assert.equal(MAP.bearingLocked, true);
   assert.deepEqual([...MAP.retainedLayers], [

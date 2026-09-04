@@ -124,7 +124,7 @@
     <section class="panel" aria-labelledby="difference-title">
       <div class="section-heading">
         <h2 id="difference-title">現行の差分</h2>
-        <small>2026-09-03 / cell2 default</small>
+        <small>2026-09-04 / cell2 default</small>
       </div>
       <div class="table-wrap">
         <table>
@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">独立真上視点test</th>
-              <td><code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>から<code>variants/map-09-top-down-game.html</code>へ接続し、実地理の連続座標を保つ北上固定の手描きゲーム表現を検証。普通建物は切妻、長屋、寄棟、平屋根、風化切妻の5種を別々のCanvas primitiveで描く。左上の固定光源に対して右下側の屋根半面を影色にし、屋根内部線は最長辺と平行な途切れ線だけ、大型屋根の外周は濃淡と太さのむらを持つ。名称・浮いたPOI・壁面・高さ押し出しは表示しない。</td>
+              <td><code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>から<code>variants/map-09-top-down-game.html</code>へ接続し、実地理の連続座標を保つ北上固定の手描きゲーム表現を検証。参考画像1から実測した青い屋根と単独樹冠を独立Canvas素材へ再構成し、切妻屋根・明るい樹冠patternへ接続。普通建物5種、右下側の屋根半面影、長辺方向だけの途切れ線、凹凸樹冠、地表色むら、道路・水際・屋根の揺れる二重輪郭を描く。名称・浮いたPOI・壁面・高さ押し出しは表示しない。</td>
               <td>変更なし。本番1・2・4マップは独立真上視点testのmoduleを読み込まず、既存のcell2／cell3描画を維持する。</td>
             </tr>
             <tr>
@@ -216,6 +216,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>参考crop実測の建物・樹冠Canvas素材を追加</h3>
+          <time datetime="2026-09-04">2026-09-04 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>参考画像1から、遮蔽のない青い屋根1点と単独樹冠1点を原寸座標で切り出して実測。bitmapを描画へ貼らず、輪郭、2つの屋根面、長辺方向の途切れ線、影色、凹凸樹冠、重なり葉、斑状の明暗を<code>top-down-game-materials.js</code>のCanvas primitiveとして再構成した。原寸の参考crop／Canvas／50%重ね合わせを表示する<code>map-10-top-down-material-lab.html</code>を追加し、地図では実建物polygonへ正規化して切妻patternに、樹冠中心へ正規化して明るい木patternに接続。あわせて地図縮尺を屋根が読める値へ寄せ、world固定の地表色むら、凹凸樹冠、道路・水際・屋根の揺れる二重輪郭を加えた。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>variants/map-09-top-down-game.html</code>、明示profileの<code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>、素材比較labだけで有効。参考cropはローカルQA時だけ読み込み、GitHub Pagesへは公開しない。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常のstandalone test、cell2／cell3、mobileは変更しない。実地理の連続座標、北上固定、名称・浮いたPOI・壁面・高さ押し出しなしの契約を維持する。</dd></div>
+          <div><dt>確認内容</dt><dd>参考座標・原寸サイズ・primitive構成・bitmap非依存・地図pattern接続を専用テストで確認。建物と樹冠を原寸／拡大／50% overlayで比較し、地図統合後の描画も実ブラウザで撮影。全Nodeテスト299件、66ファイルのビルド、差分検査を完了。参考との素材比較と地図統合を独立視覚レビューし、建物・樹冠・地図の全項目PASSを確認。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>屋根の半面影と長辺方向の手描き線を強化</h3>

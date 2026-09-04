@@ -3,8 +3,10 @@
 
   const PATTERNS = global.PixelMapTopDownPatterns;
   if (!PATTERNS) throw new Error('PixelMapTopDownPatterns is required');
+  const MATERIALS = global.PixelMapTopDownMaterials;
+  if (!MATERIALS) throw new Error('PixelMapTopDownMaterials is required');
 
-  const version = 'pixelmap-top-down-renderer/3';
+  const version = 'pixelmap-top-down-renderer/5';
   const compositor = Object.freeze([
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -145,12 +147,19 @@
     commands.push({
       layer: 'landcover', kind: 'area-fill', sourceId: feature.id, sourceKey: key,
       patternId: selected.pattern.id, paths: projectedPaths(feature, input), fill: groundFill(feature),
-      stroke: P.inkSoft, lineWidth: 1.1,
+      stroke: P.inkSoft, roughStroke: P.ink, lineWidth: 1.1,
+      roughOutline: true, roughMode: 'jittered-contour', seed: selected.seed,
     });
     commands.push({
       layer: 'landcover', kind: 'area-texture', sourceId: feature.id, sourceKey: key,
       patternId: selected.pattern.id, paths: projectedPaths(feature, input), fill: P.groundLight,
       seed: selected.seed, textureOrigin: projectPoint([0, 0], input),
+    });
+    commands.push({
+      layer: 'landcover', kind: 'area-wash', sourceId: feature.id, sourceKey: key,
+      patternId: selected.pattern.id, paths: projectedPaths(feature, input),
+      light: P.groundLight, dark: P.groundDark, seed: selected.seed,
+      textureOrigin: projectPoint([0, 0], input), worldAnchored: true,
     });
   }
 
@@ -161,9 +170,13 @@
     const paths = projectedPaths(feature, input);
     if (feature.type === 3) {
       commands.push({ layer: 'water', kind: 'water-fill', sourceId: feature.id, sourceKey: key,
-        patternId: selected.pattern.id, paths, fill: P.water, stroke: P.waterDark, lineWidth: 2.2 });
+        patternId: selected.pattern.id, paths, fill: P.water, stroke: P.waterDark,
+        roughStroke: P.ink, lineWidth: 2.2, roughOutline: true,
+        roughMode: 'jittered-contour', seed: selected.seed });
       commands.push({ layer: 'water', kind: 'water-shore', sourceId: feature.id, sourceKey: key,
-        patternId: 'water-shore-stones', paths, stroke: P.waterLight, lineWidth: 4.5, inset: true });
+        patternId: 'water-shore-stones', paths, stroke: P.waterLight, roughStroke: P.waterDark,
+        lineWidth: 4.5, inset: true, roughOutline: true,
+        roughMode: 'jittered-contour', seed: selected.seed });
       commands.push({ layer: 'water', kind: 'water-ripples', sourceId: feature.id, sourceKey: key,
         patternId: selected.pattern.id, paths, fill: P.waterLight, seed: selected.seed,
         textureOrigin: projectPoint([0, 0], input) });
@@ -183,7 +196,9 @@
     const paths = projectedPaths(feature, input);
     const layer = isBridge(feature) ? 'bridge' : 'transport';
     commands.push({ layer, kind: 'road-edge', sourceId: feature.id, sourceKey: key,
-      patternId: selected.pattern.id, paths, stroke: P.roadDark, lineWidth: width + 3.2 });
+      patternId: selected.pattern.id, paths, stroke: P.roadDark, roughStroke: P.inkSoft,
+      lineWidth: width + 3.2, roughOutline: true,
+      roughMode: 'jittered-contour', seed: selected.seed });
     commands.push({ layer, kind: 'road-fill', sourceId: feature.id, sourceKey: key,
       patternId: selected.pattern.id, paths, stroke: P.road, lineWidth: width });
     commands.push({ layer, kind: 'road-texture', sourceId: feature.id, sourceKey: key,
@@ -232,7 +247,9 @@
       commands.push({ layer: 'building-shadow', kind: 'roof-shadow', sourceId: feature.id, sourceKey: key,
         patternId: selected.pattern.id, paths, fill: P.shadow, translate: [3, 3] });
       commands.push({ layer: 'building-roof', kind: 'roof-fill', sourceId: feature.id, sourceKey: key,
-        patternId: selected.pattern.id, paths, fill, stroke: P.ink, lineWidth: outlineWidth });
+        patternId: selected.pattern.id, paths, fill, stroke: P.ink, roughStroke: dark,
+        lineWidth: outlineWidth, roughOutline: minScreenDimension >= 4,
+        roughMode: 'jittered-contour', seed: selected.seed });
       if (detailLevel) {
         commands.push({ layer: 'building-roof', kind: 'roof-detail', sourceId: feature.id, sourceKey: key,
           patternId: selected.pattern.id, paths, shade, stroke: dark, highlight,
@@ -270,7 +287,7 @@
     for (const area of areas) {
       const areaKey = featureKey(area);
       const kind = semanticClass(area);
-      const stepScreen = ['forest', 'wood'].includes(kind) ? 19 : kind === 'grass' ? 34 : 27;
+      const stepScreen = ['forest', 'wood'].includes(kind) ? 17 : kind === 'grass' ? 34 : 24;
       const step = stepScreen / input.viewport.scale;
       const bounds = boundsOfGeometry(area.geometry);
       const minX = Math.floor(bounds.minX / step) - 1;
@@ -297,7 +314,8 @@
             layer: 'vegetation', kind: 'tree', sourceId: area.id, sourceKey: areaKey,
             patternId: selected.pattern.id, worldX: point[0], worldY: point[1],
             x: screen[0], y: screen[1], radius: selected.pattern.radius,
-            clearance, seed: selected.seed,
+            clearance, seed: selected.seed, crownPrimitive: selected.pattern.primitive,
+            crownLayers: 3, handDrawn: selected.pattern.handDrawn,
           });
           assignments.set(`${areaKey}|tree:${cellKey}`, selected.pattern.id);
         }
@@ -324,7 +342,12 @@
   }
 
   function buildScene(input) {
-    const commands = [{ layer: 'ground', kind: 'background', fill: P.ground, width: input.width, height: input.height }];
+    const commands = [
+      { layer: 'ground', kind: 'background', fill: P.ground, width: input.width, height: input.height },
+      { layer: 'ground', kind: 'ground-wash', width: input.width, height: input.height,
+        light: P.groundLight, dark: P.groundDark, seed: PATTERNS.hashString('ground-wash'),
+        textureOrigin: projectPoint([0, 0], input), worldAnchored: true },
+    ];
     const assignments = new Map();
     const features = [...input.features].sort((a, b) => featureKey(a).localeCompare(featureKey(b)));
     for (const feature of features) {
@@ -387,6 +410,56 @@
       ctx.strokeStyle = command.stroke; ctx.lineWidth = command.lineWidth || 1;
       ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
     }
+    if (command.roughOutline) paintRoughPath(ctx, command);
+  }
+
+  function traceJitteredPaths(ctx, paths, seed, pass) {
+    ctx.beginPath();
+    for (let pathIndex = 0; pathIndex < paths.length; pathIndex += 1) {
+      const path = paths[pathIndex];
+      if (!path.length) continue;
+      const pointSeed = PATTERNS.hashString(`${seed}:rough:${pass}:${pathIndex}:start`);
+      const start = [
+        path[0][0] + (stableUnit(pointSeed, 1) - .5) * 1.15,
+        path[0][1] + (stableUnit(pointSeed, 2) - .5) * 1.15,
+      ];
+      ctx.moveTo(start[0], start[1]);
+      for (let index = 0; index + 1 < path.length; index += 1) {
+        const from = path[index];
+        const to = path[index + 1];
+        const dx = to[0] - from[0], dy = to[1] - from[1];
+        const length = Math.hypot(dx, dy);
+        const sections = Math.max(1, Math.ceil(length / 14));
+        const normalX = length ? -dy / length : 0;
+        const normalY = length ? dx / length : 0;
+        for (let section = 1; section <= sections; section += 1) {
+          const t = section / sections;
+          const sectionSeed = PATTERNS.hashString(`${seed}:rough:${pass}:${pathIndex}:${index}:${section}`);
+          const normalJitter = (stableUnit(sectionSeed, 1) - .5) * (pass ? 1.8 : 1.25);
+          const alongJitter = section < sections ? (stableUnit(sectionSeed, 2) - .5) * .9 : 0;
+          ctx.lineTo(
+            from[0] + dx * t + normalX * normalJitter + dx / Math.max(1, length) * alongJitter,
+            from[1] + dy * t + normalY * normalJitter + dy / Math.max(1, length) * alongJitter,
+          );
+        }
+      }
+    }
+  }
+
+  function paintRoughPath(ctx, command, offset = 0) {
+    const baseSeed = Number(command.seed) || PATTERNS.hashString(command.sourceKey || command.kind || 'rough');
+    for (let pass = 0; pass < 2; pass += 1) {
+      ctx.save();
+      if (offset) ctx.translate(offset, 0);
+      traceJitteredPaths(ctx, command.paths, baseSeed, pass);
+      ctx.strokeStyle = command.roughStroke || command.stroke || P.ink;
+      ctx.lineWidth = Math.max(.75, (command.lineWidth || 1) + (pass ? .9 : .35));
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.globalAlpha = pass ? .17 : .24;
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   function strokePaths(ctx, command, offset = 0) {
@@ -399,6 +472,59 @@
     ctx.setLineDash(command.dash || []);
     ctx.lineDashOffset = command.dashOffset || 0;
     ctx.stroke();
+    ctx.restore();
+    if (command.roughOutline) paintRoughPath(ctx, command, offset);
+  }
+
+  function paintWashBlob(ctx, x, y, radius, seed, color, alpha) {
+    const points = 9;
+    ctx.beginPath();
+    for (let index = 0; index < points; index += 1) {
+      const angle = Math.PI * 2 * index / points;
+      const localRadius = radius * (.64 + stableUnit(seed, index + 1) * .42);
+      const px = x + Math.cos(angle) * localRadius;
+      const py = y + Math.sin(angle) * localRadius * (.58 + stableUnit(seed, index + 30) * .22);
+      if (!index) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+  }
+
+  function paintSurfaceWash(ctx, command) {
+    ctx.save();
+    let minX = 0, minY = 0, maxX = command.width || 0, maxY = command.height || 0;
+    if (command.paths?.length) {
+      tracePaths(ctx, command.paths);
+      ctx.clip('evenodd');
+      const points = command.paths.flat();
+      if (!points.length) { ctx.restore(); return; }
+      const xs = points.map(point => point[0]);
+      const ys = points.map(point => point[1]);
+      minX = Math.min(...xs); minY = Math.min(...ys);
+      maxX = Math.max(...xs); maxY = Math.max(...ys);
+    }
+    const originX = command.textureOrigin?.[0] || 0;
+    const originY = command.textureOrigin?.[1] || 0;
+    const step = command.kind === 'ground-wash' ? 62 : 50;
+    const firstX = originX + Math.floor((minX - originX) / step) * step;
+    const firstY = originY + Math.floor((minY - originY) / step) * step;
+    for (let y = firstY; y <= maxY; y += step) {
+      for (let x = firstX; x <= maxX; x += step) {
+        const gridX = Math.round((x - originX) / step);
+        const gridY = Math.round((y - originY) / step);
+        const seed = PATTERNS.hashString(`${command.seed}:wash:${gridX}:${gridY}`);
+        if (seed % 3 === 0) continue;
+        const centerX = x + (stableUnit(seed, 2) - .5) * step * .72;
+        const centerY = y + (stableUnit(seed, 3) - .5) * step * .72;
+        const radius = 15 + stableUnit(seed, 4) * 17;
+        const color = seed % 2 ? command.light : command.dark;
+        paintWashBlob(ctx, centerX, centerY, radius, seed, color, .1 + stableUnit(seed, 5) * .08);
+      }
+    }
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 
@@ -595,6 +721,11 @@
     ctx.save(); tracePaths(ctx, command.paths); ctx.clip('evenodd');
     const frame = roofFrame(command.paths);
     if (!frame) { ctx.restore(); return; }
+    if (command.patternId === 'building-cottage-gable') {
+      MATERIALS.paintRoofInFrame(ctx, 'building-blue-gable-01', frame, { seed: command.seed });
+      ctx.restore();
+      return;
+    }
     paintRoofFacet(ctx, frame, roofShadowSide(frame), command.shade);
     const strokes = roofStrokePlan(frame, command);
     for (const stroke of strokes) {
@@ -622,25 +753,33 @@
 
   function paintRoofOutlineRough(ctx, command) {
     if (command.minScreenDimension < 2.5) return;
-    ctx.save(); tracePaths(ctx, command.paths); ctx.clip('evenodd');
+    ctx.save();
     for (let pathIndex = 0; pathIndex < command.paths.length; pathIndex += 1) {
       const path = command.paths[pathIndex];
       for (let index = 0; index + 1 < path.length; index += 1) {
         const from = path[index], to = path[index + 1];
         const dx = to[0] - from[0], dy = to[1] - from[1];
         const length = Math.hypot(dx, dy);
+        if (!length) continue;
+        const normal = [-dy / length, dx / length];
         const segmentSeed = PATTERNS.hashString(`${command.seed}:edge:${pathIndex}:${index}`);
-        const spacing = 4 + segmentSeed % 5;
+        const spacing = 5 + segmentSeed % 6;
         const phase = segmentSeed % spacing;
         for (let distance = phase; distance < length; distance += spacing) {
-          const x = Math.round(from[0] + dx * distance / Math.max(1, length));
-          const y = Math.round(from[1] + dy * distance / Math.max(1, length));
           const variation = PATTERNS.hashString(`${segmentSeed}:${Math.floor(distance)}`);
-          ctx.globalAlpha = variation % 5 === 0 ? .58 : .92;
-          ctx.fillStyle = variation % 4 === 0 ? command.highlight : command.stroke;
-          const width = variation % 3 === 0 ? 2 : 1;
-          const height = variation % 7 === 0 ? 2 : 1;
-          ctx.fillRect(x - (width > 1 ? 1 : 0), y - (height > 1 ? 1 : 0), width, height);
+          const start = distance / length;
+          const end = Math.min(length, distance + 2 + variation % 4) / length;
+          const normalJitter = (stableUnit(variation, 1) - .5) * 1.5;
+          ctx.beginPath();
+          ctx.moveTo(from[0] + dx * start + normal[0] * normalJitter,
+            from[1] + dy * start + normal[1] * normalJitter);
+          ctx.lineTo(from[0] + dx * end + normal[0] * normalJitter,
+            from[1] + dy * end + normal[1] * normalJitter);
+          ctx.globalAlpha = variation % 5 === 0 ? .45 : .82;
+          ctx.strokeStyle = variation % 6 === 0 ? command.highlight : command.stroke;
+          ctx.lineWidth = variation % 4 === 0 ? 1.6 : .85;
+          ctx.lineCap = 'round';
+          ctx.stroke();
         }
       }
     }
@@ -648,24 +787,93 @@
     ctx.restore();
   }
 
+  function traceScallopedCrown(ctx, x, y, radius, seed, lobes = 11) {
+    const points = [];
+    for (let index = 0; index < lobes; index += 1) {
+      const angle = Math.PI * 2 * index / lobes;
+      const localRadius = radius * (.78 + stableUnit(seed, index + 1) * .3);
+      points.push([
+        x + Math.cos(angle) * localRadius,
+        y + Math.sin(angle) * localRadius,
+      ]);
+    }
+    const firstMidpoint = [
+      (points[0][0] + points.at(-1)[0]) / 2,
+      (points[0][1] + points.at(-1)[1]) / 2,
+    ];
+    ctx.beginPath();
+    ctx.moveTo(firstMidpoint[0], firstMidpoint[1]);
+    for (let index = 0; index < points.length; index += 1) {
+      const point = points[index];
+      const next = points[(index + 1) % points.length];
+      ctx.quadraticCurveTo(point[0], point[1], (point[0] + next[0]) / 2, (point[1] + next[1]) / 2);
+    }
+    ctx.closePath();
+  }
+
   function paintTree(ctx, command) {
     const r = command.radius;
-    ctx.save(); ctx.translate(command.x, command.y);
-    ctx.fillStyle = P.forestDark; ctx.strokeStyle = P.ink; ctx.lineWidth = 1.4;
+    if (command.patternId === 'tree-light-crown') {
+      MATERIALS.paintTreeAt(ctx, 'tree-round-crown-01', {
+        x: command.x, y: command.y, radius: r, seed: command.seed,
+      });
+      return;
+    }
+    ctx.save();
+    ctx.translate(command.x, command.y);
     const crowns = command.patternId === 'tree-multi-crown'
-      ? [[-r * .42, 1, r * .7], [r * .35, 0, r * .72], [0, -r * .35, r * .76]]
+      ? [[-r * .38, 1, r * .76], [r * .34, 0, r * .78], [0, -r * .32, r * .82]]
       : command.patternId === 'tree-underbrush'
-        ? [[-2, 1, r * .7], [2, -1, r * .65], [0, 2, r * .6]]
-        : [[0, 0, r], [-r * .3, r * .14, r * .65], [r * .28, r * .18, r * .62]];
-    for (const [x, y, radius] of crowns) { ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
-    ctx.fillStyle = command.patternId === 'tree-dark-crown' ? P.forest : P.forestLight;
-    ctx.beginPath(); ctx.arc(-r * .18, -r * .24, Math.max(1.8, r * .42), 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = P.groundLight; ctx.fillRect(-r * .26, -r * .5, Math.max(1, r * .3), Math.max(1, r * .2));
+        ? [[-r * .35, 1, r * .7], [r * .34, -1, r * .66], [0, r * .22, r * .64]]
+        : [[0, 0, r], [-r * .32, r * .15, r * .68], [r * .3, r * .2, r * .65]];
+    for (let index = 0; index < crowns.length; index += 1) {
+      const [x, y, radius] = crowns[index];
+      const crownSeed = PATTERNS.hashString(`${command.seed}:crown:${index}`);
+      traceScallopedCrown(ctx, x + 1.3, y + 1.7, radius * 1.03, crownSeed + 1, 10 + crownSeed % 4);
+      ctx.fillStyle = P.forestDark;
+      ctx.globalAlpha = .68;
+      ctx.fill();
+
+      traceScallopedCrown(ctx, x, y, radius, crownSeed + 2, 10 + (crownSeed >>> 3) % 4);
+      ctx.fillStyle = command.patternId === 'tree-dark-crown' ? P.forestDark : P.forest;
+      ctx.strokeStyle = P.ink;
+      ctx.lineWidth = index ? 1 : 1.35;
+      ctx.globalAlpha = 1;
+      ctx.fill();
+      ctx.stroke();
+
+      traceScallopedCrown(ctx, x - radius * .14, y - radius * .2, radius * .68,
+        crownSeed + 3, 8 + (crownSeed >>> 6) % 3);
+      ctx.fillStyle = command.patternId === 'tree-dark-crown' ? P.forest : P.forestLight;
+      ctx.globalAlpha = .9;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    const highlightCount = command.patternId === 'tree-dark-crown' ? 2 : 3;
+    for (let index = 0; index < highlightCount; index += 1) {
+      const seed = PATTERNS.hashString(`${command.seed}:leaf-light:${index}`);
+      const x = -r * .5 + stableUnit(seed, 1) * r * .72;
+      const y = -r * .58 + stableUnit(seed, 2) * r * .55;
+      traceScallopedCrown(ctx, x, y, Math.max(1.2, r * (.12 + stableUnit(seed, 3) * .11)), seed, 7);
+      ctx.fillStyle = P.groundLight;
+      ctx.globalAlpha = .68;
+      ctx.fill();
+    }
+    ctx.globalAlpha = .72;
+    ctx.fillStyle = P.inkSoft;
+    for (let index = 0; index < 3; index += 1) {
+      const seed = PATTERNS.hashString(`${command.seed}:leaf-mark:${index}`);
+      const x = Math.round((stableUnit(seed, 1) - .5) * r * .85);
+      const y = Math.round((stableUnit(seed, 2) - .5) * r * .72);
+      ctx.fillRect(x, y, 1 + seed % 2, 1);
+    }
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 
   function paintCommand(ctx, command) {
     if (command.kind === 'background') { ctx.fillStyle = command.fill; ctx.fillRect(0, 0, command.width, command.height); return; }
+    if (command.kind === 'ground-wash' || command.kind === 'area-wash') { paintSurfaceWash(ctx, command); return; }
     if (command.kind === 'area-fill' || command.kind === 'water-fill' || command.kind === 'roof-fill') { fillPolygon(ctx, command); return; }
     if (command.kind === 'roof-shadow') {
       ctx.save(); ctx.translate(...command.translate); fillPolygon(ctx, command); ctx.restore(); return;

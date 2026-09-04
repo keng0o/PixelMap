@@ -16,11 +16,12 @@ test('独立pageは全画面Canvas・現在地・一時status・帰属だけを�
   assert.doesNotMatch(page, /<header|<nav|設定|方位|施設を選択/);
 });
 
-test('3つの専用moduleだけを順に読み、map-02 profileへ依存しない', () => {
+test('参考素材を含む4つの専用moduleだけを順に読み、map-02 profileへ依存しない', () => {
   const patterns = page.indexOf('../assets/top-down-game-patterns.js');
+  const materials = page.indexOf('../assets/top-down-game-materials.js');
   const renderer = page.indexOf('../assets/top-down-game-renderer.js');
   const runtime = page.indexOf('../assets/top-down-game-map.js');
-  assert.ok(patterns >= 0 && renderer > patterns && runtime > renderer);
+  assert.ok(patterns >= 0 && materials > patterns && renderer > materials && runtime > renderer);
   assert.doesNotMatch(page, /map-02-refined|profile=topdown-game|presentation=art/);
 });
 
@@ -37,7 +38,7 @@ test('mobile safe area・44px以上の操作・focus・reduced motionを持つ',
 
 test('Canvasは北上固定・名称なし・屋根中心の契約を説明する', () => {
   assert.match(page, /aria-label="実地理を真上から描いた、名称表示のないゲーム風地図。ドラッグで移動できます"/);
-  assert.match(page, /data-style="top-down-hand-drawn-game-v3"/);
+  assert.match(page, /data-style="top-down-hand-drawn-game-v5"/);
   assert.match(page, /data-bearing="0"/);
 });
 
