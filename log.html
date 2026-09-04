@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">独立真上視点test</th>
-              <td><code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>から<code>variants/map-09-top-down-game.html</code>へ接続し、実地理の連続座標を保つ北上固定の手描きゲーム表現を検証。参考画像1から実測した切妻・寄棟風・長屋風の青い屋根3点と、明るい単独樹冠・濃色樹冠・小型樹冠3点を独立Canvas素材へ再構成し、対応patternへ接続。寄棟・長屋風素材は原寸比1.65倍以内だけへ適用し、大型実建物の形状は既存表現で維持する。普通建物5種、右下側の屋根半面影、長辺方向だけの途切れ線、凹凸樹冠、地表色むら、道路・水際・屋根の揺れる二重輪郭を描く。名称・浮いたPOI・壁面・高さ押し出しは表示しない。</td>
+              <td><code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>から<code>variants/map-09-top-down-game.html</code>へ接続し、実地理の連続座標を保つ北上固定の手描きゲーム表現を検証。参考画像1から実測した切妻・寄棟風・長屋風・円形タンク付き港湾平屋根の青い屋根4点と、明るい単独樹冠・濃色樹冠・小型樹冠・複数樹冠4点を独立Canvas素材へ再構成し、対応patternへ接続。寄棟・長屋風素材は原寸比1.65倍以内、港湾平屋根素材はさらに工業・倉庫系、短辺12px以上、長辺50px以下、縦横scale歪み1.45倍以内だけへ適用し、住宅・極小・大型実建物は既存表現で維持する。複数樹冠は実測基準半径で地図用サイズへ正規化する。普通建物5種、右下側の屋根半面影、長辺方向だけの途切れ線、凹凸樹冠、地表色むら、道路・水際・屋根の揺れる二重輪郭を描く。名称・浮いたPOI・壁面・高さ押し出しは表示しない。</td>
               <td>変更なし。本番1・2・4マップは独立真上視点testのmoduleを読み込まず、既存のcell2／cell3描画を維持する。</td>
             </tr>
             <tr>
@@ -216,6 +216,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>参考crop実測の港湾平屋根・複数樹冠素材を追加</h3>
+          <time datetime="2026-09-04">2026-09-04 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>参考画像1から港の円形タンク付き平屋根を78×78px、森林縁の複数樹冠を76×76pxで切り出して実測。港湾平屋根を9点外形、4つの明暗面、長辺方向だけの分断線、細長い青い付属屋根、同心円のタンク、茶色い設備箱へ分解した。複数樹冠は18点外形、上側・左側・中央の3群、中央の広い明樹冠、非対称な暗斑へ分解し、既存5種の<code>building-flat-workshop</code>と<code>tree-multi-crown</code>へ接続。地図全体の確認で複数樹冠が単木用基準半径により約2倍へ拡大される問題を発見し、実測基準半径36で正規化した。独立レビューで見つかった樹冠の横幅不足・右上の背景混入と、港湾タンク屋根が住宅・極小・大型建物へ反復する問題も修正。港湾素材は工業・倉庫系、短辺12px以上、長辺50px以下、縦横scale歪み1.45倍以内だけへ限定した。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>variants/map-09-top-down-game.html</code>、明示profileの<code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>、素材比較labだけで有効。参考cropはローカルQA時だけ読み込み、GitHub Pagesへは公開しない。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常のstandalone test、cell2／cell3、mobileは変更しない。実地理の連続座標、北上固定、名称・浮いたPOI・壁面・高さ押し出しなしの契約を維持する。</dd></div>
+          <div><dt>確認内容</dt><dd>参考座標・原寸サイズ・4面の屋根陰影・長辺方向だけの分断線・円形タンクと設備箱・3群の樹冠・実測基準半径・pattern接続・1.65倍の縮尺ガード・港湾素材の建物種別／最小／最大／歪みガードを専用テストで確認。原寸／拡大／50% overlayと川崎の実地理を実ブラウザで撮影し、独立視覚レビューで港湾平屋根、修正後の複数樹冠、過適用修正後の地図統合の全項目PASSを確認。全Nodeテスト312件、66ファイルのビルド、差分検査を完了。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>参考crop実測の長い青屋根・濃色樹冠素材を追加</h3>

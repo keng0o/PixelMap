@@ -38,12 +38,12 @@ test('mobile safe area・44px以上の操作・focus・reduced motionを持つ',
 
 test('Canvasは北上固定・名称なし・屋根中心の契約を説明する', () => {
   assert.match(page, /aria-label="実地理を真上から描いた、名称表示のないゲーム風地図。ドラッグで移動できます"/);
-  assert.match(page, /data-style="top-down-hand-drawn-game-v7"/);
+  assert.match(page, /data-style="top-down-hand-drawn-game-v8"/);
   assert.match(page, /data-bearing="0"/);
 });
 
-test('参考素材3巡目のcache versionを全専用moduleへ揃える', () => {
-  assert.equal((page.match(/reference-material-3/g) || []).length, 4);
+test('参考素材4巡目のcache versionを全専用moduleへ揃える', () => {
+  assert.equal((page.match(/reference-material-4/g) || []).length, 4);
 });
 
 test('map-02の明示profileだけが専用pageへ接続し、本番入口は新styleを参照しない', async () => {

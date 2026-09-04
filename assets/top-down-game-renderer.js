@@ -6,7 +6,7 @@
   const MATERIALS = global.PixelMapTopDownMaterials;
   if (!MATERIALS) throw new Error('PixelMapTopDownMaterials is required');
 
-  const version = 'pixelmap-top-down-renderer/7';
+  const version = 'pixelmap-top-down-renderer/8';
   const compositor = Object.freeze([
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -109,6 +109,13 @@
 
   function semanticClass(feature) {
     return String(feature.props?.subclass || feature.props?.class || feature.props?.landuse || 'unknown').toLowerCase();
+  }
+
+  function buildingUsage(props = {}) {
+    const values = [props.subclass, props.class, props.building, props.landuse]
+      .map(value => String(value || '').trim().toLowerCase())
+      .filter(Boolean);
+    return [...new Set(values)].join('|') || 'unknown';
   }
 
   function groundFill(feature) {
@@ -244,6 +251,9 @@
       const detailLevel = minScreenDimension >= 6 && maxScreenDimension >= 12
         ? 'full'
         : minScreenDimension >= 4 && maxScreenDimension >= 8 ? 'ridge' : null;
+      const usage = buildingUsage(feature.props);
+      const referenceDetailEligible = selected.pattern.id !== 'building-flat-workshop' ||
+        shouldUseHarborWorkshop(roofFrame(paths), usage);
       commands.push({ layer: 'building-shadow', kind: 'roof-shadow', sourceId: feature.id, sourceKey: key,
         patternId: selected.pattern.id, paths, fill: P.shadow, translate: [3, 3] });
       commands.push({ layer: 'building-roof', kind: 'roof-fill', sourceId: feature.id, sourceKey: key,
@@ -255,7 +265,8 @@
           patternId: selected.pattern.id, paths, shade, stroke: dark, highlight,
           lineWidth: Math.min(1.35, outlineWidth), seed: selected.seed,
           detailPrimitive: selected.pattern.primitive, detailLevel, hardEdge: true,
-          lineDirection: selected.pattern.lineDirection, lightDirection: 'upper-left', shadowHalf: 'lower-right' });
+          lineDirection: selected.pattern.lineDirection, lightDirection: 'upper-left', shadowHalf: 'lower-right',
+          buildingUsage: usage, referenceDetailEligible });
       }
       if (detailLevel === 'full') {
         commands.push({ layer: 'building-roof', kind: 'roof-outline-rough', sourceId: feature.id, sourceKey: key,
@@ -619,6 +630,28 @@
       Math.max(alongScale, acrossScale) <= maxScale;
   }
 
+  function shouldUseHarborWorkshop(frame, usage) {
+    if (!frame) return false;
+    const allowed = new Set([
+      'industrial', 'warehouse', 'manufacture', 'factory', 'works', 'depot',
+      'storage', 'storage_tank', 'silo',
+    ]);
+    const kinds = String(usage || '').toLowerCase().split('|');
+    if (!kinds.some(kind => allowed.has(kind))) return false;
+    const width = frame.halfU * 2;
+    const height = frame.halfV * 2;
+    const shortEdge = Math.min(width, height);
+    const longEdge = Math.max(width, height);
+    if (shortEdge < 12 || longEdge > 50) return false;
+    const asset = MATERIALS.catalog['building-harbor-workshop-04'];
+    const nativeWidth = asset.fitBounds.maxX - asset.fitBounds.minX;
+    const nativeHeight = asset.fitBounds.maxY - asset.fitBounds.minY;
+    const alongScale = width / nativeWidth;
+    const acrossScale = height / nativeHeight;
+    const distortion = Math.max(alongScale, acrossScale) / Math.max(.000001, Math.min(alongScale, acrossScale));
+    return distortion <= 1.45 && shouldUseReferenceRoof(frame, 'building-harbor-workshop-04');
+  }
+
   function paintPixelLine(ctx, from, to, color, size = 1, salt = 0) {
     const dx = to[0] - from[0], dy = to[1] - from[1];
     const length = Math.hypot(dx, dy);
@@ -750,6 +783,12 @@
       ctx.restore();
       return;
     }
+    if (command.patternId === 'building-flat-workshop' && command.referenceDetailEligible &&
+        shouldUseReferenceRoof(frame, 'building-harbor-workshop-04')) {
+      MATERIALS.paintRoofInFrame(ctx, 'building-harbor-workshop-04', frame, { seed: command.seed });
+      ctx.restore();
+      return;
+    }
     paintRoofFacet(ctx, frame, roofShadowSide(frame), command.shade);
     const strokes = roofStrokePlan(frame, command);
     for (const stroke of strokes) {
@@ -855,6 +894,12 @@
       });
       return;
     }
+    if (command.patternId === 'tree-multi-crown') {
+      MATERIALS.paintTreeAt(ctx, 'tree-multi-crown-04', {
+        x: command.x, y: command.y, radius: r, seed: command.seed,
+      });
+      return;
+    }
     ctx.save();
     ctx.translate(command.x, command.y);
     const crowns = command.patternId === 'tree-multi-crown'
@@ -943,6 +988,6 @@
 
   global.PixelMapTopDownRenderer = Object.freeze({
     version, compositor, buildScene, paintScene, patternAssignments, pointInFeature, distanceToFeature,
-    roofFrame, roofShadowSide, roofStrokePlan, shouldUseReferenceRoof,
+    roofFrame, roofShadowSide, roofStrokePlan, shouldUseReferenceRoof, shouldUseHarborWorkshop,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -9,8 +9,8 @@ const PATTERNS = globalThis.PixelMapTopDownPatterns;
 const source = await readFile(new URL('../assets/top-down-game-patterns.js', import.meta.url), 'utf8');
 
 test('真上視点styleは参考画像1寄りの固定paletteとpattern catalogを公開する', () => {
-  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/7');
-  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v7');
+  assert.equal(PATTERNS.version, 'pixelmap-top-down-patterns/8');
+  assert.equal(PATTERNS.styleId, 'top-down-hand-drawn-game-v8');
   assert.equal(PATTERNS.palette.water, '#63c4c3');
   assert.equal(PATTERNS.palette.forest, '#3f704d');
   assert.equal(PATTERNS.palette.road, '#ead9ac');
@@ -65,6 +65,13 @@ test('長い屋根と濃色樹冠は3巡目の参考素材へ接続する', () =
     'building-blue-longhouse-03');
   assert.equal(PATTERNS.catalogs.tree.find(pattern => pattern.id === 'tree-dark-crown').referenceAsset,
     'tree-dark-crown-03');
+});
+
+test('円形タンク付き平屋根と複数樹冠は4巡目の参考素材へ接続する', () => {
+  assert.equal(PATTERNS.catalogs.roof.find(pattern => pattern.id === 'building-flat-workshop').referenceAsset,
+    'building-harbor-workshop-04');
+  assert.equal(PATTERNS.catalogs.tree.find(pattern => pattern.id === 'tree-multi-crown').referenceAsset,
+    'tree-multi-crown-04');
 });
 
 test('feature keyはproperty順と配列indexではなく地物ID・意味・world boundsで安定する', () => {

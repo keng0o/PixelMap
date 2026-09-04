@@ -1,7 +1,7 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-materials/3';
+  const version = 'pixelmap-top-down-materials/4';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -130,6 +130,79 @@
           parts: [[0, .34], [.48, 1]] },
       ],
     },
+    'building-harbor-workshop-04': {
+      family: 'building',
+      nativeSize: [78, 78],
+      source: {
+        reference: 'Photo 1.jpg',
+        crop: { x: 500, y: 855, width: 78, height: 78 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(27% 5%, 65% 9%, 83% 23%, 78% 46%, 67% 74%, 63% 90%, 39% 90%, 9% 65%, 10% 31%)',
+      fitBounds: { minX: 7, minY: 4, maxX: 65, maxY: 70 },
+      palette: {
+        ink: '#1d3342',
+        inkSoft: '#415666',
+        shade: '#394f66',
+        shadeDark: '#263b53',
+        light: '#415f78',
+        highlight: '#86a5b2',
+        shadow: '#2d443e',
+        tankDark: '#273b55',
+        tank: '#446d8f',
+        tankLight: '#78a0b5',
+        equipment: '#9c765e',
+        equipmentLight: '#c19b72',
+        roofStrip: '#537e9e',
+        roofStripLight: '#7ca2b6',
+      },
+      silhouette: [[21, 4], [51, 7], [65, 18], [61, 36], [52, 58], [49, 70],
+        [30, 70], [7, 51], [8, 24]],
+      facets: [
+        { role: 'shadeDark', points: [[21, 4], [51, 7], [65, 18], [40, 27], [8, 24]] },
+        { role: 'shade', points: [[8, 24], [40, 27], [38, 51], [7, 51]] },
+        { role: 'light', points: [[40, 27], [65, 18], [61, 36], [52, 58], [49, 70], [38, 51]] },
+        { role: 'shadeDark', points: [[7, 51], [38, 51], [49, 70], [30, 70]] },
+      ],
+      shadowHalf: 'lower-right',
+      inkSegments: [
+        { axis: 'longest-edge', from: [10, 24], to: [38, 27], width: 1.2, role: 'shade-seam-soft',
+          parts: [[0, .38], [.51, 1]] },
+        { axis: 'longest-edge', from: [9, 34], to: [35, 38], width: .9, role: 'shade-seam-soft',
+          parts: [[0, .26], [.4, .65], [.78, 1]] },
+        { axis: 'longest-edge', from: [10, 46], to: [35, 50], width: 1.05, role: 'weather-mark',
+          parts: [[0, .31], [.45, .7], [.82, 1]] },
+        { axis: 'longest-edge', from: [37, 54], to: [50, 58], width: .9, role: 'light-seam-soft',
+          parts: [[0, .35], [.55, 1]] },
+        { axis: 'longest-edge', from: [30, 65], to: [47, 69], width: .9, role: 'highlight',
+          parts: [[0, .29], [.49, .73], [.86, 1]] },
+        { axis: 'longest-edge', from: [18, 15], to: [40, 18], width: .8, role: 'highlight',
+          parts: [[0, .33], [.49, .82]] },
+      ],
+      fixtures: [
+        {
+          shape: 'polygon', role: 'roof-strip',
+          points: [[12, 20], [24, 12], [31, 17], [25, 43], [14, 52], [8, 44]],
+          fill: 'roofStrip', stroke: 'ink',
+          inset: [[16, 22], [23, 17], [26, 20], [21, 39], [15, 44], [12, 41]],
+          insetFill: 'roofStripLight',
+        },
+        {
+          shape: 'circle', role: 'tank', center: [44, 29], radius: 16,
+          fill: 'tankDark', stroke: 'ink', rings: [
+            { radius: 12, fill: 'tank' },
+            { radius: 7, fill: 'tankLight' },
+            { radius: 3.2, fill: 'highlight' },
+          ],
+        },
+        {
+          shape: 'polygon', role: 'equipment',
+          points: [[27, 45], [43, 47], [46, 61], [29, 60], [25, 53]],
+          fill: 'equipment', stroke: 'ink',
+          inset: [[30, 48], [40, 49], [42, 57], [30, 56]], insetFill: 'equipmentLight',
+        },
+      ],
+    },
     'tree-round-crown-01': {
       family: 'tree',
       nativeSize: [48, 48],
@@ -216,6 +289,53 @@
         [[13, 19], [17, 16]], [[31, 10], [35, 13]], [[42, 19], [46, 23]],
         [[42, 33], [38, 36]], [[26, 40], [30, 42]], [[13, 33], [18, 36]],
         [[21, 26], [25, 30]],
+      ],
+      glint: false,
+    },
+    'tree-multi-crown-04': {
+      family: 'tree',
+      nativeSize: [76, 76],
+      source: {
+        reference: 'Photo 1.jpg',
+        crop: { x: 100, y: 378, width: 76, height: 76 },
+        usage: 'local-visual-qa-only',
+      },
+      referenceClipPath: 'polygon(10% 18%, 23% 8%, 40% 5%, 54% 11%, 68% 6%, 82% 15%, 88% 29%, 86% 41%, 97% 60%, 90% 76%, 74% 89%, 54% 93%, 39% 87%, 23% 93%, 9% 82%, 3% 64%, 10% 49%, 2% 35%)',
+      center: [38, 40],
+      baseRadius: 36,
+      outline: [[7, 14], [17, 6], [30, 4], [41, 8], [52, 4], [62, 11], [67, 22],
+        [65, 31], [75, 45], [69, 58], [56, 68], [41, 71], [29, 66], [17, 71],
+        [6, 62], [2, 48], [7, 37], [1, 26]],
+      palette: {
+        ink: '#263c35',
+        shadow: '#294638',
+        dark: '#35533d',
+        main: '#557648',
+        light: '#87a861',
+        highlight: '#a8ba74',
+        detailDark: '#34513a',
+      },
+      crowns: [
+        { role: 'shadow', cluster: 'upper', x: 38, y: 20, rx: 34, ry: 17, seed: 301, stroke: false },
+        { role: 'dark', cluster: 'upper', x: 21, y: 15, rx: 15, ry: 11, seed: 302 },
+        { role: 'dark', cluster: 'upper', x: 40, y: 13, rx: 15, ry: 10, seed: 303 },
+        { role: 'main', cluster: 'upper', x: 60, y: 18, rx: 15, ry: 12, seed: 304 },
+        { role: 'shadow', cluster: 'left', x: 13, y: 42, rx: 15, ry: 21, seed: 311, stroke: false },
+        { role: 'dark', cluster: 'left', x: 8, y: 31, rx: 10, ry: 12, seed: 312 },
+        { role: 'main', cluster: 'left', x: 14, y: 48, rx: 15, ry: 16, seed: 313 },
+        { role: 'shadow', cluster: 'center', x: 40, y: 46, rx: 34, ry: 26, seed: 321, stroke: false },
+        { role: 'dark', cluster: 'center', x: 54, y: 49, rx: 22, ry: 19, seed: 322, stroke: false },
+        { role: 'main', cluster: 'center', x: 38, y: 43, rx: 32, ry: 24, seed: 323 },
+        { role: 'highlight', cluster: 'center', x: 37, y: 39, rx: 24, ry: 18, seed: 324, stroke: false },
+        { role: 'highlight', cluster: 'center', x: 30, y: 34, rx: 13, ry: 9, seed: 325, stroke: false },
+        { role: 'detail', cluster: 'center', x: 26, y: 48, rx: 8, ry: 10, seed: 326 },
+        { role: 'detail', cluster: 'center', x: 52, y: 35, rx: 7, ry: 8, seed: 327 },
+        { role: 'detail', cluster: 'center', x: 46, y: 56, rx: 8, ry: 6, seed: 328 },
+      ],
+      inkMarks: [
+        [[14, 20], [19, 16]], [[35, 9], [40, 12]], [[55, 11], [61, 15]],
+        [[7, 35], [12, 40]], [[19, 52], [24, 48]], [[30, 25], [35, 29]],
+        [[50, 28], [55, 32]], [[55, 49], [60, 45]], [[35, 56], [40, 52]],
       ],
       glint: false,
     },
@@ -311,6 +431,68 @@
     ctx.closePath();
   }
 
+  function traceFixtureCircle(ctx, fixture, mapper, seedOffset = 0, radius = fixture.radius) {
+    const points = [];
+    const count = 18;
+    for (let index = 0; index < count; index += 1) {
+      const angle = Math.PI * 2 * index / count;
+      const wobble = .965 + unit(seedOffset + fixture.radius, index + 31) * .07;
+      points.push(mapper([
+        fixture.center[0] + Math.cos(angle) * radius * wobble,
+        fixture.center[1] + Math.sin(angle) * radius * wobble,
+      ]));
+    }
+    ctx.beginPath();
+    const last = points.at(-1);
+    ctx.moveTo((points[0][0] + last[0]) / 2, (points[0][1] + last[1]) / 2);
+    for (let index = 0; index < points.length; index += 1) {
+      const point = points[index];
+      const next = points[(index + 1) % points.length];
+      ctx.quadraticCurveTo(point[0], point[1], (point[0] + next[0]) / 2, (point[1] + next[1]) / 2);
+    }
+    ctx.closePath();
+  }
+
+  function paintBuildingFixtures(ctx, asset, mapper, seed) {
+    const palette = asset.palette;
+    for (const fixture of asset.fixtures || []) {
+      if (fixture.shape === 'circle') {
+        traceFixtureCircle(ctx, fixture, mapper, seed);
+        ctx.fillStyle = palette[fixture.fill];
+        ctx.fill();
+        ctx.strokeStyle = palette[fixture.stroke];
+        ctx.lineWidth = 1.65;
+        ctx.stroke();
+        for (const ring of fixture.rings || []) {
+          traceFixtureCircle(ctx, fixture, mapper, seed + ring.radius * 11, ring.radius);
+          ctx.fillStyle = palette[ring.fill];
+          ctx.globalAlpha = ring.radius < 5 ? .82 : .94;
+          ctx.fill();
+          ctx.strokeStyle = ring.radius < 5 ? palette.highlight : palette.inkSoft;
+          ctx.lineWidth = ring.radius < 5 ? .65 : .9;
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      if (fixture.shape === 'polygon') {
+        tracePolygon(ctx, fixture.points, mapper);
+        ctx.fillStyle = palette[fixture.fill];
+        ctx.fill();
+        ctx.strokeStyle = palette[fixture.stroke];
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        if (fixture.inset) {
+          tracePolygon(ctx, fixture.inset, mapper);
+          ctx.fillStyle = palette[fixture.insetFill];
+          ctx.globalAlpha = .78;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+  }
+
   function paintBuilding(ctx, asset, mapper, seed = 0) {
     const palette = asset.palette;
     const shadowMapper = point => {
@@ -370,6 +552,7 @@
       }
     }
     ctx.globalAlpha = 1;
+    paintBuildingFixtures(ctx, asset, mapper, seed);
   }
 
   function paintTree(ctx, asset, mapper, seed = 0) {
@@ -465,7 +648,7 @@
   function paintTreeAt(ctx, assetId, { x = 0, y = 0, radius = 18, seed = 0 } = {}) {
     const asset = catalog[assetId];
     if (!asset || asset.family !== 'tree') return false;
-    const scale = radius / 18;
+    const scale = radius / (asset.baseRadius || 18);
     const mapper = point => [x + (point[0] - asset.center[0]) * scale, y + (point[1] - asset.center[1]) * scale];
     ctx.save();
     paintTree(ctx, asset, mapper, seed);

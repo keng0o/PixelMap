@@ -1,8 +1,8 @@
 ((global) => {
   'use strict';
 
-  const version = 'pixelmap-top-down-patterns/7';
-  const styleId = 'top-down-hand-drawn-game-v7';
+  const version = 'pixelmap-top-down-patterns/8';
+  const styleId = 'top-down-hand-drawn-game-v8';
 
   function freeze(value) {
     if (Array.isArray(value)) return Object.freeze(value.map(freeze));
@@ -66,6 +66,7 @@
       }),
       pattern('building-flat-workshop', 'roof', 'offset-long-seams', {
         structure: 'flat', palette: 'slate', lineDirection: 'longest-edge-only', handDrawn: true,
+        referenceAsset: 'building-harbor-workshop-04',
       }),
       pattern('building-weathered-gable', 'roof', 'weathered-long-strokes', {
         structure: 'weathered-gable', palette: 'blue-dark', lineDirection: 'longest-edge-only', handDrawn: true,
@@ -81,7 +82,9 @@
       pattern('tree-small', 'tree', 'scalloped-layered-crown', {
         crown: 'small', radius: 9, handDrawn: true, referenceAsset: 'tree-small-crown-02',
       }),
-      pattern('tree-multi-crown', 'tree', 'scalloped-layered-crown', { crown: 'multi', radius: 15, handDrawn: true }),
+      pattern('tree-multi-crown', 'tree', 'scalloped-layered-crown', {
+        crown: 'multi', radius: 15, handDrawn: true, referenceAsset: 'tree-multi-crown-04',
+      }),
       pattern('tree-underbrush', 'tree', 'scalloped-layered-crown', { crown: 'underbrush', radius: 8, handDrawn: true }),
     ],
     road: [

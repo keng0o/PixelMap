@@ -31,7 +31,7 @@ const fixture = (overrides = {}) => ({
 });
 
 test('rendererは固定compositorとDOM非依存のscene APIを公開する', () => {
-  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/7');
+  assert.equal(RENDERER.version, 'pixelmap-top-down-renderer/8');
   assert.deepEqual(RENDERER.compositor, [
     'ground', 'landcover', 'water', 'transport', 'bridge',
     'vegetation', 'building-shadow', 'building-roof', 'location',
@@ -86,12 +86,18 @@ test('参考画像から再構成した建物・樹冠素材を対応patternへ�
     'building-blue-longhouse-03');
   assert.equal(patterns.tree.find(pattern => pattern.id === 'tree-dark-crown').referenceAsset,
     'tree-dark-crown-03');
+  assert.equal(patterns.roof.find(pattern => pattern.id === 'building-flat-workshop').referenceAsset,
+    'building-harbor-workshop-04');
+  assert.equal(patterns.tree.find(pattern => pattern.id === 'tree-multi-crown').referenceAsset,
+    'tree-multi-crown-04');
   assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-gable-01'/);
   assert.match(source, /paintTreeAt\(ctx, 'tree-round-crown-01'/);
   assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-hipped-02'/);
   assert.match(source, /paintTreeAt\(ctx, 'tree-small-crown-02'/);
   assert.match(source, /paintRoofInFrame\(ctx, 'building-blue-longhouse-03'/);
   assert.match(source, /paintTreeAt\(ctx, 'tree-dark-crown-03'/);
+  assert.match(source, /paintRoofInFrame\(ctx, 'building-harbor-workshop-04'/);
+  assert.match(source, /paintTreeAt\(ctx, 'tree-multi-crown-04'/);
 });
 
 test('参考屋根素材は原寸比1.65倍以内だけへ適用し大型実建物を過度に引き伸ばさない', () => {
@@ -99,7 +105,36 @@ test('参考屋根素材は原寸比1.65倍以内だけへ適用し大型実建�
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 48, halfV: 34 }, 'building-blue-hipped-02'), false);
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 23, halfV: 17 }, 'building-blue-longhouse-03'), true);
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 48, halfV: 34 }, 'building-blue-longhouse-03'), false);
+  assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 28, halfV: 31 }, 'building-harbor-workshop-04'), true);
+  assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 56, halfV: 48 }, 'building-harbor-workshop-04'), false);
   assert.equal(RENDERER.shouldUseReferenceRoof({ halfU: 28, halfV: 20 }, 'missing-asset'), false);
+});
+
+test('港湾タンク屋根は工業・倉庫系の小中規模かつ原寸比を保てる建物だけへ適用する', () => {
+  assert.equal(RENDERER.shouldUseHarborWorkshop({ halfU: 10, halfV: 9 }, 'industrial'), true);
+  assert.equal(RENDERER.shouldUseHarborWorkshop({ halfU: 10, halfV: 9 }, 'warehouse'), true);
+  assert.equal(RENDERER.shouldUseHarborWorkshop({ halfU: 10, halfV: 9 }, 'residential'), false);
+  assert.equal(RENDERER.shouldUseHarborWorkshop({ halfU: 10, halfV: 5 }, 'industrial'), false);
+  assert.equal(RENDERER.shouldUseHarborWorkshop({ halfU: 26, halfV: 20 }, 'industrial'), false);
+  assert.equal(RENDERER.shouldUseHarborWorkshop({ halfU: 20, halfV: 7 }, 'industrial'), false);
+});
+
+test('平屋根detailは建物種別を保持し住宅では港湾タンク素材を無効化する', () => {
+  const buildings = [];
+  for (let index = 0; index < 160; index += 1) {
+    const x = 5 + (index % 20) * 28;
+    const y = 5 + Math.floor(index / 20) * 26;
+    buildings.push(polygon('building', 5000 + index, [[x, y], [x + 20, y], [x + 20, y + 18], [x, y + 18]], {
+      class: index % 2 ? 'industrial' : 'residential',
+    }));
+  }
+  const scene = RENDERER.buildScene({
+    width: 600, height: 260, viewport: { centerX: 300, centerY: 130, scale: 1 }, features: buildings,
+  });
+  const workshops = scene.commands.filter(command => command.kind === 'roof-detail' &&
+    command.patternId === 'building-flat-workshop');
+  assert.ok(workshops.some(command => command.buildingUsage === 'industrial' && command.referenceDetailEligible));
+  assert.ok(workshops.some(command => command.buildingUsage === 'residential' && !command.referenceDetailEligible));
 });
 
 test('建物は実polygonの屋根・手描きpixel細部・短い影だけで壁面と高さ押し出しを持たない', () => {
