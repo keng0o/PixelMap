@@ -8,13 +8,13 @@
     n = Math.imul(n ^ n >>> 15, 0x846ca68b);
     return ((n ^ n >>> 16) >>> 0) / 4294967296;
   }
-  const palette = Object.freeze({ ground: '#e1e2be', residential: '#e5e2c2', grass: '#d5ddb1',
-    park: '#cfdaad', forest: '#93ae80', forestEdge: '#738d67', field: '#daddb0', fieldLine: '#929e70',
+  const palette = Object.freeze({ ground: '#e4e2ba', residential: '#e7e2bf', grass: '#d9dfb2',
+    park: '#d0dbac', forest: '#87a879', forestEdge: '#344c31', field: '#daddad', fieldLine: '#73865b',
     soil: '#dfd5b5', plaza: '#e5dec5', road: '#efead2', roadEdge: '#96967b', path: '#e8e3c5',
     rail: '#6f7567', water: '#b6ccca', waterEdge: '#485e55', ripple: '#738f88',
-    ink: '#4a4c38', roofInk: '#473c2b', roof: '#cd8766', roofLight: '#e1a07c', roofDark: '#b47156',
-    roofShadow: '#b7b597', roofSeam: '#95684c', tree: '#89a97b', treeLight: '#a6bf8e',
-    treeDark: '#789b72', treeDeep: '#526f51', treeInk: '#3e5539', treeShadow: '#adb594' });
+    ink: '#374331', roofInk: '#382f22', roof: '#ce8160', roofLight: '#e19b76', roofDark: '#b77154',
+    roofShadow: '#a9ab87', roofSeam: '#95684c', tree: '#86a675', treeLight: '#a6bd88',
+    treeDark: '#66895b', treeDeep: '#526f51', treeInk: '#344d2f', treeShadow: '#a1ae85' });
   function project(scene, [x, y]) {
     const v = scene.viewport;
     // A subpixel grid prevents tiny floating point changes from changing pen sampling
@@ -112,49 +112,62 @@
           const frame = G.frame(poly);
           if (frame) for (let y = Math.ceil(frame.top / 6) * 6; y < frame.bottom; y += 6) {
             const seed = G.hash(`crop:${frame.point(frame.left, y)}`);
-            const row = [project(scene, frame.point(frame.left, y)), project(scene, frame.point(frame.right, y))];
-            penLine(ctx, row, '#8b9668', .75, seed, .55, scene.viewport.scale);
-            for (let x = frame.left + 2; x < frame.right; x += 4) {
-              if (random(seed, Math.floor(x * 10)) < .23) continue;
-              const p = project(scene, frame.point(x, y));
-              const q = project(scene, frame.point(x + .7, y - 1.5 - random(seed, x) * 1.5));
-              line(ctx, [p, q], '#647750', .75);
+            const start = frame.left + 2 + random(seed, 1) * 5;
+            const end = frame.right - 2 - random(seed, 2) * 6;
+            for (let x = start; x < end; x += 18) {
+              if (random(seed, Math.floor(x)) < .09) continue;
+              const row = [];
+              for (let u = x; u <= Math.min(x + 18, end); u += 2) {
+                const v = y + Math.sin((u - frame.left) / 32) * 1.2 + Math.sin((u-frame.left)/11 + random(seed,4)*6) * .3;
+                row.push(project(scene, frame.point(u, v)));
+              }
+              penLine(ctx, row, '#657f4f', 1.95 * Math.min(1.15, scene.viewport.scale), seed, .3, scene.viewport.scale);
+              line(ctx, row.map(([px,py]) => [px-.45,py-.55]), '#a4b37b', .5);
             }
           }
           ctx.restore();
         }
       }
     }
-    // Sparse ink stipples describe the open ground; roads, water and roofs cover them later.
-    const groundBounds = scene.bounds;
-    for (let gy = Math.floor(groundBounds.top / 16); gy < groundBounds.bottom / 16; gy++) {
-      for (let gx = Math.floor(groundBounds.left / 16); gx < groundBounds.right / 16; gx++) {
-        const seed = G.hash(`earth:${gx}:${gy}`);
-        if (random(seed) > .3) continue;
-        const [x, y] = project(scene, [(gx + random(seed, 1)) * 16, (gy + random(seed, 2)) * 16]);
-        const s = scene.viewport.scale;
-        line(ctx, [[x, y], [x + (1 + random(seed, 3)) * s, y - .4 * s]], '#a0a07c', .5);
-        if (random(seed, 4) > .5) {
-          line(ctx, [[x - 2 * s, y + s], [x - 1.5 * s, y + .7 * s]], '#8c9169', .65);
+    drawBuildingGround(ctx, scene);
+    for (const mark of scene.groundMarks || []) {
+      const [x, y] = project(scene, [mark.x, mark.y]), s = scene.viewport.scale;
+      const count = mark.distance < 12 ? 2 + Math.floor(random(mark.seed, 5) * 3) : 1;
+      for (let i = 0; i < count; i++) {
+        const dx = (random(mark.seed, i + 10) - .5) * 5 * s;
+        const dy = (random(mark.seed, i + 20) - .5) * 4 * s;
+        if (mark.type === 'grass') {
+          const h = (1.2 + random(mark.seed, i + 30) * 2.2) * s;
+          line(ctx, [[x+dx-s,y+dy],[x+dx-1.5*s,y+dy-h*.7]], '#848e60', .5);
+          line(ctx, [[x+dx,y+dy],[x+dx+.4*s,y+dy-h]], '#848e60', .5);
+        } else {
+          const length = (.6 + random(mark.seed, i + 40) * 1.7) * s;
+          const ux = Math.cos(mark.angle), uy = Math.sin(mark.angle);
+          line(ctx, [[x+dx,y+dy],[x+dx+ux*length,y+dy+uy*length]], '#96956b', .55);
         }
       }
     }
-    // Botanical marks on known grass only. Their world phase survives pan and tile loading.
-    for (const f of scene.land.filter(f => ['grass', 'meadow', 'park'].includes(G.kind(f)) || f.layer === 'park')) {
-      const b = { left: Math.max(f.bounds.left, scene.bounds.left), right: Math.min(f.bounds.right, scene.bounds.right),
-        top: Math.max(f.bounds.top, scene.bounds.top), bottom: Math.min(f.bounds.bottom, scene.bounds.bottom) };
-      for (let gy = Math.floor(b.top / 19); gy < b.bottom / 19; gy++) for (let gx = Math.floor(b.left / 19); gx < b.right / 19; gx++) {
-        const seed = G.hash(`grass:${gx}:${gy}`);
-        if (random(seed) > .52) continue;
-        const p = [(gx + random(seed, 1)) * 19, (gy + random(seed, 2)) * 19];
-        if (!G.containsDisc(p, 4, f.polygons)) continue;
-        const [x, y] = project(scene, p), s = Math.min(1.2, scene.viewport.scale);
-        line(ctx, [[x - 2 * s, y], [x - 3 * s, y - 2 * s]], '#90976a', .55);
-        line(ctx, [[x, y], [x + .3 * s, y - 2.8 * s]], '#90976a', .55);
-        line(ctx, [[x + s, y], [x + 2 * s, y - 2 * s]], '#90976a', .5);
-        if (random(seed, 8) > .5) line(ctx, [[x + 4 * s, y + s], [x + 5 * s, y + .5 * s]], '#949471', .65);
+  }
+
+  function drawBuildingGround(ctx, scene) {
+    const s = scene.viewport.scale;
+    ctx.save();
+    for (const roof of scene.buildings) {
+      const ring = roof.polygon[0];
+      for (let i = 1; i < ring.length; i++) {
+        const a = ring[i-1], b = ring[i], length = Math.hypot(b[0]-a[0], b[1]-a[1]);
+        if (length < 8 || random(roof.seed, i+340) > .64) continue;
+        const t = .08 + random(roof.seed, i+350) * .15;
+        const points = [t, .88].map(u => project(scene, [a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u]));
+        // Narrow broken earth washes tie the footprint to its ground; later water,
+        // roads and roofs cover the wash so it cannot become a fictitious connection.
+        for (const [width, alpha] of [[10,.08],[7,.13],[4,.19]]) {
+          ctx.globalAlpha = alpha;
+          penLine(ctx, points, '#b5aa7e', width*s, roof.seed+i, .5, s);
+        }
       }
     }
+    ctx.restore();
   }
 
   function drawWater(ctx, scene) {
@@ -277,22 +290,72 @@
       return [x + Math.cos(a) * radius, y + Math.sin(a) * radius * (.89 + random(seed, 4) * .13)];
     });
   }
-  function drawTree(ctx, scene, tree) {
+  function drawWoodland(ctx, scene) {
+    const forest = scene.trees.filter(t => t.forest), s = scene.viewport.scale;
+    if (!forest.length) return;
+    const shapes = forest.map(t => {
+      const [x,y] = project(scene, [t.x,t.y]);
+      return crownPoints(x,y,t.radius*s,t.seed);
+    });
+    // All crowns share one nonzero fill. It covers every interior edge of the
+    // underlying stroke, leaving the silhouette of their actual union in ink.
+    ctx.beginPath();
+    for (const pts of shapes) {
+      pts.forEach(([x,y],i) => i ? ctx.lineTo(x+1.5*s,y+2*s) : ctx.moveTo(x+1.5*s,y+2*s));ctx.closePath();
+    }
+    ctx.fillStyle = palette.treeShadow; ctx.fill();
+    ctx.beginPath();
+    for (const pts of shapes) {
+      pts.forEach(([x,y],i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));ctx.closePath();
+    }
+    ctx.strokeStyle = palette.forestEdge;ctx.lineWidth = 2.1;ctx.stroke();
+    ctx.fillStyle = palette.forest;ctx.fill();
+    ctx.save();ctx.clip();
+    // Larger canopy clusters share light and shade across several overlapping trees.
+    // Their world phase is stable, and the real crown union clips every wash.
+    const b = scene.bounds;
+    for (let gy=Math.floor(b.top/47);gy<=Math.ceil(b.bottom/47);gy++) for (let gx=Math.floor(b.left/47);gx<=Math.ceil(b.right/47);gx++) {
+      const seed=G.hash(`foliage:${gx}:${gy}`);
+      const center=[(gx+.15+random(seed,1)*.7)*47,(gy+.15+random(seed,2)*.7)*47];
+      const [x,y]=project(scene,center), r=(24+random(seed,3)*12)*s;
+      ctx.save();ctx.translate(x,y);
+      ctx.globalAlpha=.35;
+      polygon(ctx,crownPoints(4*s,5*s,r,seed), '#5f7e50');
+      ctx.globalAlpha=.75;
+      polygon(ctx,crownPoints(-4*s,-5*s,r*.89,seed+31), '#b4c98f');
+      ctx.globalAlpha=.18;
+      polygon(ctx,crownPoints(1*s,2*s,r*.72,seed+70), '#8da878');
+      if(random(seed,4)>.38) {
+        const points=crownPoints(0,0,r,seed), start=Math.floor(random(seed,5)*30);
+        ctx.globalAlpha=.7;
+        penLine(ctx,points.slice(start,start+22),'#526d41',.85,seed,.2,s);
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+    for (const tree of forest) drawTree(ctx, scene, tree, true);
+  }
+  function drawTree(ctx, scene, tree, grouped = false) {
     const [tx, ty] = project(scene, [tree.x, tree.y]), x = 0, y = 0, r = tree.radius * scene.viewport.scale;
     // Build the same local pen path on every frame, then translate it. This also avoids
     // floating point resampling changes when a crown crosses a screen coordinate.
     ctx.save(); ctx.translate(tx, ty);
     const pts = crownPoints(x, y, r, tree.seed);
-    const base = ['#89a97b', '#91ad80', '#83a47a', '#9ab587'][tree.seed % 4];
-    polygon(ctx, pts.map(([px, py]) => [px + 1.3 * scene.viewport.scale, py + 1.7 * scene.viewport.scale]), palette.treeShadow);
-    polygon(ctx, pts, base);
+    const base = ['#83a772', '#91ae7d', '#7b9f6e', '#99b380'][tree.seed % 4];
+    if (!grouped) {
+      polygon(ctx, pts.map(([px, py]) => [px + 1.3 * scene.viewport.scale, py + 1.7 * scene.viewport.scale]), palette.treeShadow);
+      polygon(ctx, pts, base);
+    }
     ctx.save(); polygon(ctx, pts); ctx.clip();
-    // Three broad botanical masses; no glossy concentric highlight rings.
+    // Translucent masses share a larger canopy instead of giving every tree a disk.
+    if (grouped) ctx.globalAlpha = .1;
     polygon(ctx, crownPoints(x + r * .28, y + r * .37, r * .78, tree.seed + 70), palette.treeDark);
-    polygon(ctx, crownPoints(x - r * .28, y - r * .24, r * .65, tree.seed + 31), '#9fb98c');
+    polygon(ctx, crownPoints(x - r * .28, y - r * .24, r * .65, tree.seed + 31), palette.treeLight);
     polygon(ctx, crownPoints(x + r * .05, y + r * .02, r * .45, tree.seed + 54), base);
     if (r > 4) {
-      const count = Math.min(25, Math.floor(tree.radius * 1.8));
+      ctx.globalAlpha = 1;
+      const patch = .5 + .5 * Math.sin(tree.x / 34 + Math.cos(tree.y / 47));
+      const count = Math.min(33, Math.floor(tree.radius * (grouped ? .8 + patch * .9 : 1.8)));
       for (let j = 0; j < count; j++) {
         const a = random(tree.seed, 20 + j) * Math.PI * 2;
         const d = r * (.14 + Math.sqrt(random(tree.seed, 80 + j)) * .68);
@@ -301,13 +364,18 @@
         ctx.beginPath(); ctx.moveTo(cx - 1.5 * s, cy + .8 * s);
         ctx.quadraticCurveTo(cx - 2 * s, cy - 1.7 * s, cx - .2 * s, cy - 1.2 * s);
         ctx.quadraticCurveTo(cx + .2 * s, cy - 2.2 * s, cx + 1.2 * s, cy - .9 * s);
-        ctx.strokeStyle = j % 4 === 0 ? '#527249' : '#47643f';
-        ctx.lineWidth = j % 3 === 0 ? .65 : .48; ctx.stroke();
+        ctx.strokeStyle = j % 4 === 0 ? '#5b7c4c' : '#3f5d35';
+        ctx.lineWidth = j % 3 === 0 ? .65 : .45; ctx.stroke();
         if (j % 3 === 1) line(ctx, [[cx + s, cy + 1.5 * s], [cx + 1.5 * s, cy + 1.7 * s]], '#47643f', .7);
       }
     }
     ctx.restore();
-    penLine(ctx, [...pts, pts[0]], tree.edge ? palette.treeInk : '#4d6945', tree.edge ? 1.05 : .8,
+    if (grouped) {
+      if (random(tree.seed, 380) > .28) {
+        const start = Math.floor(random(tree.seed, 381) * 33);
+        penLine(ctx, pts.slice(start,start+22), '#4d6b3f', .78, tree.seed, .12, scene.viewport.scale);
+      }
+    } else penLine(ctx, [...pts, pts[0]], palette.treeInk, tree.garden ? .8 : 1.2,
       tree.seed, .12, scene.viewport.scale);
     ctx.restore();
   }
@@ -341,8 +409,8 @@
     const mid = point(.5, .5), upper = point(.5, 0);
     const lightTop = (upper[0] - mid[0]) * -.55 + (upper[1] - mid[1]) * -.83 > 0;
     const warm = roof.seed % 5;
-    const light = ['#dfa07b', '#d99a76', '#e4a380', '#dca17e', '#d69979'][warm];
-    const shade = ['#be7d5d', '#b7795d', '#c18464', '#ba8062', '#b87c61'][warm];
+    const light = ['#df9671', '#d9906c', '#e59c77', '#dd9873', '#d58d6c'][warm];
+    const shade = ['#ba7152', '#b56e52', '#c07a59', '#b77755', '#b67556'][warm];
     polygon(ctx, [a, b, r2, r1], lightTop ? light : shade);
     polygon(ctx, [d, c, r2, r1], lightTop ? shade : light);
     if (hip) {
@@ -385,7 +453,7 @@
     ctx.save(); trace(ctx, scene, roof.polygon); ctx.clip('evenodd');
     for (const panel of roof.panels) panelRoof(ctx, scene, roof, panel);
     ctx.restore();
-    featureInk(ctx, scene, roof.polygon, palette.roofInk, min < 4 ? .55 : min < 9 ? .8 : 1.2, .3);
+    featureInk(ctx, scene, roof.polygon, palette.roofInk, min < 4 ? .55 : min < 9 ? .85 : 1.4, .3);
   }
   function drawPaper(ctx, scene) {
     const b = scene.bounds, s = scene.viewport.scale;
@@ -404,7 +472,8 @@
   function paint(ctx, scene, location = null) {
     ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     drawGround(ctx, scene); drawWater(ctx, scene); drawRoads(ctx, scene);
-    for (const tree of scene.trees) drawTree(ctx, scene, tree);
+    drawWoodland(ctx, scene);
+    for (const tree of scene.trees.filter(t => !t.forest)) drawTree(ctx, scene, tree);
     for (const roof of scene.buildings) drawRoof(ctx, scene, roof);
     drawPaper(ctx, scene);
     if (location) {

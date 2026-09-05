@@ -7,6 +7,12 @@
     return n >>> 0;
   };
   const unit = (seed, salt = 0) => hash(`${seed}:${salt}`) / 4294967296;
+  function detailRandom(seed, salt = 0) {
+    let n = hash(`${seed}:${salt}`);
+    n = Math.imul(n ^ n >>> 16, 0x7feb352d);
+    n = Math.imul(n ^ n >>> 15, 0x846ca68b);
+    return ((n ^ n >>> 16) >>> 0) / 4294967296;
+  }
   function bounds(paths) {
     const b = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
     for (const path of paths) for (const [x, y] of path) {
@@ -190,6 +196,39 @@
     });
   }
 
+  function groundDetails(visible, b, vegetationIndex, obstacles) {
+    const edges = [];
+    for (const f of visible) {
+      if (f.props.brunnel === 'tunnel') continue;
+      const type = f.layer === 'building' ? 'building' : ['water', 'waterway'].includes(f.layer) ? 'water' :
+        f.layer === 'transportation' ? 'road' : isForest(kind(f)) ? 'forest' : null;
+      if (!type) continue;
+      for (const ring of f.geometry) for (let i = 1; i < ring.length; i++) {
+        const a = ring[i - 1], q = ring[i], box = bounds([[a, q]]);
+        if (!overlaps(box, b, 20)) continue;
+        edges.push({type, geometry:[[a,q]], bounds:box, width:type === 'road' ? roadWidth(f) / 2 : 0,
+          angle:Math.atan2(q[1] - a[1], q[0] - a[0])});
+      }
+    }
+    const index = new SpatialIndex(edges, 32), marks = [];
+    for (let gy = Math.floor(b.top / 12); gy < b.bottom / 12; gy++) for (let gx = Math.floor(b.left / 12); gx < b.right / 12; gx++) {
+      const seed = hash(`margin:${gx}:${gy}`);
+      const p = [(gx + detailRandom(seed, 1)) * 12, (gy + detailRandom(seed, 2)) * 12];
+      let distance = 24, nearest = null;
+      for (const edge of index.near(p, 20)) {
+        const d = edgeDistance(p, edge.geometry) - edge.width;
+        if (d < distance) { distance = d; nearest = edge; }
+      }
+      const density = nearest ? .015 + .68 * Math.exp(-Math.max(0, distance - 2) / 8) : .015;
+      if (detailRandom(seed) > density || blocked(p, 2.2, obstacles.near(p, 16))) continue;
+      const green = vegetationIndex.near(p, 5).some(f => containsDisc(p, 3, f.polygons));
+      marks.push({key:`margin:${gx}:${gy}`, x:p[0], y:p[1], seed,
+        type:green && detailRandom(seed, 4) > .2 ? 'grass' : 'earth',
+        edgeType:nearest?.type || null, distance, angle:nearest?.angle || 0});
+    }
+    return marks;
+  }
+
   function compose(features, viewport) {
     const b = { left: viewport.centerX - viewport.width / 2 / viewport.scale - 64,
       right: viewport.centerX + viewport.width / 2 / viewport.scale + 64,
@@ -231,21 +270,41 @@
         const forest = eligible.some(f => isForest(kind(f)));
         const density = forest ? .95 : eligible.some(f => ['grass', 'meadow'].includes(kind(f))) ? .065 : .34;
         if (unit(seed, 3) > density) continue;
-        let radius = forest ? 7 + unit(seed, 4) * 4.5 : 5.5 + unit(seed, 4) * 4.8;
-        const containing = eligible.find(f => containsDisc(p, radius * 1.07 + 2, f.polygons));
-        if (!containing) {
-          radius *= .55;
-          if (!eligible.some(f => containsDisc(p, radius * 1.07 + 2, f.polygons))) continue;
-        }
-        if (blocked(p, radius * 1.07 + 2, obstacles.near(p, radius + 20))) continue;
+        const baseRadius = forest ? 7 + unit(seed, 4) * 4.5 : 5.5 + unit(seed, 4) * 4.8;
+        const cluster = .5 + .5 * Math.sin(p[0] / 49 + Math.cos(p[1] / 61));
+        const candidates = forest ? [baseRadius * (1.18 + cluster * .28 + detailRandom(seed, 9) * .16), baseRadius, baseRadius * .55] :
+          [baseRadius, baseRadius * .55];
+        const radius = candidates.find(r => eligible.some(f => containsDisc(p, r * 1.07 + 2, f.polygons)) &&
+          !blocked(p, r * 1.07 + 2, obstacles.near(p, r + 20)));
+        if (!radius) continue;
         const edge = !forest || !eligible.some(f => containsDisc(p, radius * 2.3, f.polygons));
         trees.push({ key: `${gx}:${gy}`, x: p[0], y: p[1], radius, seed, forest, edge });
       }
     }
+    // Small plantings belong only to mapped vegetation next to a real building.
+    // Nothing here invents parcels, fences, entrances or connecting paths.
+    for (const roof of buildings) {
+      const ring = roof.polygon[0];
+      for (let i = 1; i < ring.length; i++) {
+        const a = ring[i - 1], q = ring[i], length = Math.hypot(q[0] - a[0], q[1] - a[1]);
+        const seed = hash(`garden:${roof.seed}:${i}`);
+        if (length < 10 || detailRandom(seed) > .62) continue;
+        const t = .2 + detailRandom(seed, 1) * .6, r = 2 + detailRandom(seed, 2) * 1.5;
+        let nx = -(q[1] - a[1]) / length, ny = (q[0] - a[0]) / length;
+        const mid = [a[0] + (q[0] - a[0]) * t, a[1] + (q[1] - a[1]) * t];
+        if (inside([mid[0] + nx, mid[1] + ny], [roof.polygon])) { nx *= -1; ny *= -1; }
+        const p = [mid[0] + nx * (r + 3.5), mid[1] + ny * (r + 3.5)];
+        if (!vegetationIndex.near(p, 6).some(f => containsDisc(p, r * 1.07 + 2, f.polygons)) ||
+          blocked(p, r * 1.07 + 2, obstacles.near(p, r + 20))) continue;
+        trees.push({key:`garden:${roof.seed}:${i}`, x:p[0], y:p[1], radius:r, seed, forest:false, edge:true, garden:true});
+      }
+    }
     trees.sort((a, b) => a.y - b.y || a.x - b.x);
-    return { viewport, bounds: b, land, roads, water, buildings, trees,
+    const groundMarks = groundDetails(visible, b, vegetationIndex, obstacles);
+    return { viewport, bounds: b, land, roads, water, buildings, trees, groundMarks,
       stats: { sourceBuildingCount: buildings.length, roofCount: buildings.length, roadCount: roads.length,
         sourceRoadCount: roads.length, waterCount: water.length, treeCount: trees.length,
+        gardenCount:trees.filter(t => t.garden).length, groundMarkCount:groundMarks.length,
         courtyardCount: buildings.filter(f => f.polygon.length > 1).length, labelCount: 0, poiMarkerCount: 0,
         buildingExtrusionEnabled: false, geometryErrors: 0,
         placementFingerprint: hash(trees.map(t => `${t.key}:${t.radius.toFixed(3)}`).join('|')).toString(16) } };

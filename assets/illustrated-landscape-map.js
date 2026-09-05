@@ -3,7 +3,7 @@
   const MapData = global.PixelMapTopDownMap;
   const G = global.PixelMapIllustratedGeometry;
   const Renderer = global.PixelMapIllustratedRenderer;
-  const styleId = 'illustrated-landscape-hand-drawn-v2';
+  const styleId = 'illustrated-landscape-hand-drawn-v3';
   const defaultScale = 1.05;
   const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
   const FALLBACK_TILE_URL = 'https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf';

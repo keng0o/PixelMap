@@ -124,6 +124,44 @@ test('fictional art-direction fixture does not place a building on open water', 
   }
 });
 
+test('garden plants require mapped vegetation and retain clearances from real features', () => {
+  const features = G.mergeFeatures(globalThis.PixelMapIllustratedFixture.features);
+  const scene = G.compose(features,{centerX:368,centerY:476,width:736,height:952,scale:1});
+  const gardens = scene.trees.filter(t=>t.garden);
+  assert.ok(gardens.length>10);
+  const vegetation = features.filter(f=>f.layer==='park' || ['forest','wood','grass','meadow','park','garden','recreation_ground'].includes(G.kind(f)));
+  const obstacles = features.filter(f=>['building','water','waterway','transportation'].includes(f.layer) || G.kind(f)==='farmland');
+  for(const tree of gardens) {
+    assert.ok(vegetation.some(f=>G.containsDisc([tree.x,tree.y],tree.radius*1.07+2,f.polygons)));
+    assert.equal(G.blocked([tree.x,tree.y],tree.radius*1.07+2,obstacles),false);
+  }
+  const bare = G.compose(G.mergeFeatures([polygon(3,'building','residential',[rect(50,50,40,30)])]),viewport);
+  assert.equal(bare.trees.length,0,'unknown land must not acquire invented garden plants');
+});
+
+test('margin marks follow existing edges and keep their geographic phase under pan', () => {
+  const source = [polygon(1,'landcover','grass',[rect(-300,-300,800,800)]),
+    road(2,[[[100,-300],[100,500]]])];
+  const features = G.mergeFeatures(source);
+  const a = G.compose(features,viewport), b = G.compose(features,{...viewport,centerX:124});
+  const later = new globalThis.Map(b.groundMarks.map(m=>[m.key,m]));
+  const interior = a.groundMarks.filter(m=>m.x>20&&m.x<180&&m.y>20&&m.y<180);
+  assert.ok(interior.length>10);
+  assert.ok(interior.filter(m=>m.distance<18).length/interior.length>.65);
+  for(const mark of interior) {
+    assert.deepEqual(later.get(mark.key),mark);
+    assert.equal(G.blocked([mark.x,mark.y],2.2,features.filter(f=>f.layer==='transportation')),false);
+  }
+  assert.deepEqual(a.roads[0].geometry,source[1].geometry);
+});
+
+test('the rounded fictional river still has a bridge with dry approaches and a wet crossing', () => {
+  const water = G.mergeFeatures(globalThis.PixelMapIllustratedFixture.features).find(f=>f.layer==='water');
+  assert.equal(G.inside([359,632],water.polygons),false);
+  assert.equal(G.inside([421,609],water.polygons),false);
+  assert.equal(G.inside([390,620.5],water.polygons),true);
+});
+
 test('new entry is standalone-only; normal, embedded, and existing topdown routes retain their paths', async () => {
   const source = await readFile(new URL('../variants/map-02-refined.html',import.meta.url),'utf8');
   const script = source.match(/<script>([\s\S]*?)<\/script>/)[1];

@@ -26,7 +26,7 @@ async function run() {
       page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
       await page.goto(base+route+query); await ready(page);
       const d = await page.evaluate(()=>window.PixelMapIllustratedStudy);
-      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v2'); assert.equal(d.failedTileCount,0);
+      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v3'); assert.equal(d.failedTileCount,0);
       assert.equal(d.paintedRoofs,d.roofCount); assert.equal(d.paintedTrees,d.treeCount);
       assert.equal(d.buildingExtrusionEnabled,false); assert.equal(d.labelCount,0);
       assert.deepEqual(errors,[]);
