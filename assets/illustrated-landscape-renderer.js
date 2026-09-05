@@ -65,10 +65,51 @@
     }
     return result;
   }
+  // A pen mark is a continuous strip whose two edges follow its changing width.
+  // Varying the filled width avoids the dotted joins of short thick strokes.
+  function pressure(value) {
+    const t=Math.max(0,Math.min(1,(value-.22)/.56));
+    return .5+1.1*(t*t*(3-2*t));
+  }
+  function inkStrip(ctx, points, widths, color) {
+    if(points.length<2)return;
+    const closed=Math.hypot(points[0][0]-points.at(-1)[0],points[0][1]-points.at(-1)[1])<.001;
+    const count=closed?points.length-1:points.length,left=[],right=[];
+    for(let i=0;i<count;i++) {
+      const p=points[i],a=points[i===0?(closed?count-1:0):i-1],b=points[i===count-1?(closed?0:i):i+1];
+      const before=Math.hypot(p[0]-a[0],p[1]-a[1]),after=Math.hypot(b[0]-p[0],b[1]-p[1]);
+      const ux=before?(p[0]-a[0])/before:(b[0]-p[0])/(after||1);
+      const uy=before?(p[1]-a[1])/before:(b[1]-p[1])/(after||1);
+      const vx=after?(b[0]-p[0])/after:ux,vy=after?(b[1]-p[1])/after:uy;
+      const sum=Math.hypot(ux+vx,uy+vy),nx=sum?-(uy+vy)/sum:-uy,ny=sum?(ux+vx)/sum:ux;
+      const join=Math.min(1.5,1/Math.max(.2,nx*-uy+ny*ux)),r=widths[i]*.5*join;
+      left.push([p[0]+nx*r,p[1]+ny*r]);right.push([p[0]-nx*r,p[1]-ny*r]);
+    }
+    ctx.beginPath();
+    if(closed) {
+      for(const ring of [left,right]) {ring.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();}
+    } else {
+      [...left,...right.reverse()].forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();
+    }
+    ctx.fillStyle=color;ctx.fill('evenodd');
+  }
+  function inkPenLine(ctx, points, color, width, seed, amplitude = .35, scale = 1) {
+    const pts = penPoints(points, seed, amplitude * scale, 1.6 * scale);
+    const phase=random(seed,17)*Math.PI*2,phase2=random(seed,19)*Math.PI*2;
+    let distance=0;
+    const closed=pts.length>1&&Math.hypot(pts[0][0]-pts.at(-1)[0],pts[0][1]-pts.at(-1)[1])<.001;
+    const widths=pts.map((p,i)=>{
+      if(i)distance+=Math.hypot(p[0]-pts[i-1][0],p[1]-pts[i-1][1])/scale;
+      const signal=.5+.23*Math.sin(distance/7.1+phase)+.12*Math.sin(distance/2.7+phase2);
+      return width*pressure(signal);
+    });
+    if(closed&&widths.length)widths[widths.length-1]=widths[0];
+    else if(widths.length>2) {widths[0]*=.35;widths[widths.length-1]*=.2;}
+    inkStrip(ctx,pts,widths,color);
+  }
   function penLine(ctx, points, color, width, seed, amplitude = .35, scale = 1) {
     const pts = penPoints(points, seed, amplitude * scale, 3 * scale);
     line(ctx, pts, color, width * .83);
-    // Batch pressure accents into one path; hundreds of roofs must remain cheap to pan.
     ctx.beginPath();
     for (let i = 0; i < pts.length - 1; i += 5) {
       if (random(seed, i + 71) < .55) continue;
@@ -79,7 +120,7 @@
   function featureInk(ctx, scene, paths, color, width, amplitude = .35) {
     for (const path of paths) {
       const seed = G.hash(path.slice(0, 2).flat().map(n => n.toFixed(3)).join(':'));
-      penLine(ctx, path.map(p => project(scene, p)), color, width, seed, amplitude, scene.viewport.scale);
+      inkPenLine(ctx, path.map(p => project(scene, p)), color, width, seed, amplitude, scene.viewport.scale);
     }
   }
   function fillFeature(ctx, scene, feature, color, stroke = null, width = .6) {
@@ -202,23 +243,27 @@
     }
     ctx.restore();
   }
-  // The footprint is already irregular. Ink pressure and missing runs depend
-  // only on world coordinates, so union order and pan cannot re-seed the pen.
-  function surfaceInk(ctx, scene, polygons, color, width) {
-    const paths=polygons.flat();
-    ctx.save();trace(ctx,scene,paths);ctx.strokeStyle=color;
-    ctx.lineWidth=width*.45;ctx.globalAlpha=.3;ctx.stroke();
-    for(let bucket=0;bucket<3;bucket++) {
-      ctx.beginPath();
-      for(const path of paths) for(let i=1;i<path.length;i++) {
-        const a=path[i-1],b=path[i],x=(a[0]+b[0])/2,y=(a[1]+b[1])/2;
-        const pressure=Surfaces.noise(x,y,8,41);
-        if(pressure<.29 || Math.min(2,Math.floor((pressure-.29)*5))!==bucket)continue;
-        const pa=project(scene,a),pb=project(scene,b);ctx.moveTo(...pa);ctx.lineTo(...pb);
+  // World-seeded pressure remains fixed when union rings acquire a different
+  // start vertex after panning. Tiny dry sections taper to paper between marks.
+  function surfaceInk(ctx, scene, polygons, color, width, broken = false) {
+    for(const path of polygons.flat()) {
+      const points=[];
+      for(let i=1;i<path.length;i++) {
+        const a=path[i-1],b=path[i],dx=b[0]-a[0],dy=b[1]-a[1];
+        const axis=Math.abs(dx)>=Math.abs(dy)?0:1,delta=b[axis]-a[axis];
+        const ts=[0];
+        for(let n=Math.ceil(Math.min(a[axis],b[axis])/1.5);n*1.5<Math.max(a[axis],b[axis]);n++) {
+          const t=(n*1.5-a[axis])/delta;if(t>0&&t<1)ts.push(t);
+        }
+        for(const t of ts.sort((x,y)=>x-y))points.push([a[0]+dx*t,a[1]+dy*t]);
       }
-      ctx.globalAlpha=.55+bucket*.17;ctx.lineWidth=width*(.65+bucket*.23);ctx.stroke();
+      if(path.length)points.push(path.at(-1));
+      const widths=points.map(p=>{
+        const value=Surfaces.noise(p[0],p[1],9,41)*.8+Surfaces.noise(p[0],p[1],2.8,19)*.2;
+        return width*Math.max(broken?0:.2,pressure(value)-(broken?.16:0));
+      });
+      inkStrip(ctx,points.map(p=>project(scene,p)),widths,color);
     }
-    ctx.restore();
   }
   function drawWaterWash(ctx, scene, feature, angleAt) {
     const paths=feature.polygons.flat(), s=scene.viewport.scale, b=scene.bounds;
@@ -261,7 +306,7 @@
       fillFeature(ctx,scene,f,palette.water);
       const angleAt=Surfaces.flowField(scene,source);
       if(source.type===3) { drawWaterWash(ctx,scene,f,angleAt);areas.push({f,angleAt}); }
-      surfaceInk(ctx,scene,f.polygons,palette.waterEdge,source.type===3?.9:.7);
+      surfaceInk(ctx,scene,f.polygons,'#364e45',source.type===3?1.3:.85,true);
     }
     const b=scene.bounds,s=scene.viewport.scale;
     for(let gy=Math.floor(b.top/27);gy<b.bottom/27;gy++) for(let gx=Math.floor(b.left/27);gx<b.right/27;gx++) {
@@ -301,7 +346,13 @@
       }
     }
     ctx.restore();
-    surfaceInk(ctx,scene,polygons,bridge?'#74745b':'#7e8063',bridge?.85:.7);
+    if(bridge)for(const poly of polygons) {
+      // A narrow footbridge needs a visible light deck between its two ink
+      // edges. Size the pen per connected deck, not by the widest bridge.
+      const touching=roads.filter(f=>f.paintQuery.nearest(poly[0][0],1).distance<1);
+      const width=Math.min(1,...touching.map(f=>f.width*s*.2));
+      surfaceInk(ctx,scene,[poly],'#4e513a',width,true);
+    } else surfaceInk(ctx,scene,polygons,'#5d6347',.95,true);
   }
   function drawRails(ctx, scene, roads) {
     for (const f of roads) {
@@ -368,6 +419,7 @@
   function drawWoodland(ctx, scene) {
     const forest = scene.trees.filter(t => t.forest), s = scene.viewport.scale;
     if (!forest.length) return;
+    const worldShapes=forest.map(t=>{const p=crownPoints(t.x,t.y,t.radius,t.seed);return [...p,p[0]];});
     const shapes = forest.map(t => {
       const [x,y] = project(scene, [t.x,t.y]);
       return crownPoints(x,y,t.radius*s,t.seed);
@@ -384,7 +436,8 @@
     for (const pts of shapes) {
       pts.forEach(([x,y],i) => i ? ctx.lineTo(x,y) : ctx.moveTo(x,y));ctx.closePath();
     }
-    ctx.strokeStyle = palette.forestEdge;ctx.lineWidth = 2.1;ctx.stroke();
+    surfaceInk(ctx,scene,[worldShapes], '#2b422c',2.7);
+    trace(ctx,scene,worldShapes);
     ctx.fillStyle = palette.forest;ctx.fill();
     ctx.save();ctx.clip();
     // Larger canopy clusters share light and shade across several overlapping trees.
@@ -451,9 +504,9 @@
     if (grouped) {
       if (random(tree.seed, 380) > .28) {
         const start = Math.floor(random(tree.seed, 381) * 33);
-        penLine(ctx, pts.slice(start,start+22), '#4d6b3f', .78, tree.seed, .12, scene.viewport.scale);
+        inkPenLine(ctx, pts.slice(start,start+22), '#3d5934', .85, tree.seed, .12, scene.viewport.scale);
       }
-    } else penLine(ctx, [...pts, pts[0]], palette.treeInk, tree.garden ? .8 : 1.2,
+    } else inkPenLine(ctx, [...pts, pts[0]], palette.treeInk, tree.garden ? .9 : 1.4,
       tree.seed, .12, scene.viewport.scale);
     ctx.restore();
   }
@@ -533,7 +586,7 @@
     ctx.save(); trace(ctx, scene, roof.polygon); ctx.clip('evenodd');
     for (const panel of roof.panels) panelRoof(ctx, scene, roof, panel);
     ctx.restore();
-    featureInk(ctx, scene, roof.polygon, palette.roofInk, min < 4 ? .55 : min < 9 ? .85 : 1.4, .3);
+    featureInk(ctx, scene, roof.polygon, palette.roofInk, min < 4 ? .75 : min < 9 ? 1.05 : 1.65, .25);
   }
   function drawPaper(ctx, scene) {
     const b = scene.bounds, s = scene.viewport.scale;
@@ -567,5 +620,5 @@
     return { ...shadows, paintedRoofs: scene.buildings.length, paintedTrees: scene.trees.length,
       paintedRoads: scene.roads.filter(f => f.props.brunnel !== 'tunnel').length };
   }
-  global.PixelMapIllustratedRenderer = Object.freeze({ palette, project, paint, crownPoints, penPoints });
+  global.PixelMapIllustratedRenderer = Object.freeze({ palette, project, paint, crownPoints, penPoints, inkStrip, inkPenLine, pressure });
 })(typeof window !== 'undefined' ? window : globalThis);

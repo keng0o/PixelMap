@@ -29,7 +29,7 @@ async function run() {
       page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
       await page.goto(base+route+query); await ready(page);
       const d = await page.evaluate(()=>window.PixelMapIllustratedStudy);
-      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v6'); assert.equal(d.failedTileCount,0);
+      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v7'); assert.equal(d.failedTileCount,0);
       assert.equal(d.paintedRoofs,d.roofCount); assert.equal(d.paintedTrees,d.treeCount);
       assert.equal(d.buildingExtrusionEnabled,false); assert.equal(d.labelCount,0);
       assert.equal(d.shadowSolver,'height-intervals-v1');
@@ -57,7 +57,9 @@ async function run() {
       const features=PixelMapIllustratedGeometry.mergeFeatures(PixelMapIllustratedFixture.features);
       const draw=centerX=>{
         const c=document.createElement('canvas');c.width=360;c.height=360;
-        const ctx=c.getContext('2d');
+        // This test reads three canvases back byte-for-byte. Keep the readback
+        // renderer consistent instead of allowing adaptive GPU/CPU switching.
+        const ctx=c.getContext('2d',{willReadFrequently:true});
         const scene=PixelMapIllustratedGeometry.compose(features,{centerX,centerY:650,width:360,height:360,scale:1});
         const start=performance.now();PixelMapIllustratedRenderer.paint(ctx,scene);
         return {ctx,ms:performance.now()-start};
