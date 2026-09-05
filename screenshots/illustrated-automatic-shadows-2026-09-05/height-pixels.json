@@ -1,0 +1,305 @@
+{
+  "base": "http://127.0.0.1:8766",
+  "samples": [
+    {
+      "title": "建物 6m",
+      "ground": [
+        228,
+        226,
+        186
+      ],
+      "roof": [
+        228,
+        226,
+        186
+      ],
+      "water": [
+        228,
+        226,
+        186
+      ],
+      "gap": [
+        228,
+        226,
+        186
+      ],
+      "deck": [
+        228,
+        226,
+        186
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 1,
+        "heightFromDataCount": 1,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          98,
+          0,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 1,
+        "paintedTrees": 0,
+        "paintedRoads": 0
+      }
+    },
+    {
+      "title": "建物 28m",
+      "ground": [
+        203,
+        203,
+        165
+      ],
+      "roof": [
+        202,
+        201,
+        165
+      ],
+      "water": [
+        228,
+        226,
+        186
+      ],
+      "gap": [
+        228,
+        226,
+        186
+      ],
+      "deck": [
+        228,
+        226,
+        186
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 1,
+        "heightFromDataCount": 1,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          441,
+          0,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 1,
+        "paintedTrees": 0,
+        "paintedRoads": 0
+      }
+    },
+    {
+      "title": "低い屋根 4m が影を受ける",
+      "ground": [
+        197,
+        163,
+        131
+      ],
+      "roof": [
+        192,
+        158,
+        127
+      ],
+      "water": [
+        115,
+        111,
+        87
+      ],
+      "gap": [
+        83,
+        78,
+        59
+      ],
+      "deck": [
+        85,
+        80,
+        60
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 2,
+        "heightFromDataCount": 2,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          327,
+          0,
+          149,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 2,
+        "paintedTrees": 0,
+        "paintedRoads": 0
+      }
+    },
+    {
+      "title": "高い屋根 40m は遮られない",
+      "ground": [
+        210,
+        175,
+        142
+      ],
+      "roof": [
+        210,
+        175,
+        142
+      ],
+      "water": [
+        112,
+        108,
+        84
+      ],
+      "gap": [
+        83,
+        80,
+        60
+      ],
+      "deck": [
+        86,
+        81,
+        60
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 2,
+        "heightFromDataCount": 2,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          1047,
+          0,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 2,
+        "paintedTrees": 0,
+        "paintedRoads": 0
+      }
+    },
+    {
+      "title": "橋桁 22m · 水面との隙間",
+      "ground": [
+        182,
+        204,
+        202
+      ],
+      "roof": [
+        179,
+        201,
+        199
+      ],
+      "water": [
+        162,
+        186,
+        183
+      ],
+      "gap": [
+        182,
+        204,
+        202
+      ],
+      "deck": [
+        232,
+        227,
+        197
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 1,
+        "heightFromDataCount": 1,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          0,
+          200,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 0,
+        "paintedTrees": 0,
+        "paintedRoads": 1
+      }
+    },
+    {
+      "title": "樹冠 · 葉の塊と投影影",
+      "ground": [
+        166,
+        190,
+        134
+      ],
+      "roof": [
+        77,
+        109,
+        68
+      ],
+      "water": [
+        137,
+        169,
+        121
+      ],
+      "gap": [
+        133,
+        166,
+        119
+      ],
+      "deck": [
+        84,
+        114,
+        72
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 3,
+        "heightFromDataCount": 3,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          300,
+          0,
+          0,
+          41,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 0,
+        "paintedTrees": 3,
+        "paintedRoads": 0
+      }
+    }
+  ]
+}

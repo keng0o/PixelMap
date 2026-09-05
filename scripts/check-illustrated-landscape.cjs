@@ -29,9 +29,12 @@ async function run() {
       page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
       await page.goto(base+route+query); await ready(page);
       const d = await page.evaluate(()=>window.PixelMapIllustratedStudy);
-      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v4'); assert.equal(d.failedTileCount,0);
+      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v5'); assert.equal(d.failedTileCount,0);
       assert.equal(d.paintedRoofs,d.roofCount); assert.equal(d.paintedTrees,d.treeCount);
       assert.equal(d.buildingExtrusionEnabled,false); assert.equal(d.labelCount,0);
+      assert.equal(d.shadowSolver,'height-intervals-v1');
+      assert.equal(d.heightFromDataCount+d.heightEstimatedCount,d.shadowCasterCount);
+      assert.ok(d.shadowCasterCount>0 && d.shadowPixels.some(n=>n>0));
       assert.deepEqual(errors,[]);
       await page.screenshot({path:path.join(output,`${name}.png`)});
       report.screenshots.push({name,query,width,height,deviceScaleFactor,diagnostics:d});

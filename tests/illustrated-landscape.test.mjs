@@ -8,6 +8,7 @@ globalThis.window = globalThis;
 globalThis.polygonClipping = require('../assets/vendor/polygon-clipping-0.15.7.js');
 await import('../assets/top-down-game-map.js');
 await import('../assets/illustrated-landscape-geometry.js');
+await import('../assets/illustrated-landscape-shadows.js');
 await import('../assets/illustrated-landscape-renderer.js');
 await import('../assets/illustrated-landscape-fixture.js');
 await import('../assets/illustrated-landscape-map.js');

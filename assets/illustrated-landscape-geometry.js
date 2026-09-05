@@ -230,10 +230,10 @@
   }
 
   function compose(features, viewport) {
-    const b = { left: viewport.centerX - viewport.width / 2 / viewport.scale - 64,
-      right: viewport.centerX + viewport.width / 2 / viewport.scale + 64,
-      top: viewport.centerY - viewport.height / 2 / viewport.scale - 64,
-      bottom: viewport.centerY + viewport.height / 2 / viewport.scale + 64 };
+    const b = { left: viewport.centerX - viewport.width / 2 / viewport.scale - 96,
+      right: viewport.centerX + viewport.width / 2 / viewport.scale + 96,
+      top: viewport.centerY - viewport.height / 2 / viewport.scale - 96,
+      bottom: viewport.centerY + viewport.height / 2 / viewport.scale + 96 };
     const visible = features.filter(f => overlaps(f.bounds, b)).flatMap(f => {
       if (f.type !== 3) return [f];
       return f.polygons.map(poly => ({ ...f, polygons: [poly], geometry: poly, bounds: bounds(poly) }))

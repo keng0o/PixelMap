@@ -1,6 +1,8 @@
 ((global) => {
   'use strict';
   const G = global.PixelMapIllustratedGeometry;
+  const Shadows = global.PixelMapIllustratedShadows;
+  const lightDirection = Shadows.lighting.direction;
   // Avalanche the hash so neighbouring stroke salts do not produce clustered leaves.
   function random(seed, salt = 0) {
     let n = G.hash(`${seed}:${salt}`);
@@ -363,7 +365,7 @@
   }
   function shadeCrown(ctx, radius, seed, scale) {
     const outer=crownPoints(0,0,radius,seed);
-    const inner=crownPoints(-radius*.22,-radius*.29,radius*(.90+random(seed,61)*.06),seed+31);
+    const inner=crownPoints(-radius*.38*lightDirection[0],-radius*.38*lightDirection[1],radius*(.90+random(seed,61)*.06),seed+31);
     ctx.save();polygon(ctx,outer);ctx.clip();
     // A broken crescent describes the lower-right overlap, with paper showing
     // through the pigment. There is no circular gradient or glossy highlight.
@@ -393,7 +395,8 @@
     // underlying stroke, leaving the silhouette of their actual union in ink.
     ctx.beginPath();
     for (const pts of shapes) {
-      pts.forEach(([x,y],i) => i ? ctx.lineTo(x+1.5*s,y+2*s) : ctx.moveTo(x+1.5*s,y+2*s));ctx.closePath();
+      pts.forEach(([x,y],i) => i ? ctx.lineTo(x+lightDirection[0]*s,y+lightDirection[1]*s) :
+        ctx.moveTo(x+lightDirection[0]*s,y+lightDirection[1]*s));ctx.closePath();
     }
     ctx.fillStyle = palette.treeShadow; ctx.fill();
     ctx.beginPath();
@@ -436,7 +439,8 @@
     const pts = crownPoints(x, y, r, tree.seed);
     const base = ['#83a772', '#91ae7d', '#7b9f6e', '#99b380'][tree.seed % 4];
     if (!grouped) {
-      polygon(ctx, pts.map(([px, py]) => [px + 1.3 * scene.viewport.scale, py + 1.7 * scene.viewport.scale]), palette.treeShadow);
+      polygon(ctx, pts.map(([px, py]) => [px + lightDirection[0] * scene.viewport.scale,
+        py + lightDirection[1] * scene.viewport.scale]), palette.treeShadow);
       polygon(ctx, pts, base);
     }
     ctx.save(); polygon(ctx, pts); ctx.clip();
@@ -500,7 +504,7 @@
     const a = point(0, 0), b = point(1, 0), c = point(1, 1), d = point(0, 1);
     const r1 = point(inset, .5), r2 = point(1 - inset, .5);
     const mid = point(.5, .5), upper = point(.5, 0);
-    const lightTop = (upper[0] - mid[0]) * -.55 + (upper[1] - mid[1]) * -.83 > 0;
+    const lightTop = (upper[0] - mid[0]) * -lightDirection[0] + (upper[1] - mid[1]) * -lightDirection[1] > 0;
     const warm = roof.seed % 5;
     const light = ['#df9671', '#d9906c', '#e59c77', '#dd9873', '#d58d6c'][warm];
     const shade = ['#ba7152', '#b56e52', '#c07a59', '#b77755', '#b67556'][warm];
@@ -540,7 +544,9 @@
   }
   function drawRoof(ctx, scene, roof) {
     const min = Math.min(roof.frame.width, roof.frame.height) * scene.viewport.scale;
-    trace(ctx, scene, roof.polygon, true, [1.3, 1.7]);
+    // A narrow contact pigment remains at the foot; height-dependent cast
+    // shadows are composited across all receiving surfaces after object paint.
+    trace(ctx, scene, roof.polygon, true, lightDirection.map(n => n * 1.1));
     ctx.fillStyle = palette.roofShadow; ctx.fill('evenodd');
     trace(ctx, scene, roof.polygon); ctx.fillStyle = palette.roof; ctx.fill('evenodd');
     ctx.save(); trace(ctx, scene, roof.polygon); ctx.clip('evenodd');
@@ -568,6 +574,7 @@
     drawWoodland(ctx, scene);
     for (const tree of scene.trees.filter(t => !t.forest)) drawTree(ctx, scene, tree);
     for (const roof of scene.buildings) drawRoof(ctx, scene, roof);
+    const shadows = Shadows.paint(ctx, scene, crownPoints);
     drawPaper(ctx, scene);
     if (location) {
       const [x, y] = project(scene, location);
@@ -576,7 +583,7 @@
       ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fillStyle = '#456f71'; ctx.fill();
     }
     ctx.restore();
-    return { paintedRoofs: scene.buildings.length, paintedTrees: scene.trees.length,
+    return { ...shadows, paintedRoofs: scene.buildings.length, paintedTrees: scene.trees.length,
       paintedRoads: scene.roads.filter(f => f.props.brunnel !== 'tunnel').length };
   }
   global.PixelMapIllustratedRenderer = Object.freeze({ palette, project, paint, crownPoints, penPoints });

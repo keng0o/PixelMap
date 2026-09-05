@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">彩色ゲーム地図test</th>
-              <td><a href="variants/map-02-refined.html?profile=illustrated-landscape&amp;presentation=art&amp;lat=35.611&amp;lon=139.573">standaloneの明示profileから彩色地図を開く</a>。<code>map-12-illustrated-landscape.html</code>で、実地理の道路・建物・中庭を保ち、赤茶の屋根、灰青の水面、淡い地表を描く。手描きV4では川岸に途切れる陰影、水面にかすれた筆跡、樹冠群の右下に深い影と短いハッチ線を追加。V3の樹冠を重ねた林縁と大きな明暗、家の足元の土・短い影、緑地データ上の小さな植栽、地物の際に集まる草土の線も維持。強い外周と細い内部線、紙目、水面の疎密を使う。屋根は切妻・寄棟・長屋・複合翼・中庭型・平屋根を形と用途に応じて構成し、植生と筆跡はworld座標で固定する。<a href="variants/map-12-illustrated-landscape.html?scene=fixture">架空と明示した構成見本</a>だけは川と畑の形も調整し、曲線の川と不揃いの区画・畝を描く。</td>
+              <td><a href="variants/map-02-refined.html?profile=illustrated-landscape&amp;presentation=art&amp;lat=35.611&amp;lon=139.573">standaloneの明示profileから彩色地図を開く</a>。<code>map-12-illustrated-landscape.html</code>で、実地理の道路・建物・中庭を保ち、赤茶の屋根、灰青の水面、淡い地表を描く。手描きV5では建物・森・単木・橋の形と高さから、共通光源による投影影を自動計算。中庭・低い屋根・水面を受け面として扱い、影の境界だけをなじませる。高さ属性がない地物は推定する。V4の川岸に途切れる陰影、水面にかすれた筆跡、樹冠群の右下の暗部と短いハッチ線も維持。V3の樹冠を重ねた林縁と大きな明暗、家の足元の土・短い影、緑地データ上の小さな植栽、地物の際に集まる草土の線も維持。強い外周と細い内部線、紙目、水面の疎密を使う。屋根は切妻・寄棟・長屋・複合翼・中庭型・平屋根を形と用途に応じて構成し、植生と筆跡はworld座標で固定する。<a href="variants/map-12-illustrated-landscape.html?scene=fixture">架空と明示した構成見本</a>だけは川と畑の形も調整し、曲線の川と不揃いの区画・畝を描く。</td>
               <td>変更なし。<strong>testのみ</strong>。新profileはembeddedで無効。本番1・2・4マップ、通常standalone、旧topdown、既存素材ラボ、mobileには反映しない。</td>
             </tr>
             <tr>
@@ -221,6 +221,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>建物・森・単木・橋の高さから投影影を自動計算</h3>
+          <time datetime="2026-09-05">2026-09-05 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>共通光源を左上・仰角68度とし、地物の形と高さ、影を受ける面の高さから投影影を計算する。建物は高さ・階数属性を優先し、欠ける場合と樹木・橋は種類や大きさから推定。中庭や低い屋根への影、橋桁と水面の間の隙間を扱う。地面・水・屋根・樹冠で影の色を変え、重複で濃くせず、境界だけをなじませる。手描き彩色と紙目は維持する。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standaloneの<code>profile=illustrated-landscape&amp;presentation=art</code>から開く専用ページと架空の構成見本。style IDは<code>illustrated-landscape-hand-drawn-v5</code>。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常standalone、旧topdown、素材ラボ、mobileは変更なし。固定光源・平地上の近似で、極端に長い影は計算用高さへ上限を設ける。実際の日照や地形標高の再現ではない。</dd></div>
+          <div><dt>確認内容</dt><dd>市街地の影の段差と薄い橋桁の投影漏れを修正。最新地図11画面＋高さ比較1画面が独立視覚レビューPASS。Nodeテスト368件PASS、81ファイルのビルド。既存ブラウザ8項目に加え、6m／28mの建物、低い／高い屋根、橋桁・隙間・水面の影を実pixelで検証。詳細は<code>docs/validation/2026-09-05-illustrated-automatic-shadows.md</code>。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>川と森にかすれた手描きの陰影を追加</h3>

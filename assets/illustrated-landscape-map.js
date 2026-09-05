@@ -3,7 +3,7 @@
   const MapData = global.PixelMapTopDownMap;
   const G = global.PixelMapIllustratedGeometry;
   const Renderer = global.PixelMapIllustratedRenderer;
-  const styleId = 'illustrated-landscape-hand-drawn-v4';
+  const styleId = 'illustrated-landscape-hand-drawn-v5';
   const defaultScale = 1.05;
   const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
   const FALLBACK_TILE_URL = 'https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf';
@@ -60,7 +60,7 @@
     }
     function render() {
       const dimensions = size();
-      const viewport = { ...dimensions, centerX: navigation.centerX, centerY: navigation.centerY,
+      const viewport = { ...dimensions, geographic: !isFixture, centerX: navigation.centerX, centerY: navigation.centerY,
         scale: isFixture ? Math.max(dimensions.width / fixture.width, dimensions.height / fixture.height) : navigation.scale };
       if (isFixture) navigation = { ...navigation, scale: viewport.scale };
       lastScene = G.compose(merged, viewport);
