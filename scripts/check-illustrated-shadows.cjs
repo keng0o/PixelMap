@@ -50,7 +50,10 @@ async function run() {
     assert.ok(low.ground[1]-tall.ground[1]>10,JSON.stringify({low,tall}));
     assert.ok(highRoof.roof[1]-lowRoof.roof[1]>7,JSON.stringify({lowRoof,highRoof}));
     assert.ok(bridge.gap[1]-bridge.water[1]>10,JSON.stringify(bridge));
-    assert.ok(bridge.deck[0]>225 && bridge.deck[1]>220,JSON.stringify(bridge));
+    // Thin deck pixels include the irregular edge ink. Check their separation
+    // from shaded water and the actual receiver mask, not a fixed paper RGB.
+    assert.ok(bridge.deck[0]-bridge.water[0]>40 && bridge.deck[1]-bridge.water[1]>25,JSON.stringify(bridge));
+    assert.equal(bridge.diagnostics.shadowPixels[4],0,'the raised deck must stay lit');
     assert.equal(tall.diagnostics.shadowCasterCount,1);
     assert.ok(tall.diagnostics.heightFromDataCount>0);
     assert.ok(bridge.diagnostics.shadowPixels[1]>0);

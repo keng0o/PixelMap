@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">彩色ゲーム地図test</th>
-              <td><a href="variants/map-02-refined.html?profile=illustrated-landscape&amp;presentation=art&amp;lat=35.611&amp;lon=139.573">standaloneの明示profileから彩色地図を開く</a>。<code>map-12-illustrated-landscape.html</code>で、実地理の道路・建物・中庭を保ち、赤茶の屋根、灰青の水面、淡い地表を描く。手描きV5では建物・森・単木・橋の形と高さから、共通光源による投影影を自動計算。中庭・低い屋根・水面を受け面として扱い、影の境界だけをなじませる。高さ属性がない地物は推定する。V4の川岸に途切れる陰影、水面にかすれた筆跡、樹冠群の右下の暗部と短いハッチ線も維持。V3の樹冠を重ねた林縁と大きな明暗、家の足元の土・短い影、緑地データ上の小さな植栽、地物の際に集まる草土の線も維持。強い外周と細い内部線、紙目、水面の疎密を使う。屋根は切妻・寄棟・長屋・複合翼・中庭型・平屋根を形と用途に応じて構成し、植生と筆跡はworld座標で固定する。<a href="variants/map-12-illustrated-landscape.html?scene=fixture">架空と明示した構成見本</a>だけは川と畑の形も調整し、曲線の川と不揃いの区画・畝を描く。</td>
+              <td><a href="variants/map-02-refined.html?profile=illustrated-landscape&amp;presentation=art&amp;lat=35.611&amp;lon=139.573">standaloneの明示profileから彩色地図を開く</a>。<code>map-12-illustrated-landscape.html</code>で、実地理の道路・建物・中庭を保ち、赤茶の屋根、灰青の水面、淡い地表を描く。手描きV6では道の左右の縁から不揃いの面を生成し、合流部を結合して途切れた輪郭と土色で描く。川は中洲を保つ岸の揺れ、薄い岸の筆跡、方向が滑らかにつながる水面の線を使う。彩色・クリップ・影は同じ描画用外形を参照し、元の地理形状を保持する。V5の建物・森・単木・橋の形と高さから、共通光源による投影影を自動計算。中庭・低い屋根・水面を受け面として扱い、影の境界だけをなじませる。高さ属性がない地物は推定する。V4の川岸に途切れる陰影、水面にかすれた筆跡、樹冠群の右下の暗部と短いハッチ線も維持。V3の樹冠を重ねた林縁と大きな明暗、家の足元の土・短い影、緑地データ上の小さな植栽、地物の際に集まる草土の線も維持。強い外周と細い内部線、紙目、水面の疎密を使う。屋根は切妻・寄棟・長屋・複合翼・中庭型・平屋根を形と用途に応じて構成し、植生と筆跡はworld座標で固定する。<a href="variants/map-12-illustrated-landscape.html?scene=fixture">架空と明示した構成見本</a>だけは川と畑の形も調整し、曲線の川と不揃いの区画・畝を描く。</td>
               <td>変更なし。<strong>testのみ</strong>。新profileはembeddedで無効。本番1・2・4マップ、通常standalone、旧topdown、既存素材ラボ、mobileには反映しない。</td>
             </tr>
             <tr>
@@ -221,6 +221,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>道の面・川岸・水面の流線を手描きの表現へ変更</h3>
+          <time datetime="2026-09-06">2026-09-06 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>道路の左右の縁を別々に揺らして面を作り、合流部を結合して外周だけを描く。土色の面、途切れた筆圧、疎らな擦れを追加。川は中洲と狭い流路を保つ岸の揺れ、内側の淡い筆跡、周囲の岸と水路に沿って滑らかにつながる流線を描く。彩色・輪郭・影・地物際の細部に同じ描画用外形を使い、world座標で筆跡を固定する。内外と近傍の判定に空間索引を使う。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standaloneの<code>profile=illustrated-landscape&amp;presentation=art</code>から開く専用ページと架空の構成見本。style IDは<code>illustrated-landscape-hand-drawn-v6</code>。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常standalone、旧topdown、素材ラボ、mobileは変更なし。元の道路・水域・建物の座標と樹木配置を保持し、橋・鉄道は幅を固定する。</dd></div>
+          <div><dt>確認内容</dt><dd>Nodeテスト376件PASS、82ファイルのビルド。地図11画面、ブラウザ8項目、高さによる影のpixel検証4項目を確認。同位置再描画はpixel完全一致、陸地・中洲25,030 pixelへの水面の塗り漏れ0。中洲・橋・合流の拡大図も保存。最新13画面の独立視覚レビューPASS。詳細は<code>docs/validation/2026-09-06-illustrated-hand-drawn-surfaces.md</code>。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>建物・森・単木・橋の高さから投影影を自動計算</h3>

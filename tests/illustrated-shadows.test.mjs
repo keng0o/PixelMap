@@ -5,6 +5,7 @@ const require = createRequire(import.meta.url);
 globalThis.window = globalThis;
 globalThis.polygonClipping = require('../assets/vendor/polygon-clipping-0.15.7.js');
 await import('../assets/illustrated-landscape-geometry.js');
+await import('../assets/illustrated-landscape-surfaces.js');
 await import('../assets/illustrated-landscape-shadows.js');
 await import('../assets/illustrated-landscape-renderer.js');
 const G = globalThis.PixelMapIllustratedGeometry, S = globalThis.PixelMapIllustratedShadows;

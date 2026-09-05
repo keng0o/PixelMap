@@ -1,0 +1,53 @@
+[
+  {
+    "name": "city",
+    "samples": [
+      {
+        "composeMs": 258.69999998807907,
+        "paintMs": 203.80000001192093
+      },
+      {
+        "composeMs": 267.80000001192093,
+        "paintMs": 212.0999999642372
+      },
+      {
+        "composeMs": 284.10000002384186,
+        "paintMs": 215.10000002384186
+      }
+    ]
+  },
+  {
+    "name": "river",
+    "samples": [
+      {
+        "composeMs": 78,
+        "paintMs": 86.5
+      },
+      {
+        "composeMs": 77.60000002384186,
+        "paintMs": 88.5
+      },
+      {
+        "composeMs": 77.79999995231628,
+        "paintMs": 87.60000002384186
+      }
+    ]
+  },
+  {
+    "name": "green",
+    "samples": [
+      {
+        "composeMs": 211.5,
+        "paintMs": 271
+      },
+      {
+        "composeMs": 215.69999998807907,
+        "paintMs": 295
+      },
+      {
+        "composeMs": 230.80000001192093,
+        "paintMs": 324.2999999523163
+      }
+    ]
+  }
+]

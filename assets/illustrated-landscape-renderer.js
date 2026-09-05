@@ -1,6 +1,7 @@
 ((global) => {
   'use strict';
   const G = global.PixelMapIllustratedGeometry;
+  const Surfaces = global.PixelMapIllustratedSurfaces;
   const Shadows = global.PixelMapIllustratedShadows;
   const lightDirection = Shadows.lighting.direction;
   // Avalanche the hash so neighbouring stroke salts do not produce clustered leaves.
@@ -201,123 +202,106 @@
     }
     ctx.restore();
   }
-  function drawWaterWash(ctx, scene, feature) {
-    const paths=feature.polygons.flat(), s=scene.viewport.scale;
-    ctx.save();trace(ctx,scene,paths);ctx.clip('evenodd');
-    // Translucent pigment layers sink into the inner bank. The mask preserves
-    // islands and the shoreline; all later bridges remain above this wash.
-    trace(ctx,scene,paths);ctx.strokeStyle='#618b82';ctx.lineWidth=3*s;ctx.globalAlpha=.16;ctx.stroke();
-    for(const path of paths) {
-      let distance=0;
-      for(let i=1;i<path.length;i++) {
-        const a=path[i-1],p=path[i],length=Math.hypot(p[0]-a[0],p[1]-a[1]);
-        if(!length) continue;
-        const start=distance;distance+=length;
-        if(!G.overlaps({left:Math.min(a[0],p[0]),right:Math.max(a[0],p[0]),
-          top:Math.min(a[1],p[1]),bottom:Math.max(a[1],p[1])},scene.bounds,40)) continue;
-        const ux=(p[0]-a[0])/length,uy=(p[1]-a[1])/length;
-        for(let d=Math.ceil(start/13)*13;d<distance;d+=13) {
-          const point=[a[0]+ux*(d-start),a[1]+uy*(d-start)];
-          const seed=G.hash(`bank-wash:${point.map(n=>n.toFixed(3))}`);
-          if(random(seed)>.72) continue;
-          waterBrush(ctx,scene,point,Math.atan2(uy,ux),14+random(seed,1)*24,
-            8+random(seed,2)*16,seed,'#587c72',.15+random(seed,3)*.12);
-        }
+  // The footprint is already irregular. Ink pressure and missing runs depend
+  // only on world coordinates, so union order and pan cannot re-seed the pen.
+  function surfaceInk(ctx, scene, polygons, color, width) {
+    const paths=polygons.flat();
+    ctx.save();trace(ctx,scene,paths);ctx.strokeStyle=color;
+    ctx.lineWidth=width*.45;ctx.globalAlpha=.3;ctx.stroke();
+    for(let bucket=0;bucket<3;bucket++) {
+      ctx.beginPath();
+      for(const path of paths) for(let i=1;i<path.length;i++) {
+        const a=path[i-1],b=path[i],x=(a[0]+b[0])/2,y=(a[1]+b[1])/2;
+        const pressure=Surfaces.noise(x,y,8,41);
+        if(pressure<.29 || Math.min(2,Math.floor((pressure-.29)*5))!==bucket)continue;
+        const pa=project(scene,a),pb=project(scene,b);ctx.moveTo(...pa);ctx.lineTo(...pb);
       }
-    }
-    ctx.globalAlpha=1;
-    const b=scene.bounds;
-    for(let gy=Math.floor(b.top/53);gy<=Math.ceil(b.bottom/53);gy++) for(let gx=Math.floor(b.left/53);gx<=Math.ceil(b.right/53);gx++) {
-      const seed=G.hash(`water-wash:${gx}:${gy}`);
-      if(random(seed)>.64) continue;
-      const p=[(gx+random(seed,1))*53,(gy+random(seed,2))*53];
-      if(!G.inside(p,feature.polygons)) continue;
-      const edge=nearestWaterEdge(p,paths), angle=edge.angle+(random(seed,3)-.5)*.18;
-      const length=24+random(seed,4)*43, width=3+random(seed,5)*7;
-      const light=random(seed,6)>.52;
-      waterBrush(ctx,scene,p,angle,length,width,seed,light?'#e2e8d9':'#638e89',light?.15:.13);
-      if(edge.distance<22) waterBrush(ctx,scene,p,angle,length*.65,width*.4,seed+17,'#5c8176',.13);
+      ctx.globalAlpha=.55+bucket*.17;ctx.lineWidth=width*(.65+bucket*.23);ctx.stroke();
     }
     ctx.restore();
   }
-
-  function drawWater(ctx, scene) {
-    // River polygons cover the duplicate MVT centerlines; uncovered streams remain visible.
-    for (const f of [...scene.water].sort((a, b) => a.type - b.type)) {
-      if (f.type === 3) {
-        fillFeature(ctx, scene, f, palette.water);
-        drawWaterWash(ctx,scene,f);
-        featureInk(ctx, scene, f.polygons.flat(), palette.waterEdge, 1.05, .45);
-        // Short offset bank strokes are clipped to the water, never a river centerline.
-        ctx.save(); trace(ctx, scene, f.polygons.flat()); ctx.clip('evenodd');
-        for (const poly of f.polygons) for (const path of poly) for (let i = 1; i < path.length; i++) {
-          const a = path[i - 1], b = path[i], length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-          if (length < 6) continue;
-          const ux = (b[0] - a[0]) / length, uy = (b[1] - a[1]) / length;
-          const seed = G.hash(`bank:${a}`);
-          for (let d = 3 + random(seed) * 5; d < length - 3; d += 15) for (const side of [-1, 1]) {
-            const pts = [d, Math.min(d + 8 + random(seed, d) * 5, length - 2)].map(t =>
-              project(scene, [a[0] + ux * t - uy * 2.6 * side, a[1] + uy * t + ux * 2.6 * side]));
-            penLine(ctx, pts, '#80978c', .5, seed, .3, scene.viewport.scale);
-          }
-        }
-        ctx.restore();
-      }
-      else {
-        trace(ctx, scene, f.geometry, false); ctx.strokeStyle = palette.waterEdge;
-        ctx.lineWidth = (G.kind(f) === 'river' ? 10 : 3) * scene.viewport.scale + 1; ctx.stroke();
-        ctx.strokeStyle = palette.water; ctx.lineWidth -= 1.2; ctx.stroke();
+  function drawWaterWash(ctx, scene, feature, angleAt) {
+    const paths=feature.polygons.flat(), s=scene.viewport.scale, b=scene.bounds;
+    ctx.save();trace(ctx,scene,paths);ctx.clip('evenodd');
+    trace(ctx,scene,paths);ctx.strokeStyle='#618b82';ctx.lineWidth=2.5*s;ctx.globalAlpha=.13;ctx.stroke();
+    // A world lattice replaces distance-from-ring-start: clipped banks must not
+    // shift all subsequent brush marks when more geography enters the viewport.
+    for(let gy=Math.floor(b.top/15);gy<=Math.ceil(b.bottom/15);gy++) for(let gx=Math.floor(b.left/15);gx<=Math.ceil(b.right/15);gx++) {
+      const seed=G.hash(`bank-wash:${gx}:${gy}`);
+      if(random(seed)>.58)continue;
+      const point=[(gx+random(seed,1))*15,(gy+random(seed,2))*15];
+      if(!feature.paintQuery.inside(point))continue;
+      const edge=feature.paintQuery.nearest(point,9);if(edge.distance>9)continue;
+      waterBrush(ctx,scene,point,angleAt(point),15+random(seed,3)*26,
+        5+random(seed,4)*10,seed,'#587c72',.13+random(seed,5)*.12);
+      if(edge.distance<5 && random(seed,6)>.4) {
+        ctx.globalAlpha=.48;
+        const points=Surfaces.flowPath(point,6+random(seed,7)*13,angleAt);
+        line(ctx,points.map(p=>project(scene,p)),'#789084',.45);
       }
     }
-    const waterAreas = scene.water.filter(f => f.type === 3);
-    const b = scene.bounds;
-    for (let gy = Math.floor(b.top / 27); gy < b.bottom / 27; gy++) for (let gx = Math.floor(b.left / 27); gx < b.right / 27; gx++) {
-      const seed = G.hash(`water:${gx}:${gy}`);
-      const p = [(gx + random(seed, 1)) * 27, (gy + random(seed, 2)) * 27];
-      // Broad quiet patches alternate with small current clusters, all fixed to the world.
-      const drift = Math.sin(p[0] / 71 + Math.sin(p[1] / 97)) * Math.cos(p[1] / 53);
-      if (random(seed) > .28 + Math.max(0, drift) * .5) continue;
-      const half = 2 + random(seed, 4) * 8, bend = .5 + random(seed, 5) * 2;
-      const area=waterAreas.find(f => G.containsDisc(p, half + 4, f.polygons));
-      if (!area) continue;
-      const angle = nearestWaterEdge(p,area.polygons.flat()).angle + (random(seed,6)-.5)*.35;
-      const [x, y] = project(scene, p), s = scene.viewport.scale;
-      ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
-      ctx.beginPath(); ctx.moveTo(-half * s, bend * s);
-      ctx.bezierCurveTo(-half * .4 * s, -bend * s, half * .3 * s, bend * s, half * s, -bend * s);
-      ctx.strokeStyle = random(seed, 7) > .6 ? '#66847d' : '#8ca39b';
-      ctx.lineWidth = .4 + random(seed, 8) * .3; ctx.stroke();
-      if (random(seed, 3) > .57) {
-        ctx.beginPath(); ctx.moveTo(-half * .6 * s, 3 * s);
-        ctx.quadraticCurveTo(0, 2 * s, half * .4 * s, 2.5 * s);
-        ctx.strokeStyle = '#d2ded3'; ctx.lineWidth = .75; ctx.stroke();
+    ctx.globalAlpha=1;
+    for(let gy=Math.floor(b.top/53);gy<=Math.ceil(b.bottom/53);gy++) for(let gx=Math.floor(b.left/53);gx<=Math.ceil(b.right/53);gx++) {
+      const seed=G.hash(`water-wash:${gx}:${gy}`);
+      if(random(seed)>.52)continue;
+      const point=[(gx+random(seed,1))*53,(gy+random(seed,2))*53];
+      if(!feature.paintQuery.inside(point))continue;
+      const length=24+random(seed,4)*43,width=3+random(seed,5)*7,light=random(seed,6)>.52;
+      waterBrush(ctx,scene,point,angleAt(point),length,width,seed,light?'#e2e8d9':'#638e89',light?.12:.10);
+    }
+    ctx.restore();
+  }
+  function drawWater(ctx, scene) {
+    const areas=[];
+    // Area water covers duplicate centerlines; both share their drawn footprint
+    // with the receiver mask, preserving islands and the bridge deck above them.
+    for(const source of [...scene.water].sort((a,b)=>a.type-b.type)) {
+      const f={...source,polygons:source.paintPolygons};
+      if(!f.polygons.length)continue;
+      fillFeature(ctx,scene,f,palette.water);
+      const angleAt=Surfaces.flowField(scene,source);
+      if(source.type===3) { drawWaterWash(ctx,scene,f,angleAt);areas.push({f,angleAt}); }
+      surfaceInk(ctx,scene,f.polygons,palette.waterEdge,source.type===3?.9:.7);
+    }
+    const b=scene.bounds,s=scene.viewport.scale;
+    for(let gy=Math.floor(b.top/27);gy<b.bottom/27;gy++) for(let gx=Math.floor(b.left/27);gx<b.right/27;gx++) {
+      const seed=G.hash(`water:${gx}:${gy}`),p=[(gx+random(seed,1))*27,(gy+random(seed,2))*27];
+      const drift=Math.sin(p[0]/71+Math.sin(p[1]/97))*Math.cos(p[1]/53);
+      if(random(seed)>.23+Math.max(0,drift)*.42)continue;
+      const half=4+random(seed,4)*11;
+      const area=areas.find(({f})=>f.paintQuery.containsDisc(p,half+4));if(!area)continue;
+      const points=Surfaces.flowPath(p,half*2,area.angleAt);
+      ctx.save();trace(ctx,scene,area.f.polygons.flat());ctx.clip('evenodd');
+      penLine(ctx,points.map(p=>project(scene,p)),random(seed,7)>.6?'#6c8981':'#8ca39b',
+        .4+random(seed,8)*.24,seed,.45,s);
+      if(random(seed,3)>.64) {
+        const angle=area.angleAt(p),q=[p[0]-Math.sin(angle)*2.5,p[1]+Math.cos(angle)*2.5];
+        line(ctx,Surfaces.flowPath(q,half*.9,area.angleAt).map(p=>project(scene,p)),'#d2ded3',.65);
       }
       ctx.restore();
     }
   }
-
-  function roadPass(ctx, scene, roads, edge) {
-    for (const f of roads) {
-      const width = f.width * scene.viewport.scale;
-      trace(ctx, scene, f.geometry, false);
-      ctx.strokeStyle = edge ? palette.roadEdge : (width < 4 ? palette.path : palette.road);
-      ctx.lineWidth = width + (edge ? 1.2 : 0); ctx.stroke();
-      if (edge) for (const path of f.geometry) for (let i = 1; i < path.length; i++) {
-        const a = path[i - 1], b = path[i], length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-        if (!length) continue;
-        // A visible MVT line feature may contain kilometres of offscreen segments.
-        // Cull detail per segment while retaining the source road and its base stroke.
-        if (!G.overlaps({left:Math.min(a[0],b[0]),right:Math.max(a[0],b[0]),
-          top:Math.min(a[1],b[1]),bottom:Math.max(a[1],b[1])}, scene.bounds, f.width)) continue;
-        const nx = -(b[1] - a[1]) / length, ny = (b[0] - a[0]) / length;
-        const seed = G.hash(`verge:${a}:${b}`);
-        for (const side of [-1, 1]) {
-          const offset = (f.width / 2 + .25) * side;
-          const pts = [a, b].map(p => project(scene, [p[0] + nx * offset, p[1] + ny * offset]));
-          penLine(ctx, pts, '#7e8063', .65, seed, .45, scene.viewport.scale);
-        }
+  function roadSurface(ctx, scene, roads, polygons, bridge) {
+    for(const f of roads) fillFeature(ctx,scene,{polygons:f.paintPolygons},
+      bridge?palette.road:f.width<4?'#e0d6b4':f.width<10?'#e6ddbc':'#ebe4c9');
+    if(!polygons.length)return;
+    ctx.save();trace(ctx,scene,polygons.flat());ctx.clip('evenodd');
+    const b=scene.bounds,s=scene.viewport.scale;
+    if(!bridge)for(let gy=Math.floor(b.top/12);gy<b.bottom/12;gy++)for(let gx=Math.floor(b.left/12);gx<b.right/12;gx++) {
+      const seed=G.hash(`road-grain:${gx}:${gy}`);if(random(seed)>.35)continue;
+      const p=[(gx+random(seed,1))*12,(gy+random(seed,2))*12];
+      const road=roads.find(f=>f.paintQuery.inside(p));if(!road)continue;
+      const edge=nearestWaterEdge(p,road.geometry),a=edge.angle;
+      const length=1.4+random(seed,3)*4;
+      ctx.globalAlpha=.22+random(seed,4)*.18;
+      const q=[p[0]+Math.cos(a)*length,p[1]+Math.sin(a)*length];
+      penLine(ctx,[p,q].map(p=>project(scene,p)),'#a49770',.45,seed,.25,s);
+      if(road.width<5&&random(seed,5)>.6) {
+        const [x,y]=project(scene,p);ctx.fillStyle='#9c926f';ctx.fillRect(x,y,.65*s,.65*s);
       }
     }
+    ctx.restore();
+    surfaceInk(ctx,scene,polygons,bridge?'#74745b':'#7e8063',bridge?.85:.7);
   }
   function drawRails(ctx, scene, roads) {
     for (const f of roads) {
@@ -346,13 +330,10 @@
     const rail = f => ['rail', 'transit'].includes(G.kind(f));
     const bridges = scene.roads.filter(f => f.props.brunnel === 'bridge');
     const ground = scene.roads.filter(f => f.props.brunnel !== 'bridge' && f.props.brunnel !== 'tunnel');
-    // All edges before all fills: joins stay open, even across separate road features.
-    roadPass(ctx, scene, ground.filter(f => !rail(f)), true);
-    roadPass(ctx, scene, ground.filter(f => !rail(f)), false);
-    drawRails(ctx, scene, ground.filter(rail));
-    roadPass(ctx, scene, bridges.filter(f => !rail(f)), true);
-    roadPass(ctx, scene, bridges.filter(f => !rail(f)), false);
-    drawRails(ctx, scene, bridges.filter(rail));
+    roadSurface(ctx,scene,ground.filter(f=>!rail(f)),scene.roadGroups.ground,false);
+    drawRails(ctx,scene,ground.filter(rail));
+    roadSurface(ctx,scene,bridges.filter(f=>!rail(f)),scene.roadGroups.bridge,true);
+    drawRails(ctx,scene,bridges.filter(rail));
   }
 
   function crownPoints(x, y, r, seed) {

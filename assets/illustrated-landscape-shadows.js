@@ -116,12 +116,12 @@
       stats: { shadowSolver: 'height-intervals-v1', shadowCasterCount: 0, heightFromDataCount: 0,
         heightEstimatedCount: 0, shadowHeightCappedCount: 0, shadowPixels: [0, 0, 0, 0, 0] } };
     for (const water of scene.water) {
-      const polygons = water.type === 3 ? water.polygons : linePolygons(water.geometry, G.kind(water) === 'river' ? 10 : 3).map(p => [p]);
+      const polygons = water.paintPolygons || (water.type === 3 ? water.polygons : linePolygons(water.geometry, G.kind(water) === 'river' ? 10 : 3).map(p => [p]));
       for (const poly of polygons) raster(field, poly, i => { field.surface[i] = material.water; });
     }
     // Surface roads paint over water; bridge decks receive a separate height below.
     for (const road of scene.roads.filter(r => r.props.brunnel !== 'tunnel')) {
-      for (const poly of linePolygons(road.geometry, road.width)) raster(field, [poly], i => { field.surface[i] = material.ground; });
+      for (const poly of road.paintPolygons || linePolygons(road.geometry, road.width).map(p => [p])) raster(field, poly, i => { field.surface[i] = material.ground; });
     }
     function addInfo(object, type) {
       const info = heightInfo(scene, object, type, light);
@@ -135,7 +135,7 @@
     }
     for (const bridge of scene.roads.filter(r => r.props.brunnel === 'bridge')) {
       const info = addInfo(bridge, 'bridge'), thickness = Math.min(info.world * .3, .8 / info.units);
-      for (const poly of linePolygons(bridge.geometry, bridge.width)) raster(field, [poly], i => solid(i, info.world,
+      for (const poly of bridge.paintPolygons || linePolygons(bridge.geometry, bridge.width).map(p => [p])) raster(field, poly, i => solid(i, info.world,
         Math.max(.1, info.world - thickness), material.bridge));
     }
     for (const tree of scene.trees) {

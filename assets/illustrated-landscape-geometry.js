@@ -191,6 +191,7 @@
   }
   function blocked(p, radius, obstacles) {
     return obstacles.some(f => {
+      if (f.paintQuery) return f.paintQuery.inside(p) || f.paintQuery.nearest(p, radius).distance < radius;
       if (f.type === 3) return inside(p, f.polygons) || edgeDistance(p, f.geometry) < radius;
       return edgeDistance(p, f.geometry) < radius + (f.width || roadWidth(f)) / 2 + 1.5;
     });
@@ -206,7 +207,7 @@
       for (const ring of f.geometry) for (let i = 1; i < ring.length; i++) {
         const a = ring[i - 1], q = ring[i], box = bounds([[a, q]]);
         if (!overlaps(box, b, 20)) continue;
-        edges.push({type, geometry:[[a,q]], bounds:box, width:type === 'road' ? roadWidth(f) / 2 : 0,
+        edges.push({type, geometry:[[a,q]], bounds:box, width:type === 'road' && f.type === 2 ? roadWidth(f) / 2 : 0,
           angle:Math.atan2(q[1] - a[1], q[0] - a[0])});
       }
     }
@@ -300,8 +301,15 @@
       }
     }
     trees.sort((a, b) => a.y - b.y || a.x - b.x);
-    const groundMarks = groundDetails(visible, b, vegetationIndex, obstacles);
-    return { viewport, bounds: b, land, roads, water, buildings, trees, groundMarks,
+    const surfaces = global.PixelMapIllustratedSurfaces.prepare(roads, water, b);
+    const paintedFeatures = [...visible.filter(f => !['transportation','water','waterway'].includes(f.layer)),
+      ...surfaces.roads, ...surfaces.water].map(f => f.paintPolygons ?
+        {...f,type:3,polygons:f.paintPolygons,geometry:f.paintPolygons.flat()} : f);
+    const paintedObstacles = new SpatialIndex([...paintedFeatures.filter(f => f.props.brunnel !== 'tunnel' &&
+      (['building','water','waterway','transportation'].includes(f.layer) || ['farmland','farm','vineyard'].includes(kind(f)))),
+      ...roads.filter(f=>f.props.brunnel!=='tunnel')]);
+    const groundMarks = groundDetails(paintedFeatures, b, vegetationIndex, paintedObstacles);
+    return { viewport, bounds: b, land, ...surfaces, buildings, trees, groundMarks,
       stats: { sourceBuildingCount: buildings.length, roofCount: buildings.length, roadCount: roads.length,
         sourceRoadCount: roads.length, waterCount: water.length, treeCount: trees.length,
         gardenCount:trees.filter(t => t.garden).length, groundMarkCount:groundMarks.length,
