@@ -170,11 +170,81 @@
     ctx.restore();
   }
 
+  function nearestWaterEdge(point, paths) {
+    let best = {distance:Infinity, angle:0};
+    for (const path of paths) for (let i=1;i<path.length;i++) {
+      const a=path[i-1], b=path[i], dx=b[0]-a[0], dy=b[1]-a[1], length2=dx*dx+dy*dy;
+      if (!length2) continue;
+      const t=Math.max(0,Math.min(1,((point[0]-a[0])*dx+(point[1]-a[1])*dy)/length2));
+      const distance=Math.hypot(point[0]-a[0]-dx*t,point[1]-a[1]-dy*t);
+      if(distance<best.distance) best={distance,angle:Math.atan2(dy,dx)};
+    }
+    return best;
+  }
+  function waterBrush(ctx, scene, point, angle, length, width, seed, color, alpha) {
+    const [x,y]=project(scene,point), s=scene.viewport.scale;
+    ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.strokeStyle=color;
+    // Uneven bristles leave open, offset ends, rather than a closed leaf-shaped
+    // stamp. Several faint strands make the pigment edges lose definition.
+    for(let j=0;j<9;j++) {
+      const offset=(j/8-.5)*width*s;
+      const start=(-.5+random(seed,j+20)*.33)*length*s;
+      const end=(.18+random(seed,j+40)*.4)*length*s;
+      const bend=(random(seed,j+60)-.5)*width*.32*s;
+      ctx.globalAlpha=alpha*(.45+random(seed,j+80)*.5);
+      ctx.lineWidth=(.55+random(seed,j+100)*.9)*s;
+      ctx.beginPath();ctx.moveTo(start,offset);
+      ctx.bezierCurveTo(start*.4,offset+bend,end*.45,offset-bend*.4,end,offset+bend*.2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawWaterWash(ctx, scene, feature) {
+    const paths=feature.polygons.flat(), s=scene.viewport.scale;
+    ctx.save();trace(ctx,scene,paths);ctx.clip('evenodd');
+    // Translucent pigment layers sink into the inner bank. The mask preserves
+    // islands and the shoreline; all later bridges remain above this wash.
+    trace(ctx,scene,paths);ctx.strokeStyle='#618b82';ctx.lineWidth=3*s;ctx.globalAlpha=.16;ctx.stroke();
+    for(const path of paths) {
+      let distance=0;
+      for(let i=1;i<path.length;i++) {
+        const a=path[i-1],p=path[i],length=Math.hypot(p[0]-a[0],p[1]-a[1]);
+        if(!length) continue;
+        const start=distance;distance+=length;
+        if(!G.overlaps({left:Math.min(a[0],p[0]),right:Math.max(a[0],p[0]),
+          top:Math.min(a[1],p[1]),bottom:Math.max(a[1],p[1])},scene.bounds,40)) continue;
+        const ux=(p[0]-a[0])/length,uy=(p[1]-a[1])/length;
+        for(let d=Math.ceil(start/13)*13;d<distance;d+=13) {
+          const point=[a[0]+ux*(d-start),a[1]+uy*(d-start)];
+          const seed=G.hash(`bank-wash:${point.map(n=>n.toFixed(3))}`);
+          if(random(seed)>.72) continue;
+          waterBrush(ctx,scene,point,Math.atan2(uy,ux),14+random(seed,1)*24,
+            8+random(seed,2)*16,seed,'#587c72',.15+random(seed,3)*.12);
+        }
+      }
+    }
+    ctx.globalAlpha=1;
+    const b=scene.bounds;
+    for(let gy=Math.floor(b.top/53);gy<=Math.ceil(b.bottom/53);gy++) for(let gx=Math.floor(b.left/53);gx<=Math.ceil(b.right/53);gx++) {
+      const seed=G.hash(`water-wash:${gx}:${gy}`);
+      if(random(seed)>.64) continue;
+      const p=[(gx+random(seed,1))*53,(gy+random(seed,2))*53];
+      if(!G.inside(p,feature.polygons)) continue;
+      const edge=nearestWaterEdge(p,paths), angle=edge.angle+(random(seed,3)-.5)*.18;
+      const length=24+random(seed,4)*43, width=3+random(seed,5)*7;
+      const light=random(seed,6)>.52;
+      waterBrush(ctx,scene,p,angle,length,width,seed,light?'#e2e8d9':'#638e89',light?.15:.13);
+      if(edge.distance<22) waterBrush(ctx,scene,p,angle,length*.65,width*.4,seed+17,'#5c8176',.13);
+    }
+    ctx.restore();
+  }
+
   function drawWater(ctx, scene) {
     // River polygons cover the duplicate MVT centerlines; uncovered streams remain visible.
     for (const f of [...scene.water].sort((a, b) => a.type - b.type)) {
       if (f.type === 3) {
         fillFeature(ctx, scene, f, palette.water);
+        drawWaterWash(ctx,scene,f);
         featureInk(ctx, scene, f.polygons.flat(), palette.waterEdge, 1.05, .45);
         // Short offset bank strokes are clipped to the water, never a river centerline.
         ctx.save(); trace(ctx, scene, f.polygons.flat()); ctx.clip('evenodd');
@@ -206,8 +276,9 @@
       const drift = Math.sin(p[0] / 71 + Math.sin(p[1] / 97)) * Math.cos(p[1] / 53);
       if (random(seed) > .28 + Math.max(0, drift) * .5) continue;
       const half = 2 + random(seed, 4) * 8, bend = .5 + random(seed, 5) * 2;
-      const angle = -.7 + random(seed, 6) * 1.1;
-      if (!waterAreas.some(f => G.containsDisc(p, half + 4, f.polygons))) continue;
+      const area=waterAreas.find(f => G.containsDisc(p, half + 4, f.polygons));
+      if (!area) continue;
+      const angle = nearestWaterEdge(p,area.polygons.flat()).angle + (random(seed,6)-.5)*.35;
       const [x, y] = project(scene, p), s = scene.viewport.scale;
       ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
       ctx.beginPath(); ctx.moveTo(-half * s, bend * s);
@@ -290,6 +361,27 @@
       return [x + Math.cos(a) * radius, y + Math.sin(a) * radius * (.89 + random(seed, 4) * .13)];
     });
   }
+  function shadeCrown(ctx, radius, seed, scale) {
+    const outer=crownPoints(0,0,radius,seed);
+    const inner=crownPoints(-radius*.22,-radius*.29,radius*(.90+random(seed,61)*.06),seed+31);
+    ctx.save();polygon(ctx,outer);ctx.clip();
+    // A broken crescent describes the lower-right overlap, with paper showing
+    // through the pigment. There is no circular gradient or glossy highlight.
+    ctx.beginPath();
+    for(const ring of [outer,inner]) {
+      ring.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();
+    }
+    ctx.fillStyle='#395d37';ctx.globalAlpha=.32+random(seed,62)*.13;ctx.fill('evenodd');
+    ctx.globalAlpha=.52;
+    const count=5+Math.floor(random(seed,63)*5);
+    for(let j=0;j<count;j++) {
+      const a=.12+random(seed,j+70)*1.48, d=radius*(.70+random(seed,j+90)*.2);
+      const x=Math.cos(a)*d,y=Math.sin(a)*d;
+      const length=(1.5+random(seed,j+110)*3)*scale;
+      penLine(ctx,[[x-length*.5,y-length*.3],[x+length*.2,y+length*.5]],'#365732',.6,seed+j,.13,scale);
+    }
+    ctx.restore();
+  }
   function drawWoodland(ctx, scene) {
     const forest = scene.trees.filter(t => t.forest), s = scene.viewport.scale;
     if (!forest.length) return;
@@ -325,6 +417,7 @@
       polygon(ctx,crownPoints(-4*s,-5*s,r*.89,seed+31), '#b4c98f');
       ctx.globalAlpha=.18;
       polygon(ctx,crownPoints(1*s,2*s,r*.72,seed+70), '#8da878');
+      shadeCrown(ctx,r,seed,s);
       if(random(seed,4)>.38) {
         const points=crownPoints(0,0,r,seed), start=Math.floor(random(seed,5)*30);
         ctx.globalAlpha=.7;

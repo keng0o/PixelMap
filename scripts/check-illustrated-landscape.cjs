@@ -13,6 +13,9 @@ const cases = [
   ['city', '?lat=35.531&lon=139.702', 736, 952], ['city-mobile', '?lat=35.531&lon=139.702', 390, 844],
   ['river', '?lat=35.5536&lon=139.7013', 736, 952], ['river-mobile', '?lat=35.5536&lon=139.7013', 390, 844],
   ['green', '?lat=35.611&lon=139.573', 736, 952], ['green-mobile', '?lat=35.611&lon=139.573', 390, 844],
+  ['city-mobile-dpr2', '?lat=35.531&lon=139.702', 390, 844, 2],
+  ['river-mobile-dpr2', '?lat=35.5536&lon=139.7013', 390, 844, 2],
+  ['green-mobile-dpr2', '?lat=35.611&lon=139.573', 390, 844, 2],
 ];
 const ready = page => page.waitForFunction(() => document.documentElement.dataset.mapReady === '1' && window.PixelMapIllustratedApp, null, {timeout:60000});
 async function run() {
@@ -20,18 +23,18 @@ async function run() {
   const browser = await chromium.launch({executablePath:chrome, headless:true});
   const report = { base, screenshots:[], interactions:[] };
   try {
-    for(const [name, query, width, height] of cases) {
-      const page = await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
+    for(const [name, query, width, height, deviceScaleFactor=1] of cases) {
+      const page = await browser.newPage({viewport:{width,height},deviceScaleFactor});
       const errors = []; page.on('pageerror',e=>errors.push(String(e)));
       page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
       await page.goto(base+route+query); await ready(page);
       const d = await page.evaluate(()=>window.PixelMapIllustratedStudy);
-      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v3'); assert.equal(d.failedTileCount,0);
+      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v4'); assert.equal(d.failedTileCount,0);
       assert.equal(d.paintedRoofs,d.roofCount); assert.equal(d.paintedTrees,d.treeCount);
       assert.equal(d.buildingExtrusionEnabled,false); assert.equal(d.labelCount,0);
       assert.deepEqual(errors,[]);
       await page.screenshot({path:path.join(output,`${name}.png`)});
-      report.screenshots.push({name,query,width,height,diagnostics:d});
+      report.screenshots.push({name,query,width,height,deviceScaleFactor,diagnostics:d});
       await page.close();
     }
     const page = await browser.newPage({viewport:{width:736,height:952},deviceScaleFactor:1});
@@ -98,6 +101,38 @@ async function run() {
     assert.ok(pigment(pixels.courtyard,rgb(pixels.palette.ground)),JSON.stringify(pixels.courtyard));
     assert.ok(pixels.roof[0]>pixels.roof[1]);
     report.interactions.push({name:'paint-pixels-bridge-water-courtyard',pixels});
+
+    const shoreMask = await page.evaluate(()=>{
+      const rect=(x,y,w,h)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]];
+      const feature={id:10,layer:'water',type:3,props:{class:'river'},
+        geometry:[rect(30,25,180,190),rect(80,80,80,80).reverse()]};
+      const scene=PixelMapIllustratedGeometry.compose(PixelMapIllustratedGeometry.mergeFeatures([feature]),
+        {centerX:120,centerY:120,width:240,height:240,scale:1});
+      // Isolate the actual water paint from nearby ground decoration. Comparing
+      // every dry pixel catches bank-wash leaks, including polygon island holes.
+      Object.assign(scene,{land:[],roads:[],buildings:[],trees:[],groundMarks:[]});
+      const draw=water=>{
+        const c=document.createElement('canvas');c.width=240;c.height=240;
+        const ctx=c.getContext('2d',{willReadFrequently:true});PixelMapIllustratedRenderer.paint(ctx,{...scene,water});
+        return ctx.getImageData(0,0,240,240).data;
+      };
+      const water=draw(scene.water),dry=draw([]);
+      let dryPixels=0,leakedPixels=0,bank=0,center=0,samples=0;
+      for(let y=0;y<240;y++) for(let x=0;x<240;x++) {
+        const i=(y*240+x)*4;
+        if(x<26 || x>214 || y<21 || y>219 || (x>84 && x<156 && y>84 && y<156)) {
+          dryPixels++;
+          if([0,1,2].some(c=>water[i+c]!==dry[i+c]))leakedPixels++;
+        }
+      }
+      for(let y=35;y<205;y++) for(let x=33;x<38;x++) {
+        bank+=water[(y*240+x)*4+1];center+=water[(y*240+x+25)*4+1];samples++;
+      }
+      return {dryPixels,leakedPixels,meanBankGreen:bank/samples,meanCenterGreen:center/samples};
+    });
+    assert.equal(shoreMask.leakedPixels,0,JSON.stringify(shoreMask));
+    assert.ok(shoreMask.meanCenterGreen-shoreMask.meanBankGreen>3,JSON.stringify(shoreMask));
+    report.interactions.push({name:'shore-shading-preserves-land-and-islands',...shoreMask});
 
     await page.context().grantPermissions(['geolocation']);
     await page.context().setGeolocation({latitude:35.531,longitude:139.702});
