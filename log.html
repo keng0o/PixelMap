@@ -172,6 +172,11 @@
               <td>変更なし。本番1・2・4マップと通常のstandalone testは新しい橋分類器・描画器を読み込まない。</td>
             </tr>
             <tr>
+              <th scope="row">彩色ゲーム地図test</th>
+              <td><a href="variants/map-02-refined.html?profile=illustrated-landscape&amp;presentation=art&amp;lat=35.611&amp;lon=139.573">standaloneの明示profileから彩色地図を開く</a>。<code>map-12-illustrated-landscape.html</code>で、実地理の道路・建物・中庭を保ち、赤茶の屋根、灰青の水面、淡い地表、樹冠で構成する林縁を描く。屋根は切妻・寄棟・長屋・複合翼・中庭型・平屋根を形と用途に応じて構成。樹木は道路・水面・建物・畑との余白を保ち、world座標で配置を固定する。<a href="variants/map-12-illustrated-landscape.html?scene=fixture">架空と明示した構成見本</a>も同じ描画処理で表示する。</td>
+              <td>変更なし。<strong>testのみ</strong>。新profileはembeddedで無効。本番1・2・4マップ、通常standalone、旧topdown、既存素材ラボ、mobileには反映しない。</td>
+            </tr>
+            <tr>
               <th scope="row">独立真上視点test</th>
               <td><code>variants/map-02-refined.html?profile=topdown-game&amp;presentation=art</code>から<code>variants/map-09-top-down-game.html</code>へ接続するtest専用経路。実地理の接続を保ったsemantic composerが、可視建物を8〜24の集落・最大170棟へ圧縮し、生活道路だけを35%以下へ整理する。主要道路・鉄道・水域は全件保持し、実道路から一本の主経路を選ぶ。暖色の壁付き小屋、旗付き目的地1〜3件、旅人を重ね、195×422のart Canvasを390×844へ2倍最近傍拡大する。名称と浮いたPOIは表示せず、入力順に依存しないworld固定の構図を使う。</td>
               <td>変更なし。本番1・2・4マップは独立真上視点testのmoduleを読み込まず、既存のcell2／cell3描画を維持する。</td>
@@ -216,6 +221,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>実地理を保つ真上視点の彩色ゲーム地図を追加</h3>
+          <time datetime="2026-09-05">2026-09-05 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>地理の整理・風景構成・描画を分けた専用経路を追加。MVT断片を中庭の穴を維持して結合し、複数棟featureを棟単位で表示判定する。赤茶の勾配屋根と平屋根、淡い地表、灰青の水、疎な草・水面模様を共通の色と線で描く。森は樹冠の重なりで林縁を形成し、植生と通路・水面・建物・畑との衝突を防ぐ。水域内の重複waterway線は水面で覆い、橋を上に描く。位置情報の拒否、通信再試行、全取得失敗時の前景維持に対応。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。<code>map-02-refined.html?profile=illustrated-landscape&amp;presentation=art</code>のstandalone入口と専用<code>map-12-illustrated-landscape.html</code>。<code>scene=fixture</code>は架空の構成見本と明示し、実地理へ混ぜない。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常standalone、旧topdown、既存素材ラボ、mobileは差分なし。新profileの接続はiframe・embed指定時に無効。</dd></div>
+          <div><dt>確認内容</dt><dd>川崎市街地・多摩川沿い・緑地と構成見本を736×952／390×844の8画面で撮影し、最新版すべて独立視覚レビューPASS。パン前後72樹木の同一性、実pixelによる橋・水・中庭、位置情報成功／拒否mock、通信失敗・再試行・前景維持、入口遷移を実ブラウザで確認。Nodeテスト356件、80ファイルの静的ビルド、console errorなし、差分検査。詳細は<code>docs/validation/2026-09-05-illustrated-landscape.md</code>。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>真上視点testを旅人・主経路・集落・目的地のsemantic miniatureへ再構成</h3>

@@ -7,6 +7,15 @@
 <script>
   (() => {
     const params = new URLSearchParams(location.search);
+    if (params.get('profile') === 'illustrated-landscape' && params.get('presentation') === 'art') {
+      if (window.self !== window.top || params.has('embed') || params.has('embedded')) return;
+      const illustrated = new URL('map-12-illustrated-landscape.html', location.href);
+      for (const key of ['lat', 'lon', 'scene']) {
+        if (params.has(key)) illustrated.searchParams.set(key, params.get(key));
+      }
+      location.replace(illustrated.href);
+      return;
+    }
     if (params.get('profile') !== 'topdown-game' || params.get('presentation') !== 'art') return;
     const target = new URL('map-09-top-down-game.html', location.href);
     for (const key of ['lat', 'lon']) {
