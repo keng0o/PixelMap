@@ -26,7 +26,7 @@ async function run() {
       page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
       await page.goto(base+route+query); await ready(page);
       const d = await page.evaluate(()=>window.PixelMapIllustratedStudy);
-      assert.equal(d.styleId,'illustrated-landscape-v1'); assert.equal(d.failedTileCount,0);
+      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v2'); assert.equal(d.failedTileCount,0);
       assert.equal(d.paintedRoofs,d.roofCount); assert.equal(d.paintedTrees,d.treeCount);
       assert.equal(d.buildingExtrusionEnabled,false); assert.equal(d.labelCount,0);
       assert.deepEqual(errors,[]);
@@ -47,6 +47,36 @@ async function run() {
     for(const tree of common) assert.deepEqual(later.get(tree.key),tree);
     report.interactions.push({name:'pan-world-stability',comparedTrees:common.length});
 
+    const inkPan = await page.evaluate(()=>{
+      const features=PixelMapIllustratedGeometry.mergeFeatures(PixelMapIllustratedFixture.features);
+      const draw=centerX=>{
+        const c=document.createElement('canvas');c.width=360;c.height=360;
+        const ctx=c.getContext('2d');
+        const scene=PixelMapIllustratedGeometry.compose(features,{centerX,centerY:650,width:360,height:360,scale:1});
+        const start=performance.now();PixelMapIllustratedRenderer.paint(ctx,scene);
+        return {ctx,ms:performance.now()-start};
+      };
+      const a=draw(245),b=draw(269),repeat=draw(245);
+      const first=a.ctx.getImageData(48,24,264,312).data,second=b.ctx.getImageData(24,24,264,312).data;
+      const again=repeat.ctx.getImageData(48,24,264,312).data;
+      let different=0,maxChannelDifference=0,totalDifference=0,significantPixels=0,repeatedDifferences=0;
+      for(let i=0;i<first.length;i+=4) {
+        const d=Math.max(...[0,1,2].map(c=>Math.abs(first[i+c]-second[i+c])));
+        if(d>0)different++; maxChannelDifference=Math.max(maxChannelDifference,d);
+        totalDifference+=d;if(d>2)significantPixels++;
+        if([0,1,2].some(c=>first[i+c]!==again[i+c]))repeatedDifferences++;
+      }
+      return {comparedPixels:first.length/4,different,maxChannelDifference,significantPixels,
+        meanChannelDifference:totalDifference/(first.length/4),repeatedDifferences,paintMs:[a.ms,b.ms]};
+    });
+    // Identical frames are pixel-exact. Translation can round GPU antialiasing at
+    // overlapping pen contours; bound both the affected area and the mean RGB error.
+    assert.equal(inkPan.repeatedDifferences,0,JSON.stringify(inkPan));
+    assert.ok(inkPan.different/inkPan.comparedPixels<.03,JSON.stringify(inkPan));
+    assert.ok(inkPan.significantPixels/inkPan.comparedPixels<.001,JSON.stringify(inkPan));
+    assert.ok(inkPan.meanChannelDifference<.05 && inkPan.maxChannelDifference<=20,JSON.stringify(inkPan));
+    report.interactions.push({name:'ink-paper-pan-pixels',...inkPan});
+
     const pixels = await page.evaluate(()=>{
       const rect=(x,y,w,h)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]];
       const f=[{id:1,layer:'water',type:3,props:{class:'river'},geometry:[rect(80,0,40,200)]},
@@ -60,9 +90,12 @@ async function run() {
       return {bridge:get(100,100),water:get(100,80),courtyard:get(40,40),roof:get(25,25),palette:PixelMapIllustratedRenderer.palette};
     });
     const rgb=hex=>hex.slice(1).match(/../g).map(x=>parseInt(x,16));
-    assert.deepEqual(pixels.bridge,rgb(pixels.palette.road));
-    assert.deepEqual(pixels.water,rgb(pixels.palette.water));
-    assert.deepEqual(pixels.courtyard,rgb(pixels.palette.ground));
+    // Paper fibres can tint a sampled pigment by at most 12 RGB steps. A wrong
+    // water/road layer or a filled courtyard remains outside this narrow tolerance.
+    const pigment = (actual, expected) => actual.every((n,i)=>Math.abs(n-expected[i])<=12);
+    assert.ok(pigment(pixels.bridge,rgb(pixels.palette.road)),JSON.stringify(pixels.bridge));
+    assert.ok(pigment(pixels.water,rgb(pixels.palette.water)),JSON.stringify(pixels.water));
+    assert.ok(pigment(pixels.courtyard,rgb(pixels.palette.ground)),JSON.stringify(pixels.courtyard));
     assert.ok(pixels.roof[0]>pixels.roof[1]);
     report.interactions.push({name:'paint-pixels-bridge-water-courtyard',pixels});
 

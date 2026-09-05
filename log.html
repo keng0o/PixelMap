@@ -173,7 +173,7 @@
             </tr>
             <tr>
               <th scope="row">彩色ゲーム地図test</th>
-              <td><a href="variants/map-02-refined.html?profile=illustrated-landscape&amp;presentation=art&amp;lat=35.611&amp;lon=139.573">standaloneの明示profileから彩色地図を開く</a>。<code>map-12-illustrated-landscape.html</code>で、実地理の道路・建物・中庭を保ち、赤茶の屋根、灰青の水面、淡い地表、樹冠で構成する林縁を描く。屋根は切妻・寄棟・長屋・複合翼・中庭型・平屋根を形と用途に応じて構成。樹木は道路・水面・建物・畑との余白を保ち、world座標で配置を固定する。<a href="variants/map-12-illustrated-landscape.html?scene=fixture">架空と明示した構成見本</a>も同じ描画処理で表示する。</td>
+              <td><a href="variants/map-02-refined.html?profile=illustrated-landscape&amp;presentation=art&amp;lat=35.611&amp;lon=139.573">standaloneの明示profileから彩色地図を開く</a>。<code>map-12-illustrated-landscape.html</code>で、実地理の道路・建物・中庭を保ち、赤茶の屋根、灰青の水面、淡い地表、樹冠で構成する林縁を描く。手描きV2では輪郭の揺れと筆圧、屋根の筆跡、葉・草・土・畝の細線、淡い紙目を追加。水面は疎密・長短・曲率の異なる線を使う。屋根は切妻・寄棟・長屋・複合翼・中庭型・平屋根を形と用途に応じて構成。植生と筆跡はworld座標で固定し、道路・水面・建物・畑の位置と余白を保つ。<a href="variants/map-12-illustrated-landscape.html?scene=fixture">架空と明示した構成見本</a>も同じ描画処理で表示する。</td>
               <td>変更なし。<strong>testのみ</strong>。新profileはembeddedで無効。本番1・2・4マップ、通常standalone、旧topdown、既存素材ラボ、mobileには反映しない。</td>
             </tr>
             <tr>
@@ -221,6 +221,18 @@
         <h2 id="history-title">変更履歴</h2>
         <small>NEWEST FIRST</small>
       </div>
+      <article class="entry">
+        <div class="entry-header">
+          <h3>彩色地図の輪郭・葉・屋根・水辺を手描きの表情へ調整</h3>
+          <time datetime="2026-09-05">2026-09-05 JST</time>
+        </div>
+        <dl class="entry-grid">
+          <div><dt>変更内容</dt><dd>参考画像に近づけるため、微小な揺れと筆圧のある輪郭、屋根の薄い筆跡、樹冠の葉線、草・土・畝の短線、淡い紙の繊維を追加。水面は線の長短・角度・濃淡・曲率と広い疎密を使い、岸沿いの途切れた線を重ねる。筆跡をworld座標へ固定し、道路の画面外の細線を省いて負荷を抑えた。</dd></div>
+          <div><dt>対象モード</dt><dd><strong>testのみ</strong>。standaloneの<code>profile=illustrated-landscape&amp;presentation=art</code>から開く<code>map-12-illustrated-landscape.html</code>と、同ページの架空の構成見本。style IDは<code>illustrated-landscape-hand-drawn-v2</code>。</dd></div>
+          <div><dt>本番への影響</dt><dd>なし。本番1・2・4マップ、通常standalone、旧topdown、mobileは変更なし。地理の構成処理、道路・建物・中庭の形状と植生の配置を維持する。</dd></div>
+          <div><dt>確認内容</dt><dd>4地点×2サイズの8画面と追加のDPR 2の2画面で独立視覚レビューPASS。初回に指摘された川の波線の反復を修正済み。パン時の72樹木の保持、筆跡・紙目のpixel比較、橋・水・中庭、位置情報mock、通信失敗・再試行、入口遷移を実ブラウザで確認。Nodeテスト356件PASS、80ファイルのビルド、差分検査。詳細は<code>docs/validation/2026-09-05-illustrated-hand-drawn.md</code>。</dd></div>
+        </dl>
+      </article>
       <article class="entry">
         <div class="entry-header">
           <h3>実地理を保つ真上視点の彩色ゲーム地図を追加</h3>
