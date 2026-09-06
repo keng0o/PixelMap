@@ -602,6 +602,27 @@
     }
     ctx.restore();
   }
+  function drawRoadside(ctx, scene) {
+    const s=scene.viewport.scale;
+    for(const m of scene.roadside || []) {
+      const [x,y]=project(scene,[m.x,m.y]);
+      ctx.save();ctx.translate(x,y);ctx.rotate(m.angle);
+      if(m.wash) {
+        // All paint fits the checked 3.7-world-unit disc, including line caps.
+        ctx.strokeStyle='#9c926b';ctx.lineWidth=2.3*s;ctx.globalAlpha=.17;
+        ctx.beginPath();ctx.moveTo(-2.35*s,0);ctx.quadraticCurveTo(0,-.8*s,2.35*s,.2*s);ctx.stroke();
+        ctx.lineWidth=.65*s;ctx.globalAlpha=.29;
+        ctx.beginPath();ctx.moveTo(-1.7*s,.45*s);ctx.lineTo(1.1*s,.8*s);ctx.stroke();
+      } else {
+        const size=(.7+random(m.seed,2)*.5)*s;
+        ctx.globalAlpha=.6;ctx.fillStyle='#8e8664';ctx.beginPath();
+        ctx.moveTo(-size,-size*.2);ctx.lineTo(-size*.1,-size*.65);ctx.lineTo(size*.8,size*.15);ctx.lineTo(size*.2,size*.65);ctx.closePath();ctx.fill();
+        ctx.strokeStyle='#f4ebcb';ctx.globalAlpha=.65;ctx.lineWidth=.3*s;
+        ctx.beginPath();ctx.moveTo(-size*.55,-size*.15);ctx.lineTo(0,-size*.4);ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
   function paint(ctx, scene, location = null) {
     ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     drawGround(ctx, scene);
@@ -609,7 +630,7 @@
       trace(ctx, scene, polygon); ctx.fillStyle = palette.buildingArea; ctx.fill('evenodd');
       featureInk(ctx, scene, polygon, '#a38f72', .7, .12);
     }
-    drawWater(ctx, scene); drawRoads(ctx, scene);
+    drawRoadside(ctx, scene); drawWater(ctx, scene); drawRoads(ctx, scene);
     drawWoodland(ctx, scene);
     for (const tree of scene.trees.filter(t => !t.forest)) drawTree(ctx, scene, tree);
     for (const roof of scene.buildings) drawRoof(ctx, scene, roof);
@@ -623,7 +644,7 @@
     }
     ctx.restore();
     return { ...shadows, paintedRoofs: scene.buildings.length, paintedBuildingAreas:(scene.buildingAreas || []).length,
-      paintedTrees: scene.trees.length,
+      paintedTrees: scene.trees.length, paintedRoadsideMarks:(scene.roadside || []).length,
       paintedRoads: scene.roads.filter(f => f.props.brunnel !== 'tunnel').length };
   }
   global.PixelMapIllustratedRenderer = Object.freeze({ palette, project, paint, crownPoints, penPoints, inkStrip, inkPenLine, pressure });

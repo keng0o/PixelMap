@@ -45,15 +45,75 @@ test('drawn roads keep their source geometry and join T/X intersections without 
  for(let x=0;x<=200;x++)assert.ok(G.inside([x,100],scene.roadGroups.ground));
 });
 
+test('nearly coincident variable road caps from the green viewport still close after precision recovery',()=>{
+ const polygons=JSON.parse(readFileSync(new URL('./fixtures/illustrated-roadside-junction.json',import.meta.url),'utf8'));
+ const original=JSON.stringify(polygons),result=S.union(polygons);
+ assert.equal(JSON.stringify(polygons),original);assert.ok(result.length>0);
+ assert.ok(result.flat(3).every(Number.isFinite));
+ for(const ring of result.flat())assert.deepEqual(ring[0],ring.at(-1));
+ const coarse=clip.union(polygons.map(p=>p.map(r=>r.map(v=>v.map(n=>Math.round(n*256)/256)))));
+ assert.ok(Math.abs(area(result)-area(coarse))<.15);
+});
+
 test('width variation stays bounded and fixed bridge approaches retain their width',()=>{
  const scene=compose([road(1,[[0,80],[200,80]]),road(2,[[0,120],[200,120]],{brunnel:'bridge'})]);
  const [ground,bridge]=scene.roads;
  const edges=ground.paintPolygons.flat(2).filter(p=>p[0]>20&&p[0]<180);
  const radii=edges.map(p=>Math.abs(p[1]-80));
- assert.ok(Math.max(...radii)-Math.min(...radii)>.1,'road edges must vary visibly');
- assert.ok(radii.every(r=>r>2.7&&r<4.3));
+ assert.ok(Math.max(...radii)-Math.min(...radii)>1.4,'open road edges must have substantial slow width variation');
+ assert.ok(radii.every(r=>r>=3.5*.58-.001&&r<=3.5*1.65+.001));
  for(const p of bridge.paintPolygons.flat(2).filter(p=>p[0]>5&&p[0]<195))assert.equal(Math.abs(p[1]-120),3.5);
  for(const p of [[.1,76.6],[199.9,83.4]])assert.ok(G.inside(p,ground.paintPolygons));
+});
+
+test('widened roads avoid actual building shapes, water and full tree crowns, including corners and caps',()=>{
+ const building={id:71,layer:'building',type:3,props:{},geometry:[[[38,83],[72,85],[75,109],[35,109],[38,83]]]};
+ const lake=water([rect(115,70,30,6)]);
+ const source=G.mergeFeatures([road(1,[[0,80],[55,80],[90,80],[200,80]]),building,lake]);
+ const tree={x:168,y:89,radius:4};
+ const surface=S.prepare(source.filter(f=>f.layer==='transportation').map(f=>({...f,width:7})),
+  source.filter(f=>f.layer==='water'),box,source.filter(f=>f.layer==='building'),[tree]);
+ const free=compose([road(1,[[0,80],[55,80],[90,80],[200,80]])]);
+ assert.ok(area(surface.roadGroups.ground)<area(free.roadGroups.ground),'crowded shoulders must narrow');
+ for(const f of source.filter(f=>f.type===3))assert.ok(area(clip.intersection(surface.roadGroups.ground,f.polygons))<.002);
+ for(const p of surface.roadGroups.ground.flat(2))assert.ok(Math.hypot(p[0]-tree.x,p[1]-tree.y)>tree.radius*1.08);
+ for(let x=0;x<200;x++)assert.ok(G.inside([x,80],surface.roadGroups.ground),'source route remains connected');
+ assert.ok(G.inside([50,77.5],surface.roadGroups.ground),'free side remains usable next to a building');
+});
+
+test('roadside gravel and wash primitives clear roads, buildings, water, trees and fields and remain world-stable',()=>{
+ const building={id:72,layer:'building',type:3,props:{},geometry:[rect(25,106,25,25)]};
+ const field={id:73,layer:'landuse',type:3,props:{class:'farmland'},geometry:[rect(70,70,30,24)]};
+ const source=[road(1,[[-500,100],[600,100]]),building,field,water([rect(120,105,40,30)])];
+ const scene=compose(source),later=G.compose(G.mergeFeatures(source.reverse()),{...view,centerX:124});
+ assert.ok(scene.roadside.length>10);assert.ok(scene.roadside.some(m=>m.wash));assert.ok(scene.roadside.some(m=>!m.wash));
+ const blockers=[...scene.roadGroups.ground,...scene.water.flatMap(f=>f.paintPolygons),...G.mergeFeatures([building,field]).flatMap(f=>f.polygons)];
+ for(const m of scene.roadside) {
+  const p=[m.x,m.y];assert.ok(!G.inside(p,blockers));
+  assert.ok(G.edgeDistance(p,blockers.flat())>m.radius+.45,'entire decoration footprint must fit');
+ }
+ const middle=marks=>marks.filter(m=>m.x>10&&m.x<190&&m.y>10&&m.y<190).sort((a,b)=>a.key.localeCompare(b.key));
+ assert.deepEqual(middle(scene.roadside),middle(later.roadside));
+});
+
+test('mapped L-shaped piers retain their fixed water crossing without a bridge tag',()=>{
+ const scene=compose([water([rect(40,0,150,190)]),road(81,[[0,60],[100,60],[100,130]],{class:'pier'})]);
+ const pier=scene.roads[0];
+ for(let x=0;x<100;x++)assert.ok(G.inside([x,60],pier.paintPolygons));
+ for(let y=60;y<130;y++)assert.ok(G.inside([100,y],pier.paintPolygons));
+ for(const p of pier.paintPolygons.flat(2).filter(p=>p[0]>45&&p[0]<90))assert.equal(Math.abs(p[1]-60),pier.width/2);
+ assert.ok(scene.roadside.every(m=>!G.inside([m.x,m.y],scene.water[0].paintPolygons)));
+});
+
+test('generalized z13 city blocks preserve through streets while excluding extra width and roadside gravel',()=>{
+ const block={id:91,layer:'building',type:3,sourceZoom:13,props:{},geometry:[rect(25,20,150,160)]};
+ const scene=compose([block,road(92,[[-100,100],[300,100]]),road(93,[[100,-100],[100,300]])]);
+ assert.equal(scene.buildings.length,0);assert.equal(scene.buildingAreas.length,1);
+ for(let x=0;x<200;x++)assert.ok(G.inside([x,100],scene.roadGroups.ground),'horizontal route survives the generalized area');
+ for(let y=0;y<200;y++)assert.ok(G.inside([100,y],scene.roadGroups.ground),'vertical route survives the generalized area');
+ for(const p of scene.roads[0].paintPolygons.flat(2).filter(p=>p[0]>30&&p[0]<170))assert.ok(Math.abs(p[1]-100)<=scene.roads[0].width/2+.001);
+ const q=scene.buildingAreas[0].polygons;
+ assert.ok(scene.roadside.every(m=>!G.inside([m.x,m.y],q)));
 });
 
 test('road shape stays fixed under pan, feature order and reversed source direction',()=>{

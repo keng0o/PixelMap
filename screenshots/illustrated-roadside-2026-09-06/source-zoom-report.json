@@ -1,0 +1,626 @@
+{
+  "base": "http://127.0.0.1:8766",
+  "checks": [
+    "real-z14-z13-z14-requests-canonical-coordinates-and-separated-cache",
+    "provider-maximum-no-z15-requests",
+    "late-z13-response-cannot-replace-newer-z14-frame",
+    "partial-new-zoom-failure-preserves-old-frame-then-recovers"
+  ],
+  "requests": [
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14549/6459.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14550/6459.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14549/6460.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14550/6460.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7274/3229.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7275/3229.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7274/3230.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7275/3230.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14549/6459.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14550/6459.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14549/6460.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14550/6460.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7274/3229.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7275/3229.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7274/3230.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7275/3230.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14549/6459.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14550/6459.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14549/6460.pbf"
+    },
+    {
+      "z": 14,
+      "path": "/planet/20260830_080001_pt/14/14550/6460.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7274/3229.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7275/3229.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7274/3230.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7275/3230.pbf"
+    },
+    {
+      "z": 13,
+      "path": "/planet/20260830_080001_pt/13/7274/3229.pbf"
+    }
+  ],
+  "frames": [
+    {
+      "d": {
+        "styleId": "illustrated-landscape-hand-drawn-v10",
+        "mapReady": true,
+        "sceneType": "geographic",
+        "renderCount": 1,
+        "tileCount": 4,
+        "failedTileCount": 0,
+        "centerX": 59596772.32924444,
+        "centerY": 26460440.88820213,
+        "scale": 1.05,
+        "zoom": 1,
+        "zoomMin": 0.5,
+        "zoomMax": 4,
+        "dataZoom": 14,
+        "requestedDataZoom": 14,
+        "sourceMinZoom": 0,
+        "sourceMaxZoom": 14,
+        "loading": false,
+        "interacting": false,
+        "bearing": 0,
+        "sourceBuildingCount": 835,
+        "roofCount": 835,
+        "generalizedBuildingAreaCount": 0,
+        "roadCount": 159,
+        "sourceRoadCount": 159,
+        "waterCount": 0,
+        "treeCount": 3,
+        "gardenCount": 2,
+        "groundMarkCount": 582,
+        "roadsideMarkCount": 1079,
+        "courtyardCount": 0,
+        "labelCount": 0,
+        "poiMarkerCount": 0,
+        "buildingExtrusionEnabled": false,
+        "geometryErrors": 0,
+        "placementFingerprint": "f25cd739",
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 849,
+        "heightFromDataCount": 834,
+        "heightEstimatedCount": 15,
+        "shadowHeightCappedCount": 3,
+        "shadowPixels": [
+          71411,
+          0,
+          8996,
+          0,
+          271
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 835,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 3,
+        "paintedRoadsideMarks": 1079,
+        "paintedRoads": 151
+      },
+      "featureZooms": [
+        14
+      ],
+      "cacheKeys": [
+        "14/14549/6459",
+        "14/14550/6459",
+        "14/14549/6460",
+        "14/14550/6460"
+      ],
+      "pending": 0
+    },
+    {
+      "d": {
+        "styleId": "illustrated-landscape-hand-drawn-v10",
+        "mapReady": true,
+        "sceneType": "geographic",
+        "renderCount": 3,
+        "tileCount": 4,
+        "failedTileCount": 0,
+        "centerX": 59596772.32924444,
+        "centerY": 26460440.88820213,
+        "scale": 1.0497900209954716,
+        "zoom": 0.9998000199956871,
+        "zoomMin": 0.5,
+        "zoomMax": 4,
+        "dataZoom": 13,
+        "requestedDataZoom": 13,
+        "sourceMinZoom": 0,
+        "sourceMaxZoom": 14,
+        "loading": false,
+        "interacting": false,
+        "bearing": 0,
+        "sourceBuildingCount": 56,
+        "roofCount": 0,
+        "generalizedBuildingAreaCount": 56,
+        "roadCount": 107,
+        "sourceRoadCount": 107,
+        "waterCount": 0,
+        "treeCount": 0,
+        "gardenCount": 0,
+        "groundMarkCount": 511,
+        "roadsideMarkCount": 970,
+        "courtyardCount": 0,
+        "labelCount": 0,
+        "poiMarkerCount": 0,
+        "buildingExtrusionEnabled": false,
+        "geometryErrors": 0,
+        "placementFingerprint": "811c9dc5",
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 5,
+        "heightFromDataCount": 0,
+        "heightEstimatedCount": 5,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          2610,
+          0,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 0,
+        "paintedBuildingAreas": 56,
+        "paintedTrees": 0,
+        "paintedRoadsideMarks": 970,
+        "paintedRoads": 102
+      },
+      "featureZooms": [
+        13
+      ],
+      "cacheKeys": [
+        "14/14549/6459",
+        "14/14550/6459",
+        "14/14549/6460",
+        "14/14550/6460",
+        "13/7275/3229",
+        "13/7275/3230",
+        "13/7274/3229",
+        "13/7274/3230"
+      ],
+      "pending": 0
+    },
+    {
+      "d": {
+        "styleId": "illustrated-landscape-hand-drawn-v10",
+        "mapReady": true,
+        "sceneType": "geographic",
+        "renderCount": 5,
+        "tileCount": 4,
+        "failedTileCount": 0,
+        "centerX": 59596772.32924444,
+        "centerY": 26460440.88820213,
+        "scale": 1.05,
+        "zoom": 1,
+        "zoomMin": 0.5,
+        "zoomMax": 4,
+        "dataZoom": 14,
+        "requestedDataZoom": 14,
+        "sourceMinZoom": 0,
+        "sourceMaxZoom": 14,
+        "loading": false,
+        "interacting": false,
+        "bearing": 0,
+        "sourceBuildingCount": 835,
+        "roofCount": 835,
+        "generalizedBuildingAreaCount": 0,
+        "roadCount": 159,
+        "sourceRoadCount": 159,
+        "waterCount": 0,
+        "treeCount": 3,
+        "gardenCount": 2,
+        "groundMarkCount": 582,
+        "roadsideMarkCount": 1079,
+        "courtyardCount": 0,
+        "labelCount": 0,
+        "poiMarkerCount": 0,
+        "buildingExtrusionEnabled": false,
+        "geometryErrors": 0,
+        "placementFingerprint": "f25cd739",
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 849,
+        "heightFromDataCount": 834,
+        "heightEstimatedCount": 15,
+        "shadowHeightCappedCount": 3,
+        "shadowPixels": [
+          71411,
+          0,
+          8996,
+          0,
+          271
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 835,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 3,
+        "paintedRoadsideMarks": 1079,
+        "paintedRoads": 151
+      },
+      "featureZooms": [
+        14
+      ],
+      "cacheKeys": [
+        "14/14549/6459",
+        "14/14550/6459",
+        "14/14549/6460",
+        "14/14550/6460",
+        "13/7275/3229",
+        "13/7275/3230",
+        "13/7274/3229",
+        "13/7274/3230"
+      ],
+      "pending": 0
+    },
+    {
+      "d": {
+        "styleId": "illustrated-landscape-hand-drawn-v10",
+        "mapReady": true,
+        "sceneType": "geographic",
+        "renderCount": 13,
+        "tileCount": 2,
+        "failedTileCount": 0,
+        "centerX": 59596772.32924444,
+        "centerY": 26460440.88820213,
+        "scale": 4.2,
+        "zoom": 4,
+        "zoomMin": 0.5,
+        "zoomMax": 4,
+        "dataZoom": 14,
+        "requestedDataZoom": 14,
+        "sourceMinZoom": 0,
+        "sourceMaxZoom": 14,
+        "loading": false,
+        "interacting": false,
+        "bearing": 0,
+        "sourceBuildingCount": 137,
+        "roofCount": 137,
+        "generalizedBuildingAreaCount": 0,
+        "roadCount": 47,
+        "sourceRoadCount": 47,
+        "waterCount": 0,
+        "treeCount": 0,
+        "gardenCount": 0,
+        "groundMarkCount": 90,
+        "roadsideMarkCount": 178,
+        "courtyardCount": 0,
+        "labelCount": 0,
+        "poiMarkerCount": 0,
+        "buildingExtrusionEnabled": false,
+        "geometryErrors": 0,
+        "placementFingerprint": "811c9dc5",
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 137,
+        "heightFromDataCount": 137,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 3,
+        "shadowPixels": [
+          5369,
+          0,
+          800,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 137,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 0,
+        "paintedRoadsideMarks": 178,
+        "paintedRoads": 43
+      },
+      "featureZooms": [
+        14
+      ],
+      "cacheKeys": [
+        "14/14549/6459",
+        "14/14550/6459",
+        "14/14549/6460",
+        "14/14550/6460",
+        "13/7275/3229",
+        "13/7275/3230",
+        "13/7274/3229",
+        "13/7274/3230"
+      ],
+      "pending": 0
+    },
+    {
+      "d": {
+        "styleId": "illustrated-landscape-hand-drawn-v10",
+        "mapReady": true,
+        "sceneType": "geographic",
+        "renderCount": 4,
+        "tileCount": 4,
+        "failedTileCount": 0,
+        "centerX": 59596772.32924444,
+        "centerY": 26460440.88820213,
+        "scale": 1.05,
+        "zoom": 1,
+        "zoomMin": 0.5,
+        "zoomMax": 4,
+        "dataZoom": 14,
+        "requestedDataZoom": 14,
+        "sourceMinZoom": 0,
+        "sourceMaxZoom": 14,
+        "loading": false,
+        "interacting": false,
+        "bearing": 0,
+        "sourceBuildingCount": 835,
+        "roofCount": 835,
+        "generalizedBuildingAreaCount": 0,
+        "roadCount": 159,
+        "sourceRoadCount": 159,
+        "waterCount": 0,
+        "treeCount": 3,
+        "gardenCount": 2,
+        "groundMarkCount": 582,
+        "roadsideMarkCount": 1079,
+        "courtyardCount": 0,
+        "labelCount": 0,
+        "poiMarkerCount": 0,
+        "buildingExtrusionEnabled": false,
+        "geometryErrors": 0,
+        "placementFingerprint": "f25cd739",
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 849,
+        "heightFromDataCount": 834,
+        "heightEstimatedCount": 15,
+        "shadowHeightCappedCount": 3,
+        "shadowPixels": [
+          71411,
+          0,
+          8996,
+          0,
+          271
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 835,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 3,
+        "paintedRoadsideMarks": 1079,
+        "paintedRoads": 151
+      },
+      "featureZooms": [
+        14
+      ],
+      "cacheKeys": [
+        "14/14549/6459",
+        "14/14550/6459",
+        "14/14550/6460",
+        "14/14549/6460"
+      ],
+      "pending": 4
+    },
+    {
+      "d": {
+        "styleId": "illustrated-landscape-hand-drawn-v10",
+        "mapReady": true,
+        "sceneType": "geographic",
+        "renderCount": 4,
+        "tileCount": 4,
+        "failedTileCount": 0,
+        "centerX": 59596772.32924444,
+        "centerY": 26460440.88820213,
+        "scale": 1.05,
+        "zoom": 1,
+        "zoomMin": 0.5,
+        "zoomMax": 4,
+        "dataZoom": 14,
+        "requestedDataZoom": 14,
+        "sourceMinZoom": 0,
+        "sourceMaxZoom": 14,
+        "loading": false,
+        "interacting": false,
+        "bearing": 0,
+        "sourceBuildingCount": 835,
+        "roofCount": 835,
+        "generalizedBuildingAreaCount": 0,
+        "roadCount": 159,
+        "sourceRoadCount": 159,
+        "waterCount": 0,
+        "treeCount": 3,
+        "gardenCount": 2,
+        "groundMarkCount": 582,
+        "roadsideMarkCount": 1079,
+        "courtyardCount": 0,
+        "labelCount": 0,
+        "poiMarkerCount": 0,
+        "buildingExtrusionEnabled": false,
+        "geometryErrors": 0,
+        "placementFingerprint": "f25cd739",
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 849,
+        "heightFromDataCount": 834,
+        "heightEstimatedCount": 15,
+        "shadowHeightCappedCount": 3,
+        "shadowPixels": [
+          71411,
+          0,
+          8996,
+          0,
+          271
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 835,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 3,
+        "paintedRoadsideMarks": 1079,
+        "paintedRoads": 151
+      },
+      "featureZooms": [
+        14
+      ],
+      "cacheKeys": [
+        "14/14549/6459",
+        "14/14550/6459",
+        "14/14550/6460",
+        "14/14549/6460",
+        "13/7275/3230",
+        "13/7275/3229",
+        "13/7274/3229",
+        "13/7274/3230"
+      ],
+      "pending": 0
+    },
+    {
+      "d": {
+        "styleId": "illustrated-landscape-hand-drawn-v10",
+        "mapReady": true,
+        "sceneType": "geographic",
+        "renderCount": 8,
+        "tileCount": 4,
+        "failedTileCount": 0,
+        "centerX": 59596772.32924444,
+        "centerY": 26460440.88820213,
+        "scale": 0.7424621202458749,
+        "zoom": 0.7071067811865475,
+        "zoomMin": 0.5,
+        "zoomMax": 4,
+        "dataZoom": 13,
+        "requestedDataZoom": 13,
+        "sourceMinZoom": 0,
+        "sourceMaxZoom": 14,
+        "loading": false,
+        "interacting": false,
+        "bearing": 0,
+        "sourceBuildingCount": 85,
+        "roofCount": 0,
+        "generalizedBuildingAreaCount": 85,
+        "roadCount": 157,
+        "sourceRoadCount": 157,
+        "waterCount": 0,
+        "treeCount": 0,
+        "gardenCount": 0,
+        "groundMarkCount": 939,
+        "roadsideMarkCount": 1748,
+        "courtyardCount": 0,
+        "labelCount": 0,
+        "poiMarkerCount": 0,
+        "buildingExtrusionEnabled": false,
+        "geometryErrors": 0,
+        "placementFingerprint": "811c9dc5",
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 7,
+        "heightFromDataCount": 0,
+        "heightEstimatedCount": 7,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          6347,
+          0,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 0,
+        "paintedBuildingAreas": 85,
+        "paintedTrees": 0,
+        "paintedRoadsideMarks": 1748,
+        "paintedRoads": 151
+      },
+      "featureZooms": [
+        13
+      ],
+      "cacheKeys": [
+        "13/7275/3229",
+        "13/7275/3230",
+        "13/7274/3230",
+        "13/7274/3229"
+      ],
+      "pending": 0
+    }
+  ]
+}

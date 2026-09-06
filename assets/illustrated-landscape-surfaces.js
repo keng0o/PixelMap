@@ -19,9 +19,23 @@
     // coordinates (~60 million), the clipper can otherwise lose a closing edge.
     // An integer origin retains the same world-anchored 1/1024 quantization.
     const origin=polygons[0][0][0].map(n=>Math.floor(n/4096)*4096);
-    const local=polygons.map(poly=>poly.map(ring=>ring.map(p=>
-      p.map((n,i)=>Math.round((n-origin[i])*1024)/1024))));
-    return clip.union(local).map(poly=>poly.map(ring=>ring.map(p=>p.map((n,i)=>n+origin[i]))));
+    let error;
+    for(const precision of [1024,512,256]) {
+      const local=polygons.map(poly=>poly.map(ring=>ring.map(p=>
+        p.map((n,i)=>Math.round((n-origin[i])*precision)/precision))));
+      try {return clip.union(local).map(poly=>poly.map(ring=>ring.map(p=>p.map((n,i)=>n+origin[i]))));}
+      catch(cause){error=cause;}
+    }
+    // Near-coincident variable caps can need one extra quantization bit. Even
+    // the final retry moves a vertex by less than 0.002 world units; never drop
+    // a failed road or silently replace its geometry with a bounding box.
+    throw error;
+  }
+  function difference(polygons, obstacles) {
+    if (!polygons.length || !obstacles.length) return polygons;
+    const origin=polygons[0][0][0].map(n=>Math.floor(n/4096)*4096);
+    const local=polys=>polys.map(poly=>poly.map(ring=>ring.map(p=>p.map((n,i)=>Math.round((n-origin[i])*1024)/1024))));
+    return clip.difference(local(polygons),local(obstacles)).map(poly=>poly.map(ring=>ring.map(p=>p.map((n,i)=>n+origin[i]))));
   }
   // Sample on a world lattice, including when clipping changes a segment's ends.
   function samples(a, b, spacing) {
@@ -45,18 +59,48 @@
     }
     return [[a[0]+dx*lo,a[1]+dy*lo],[a[0]+dx*hi,a[1]+dy*hi]];
   }
-  function roadPolygons(road, box, nodes) {
-    const fixed = road.props.brunnel === 'bridge' || ['rail','transit'].includes(G.kind(road));
+  function roadPolygons(road, box, nodes, protection = null, waterway = false) {
+    // Piers are mapped structures over water even without brunnel=bridge.
+    // Keep their source corridor; only land paths receive organic widening.
+    const fixed = road.props.brunnel === 'bridge' || ['rail','transit','pier'].includes(G.kind(road));
     const major = ['motorway','trunk','primary','secondary','tertiary'].includes(G.kind(road));
-    const radius = road.width / 2, strips=[];
+    const radius = road.width / 2, strips=[], centreChecks=new Map();
     function halfWidth(p, nx, ny) {
       if(fixed)return radius;
       const nearby=nodes.get(`${Math.floor(p[0]/16)}:${Math.floor(p[1]/16)}`)||[];
       const distance=nearby.reduce((d,q)=>Math.min(d,Math.hypot(p[0]-q[0],p[1]-q[1])),10);
       const taper=Math.min(1,distance/10), x=p[0]+nx*radius,y=p[1]+ny*radius;
-      const broad=(noise(x,y,27,11)-.5)*2*radius*(major?.045:.095);
+      const broad=waterway ? (noise(x,y,27,11)-.5)*2*radius*.095 :
+        (noise(x,y,53,11)-.42)*2*radius*(major?.2:.95);
       const fine=(noise(x,y,5,29)-.5)*2*Math.min(major?.22:.42,radius*.15);
-      return radius+(broad+fine)*taper;
+      let wanted=Math.max(radius*.58,Math.min(radius*(major?1.22:1.65),radius+(broad+fine)*taper));
+      if(!protection)return wanted;
+      // Generalized z13 blocks contain streets. They limit extra width but
+      // must never cut the mapped route as an individual roof footprint does.
+      if(protection.areas?.inside([p[0]+nx*wanted,p[1]+ny*wanted]) || protection.areas?.inside(p))
+        wanted=Math.min(radius,wanted);
+      const key=`${p[0]}:${p[1]}`;
+      if(!centreChecks.has(key))centreChecks.set(key,{inside:protection.inside(p),distance:protection.nearest(p,radius*1.65+1.1).distance});
+      const centre=centreChecks.get(key);
+      if(centre.inside)return 0;
+      if(centre.distance>=wanted+1.1)return wanted;
+      const blockedAt=d=>{
+        const q=[p[0]+nx*d,p[1]+ny*d];
+        // Starting outside, steps smaller than the clearance cannot cross an
+        // edge undetected. Avoid repeating a full polygon containment query.
+        return protection.nearest(q,1.1).distance<1.1;
+      };
+      // Sweep from the centre outwards: an obstacle cannot be jumped over by
+      // testing only the desired edge. Clearance also leaves room for the ink.
+      for(let d=0;d<=wanted+.75;d+=.75) {
+        const at=Math.min(d,wanted);
+        if(blockedAt(at)) {
+          let lo=Math.max(0,at-.75),hi=at;
+          for(let i=0;i<5;i++){const mid=(lo+hi)/2;if(blockedAt(mid))hi=mid;else lo=mid;}
+          return lo;
+        }
+      }
+      return wanted;
     }
     for(const path of road.geometry) {
       for(let i=1;i<path.length;i++) {
@@ -69,9 +113,24 @@
         }
         strips.push([[...left,...right.reverse(),left[0]]]);
       }
-      for(const p of path) if(G.overlaps({left:p[0],right:p[0],top:p[1],bottom:p[1]},box)) strips.push([disk(p,radius)]);
+      for(let i=0;i<path.length;i++) {
+        const p=path[i];
+        if(!G.overlaps({left:p[0],right:p[0],top:p[1],bottom:p[1]},box))continue;
+        if(fixed||waterway)strips.push([disk(p,radius)]);
+        else {
+          const ring=Array.from({length:32},(_,j)=>{
+            const nx=Math.cos(j/32*Math.PI*2),ny=Math.sin(j/32*Math.PI*2),r=halfWidth(p,nx,ny);
+            return [p[0]+nx*r,p[1]+ny*r];
+          });
+          strips.push([[...ring,ring[0]]]);
+        }
+      }
     }
-    return union(strips);
+    const result=union(strips);
+    if(!protection || fixed || !result.length)return result;
+    // Guard corners, end caps and the area between samples as well as samples.
+    const b=G.bounds(result.flat());
+    return difference(result,protection.items.filter(item=>G.overlaps(item.bounds,b)).map(item=>item.polygon));
   }
   function waterPolygons(water, box) {
     const source=clip.intersection(water.polygons,[rect(box)]);
@@ -129,7 +188,24 @@
     };
     return {inside,nearest,containsDisc:(p,r)=>inside(p)&&nearest(p,r).distance>=r};
   }
-  function prepare(roads, water, bounds) {
+  function roadsideMarks(bounds, roads, obstacles) {
+    const marks=[];
+    for(let gy=Math.floor(bounds.top/5);gy<bounds.bottom/5;gy++)for(let gx=Math.floor(bounds.left/5);gx<bounds.right/5;gx++) {
+      const p=[(gx+random(gx,gy,71))*5,(gy+random(gx,gy,72))*5];
+      // Slow patches and gaps, rather than dots marching along both road edges.
+      const patch=noise(p[0],p[1],32,83);
+      if(random(gx,gy,73)>.12+Math.max(0,patch-.3)*.9 || roads.inside(p))continue;
+      const edge=roads.nearest(p,9),wash=random(gx,gy,74)<.24;
+      const radius=wash?3.7:1.45;
+      if(edge.distance<radius+.65||edge.distance>7.5||obstacles.inside(p)||
+        obstacles.nearest(p,radius+.5).distance<radius+.5)continue;
+      // Canonical angle avoids a reversed union ring rotating an asymmetric mark.
+      const angle=(edge.angle+Math.PI)%Math.PI;
+      marks.push({key:`roadside:${gx}:${gy}`,x:p[0],y:p[1],angle,radius,wash,seed:G.hash(`roadside:${gx}:${gy}`)});
+    }
+    return marks;
+  }
+  function prepare(roads, water, bounds, buildings = [], trees = [], fields = [], buildingAreas = []) {
     const box={left:bounds.left-32,top:bounds.top-32,right:bounds.right+32,bottom:bounds.bottom+32};
     const nodes=new Map();
     for(const road of roads) for(const path of road.geometry) for(const p of [path[0],path[path.length-1]]) {
@@ -139,15 +215,25 @@
         const key=`${x}:${y}`;if(!nodes.has(key))nodes.set(key,[]);nodes.get(key).push(p);
       }
     }
-    const drawnRoads=roads.map(f=>({...f,paintPolygons:f.props.brunnel==='tunnel'?[]:roadPolygons(f,box,nodes)}));
     const drawnWater=water.map(f=>({...f,paintPolygons:f.type===3?waterPolygons(f,box):
-      roadPolygons({...f,width:G.kind(f)==='river'?10:3,props:{...f.props,brunnel:''}},box,nodes)}));
+      roadPolygons({...f,width:G.kind(f)==='river'?10:3,props:{...f.props,brunnel:''}},box,nodes,null,true)}));
+    const protectedPolygons=union([
+      ...buildings.flatMap(f=>f.polygons),...drawnWater.flatMap(f=>f.paintPolygons),
+      ...trees.map(t=>[disk([t.x,t.y],t.radius*1.14+1.1)])]);
+    const areaPolygons=union(buildingAreas.flatMap(f=>f.polygons));
+    const protection={...query(protectedPolygons),areas:areaPolygons.length?query(areaPolygons):null,
+      items:protectedPolygons.map(polygon=>({polygon,bounds:G.bounds(polygon)}))};
+    const drawnRoads=roads.map(f=>({...f,paintPolygons:f.props.brunnel==='tunnel'?[]:roadPolygons(f,box,nodes,protection)}));
     for(const f of [...drawnRoads,...drawnWater])f.paintQuery=query(f.paintPolygons);
     const roadGroups={};
     for(const mode of ['ground','bridge']) roadGroups[mode]=union(drawnRoads.filter(f=>
       f.props.brunnel!=='tunnel' && !['rail','transit'].includes(G.kind(f)) &&
       (f.props.brunnel==='bridge')===(mode==='bridge')).flatMap(f=>f.paintPolygons));
-    return {roads:drawnRoads,water:drawnWater,roadGroups};
+    const decorationObstacles=query(union([...protectedPolygons,...areaPolygons,...roadGroups.bridge,
+      ...drawnRoads.filter(f=>['rail','transit'].includes(G.kind(f))).flatMap(f=>f.paintPolygons),
+      ...fields.flatMap(f=>f.polygons)]));
+    const roadside=roadsideMarks(bounds,query(roadGroups.ground),decorationObstacles);
+    return {roads:drawnRoads,water:drawnWater,roadGroups,roadside};
   }
   // Orientations are averaged modulo 180 degrees so opposite banks reinforce
   // each other rather than cancelling. Grid samples are fixed to the world.

@@ -305,7 +305,9 @@
       }
     }
     trees.sort((a, b) => a.y - b.y || a.x - b.x);
-    const surfaces = global.PixelMapIllustratedSurfaces.prepare(roads, water, b);
+    const surfaces = global.PixelMapIllustratedSurfaces.prepare(roads, water, b,
+      sourceBuildings.filter(f=>!buildingAreas.includes(f)), trees,
+      land.filter(f=>['farmland','farm','vineyard'].includes(kind(f))), buildingAreas);
     const paintedFeatures = [...visible.filter(f => !['transportation','water','waterway'].includes(f.layer)),
       ...surfaces.roads, ...surfaces.water].map(f => f.paintPolygons ?
         {...f,type:3,polygons:f.paintPolygons,geometry:f.paintPolygons.flat()} : f);
@@ -317,7 +319,7 @@
       stats: { sourceBuildingCount: buildings.length + buildingAreas.length, roofCount: buildings.length,
         generalizedBuildingAreaCount: buildingAreas.length, roadCount: roads.length,
         sourceRoadCount: roads.length, waterCount: water.length, treeCount: trees.length,
-        gardenCount:trees.filter(t => t.garden).length, groundMarkCount:groundMarks.length,
+        gardenCount:trees.filter(t => t.garden).length, groundMarkCount:groundMarks.length, roadsideMarkCount:surfaces.roadside.length,
         courtyardCount: buildings.filter(f => f.polygon.length > 1).length, labelCount: 0, poiMarkerCount: 0,
         buildingExtrusionEnabled: false, geometryErrors: 0,
         placementFingerprint: hash(trees.map(t => `${t.key}:${t.radius.toFixed(3)}`).join('|')).toString(16) } };
