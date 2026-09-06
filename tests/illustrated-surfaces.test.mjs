@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 const require=createRequire(import.meta.url);
 globalThis.window=globalThis;
 globalThis.polygonClipping=require('../assets/vendor/polygon-clipping-0.15.7.js');
@@ -17,6 +18,19 @@ const road=(id,path,props={})=>({id,layer:'transportation',type:2,props:{class:'
 const water=(rings)=>({id:50,layer:'water',type:3,props:{class:'river'},geometry:rings});
 const compose=features=>G.compose(G.mergeFeatures(features),view);
 const area=polys=>polys.reduce((sum,p)=>sum+Math.abs(G.area(p[0]))-p.slice(1).reduce((n,r)=>n+Math.abs(G.area(r)),0),0);
+
+test('geographic road union closes the near-coincident junction exposed at 0.5x zoom',()=>{
+ // Reduced from the actual city viewport failure: two road strips and their cap.
+ const polygons=JSON.parse(readFileSync(new URL('./fixtures/illustrated-zoom-junction.json',import.meta.url),'utf8'));
+ const original=JSON.stringify(polygons),result=S.union(polygons);
+ assert.equal(JSON.stringify(polygons),original);
+ assert.equal(result.length,1);assert.equal(result[0].length,1);
+ assert.deepEqual(result[0][0][0],result[0][0].at(-1));
+ assert.ok(result.flat(3).every(Number.isFinite));
+ for(const p of [[59597380,26461311],[59597388,26461278],[59597376,26461315]])assert.ok(G.inside(p,result));
+ const shifted=polygons.map(p=>p.map(r=>r.map(([x,y])=>[x-59597000,y-26461000])));
+ assert.ok(Math.abs(area(result)-area(S.union(shifted)))<1e-5);
+});
 
 test('drawn roads keep their source geometry and join T/X intersections without internal ink boundaries',()=>{
  const features=[road(1,[[-100,100],[300,100]]),road(2,[[100,0],[100,100]]),road(3,[[150,0],[150,200]])];

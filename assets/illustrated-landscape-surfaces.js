@@ -14,9 +14,14 @@
   }
   const rect = b => [[[b.left,b.top],[b.right,b.top],[b.right,b.bottom],[b.left,b.bottom],[b.left,b.top]]];
   function union(polygons) {
-    // Subpixel quantization avoids almost-coincident cap/strip intersections.
-    return polygons.length ? clip.union(polygons.map(poly=>poly.map(ring=>
-      ring.map(p=>p.map(n=>Math.round(n*1024)/1024))))) : [];
+    if (!polygons.length) return [];
+    // Keep subpixel strip/cap intersections near zero. At geographic world
+    // coordinates (~60 million), the clipper can otherwise lose a closing edge.
+    // An integer origin retains the same world-anchored 1/1024 quantization.
+    const origin=polygons[0][0][0].map(n=>Math.floor(n/4096)*4096);
+    const local=polygons.map(poly=>poly.map(ring=>ring.map(p=>
+      p.map((n,i)=>Math.round((n-origin[i])*1024)/1024))));
+    return clip.union(local).map(poly=>poly.map(ring=>ring.map(p=>p.map((n,i)=>n+origin[i]))));
   }
   // Sample on a world lattice, including when clipping changes a segment's ends.
   function samples(a, b, spacing) {
@@ -194,5 +199,5 @@
     }
     return [...halves[0].reverse(),...halves[1].slice(1)];
   }
-  global.PixelMapIllustratedSurfaces=Object.freeze({noise,prepare,query,flowField,flowPath});
+  global.PixelMapIllustratedSurfaces=Object.freeze({noise,union,prepare,query,flowField,flowPath});
 })(typeof window!=='undefined'?window:globalThis);

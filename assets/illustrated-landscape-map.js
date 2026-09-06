@@ -3,8 +3,23 @@
   const MapData = global.PixelMapTopDownMap;
   const G = global.PixelMapIllustratedGeometry;
   const Renderer = global.PixelMapIllustratedRenderer;
-  const styleId = 'illustrated-landscape-hand-drawn-v7';
+  const styleId = 'illustrated-landscape-hand-drawn-v8';
   const defaultScale = 1.05;
+  const zoomRange = Object.freeze({ min: .5, max: 4, step: Math.SQRT2 });
+  function transformView(view, viewport, from, to, factor = 1, baseScale = defaultScale) {
+    const scale = Math.max(baseScale * zoomRange.min, Math.min(baseScale * zoomRange.max,
+      view.scale * (Number.isFinite(factor) && factor > 0 ? factor : 1)));
+    if (scale === view.scale && from.x === to.x && from.y === to.y) return view;
+    return MapData.createNavigationState({ scale,
+      centerX: view.centerX + (from.x - viewport.width / 2) / view.scale - (to.x - viewport.width / 2) / scale,
+      centerY: view.centerY + (from.y - viewport.height / 2) / view.scale - (to.y - viewport.height / 2) / scale });
+  }
+  function previewTransform(painted, view, viewport) {
+    const scale = view.scale / painted.scale;
+    return { scale,
+      x: viewport.width / 2 - painted.width / 2 * scale + (painted.centerX - view.centerX) * view.scale,
+      y: viewport.height / 2 - painted.height / 2 * scale + (painted.centerY - view.centerY) * view.scale };
+  }
   const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
   const FALLBACK_TILE_URL = 'https://tiles.openfreemap.org/planet/20260802_080001_pt/{z}/{x}/{y}.pbf';
   function normalize(layers, tile) {
@@ -26,17 +41,22 @@
     const message = document.querySelector('[data-map-message]');
     const retry = document.querySelector('[data-map-retry]');
     const locate = document.querySelector('[data-current-location]');
+    const zoomIn = document.querySelector('[data-zoom-in]'), zoomOut = document.querySelector('[data-zoom-out]');
     const query = new URLSearchParams(global.location.search);
     const isFixture = query.get('scene') === 'fixture';
     const fixture = global.PixelMapIllustratedFixture;
     const start = MapData.parseInitialCoordinates(global.location.search) || { latitude: 35.531, longitude: 139.702 };
     const point = MapData.lonLatToWorld(start.longitude, start.latitude);
+    const fitScale = () => isFixture ? Math.max(canvas.clientWidth / fixture.width, canvas.clientHeight / fixture.height) : defaultScale;
+    let baseScale = fitScale();
     let navigation = MapData.createNavigationState({ centerX: isFixture ? fixture.centerX : point.x,
-      centerY: isFixture ? fixture.centerY : point.y, scale: isFixture ? 1 : defaultScale });
+      centerY: isFixture ? fixture.centerY : point.y, scale: baseScale });
     const cache = new Map(), pending = new Map();
     const fetcher = options.fetch || global.fetch.bind(global);
     let template = FALLBACK_TILE_URL, generation = 0, merged = [], lastScene = null, locationPoint = null, renderCount = 0;
-    let failedCount = 0, tileCount = 0, dataReady = false, lastGoodView = null;
+    let failedCount = 0, tileCount = 0, dataReady = false, lastGoodView = null, loading = false;
+    const pointers = new Map();
+    let gesture = null, commitTimer = 0, dirty = false;
     const status = (text, canRetry = false) => {
       message.textContent = text; panel.hidden = !text; retry.hidden = !canRetry;
     };
@@ -52,19 +72,22 @@
     function publish(paint = {}) {
       const diagnostics = { styleId, mapReady: dataReady, sceneType: isFixture ? 'fictional-fixture' : 'geographic',
         renderCount, tileCount, failedTileCount: failedCount, centerX: navigation.centerX, centerY: navigation.centerY,
-        scale: navigation.scale, bearing: 0, ...lastScene?.stats, ...paint };
+        scale: navigation.scale, zoom: navigation.scale / baseScale, zoomMin: zoomRange.min, zoomMax: zoomRange.max,
+        loading, interacting: pointers.size > 0 || Boolean(commitTimer), bearing: 0, ...lastScene?.stats, ...paint };
       global.PixelMapIllustratedStudy = Object.freeze(diagnostics);
       root.dataset.mapReady = dataReady ? '1' : '0'; root.dataset.styleId = styleId;
       root.dataset.sceneType = diagnostics.sceneType;
       root.dataset.renderCount = String(renderCount);
+      zoomIn.disabled = !dataReady || navigation.scale >= baseScale * zoomRange.max - 1e-9;
+      zoomOut.disabled = !dataReady || navigation.scale <= baseScale * zoomRange.min + 1e-9;
     }
     function render() {
       const dimensions = size();
       const viewport = { ...dimensions, geographic: !isFixture, centerX: navigation.centerX, centerY: navigation.centerY,
-        scale: isFixture ? Math.max(dimensions.width / fixture.width, dimensions.height / fixture.height) : navigation.scale };
-      if (isFixture) navigation = { ...navigation, scale: viewport.scale };
+        scale: navigation.scale };
       lastScene = G.compose(merged, viewport);
       const painted = Renderer.paint(ctx, lastScene, locationPoint);
+      canvas.style.transform = '';
       renderCount++; publish(painted);
       return lastScene;
     }
@@ -88,12 +111,14 @@
         merged = G.mergeFeatures(fixture.features); dataReady = true; render(); return true;
       }
       const request = ++generation;
+      loading = true; publish();
       const dimensions = size();
       const tiles = MapData.requiredTiles({ ...dimensions, centerX: navigation.centerX, centerY: navigation.centerY,
         scale: navigation.scale, buffer: 512 });
       if (!dataReady) status('地図を描いています…');
       const settled = await Promise.allSettled(tiles.map(fetchTile));
       if (request !== generation) return null;
+      loading = false;
       const failed = settled.filter(r => r.status === 'rejected').length;
       const successful = settled.filter(r => r.status === 'fulfilled');
       tileCount = tiles.length; failedCount = failed;
@@ -113,7 +138,7 @@
       try { merged = G.mergeFeatures(G.featuresNear(available, area)); }
       catch (error) {
         status('地形を描けませんでした。再試行できます。', true);
-        root.dataset.geometryError = String(error.message); return false;
+        root.dataset.geometryError = String(error.message); publish(); return false;
       }
       dataReady = true; render();
       lastGoodView = { navigation: MapData.createNavigationState({ centerX: navigation.centerX,
@@ -123,24 +148,90 @@
       for (const key of cache.keys()) if (cache.size > 36 && !current.has(key)) cache.delete(key);
       return true;
     }
+    function position(event) {
+      // The bitmap transforms during interaction, so measure against its fixed
+      // parent rather than the moving canvas bounding rectangle.
+      const rect = canvas.parentElement.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+    function pointerFrame() {
+      const points = [...pointers.values()];
+      return { center: { x: points.reduce((n,p) => n+p.x,0)/points.length,
+        y: points.reduce((n,p) => n+p.y,0)/points.length },
+        span: points.length === 2 ? Math.max(16,Math.hypot(points[1].x-points[0].x,points[1].y-points[0].y)) : 1 };
+    }
+    function showPreview() {
+      if (!lastScene) return;
+      const t = previewTransform(lastScene.viewport, navigation, size());
+      canvas.style.transform = `matrix(${t.scale},0,0,${t.scale},${t.x},${t.y})`;
+      publish();
+    }
+    function changeView(next) {
+      if (next === navigation) return false;
+      navigation = next; dirty = true;
+      generation++; loading = false; // Ignore fetches for an earlier camera.
+      showPreview(); return true;
+    }
+    function commitView() {
+      clearTimeout(commitTimer); commitTimer = 0;
+      if (!dirty) { publish(); return; }
+      dirty = false; render(); void loadViewport();
+    }
+    function releaseInputs() {
+      clearTimeout(commitTimer); commitTimer = 0;
+      const ids = [...pointers.keys()]; pointers.clear(); gesture = null;
+      for (const id of ids) if (canvas.hasPointerCapture?.(id)) canvas.releasePointerCapture(id);
+      canvas.classList.remove('is-dragging');
+    }
+    function zoomBy(factor, anchor) {
+      if (!dataReady) return;
+      releaseInputs();
+      const dimensions = size(), p = anchor || {x: dimensions.width/2, y: dimensions.height/2};
+      changeView(transformView(navigation, dimensions, p, p, factor, baseScale));
+      commitTimer = setTimeout(commitView, 120); publish();
+    }
     canvas.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || navigation.drag) return;
-      navigation = MapData.reduceNavigation(navigation, { type: 'drag-start', pointerId: event.pointerId, x: event.clientX, y: event.clientY });
-      canvas.setPointerCapture?.(event.pointerId); canvas.classList.add('is-dragging');
+      if (!dataReady || event.button !== 0 || pointers.size >= 2) return;
+      if (loading) dirty = true;
+      clearTimeout(commitTimer); commitTimer = 0;
+      generation++; loading = false;
+      pointers.set(event.pointerId, position(event));
+      gesture = {view: navigation, ...pointerFrame()};
+      canvas.setPointerCapture?.(event.pointerId); canvas.classList.add('is-dragging'); publish();
     });
     canvas.addEventListener('pointermove', event => {
-      if (navigation.drag?.pointerId !== event.pointerId) return;
-      navigation = MapData.reduceNavigation(navigation, { type: 'drag-move', pointerId: event.pointerId, x: event.clientX, y: event.clientY });
-      canvas.style.transform = `translate(${navigation.preview.x}px, ${navigation.preview.y}px)`;
+      if (!pointers.has(event.pointerId)) return;
+      pointers.set(event.pointerId, position(event));
+      const frame = pointerFrame();
+      changeView(transformView(gesture.view, size(), gesture.center, frame.center,
+        frame.span/gesture.span, baseScale));
     });
-    function endDrag(event, cancelled) {
-      if (navigation.drag?.pointerId !== event.pointerId) return;
-      navigation = MapData.reduceNavigation(navigation, { type: cancelled ? 'drag-cancel' : 'drag-end', pointerId: event.pointerId });
-      canvas.style.transform = ''; canvas.classList.remove('is-dragging'); canvas.releasePointerCapture?.(event.pointerId);
-      render(); if (!cancelled) void loadViewport();
+    function endPointer(event) {
+      if (!pointers.delete(event.pointerId)) return;
+      if (canvas.hasPointerCapture?.(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+      if (pointers.size) gesture = {view: navigation, ...pointerFrame()};
+      else { gesture = null; canvas.classList.remove('is-dragging'); commitView(); }
     }
-    canvas.addEventListener('pointerup', e => endDrag(e, false));
-    canvas.addEventListener('pointercancel', e => endDrag(e, true));
+    for (const type of ['pointerup','pointercancel','lostpointercapture']) canvas.addEventListener(type,endPointer);
+    canvas.addEventListener('wheel', event => {
+      event.preventDefault();
+      if (!dataReady || pointers.size) return;
+      const dimensions = size(), p = position(event);
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? dimensions.height : 1;
+      const delta = Math.max(-500,Math.min(500,event.deltaY*unit));
+      const factor = Math.exp(-delta*(event.ctrlKey ? .008 : .002));
+      changeView(transformView(navigation,dimensions,p,p,factor,baseScale));
+      clearTimeout(commitTimer); commitTimer = setTimeout(commitView,180); publish();
+    }, {passive:false});
+    zoomIn.addEventListener('click', () => zoomBy(zoomRange.step));
+    zoomOut.addEventListener('click', () => zoomBy(1/zoomRange.step));
+    canvas.addEventListener('keydown', event => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (['+','=','-','_'].includes(event.key)) {
+        event.preventDefault(); zoomBy(['+','='].includes(event.key)?zoomRange.step:1/zoomRange.step);
+      }
+    });
+    global.addEventListener('blur', () => { releaseInputs(); commitView(); });
     locate.addEventListener('click', async () => {
       if (!global.isSecureContext || !global.navigator?.geolocation) {
         status('現在地を利用できません。HTTPSと位置情報の設定を確認してください。'); return;
@@ -153,7 +244,8 @@
         const position = await new Promise((resolve, reject) => global.navigator.geolocation.getCurrentPosition(resolve, reject,
           { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }));
         const p = MapData.lonLatToWorld(position.coords.longitude, position.coords.latitude);
-        const target = MapData.createNavigationState({ centerX: p.x, centerY: p.y, scale: defaultScale });
+        releaseInputs(); dirty = false;
+        const target = MapData.createNavigationState({ centerX: p.x, centerY: p.y, scale: navigation.scale });
         navigation = target;
         locationPoint = [p.x, p.y];
         if (await loadViewport() === false && navigation === target) { navigation = previous; locationPoint = previousLocation; render(); }
@@ -161,7 +253,13 @@
       finally { locate.disabled = false; }
     });
     retry.addEventListener('click', () => { void loadViewport(); });
-    global.addEventListener('resize', () => { render(); void loadViewport(); });
+    global.addEventListener('resize', () => {
+      if (!canvas.isConnected) return;
+      releaseInputs(); generation++; loading = false; dirty = false;
+      const zoom = navigation.scale / baseScale; baseScale = fitScale();
+      navigation = MapData.createNavigationState({...navigation,scale:baseScale*zoom});
+      render(); void loadViewport();
+    });
     if (isFixture) {
       document.querySelector('[data-fixture-label]').hidden = false; locate.hidden = true;
     } else {
@@ -171,9 +269,9 @@
       } catch { /* The known fallback is retried through the same visible error flow. */ }
     }
     await loadViewport();
-    return Object.freeze({ render, loadViewport, getScene: () => lastScene, cache });
+    return Object.freeze({ render, loadViewport, getScene: () => lastScene, getView: () => navigation, cache });
   }
-  global.PixelMapIllustratedMap = Object.freeze({ styleId, defaultScale, normalize, boot });
+  global.PixelMapIllustratedMap = Object.freeze({ styleId, defaultScale, zoomRange, transformView, previewTransform, normalize, boot });
   if (typeof document !== 'undefined') {
     const start = () => { void boot().then(app => { global.PixelMapIllustratedApp = app; }).catch(error => {
       document.documentElement.dataset.bootError = String(error.message);
