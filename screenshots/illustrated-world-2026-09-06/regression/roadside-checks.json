@@ -1,0 +1,38 @@
+{
+  "comparison": [
+    {
+      "phase": "before",
+      "roadsideMarks": 0
+    },
+    {
+      "phase": "after",
+      "roadsideMarks": 82
+    }
+  ],
+  "checks": [
+    {
+      "name": "city",
+      "marks": 1079,
+      "washes": 99,
+      "overlap": 0,
+      "canopyOverlap": 0,
+      "painted": 1079
+    },
+    {
+      "name": "river",
+      "marks": 367,
+      "washes": 52,
+      "overlap": 0,
+      "canopyOverlap": 0,
+      "painted": 367
+    },
+    {
+      "name": "green",
+      "marks": 1032,
+      "washes": 129,
+      "overlap": 0,
+      "canopyOverlap": 0,
+      "painted": 1032
+    }
+  ]
+}

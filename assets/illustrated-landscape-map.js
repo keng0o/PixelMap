@@ -3,7 +3,7 @@
   const MapData = global.PixelMapTopDownMap;
   const G = global.PixelMapIllustratedGeometry;
   const Renderer = global.PixelMapIllustratedRenderer;
-  const styleId = 'illustrated-landscape-hand-drawn-v10';
+  const styleId = 'illustrated-landscape-hand-drawn-v11';
   const defaultScale = 1.05;
   const zoomRange = Object.freeze({ min: .5, max: 4, step: Math.SQRT2 });
   const fallbackSourceRange = Object.freeze({ min: 0, max: 14 });

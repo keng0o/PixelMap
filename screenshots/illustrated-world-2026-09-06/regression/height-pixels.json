@@ -1,0 +1,339 @@
+{
+  "base": "http://127.0.0.1:8766",
+  "samples": [
+    {
+      "title": "建物 6m",
+      "ground": [
+        195,
+        211,
+        158
+      ],
+      "roof": [
+        183,
+        200,
+        148
+      ],
+      "water": [
+        190,
+        208,
+        155
+      ],
+      "gap": [
+        181,
+        199,
+        147
+      ],
+      "deck": [
+        179,
+        197,
+        145
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 1,
+        "heightFromDataCount": 1,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          98,
+          0,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 1,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 0,
+        "paintedRoadsideMarks": 0,
+        "paintedRoads": 0
+      }
+    },
+    {
+      "title": "建物 28m",
+      "ground": [
+        176,
+        191,
+        142
+      ],
+      "roof": [
+        165,
+        180,
+        134
+      ],
+      "water": [
+        190,
+        208,
+        155
+      ],
+      "gap": [
+        181,
+        199,
+        147
+      ],
+      "deck": [
+        179,
+        197,
+        145
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 1,
+        "heightFromDataCount": 1,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          441,
+          0,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 1,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 0,
+        "paintedRoadsideMarks": 0,
+        "paintedRoads": 0
+      }
+    },
+    {
+      "title": "低い屋根 4m が影を受ける",
+      "ground": [
+        199,
+        166,
+        132
+      ],
+      "roof": [
+        183,
+        151,
+        121
+      ],
+      "water": [
+        74,
+        68,
+        47
+      ],
+      "gap": [
+        74,
+        70,
+        49
+      ],
+      "deck": [
+        75,
+        70,
+        49
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 2,
+        "heightFromDataCount": 2,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          327,
+          0,
+          149,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 2,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 0,
+        "paintedRoadsideMarks": 0,
+        "paintedRoads": 0
+      }
+    },
+    {
+      "title": "高い屋根 40m は遮られない",
+      "ground": [
+        212,
+        179,
+        143
+      ],
+      "roof": [
+        200,
+        167,
+        134
+      ],
+      "water": [
+        76,
+        72,
+        50
+      ],
+      "gap": [
+        75,
+        72,
+        50
+      ],
+      "deck": [
+        76,
+        72,
+        50
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 2,
+        "heightFromDataCount": 2,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          1047,
+          0,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 2,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 0,
+        "paintedRoadsideMarks": 0,
+        "paintedRoads": 0
+      }
+    },
+    {
+      "title": "橋桁 22m · 水面との隙間",
+      "ground": [
+        98,
+        139,
+        144
+      ],
+      "roof": [
+        87,
+        128,
+        135
+      ],
+      "water": [
+        87,
+        128,
+        132
+      ],
+      "gap": [
+        86,
+        127,
+        135
+      ],
+      "deck": [
+        224,
+        214,
+        175
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 1,
+        "heightFromDataCount": 1,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          0,
+          204,
+          0,
+          0,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 0,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 0,
+        "paintedRoadsideMarks": 0,
+        "paintedRoads": 1
+      },
+      "unlitWater": [
+        93,
+        135,
+        141
+      ],
+      "unlitGap": [
+        86,
+        127,
+        135
+      ],
+      "waterReceiver": {
+        "height": 0,
+        "bottom": 0,
+        "material": 1,
+        "shadow": true
+      },
+      "gapReceiver": {
+        "height": 0,
+        "bottom": 0,
+        "material": 1,
+        "shadow": false
+      }
+    },
+    {
+      "title": "樹冠 · 葉の塊と投影影",
+      "ground": [
+        120,
+        155,
+        103
+      ],
+      "roof": [
+        69,
+        101,
+        64
+      ],
+      "water": [
+        96,
+        133,
+        88
+      ],
+      "gap": [
+        79,
+        114,
+        78
+      ],
+      "deck": [
+        58,
+        92,
+        64
+      ],
+      "diagnostics": {
+        "shadowSolver": "height-intervals-v1",
+        "shadowCasterCount": 3,
+        "heightFromDataCount": 3,
+        "heightEstimatedCount": 0,
+        "shadowHeightCappedCount": 0,
+        "shadowPixels": [
+          300,
+          0,
+          0,
+          41,
+          0
+        ],
+        "shadowLightDirection": [
+          0.552380364401192,
+          0.8335921862781622
+        ],
+        "shadowSunAltitude": 68,
+        "paintedRoofs": 0,
+        "paintedBuildingAreas": 0,
+        "paintedTrees": 3,
+        "paintedRoadsideMarks": 0,
+        "paintedRoads": 0
+      }
+    }
+  ]
+}

@@ -31,7 +31,7 @@ const baseline=['geometry','surfaces','renderer'].map(name=>execFileSync('git',[
     const G=PixelMapIllustratedGeometry,R=PixelMapIllustratedRenderer;
     const scene=G.compose(G.mergeFeatures(features),{centerX:115,centerY:130,width:500,height:620,scale:2.2});
     const section=document.createElement('section'),label=document.createElement('p'),canvas=document.createElement('canvas');
-    label.textContent=phase==='before'?'変更前 V9':'変更後 V10';canvas.width=1000;canvas.height=1240;canvas.style.cssText='width:500px;height:620px';
+    label.textContent=phase==='before'?'道幅変更前 V9':'現在の描画';canvas.width=1000;canvas.height=1240;canvas.style.cssText='width:500px;height:620px';
     const ctx=canvas.getContext('2d');ctx.scale(2,2);R.paint(ctx,scene);section.append(label,canvas);main.append(section);
     result.push({phase,roadsideMarks:scene.roadside?.length||0});
    }

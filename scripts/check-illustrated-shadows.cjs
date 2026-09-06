@@ -38,7 +38,21 @@ async function run() {
         const c=document.createElement('canvas');c.width=130;c.height=100;
         const ctx=c.getContext('2d',{willReadFrequently:true});const diagnostics=R.paint(ctx,scene);
         const pixel=(x,y)=>Array.from(ctx.getImageData(x,y,1,1).data).slice(0,3);
-        samples.push({title,ground:pixel(53,57),roof:pixel(53,48),water:pixel(80,51),gap:pixel(80,47),deck:pixel(80,44),diagnostics});
+        const sample={title,ground:pixel(53,57),roof:pixel(53,48),water:pixel(80,51),gap:pixel(80,47),deck:pixel(80,44),diagnostics};
+        if(features.some(f=>f.props.brunnel==='bridge')) {
+          // Compare the same water pixels with the caster removed. Different
+          // locations have different paper grain, so their raw RGB difference
+          // cannot measure a shadow after introducing granulated materials.
+          const control=document.createElement('canvas');control.width=130;control.height=100;
+          const controlCtx=control.getContext('2d',{willReadFrequently:true});
+          R.paint(controlCtx,{...scene,roads:[],roadGroups:{ground:[],bridge:[]}});
+          const unlit=(x,y)=>Array.from(controlCtx.getImageData(x,y,1,1).data).slice(0,3);
+          sample.unlitWater=unlit(80,51);sample.unlitGap=unlit(80,47);
+          const field=PixelMapIllustratedShadows.build(scene,R.crownPoints);
+          sample.waterReceiver=PixelMapIllustratedShadows.sample(field,80,51);
+          sample.gapReceiver=PixelMapIllustratedShadows.sample(field,80,47);
+        }
+        samples.push(sample);
         const large=document.createElement('canvas');large.width=780;large.height=600;
         const largeCtx=large.getContext('2d');largeCtx.scale(2,2);
         R.paint(largeCtx,{...scene,viewport:{...scene.viewport,width:390,height:300,scale:3}});
@@ -49,7 +63,10 @@ async function run() {
     const [low,tall,lowRoof,highRoof,bridge] = results.samples;
     assert.ok(low.ground[1]-tall.ground[1]>10,JSON.stringify({low,tall}));
     assert.ok(highRoof.roof[1]-lowRoof.roof[1]>7,JSON.stringify({lowRoof,highRoof}));
-    assert.ok(bridge.gap[1]-bridge.water[1]>10,JSON.stringify(bridge));
+    assert.equal(bridge.waterReceiver.shadow,true,JSON.stringify(bridge));
+    assert.equal(bridge.gapReceiver.shadow,false,JSON.stringify(bridge));
+    assert.ok(bridge.unlitWater[1]-bridge.water[1]>3,JSON.stringify(bridge));
+    assert.ok(bridge.gap.every((n,i)=>Math.abs(n-bridge.unlitGap[i])<=1),JSON.stringify(bridge));
     // Thin deck pixels include the irregular edge ink. Check their separation
     // from shaded water and the actual receiver mask, not a fixed paper RGB.
     assert.ok(bridge.deck[0]-bridge.water[0]>40 && bridge.deck[1]-bridge.water[1]>25,JSON.stringify(bridge));

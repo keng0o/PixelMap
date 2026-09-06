@@ -11,13 +11,69 @@
     n = Math.imul(n ^ n >>> 15, 0x846ca68b);
     return ((n ^ n >>> 16) >>> 0) / 4294967296;
   }
-  const palette = Object.freeze({ ground: '#e4e2ba', residential: '#e7e2bf', grass: '#d9dfb2',
-    park: '#d0dbac', forest: '#87a879', forestEdge: '#344c31', field: '#daddad', fieldLine: '#73865b',
-    soil: '#dfd5b5', plaza: '#e5dec5', buildingArea: '#d9c5a5', road: '#efead2', roadEdge: '#96967b', path: '#e8e3c5',
-    rail: '#6f7567', water: '#b6ccca', waterEdge: '#485e55', ripple: '#738f88',
-    ink: '#374331', roofInk: '#382f22', roof: '#ce8160', roofLight: '#e19b76', roofDark: '#b77154',
-    roofShadow: '#a9ab87', roofSeam: '#95684c', tree: '#86a675', treeLight: '#a6bd88',
-    treeDark: '#66895b', treeDeep: '#526f51', treeInk: '#344d2f', treeShadow: '#a1ae85' });
+  const palette = Object.freeze({ ground: '#bfd19c', residential: '#c9d0a2', grass: '#a9c98c',
+    park: '#9fbe82', forest: '#547953', forestEdge: '#304b35', field: '#d4cc9b', fieldLine: '#798358',
+    soil: '#dbd0a2', plaza: '#d8d2ab', buildingArea: '#cbbf99', road: '#ede4be', roadEdge: '#8b8b66', path: '#e4d9ad',
+    rail: '#69725c', water: '#5b858c', waterEdge: '#344e42', ripple: '#a0bcb0',
+    ink: '#3e4d32', roofInk: '#49432e', roof: '#9e8962', roofLight: '#baa47a', roofDark: '#82734f',
+    roofShadow: '#8c9972', roofSeam: '#74643e', tree: '#608658', treeLight: '#90ad70',
+    treeDark: '#315b46', treeDeep: '#294d3d', treeInk: '#2c4633', treeShadow: '#869c70' });
+  // Pigment is a world-space material, not a viewport filter. Small cached
+  // tiles combine continuous colour pooling with fine paper-tooth granulation.
+  const pigmentTiles=new Map(), pigmentSize=64, pigmentResolution=128;
+  let pigmentScratch=null;
+  const pigmentColors={ground:[[63,86,45],[236,239,182]],water:[[29,61,70],[174,205,190]],
+    wood:[[65,50,28],[239,218,157]],leaves:[[27,55,36],[176,200,133]],earth:[[104,86,46],[249,237,191]]};
+  function pigmentTile(gx,gy,material) {
+    const key=`${material}:${gx}:${gy}`;
+    if(pigmentTiles.has(key))return pigmentTiles.get(key);
+    const canvas=typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(pigmentResolution,pigmentResolution):
+      typeof document!=='undefined'?document.createElement('canvas'):null;
+    if(!canvas)return null;
+    canvas.width=canvas.height=pigmentResolution;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true}),im=ctx.createImageData(pigmentResolution,pigmentResolution);
+    const wx=gx*pigmentSize,wy=gy*pigmentSize,field=[];
+    for(let y=0;y<=8;y++)for(let x=0;x<=8;x++)field.push(Surfaces.noise(wx+x*8,wy+y*8,37,117));
+    for(let y=0;y<pigmentResolution;y++)for(let x=0;x<pigmentResolution;x++) {
+      const u=(x+.5)/16,v=(y+.5)/16,ix=Math.floor(u),iy=Math.floor(v),tx=u-ix,ty=v-iy;
+      const coarse=(1-ty)*(field[iy*9+ix]*(1-tx)+field[iy*9+ix+1]*tx)+
+        ty*(field[(iy+1)*9+ix]*(1-tx)+field[(iy+1)*9+ix+1]*tx);
+      let n=Math.imul(wx*2+x,374761393)^Math.imul(wy*2+y,668265263);
+      n=Math.imul(n^(n>>>13),1274126177);const grain=((n^(n>>>16))>>>0)/4294967296;
+      const value=(coarse-.5)*.22+(grain-.5)*.3,color=pigmentColors[material][value>0?0:1],i=(y*pigmentResolution+x)*4;
+      im.data[i]=color[0];im.data[i+1]=color[1];im.data[i+2]=color[2];im.data[i+3]=Math.round(Math.min(.3,Math.abs(value))*255);
+    }
+    ctx.putImageData(im,0,0);pigmentTiles.set(key,canvas);
+    if(pigmentTiles.size>512)pigmentTiles.delete(pigmentTiles.keys().next().value);
+    return canvas;
+  }
+  function paintPigment(ctx,scene,material,bounds=scene.bounds) {
+    const v=scene.viewport,left=Math.max(bounds.left,v.centerX-v.width/2/v.scale),right=Math.min(bounds.right,v.centerX+v.width/2/v.scale);
+    const top=Math.max(bounds.top,v.centerY-v.height/2/v.scale),bottom=Math.min(bounds.bottom,v.centerY+v.height/2/v.scale);
+    if(left>=right||top>=bottom)return;
+    const gx0=Math.floor(left/pigmentSize),gy0=Math.floor(top/pigmentSize),gx1=Math.ceil(right/pigmentSize),gy1=Math.ceil(bottom/pigmentSize);
+    const first=pigmentTile(gx0,gy0,material);if(!first)return;
+    if(!pigmentScratch)pigmentScratch=typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(1,1):document.createElement('canvas');
+    // Quantized material LOD depends on the camera, never the visible feature
+    // subset. A wide/zoomed-out view cannot allocate an unbounded bitmap.
+    const density=Math.min(2,2**Math.floor(Math.log2(3072/(Math.max(v.width,v.height)/v.scale+128))));
+    const tilePixels=Math.max(1,pigmentSize*density),width=(gx1-gx0)*tilePixels,height=(gy1-gy0)*tilePixels;
+    if(pigmentScratch.width<width)pigmentScratch.width=width;
+    if(pigmentScratch.height<height)pigmentScratch.height=height;
+    // Keep material assembly on one raster backend. GPU snapshot promotion
+    // otherwise changes translucent pigment rounding when a later layer reuses it.
+    const target=pigmentScratch.getContext('2d',{willReadFrequently:true});
+    target.clearRect(0,0,width,height);target.imageSmoothingEnabled=false;
+    // Assemble at integer texel positions, then sample once. Drawing each tile
+    // directly at a fractional map scale leaves antialiased grid seams.
+    for(let gy=gy0;gy<gy1;gy++)for(let gx=gx0;gx<gx1;gx++) {
+      target.drawImage(pigmentTile(gx,gy,material),(gx-gx0)*tilePixels,(gy-gy0)*tilePixels,tilePixels,tilePixels);
+    }
+    const a=project(scene,[gx0*pigmentSize,gy0*pigmentSize]),b=project(scene,[gx1*pigmentSize,gy1*pigmentSize]);
+    ctx.save();ctx.imageSmoothingEnabled=true;
+    ctx.drawImage(pigmentScratch,0,0,width,height,a[0],a[1],b[0]-a[0],b[1]-a[1]);
+    ctx.restore();
+  }
   function project(scene, [x, y]) {
     const v = scene.viewport;
     // A subpixel grid prevents tiny floating point changes from changing pen sampling
@@ -149,7 +205,8 @@
     for (const f of [...scene.land].sort((a, b) => order(a) - order(b))) {
       // The woodland silhouette belongs to the overlapping crowns, not the straight MVT boundary.
       if (G.isForest(G.kind(f))) continue;
-      fillFeature(ctx, scene, f, landColor(f));
+      ctx.save();ctx.globalAlpha=['farmland','farm','orchard','vineyard'].includes(G.kind(f))?.92:.62;
+      fillFeature(ctx, scene, f, landColor(f));ctx.restore();
       if (['farmland', 'farm', 'orchard', 'vineyard'].includes(G.kind(f))) {
         for (const poly of f.polygons) {
           ctx.save(); trace(ctx, scene, poly); ctx.clip('evenodd');
@@ -173,10 +230,19 @@
         }
       }
     }
+    paintPigment(ctx,scene,'ground');
     drawBuildingGround(ctx, scene);
     for (const mark of scene.groundMarks || []) {
       const [x, y] = project(scene, [mark.x, mark.y]), s = scene.viewport.scale;
       const count = mark.distance < 12 ? 2 + Math.floor(random(mark.seed, 5) * 3) : 1;
+      if(mark.distance<8) {
+        ctx.save();ctx.globalAlpha=.22;ctx.fillStyle=mark.type==='grass'?'#5f7445':'#887643';
+        for(let j=0;j<5;j++) {
+          const dx=(random(mark.seed,j+410)-.5)*4*s,dy=(random(mark.seed,j+430)-.5)*3*s;
+          ctx.fillRect(x+dx,y+dy,(.25+random(mark.seed,j+450)*.7)*s,.4*s);
+        }
+        ctx.restore();
+      }
       for (let i = 0; i < count; i++) {
         const dx = (random(mark.seed, i + 10) - .5) * 5 * s;
         const dy = (random(mark.seed, i + 20) - .5) * 4 * s;
@@ -244,7 +310,8 @@
     ctx.restore();
   }
   // World-seeded pressure remains fixed when union rings acquire a different
-  // start vertex after panning. Tiny dry sections taper to paper between marks.
+  // start vertex after panning. A fine ink core joins the dry brush sections;
+  // the contour must never turn into a row of disconnected leaf-shaped dashes.
   function surfaceInk(ctx, scene, polygons, color, width, broken = false) {
     for(const path of polygons.flat()) {
       const points=[];
@@ -260,7 +327,8 @@
       if(path.length)points.push(path.at(-1));
       const widths=points.map(p=>{
         const value=Surfaces.noise(p[0],p[1],9,41)*.8+Surfaces.noise(p[0],p[1],2.8,19)*.2;
-        return width*Math.max(broken?0:.2,pressure(value)-(broken?.16:0));
+        const dry=broken?Math.max(0,Math.min(1,(value-.22)/.22)):1;
+        return width*Math.max(.24,pressure(value)*(.38+.62*dry*dry*(3-2*dry)));
       });
       inkStrip(ctx,points.map(p=>project(scene,p)),widths,color);
     }
@@ -268,17 +336,17 @@
   function drawWaterWash(ctx, scene, feature, angleAt) {
     const paths=feature.polygons.flat(), s=scene.viewport.scale, b=scene.bounds;
     ctx.save();trace(ctx,scene,paths);ctx.clip('evenodd');
-    trace(ctx,scene,paths);ctx.strokeStyle='#618b82';ctx.lineWidth=2.5*s;ctx.globalAlpha=.13;ctx.stroke();
+    ctx.globalAlpha=.32;surfaceInk(ctx,scene,feature.polygons,'#b7cbae',6*s,true);
     // A world lattice replaces distance-from-ring-start: clipped banks must not
     // shift all subsequent brush marks when more geography enters the viewport.
-    for(let gy=Math.floor(b.top/15);gy<=Math.ceil(b.bottom/15);gy++) for(let gx=Math.floor(b.left/15);gx<=Math.ceil(b.right/15);gx++) {
+    for(let gy=Math.floor(b.top/7);gy<=Math.ceil(b.bottom/7);gy++) for(let gx=Math.floor(b.left/7);gx<=Math.ceil(b.right/7);gx++) {
       const seed=G.hash(`bank-wash:${gx}:${gy}`);
       if(random(seed)>.58)continue;
-      const point=[(gx+random(seed,1))*15,(gy+random(seed,2))*15];
+      const point=[(gx+random(seed,1))*7,(gy+random(seed,2))*7];
       if(!feature.paintQuery.inside(point))continue;
       const edge=feature.paintQuery.nearest(point,9);if(edge.distance>9)continue;
-      waterBrush(ctx,scene,point,angleAt(point),15+random(seed,3)*26,
-        5+random(seed,4)*10,seed,'#587c72',.13+random(seed,5)*.12);
+      waterBrush(ctx,scene,point,edge.angle,8+random(seed,3)*19,
+        3+random(seed,4)*7,seed,'#b2c8b4',.10+random(seed,5)*.12);
       if(edge.distance<5 && random(seed,6)>.4) {
         ctx.globalAlpha=.48;
         const points=Surfaces.flowPath(point,6+random(seed,7)*13,angleAt);
@@ -304,6 +372,7 @@
       const f={...source,polygons:source.paintPolygons};
       if(!f.polygons.length)continue;
       fillFeature(ctx,scene,f,palette.water);
+      ctx.save();trace(ctx,scene,f.polygons.flat());ctx.clip('evenodd');paintPigment(ctx,scene,'water',G.bounds(f.polygons.flat()));ctx.restore();
       const angleAt=Surfaces.flowField(scene,source);
       if(source.type===3) { drawWaterWash(ctx,scene,f,angleAt);areas.push({f,angleAt}); }
       surfaceInk(ctx,scene,f.polygons,'#364e45',source.type===3?1.3:.85,true);
@@ -328,9 +397,10 @@
   }
   function roadSurface(ctx, scene, roads, polygons, bridge) {
     for(const f of roads) fillFeature(ctx,scene,{polygons:f.paintPolygons},
-      bridge?palette.road:f.width<4?'#e0d6b4':f.width<10?'#e6ddbc':'#ebe4c9');
+      bridge?palette.road:f.width<4?'#e2d6ac':f.width<10?'#e8ddb3':'#ece2bb');
     if(!polygons.length)return;
     ctx.save();trace(ctx,scene,polygons.flat());ctx.clip('evenodd');
+    paintPigment(ctx,scene,'earth',G.bounds(polygons.flat()));
     const b=scene.bounds,s=scene.viewport.scale;
     if(!bridge)for(let gy=Math.floor(b.top/12);gy<b.bottom/12;gy++)for(let gx=Math.floor(b.left/12);gx<b.right/12;gx++) {
       const seed=G.hash(`road-grain:${gx}:${gy}`);if(random(seed)>.35)continue;
@@ -405,7 +475,7 @@
     for(const ring of [outer,inner]) {
       ring.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();
     }
-    ctx.fillStyle='#395d37';ctx.globalAlpha=.32+random(seed,62)*.13;ctx.fill('evenodd');
+    ctx.fillStyle='#2d5440';ctx.globalAlpha=.32+random(seed,62)*.13;ctx.fill('evenodd');
     ctx.globalAlpha=.52;
     const count=5+Math.floor(random(seed,63)*5);
     for(let j=0;j<count;j++) {
@@ -449,11 +519,11 @@
       const [x,y]=project(scene,center), r=(24+random(seed,3)*12)*s;
       ctx.save();ctx.translate(x,y);
       ctx.globalAlpha=.35;
-      polygon(ctx,crownPoints(4*s,5*s,r,seed), '#5f7e50');
-      ctx.globalAlpha=.75;
-      polygon(ctx,crownPoints(-4*s,-5*s,r*.89,seed+31), '#b4c98f');
+      polygon(ctx,crownPoints(4*s,5*s,r,seed), '#365c43');
+      ctx.globalAlpha=.5;
+      polygon(ctx,crownPoints(-4*s,-5*s,r*.89,seed+31), '#92b677');
       ctx.globalAlpha=.18;
-      polygon(ctx,crownPoints(1*s,2*s,r*.72,seed+70), '#8da878');
+      polygon(ctx,crownPoints(1*s,2*s,r*.72,seed+70), '#688f60');
       shadeCrown(ctx,r,seed,s);
       if(random(seed,4)>.38) {
         const points=crownPoints(0,0,r,seed), start=Math.floor(random(seed,5)*30);
@@ -462,6 +532,7 @@
       }
       ctx.restore();
     }
+    paintPigment(ctx,scene,'leaves');
     ctx.restore();
     for (const tree of forest) drawTree(ctx, scene, tree, true);
   }
@@ -471,7 +542,7 @@
     // floating point resampling changes when a crown crosses a screen coordinate.
     ctx.save(); ctx.translate(tx, ty);
     const pts = crownPoints(x, y, r, tree.seed);
-    const base = ['#83a772', '#91ae7d', '#7b9f6e', '#99b380'][tree.seed % 4];
+    const base = ['#5f8859', '#739362', '#527b53', '#7b9d67'][tree.seed % 4];
     if (!grouped) {
       polygon(ctx, pts.map(([px, py]) => [px + lightDirection[0] * scene.viewport.scale,
         py + lightDirection[1] * scene.viewport.scale]), palette.treeShadow);
@@ -479,14 +550,16 @@
     }
     ctx.save(); polygon(ctx, pts); ctx.clip();
     // Translucent masses share a larger canopy instead of giving every tree a disk.
-    if (grouped) ctx.globalAlpha = .1;
+    if (grouped) ctx.globalAlpha = .3;
     polygon(ctx, crownPoints(x + r * .28, y + r * .37, r * .78, tree.seed + 70), palette.treeDark);
+    if (grouped) ctx.globalAlpha = .2;
     polygon(ctx, crownPoints(x - r * .28, y - r * .24, r * .65, tree.seed + 31), palette.treeLight);
+    if (grouped) ctx.globalAlpha = .1;
     polygon(ctx, crownPoints(x + r * .05, y + r * .02, r * .45, tree.seed + 54), base);
     if (r > 4) {
       ctx.globalAlpha = 1;
       const patch = .5 + .5 * Math.sin(tree.x / 34 + Math.cos(tree.y / 47));
-      const count = Math.min(33, Math.floor(tree.radius * (grouped ? .8 + patch * .9 : 1.8)));
+      const count = Math.min(25, Math.floor(tree.radius * (grouped ? .4 + patch * .6 : 1.3)));
       for (let j = 0; j < count; j++) {
         const a = random(tree.seed, 20 + j) * Math.PI * 2;
         const d = r * (.14 + Math.sqrt(random(tree.seed, 80 + j)) * .68);
@@ -502,7 +575,7 @@
     }
     ctx.restore();
     if (grouped) {
-      if (random(tree.seed, 380) > .28) {
+      if (tree.edge || random(tree.seed, 380) > .65) {
         const start = Math.floor(random(tree.seed, 381) * 33);
         inkPenLine(ctx, pts.slice(start,start+22), '#3d5934', .85, tree.seed, .12, scene.viewport.scale);
       }
@@ -540,12 +613,12 @@
     const mid = point(.5, .5), upper = point(.5, 0);
     const lightTop = (upper[0] - mid[0]) * -lightDirection[0] + (upper[1] - mid[1]) * -lightDirection[1] > 0;
     const warm = roof.seed % 5;
-    const light = ['#df9671', '#d9906c', '#e59c77', '#dd9873', '#d58d6c'][warm];
-    const shade = ['#ba7152', '#b56e52', '#c07a59', '#b77755', '#b67556'][warm];
+    const light = ['#baa47a', '#b09c70', '#bda980', '#ad976b', '#b9a074'][warm];
+    const shade = ['#82734f', '#887651', '#8c7957', '#827250', '#8c7854'][warm];
     polygon(ctx, [a, b, r2, r1], lightTop ? light : shade);
     polygon(ctx, [d, c, r2, r1], lightTop ? shade : light);
     if (hip) {
-      polygon(ctx, [a, d, r1], '#c68a68'); polygon(ctx, [b, c, r2], '#c28a69');
+      polygon(ctx, [a, d, r1], '#9b875e'); polygon(ctx, [b, c, r2], '#a28d65');
       if (short > 7) {
         penLine(ctx, [a, r1, d], '#81563c', .65, roof.seed, .2, scene.viewport.scale);
         penLine(ctx, [b, r2, c], '#81563c', .65, roof.seed + 1, .2, scene.viewport.scale);
@@ -554,12 +627,13 @@
     // A few uneven wash strokes and broken tile marks leave the roof planes readable.
     if (short > 8 && long > 13) {
       ctx.save();
-      for (let j = 0; j < 7; j++) {
-        const v = .08 + random(roof.seed, j + 200) * .84;
+      const rows=Math.max(3,Math.min(22,Math.floor(Math.min(right-left,bottom-top)/2.3)));
+      for (let j = 0; j < rows; j++) {
+        const v = (j+.45+random(roof.seed,j+200)*.2)/rows;
         const start = .07 + random(roof.seed, j + 220) * .12;
-        ctx.globalAlpha = j % 2 ? .16 : .12;
+        ctx.globalAlpha = j % 2 ? .34 : .27;
         penLine(ctx, [point(start, v), point(.78 + random(roof.seed, j + 240) * .15, v)],
-          j % 2 ? '#f1c394' : '#8c563b', .55 + random(roof.seed, j + 260), roof.seed + j, .3, scene.viewport.scale);
+          j % 2 ? '#e2cc92' : '#5b4f30', .4 + random(roof.seed, j + 260)*.5, roof.seed + j, .25, scene.viewport.scale);
       }
       ctx.globalAlpha = .42;
       for (let j = 0; j < Math.min(10, long / 8); j++) {
@@ -585,8 +659,9 @@
     trace(ctx, scene, roof.polygon); ctx.fillStyle = palette.roof; ctx.fill('evenodd');
     ctx.save(); trace(ctx, scene, roof.polygon); ctx.clip('evenodd');
     for (const panel of roof.panels) panelRoof(ctx, scene, roof, panel);
+    paintPigment(ctx,scene,'wood',G.bounds(roof.polygon));
     ctx.restore();
-    featureInk(ctx, scene, roof.polygon, palette.roofInk, min < 4 ? .75 : min < 9 ? 1.05 : 1.65, .25);
+    surfaceInk(ctx,scene,[roof.polygon],palette.roofInk,min<4?.65:min<9?.9:1.4,true);
   }
   function drawPaper(ctx, scene) {
     const b = scene.bounds, s = scene.viewport.scale;
@@ -608,11 +683,16 @@
       const [x,y]=project(scene,[m.x,m.y]);
       ctx.save();ctx.translate(x,y);ctx.rotate(m.angle);
       if(m.wash) {
-        // All paint fits the checked 3.7-world-unit disc, including line caps.
-        ctx.strokeStyle='#9c926b';ctx.lineWidth=2.3*s;ctx.globalAlpha=.17;
-        ctx.beginPath();ctx.moveTo(-2.35*s,0);ctx.quadraticCurveTo(0,-.8*s,2.35*s,.2*s);ctx.stroke();
-        ctx.lineWidth=.65*s;ctx.globalAlpha=.29;
-        ctx.beginPath();ctx.moveTo(-1.7*s,.45*s);ctx.lineTo(1.1*s,.8*s);ctx.stroke();
+        // Chipped, tapered pigment stays within the checked 3.7-world-unit disc.
+        const l=(1.6+random(m.seed,4)*1.25)*s,w=(.6+random(m.seed,5)*.55)*s;
+        ctx.globalAlpha=.16+random(m.seed,6)*.07;
+        polygon(ctx,[[-l,0],[-l*.65,-w*.4],[-l*.25,-w*.8],[0,-w*.4],[l*.4,-w],
+          [l,.15*w],[l*.5,.7*w],[l*.1,.3*w],[-l*.3,.7*w],[-l*.12,0],[-l*.7,.25*w]],'#897e50');
+        ctx.globalAlpha=.25;
+        for(let j=0;j<3;j++) {
+          const y=(random(m.seed,j+20)-.5)*w;
+          line(ctx,[[-l*.55,y],[l*(.15+random(m.seed,j+30)*.4),y-.2*s]],'#8b8054',.23*s);
+        }
       } else {
         const size=(.7+random(m.seed,2)*.5)*s;
         ctx.globalAlpha=.6;ctx.fillStyle='#8e8664';ctx.beginPath();

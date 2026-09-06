@@ -29,7 +29,7 @@ async function run() {
       page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
       await page.goto(base+route+query); await ready(page);
       const d = await page.evaluate(()=>window.PixelMapIllustratedStudy);
-      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v10'); assert.equal(d.failedTileCount,0);
+      assert.equal(d.styleId,'illustrated-landscape-hand-drawn-v11'); assert.equal(d.failedTileCount,0);
       assert.equal(d.paintedRoofs,d.roofCount); assert.equal(d.paintedTrees,d.treeCount);
       assert.equal(d.buildingExtrusionEnabled,false); assert.equal(d.labelCount,0);
       assert.equal(d.shadowSolver,'height-intervals-v1');
@@ -136,7 +136,9 @@ async function run() {
       return {dryPixels,leakedPixels,meanBankGreen:bank/samples,meanCenterGreen:center/samples};
     });
     assert.equal(shoreMask.leakedPixels,0,JSON.stringify(shoreMask));
-    assert.ok(shoreMask.meanCenterGreen-shoreMask.meanBankGreen>3,JSON.stringify(shoreMask));
+    // Pale, irregular shallows sit inside the blue water; land and island holes
+    // remain byte-identical to the dry control above.
+    assert.ok(shoreMask.meanBankGreen-shoreMask.meanCenterGreen>3,JSON.stringify(shoreMask));
     report.interactions.push({name:'shore-shading-preserves-land-and-islands',...shoreMask});
 
     await page.context().grantPermissions(['geolocation']);
