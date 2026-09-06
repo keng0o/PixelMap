@@ -21,6 +21,20 @@ const polygon = (id, layer, kind, geometry) => ({ id, layer, type: 3, props: { c
 const road = (id, geometry, props = {}) => ({ id, layer: 'transportation', type: 2, props: { class: 'minor', ...props }, geometry });
 const viewport = { centerX: 100, centerY: 100, width: 200, height: 200, scale: 1 };
 
+test('generalized source buildings remain ground areas with holes instead of giant roofs or shadow casters',()=>{
+  const feature={...polygon(90,'building','residential',[rect(20,20,160,160),rect(70,70,40,40).reverse()]),sourceZoom:13};
+  const low=G.compose(G.mergeFeatures([feature]),viewport);
+  assert.equal(low.buildings.length,0);assert.equal(low.buildingAreas.length,1);
+  assert.equal(low.stats.sourceBuildingCount,1);assert.equal(low.stats.generalizedBuildingAreaCount,1);
+  assert.equal(G.inside([80,80],low.buildingAreas[0].polygons),false);
+  const S=globalThis.PixelMapIllustratedShadows,field=S.build(low,Renderer.crownPoints);
+  assert.equal(S.sample(field,40,40).material,S.material.ground);
+  assert.equal(S.sample(field,80,80).material,S.material.ground);
+  const detailed=G.compose(G.mergeFeatures([{...feature,sourceZoom:14}]),viewport);
+  assert.equal(detailed.buildingAreas.length,0);assert.equal(detailed.buildings.length,1);
+  assert.equal(detailed.buildings[0].style,'courtyard');
+});
+
 test('MVT fragments unite without an internal tile seam or a lost courtyard', () => {
   const left = polygon(1, 'building', 'residential', [rect(0,0,60,100), rect(20,20,20,20).reverse()]);
   const right = polygon(1, 'building', 'residential', [rect(50,0,50,100)]);

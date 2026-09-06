@@ -243,7 +243,11 @@
     const roads = visible.filter(f => f.layer === 'transportation' && f.type === 2).map(f => ({ ...f, width: roadWidth(f) }));
     const water = visible.filter(f => ['water', 'waterway'].includes(f.layer));
     const land = visible.filter(f => ['landcover', 'landuse', 'park'].includes(f.layer) && f.type === 3);
-    const buildings = visible.filter(f => f.layer === 'building' && f.type === 3).flatMap(f => f.polygons.map((polygon, index) => {
+    const sourceBuildings = visible.filter(f => f.layer === 'building' && f.type === 3);
+    // OpenMapTiles merges nearby buildings into city blocks below z14. These
+    // footprints describe built-up areas, not individual roofs or tall solids.
+    const buildingAreas = sourceBuildings.filter(f => Number.isFinite(f.sourceZoom) && f.sourceZoom < 14);
+    const buildings = sourceBuildings.filter(f => !buildingAreas.includes(f)).flatMap(f => f.polygons.map((polygon, index) => {
       const roofFrame = frame(polygon);
       const footprintKey = shapeKey([polygon[0]]);
       const seed = hash(footprintKey), panels = roofFrame ? roofPanels(polygon, roofFrame) : [];
@@ -309,8 +313,9 @@
       (['building','water','waterway','transportation'].includes(f.layer) || ['farmland','farm','vineyard'].includes(kind(f)))),
       ...roads.filter(f=>f.props.brunnel!=='tunnel')]);
     const groundMarks = groundDetails(paintedFeatures, b, vegetationIndex, paintedObstacles);
-    return { viewport, bounds: b, land, ...surfaces, buildings, trees, groundMarks,
-      stats: { sourceBuildingCount: buildings.length, roofCount: buildings.length, roadCount: roads.length,
+    return { viewport, bounds: b, land, ...surfaces, buildings, buildingAreas, trees, groundMarks,
+      stats: { sourceBuildingCount: buildings.length + buildingAreas.length, roofCount: buildings.length,
+        generalizedBuildingAreaCount: buildingAreas.length, roadCount: roads.length,
         sourceRoadCount: roads.length, waterCount: water.length, treeCount: trees.length,
         gardenCount:trees.filter(t => t.garden).length, groundMarkCount:groundMarks.length,
         courtyardCount: buildings.filter(f => f.polygon.length > 1).length, labelCount: 0, poiMarkerCount: 0,

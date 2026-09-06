@@ -13,7 +13,7 @@
   }
   const palette = Object.freeze({ ground: '#e4e2ba', residential: '#e7e2bf', grass: '#d9dfb2',
     park: '#d0dbac', forest: '#87a879', forestEdge: '#344c31', field: '#daddad', fieldLine: '#73865b',
-    soil: '#dfd5b5', plaza: '#e5dec5', road: '#efead2', roadEdge: '#96967b', path: '#e8e3c5',
+    soil: '#dfd5b5', plaza: '#e5dec5', buildingArea: '#d9c5a5', road: '#efead2', roadEdge: '#96967b', path: '#e8e3c5',
     rail: '#6f7567', water: '#b6ccca', waterEdge: '#485e55', ripple: '#738f88',
     ink: '#374331', roofInk: '#382f22', roof: '#ce8160', roofLight: '#e19b76', roofDark: '#b77154',
     roofShadow: '#a9ab87', roofSeam: '#95684c', tree: '#86a675', treeLight: '#a6bd88',
@@ -604,7 +604,12 @@
   }
   function paint(ctx, scene, location = null) {
     ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    drawGround(ctx, scene); drawWater(ctx, scene); drawRoads(ctx, scene);
+    drawGround(ctx, scene);
+    for (const area of scene.buildingAreas || []) for (const polygon of area.polygons) {
+      trace(ctx, scene, polygon); ctx.fillStyle = palette.buildingArea; ctx.fill('evenodd');
+      featureInk(ctx, scene, polygon, '#a38f72', .7, .12);
+    }
+    drawWater(ctx, scene); drawRoads(ctx, scene);
     drawWoodland(ctx, scene);
     for (const tree of scene.trees.filter(t => !t.forest)) drawTree(ctx, scene, tree);
     for (const roof of scene.buildings) drawRoof(ctx, scene, roof);
@@ -617,7 +622,8 @@
       ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fillStyle = '#456f71'; ctx.fill();
     }
     ctx.restore();
-    return { ...shadows, paintedRoofs: scene.buildings.length, paintedTrees: scene.trees.length,
+    return { ...shadows, paintedRoofs: scene.buildings.length, paintedBuildingAreas:(scene.buildingAreas || []).length,
+      paintedTrees: scene.trees.length,
       paintedRoads: scene.roads.filter(f => f.props.brunnel !== 'tunnel').length };
   }
   global.PixelMapIllustratedRenderer = Object.freeze({ palette, project, paint, crownPoints, penPoints, inkStrip, inkPenLine, pressure });

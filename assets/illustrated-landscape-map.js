@@ -3,9 +3,31 @@
   const MapData = global.PixelMapTopDownMap;
   const G = global.PixelMapIllustratedGeometry;
   const Renderer = global.PixelMapIllustratedRenderer;
-  const styleId = 'illustrated-landscape-hand-drawn-v8';
+  const styleId = 'illustrated-landscape-hand-drawn-v9';
   const defaultScale = 1.05;
   const zoomRange = Object.freeze({ min: .5, max: 4, step: Math.SQRT2 });
+  const fallbackSourceRange = Object.freeze({ min: 0, max: 14 });
+  function sourceZoomRange(tileJSON = {}) {
+    const min = Number.isInteger(tileJSON.minzoom) ? Math.max(0, Math.min(22,tileJSON.minzoom)) : fallbackSourceRange.min;
+    const max = Number.isInteger(tileJSON.maxzoom) ? Math.max(min, Math.min(22,tileJSON.maxzoom)) : Math.max(min,fallbackSourceRange.max);
+    return Object.freeze({min,max});
+  }
+  function dataZoomForScale(scale, range = fallbackSourceRange) {
+    // Match the existing initial view to z14, then step the source down on zoom
+    // out. Beyond the provider's maximum, keep its most detailed source tile.
+    return Math.max(range.min,Math.min(range.max,
+      Math.floor(MapData.tileZoom + Math.log2(scale/defaultScale) + 1e-9)));
+  }
+  const tileKey = tile => `${tile.z}/${tile.worldX}/${tile.y}`;
+  function requiredTiles({centerX,centerY,width,height,scale,buffer = 512}, z) {
+    const span = MapData.worldTileExtent * 2 ** (MapData.tileZoom-z), count = 2 ** z;
+    const dx = (width/2+buffer)/scale, dy = (height/2+buffer)/scale, tiles = [];
+    const minY = Math.max(0,Math.floor((centerY-dy)/span)), maxY = Math.min(count-1,Math.floor((centerY+dy)/span));
+    for(let y=minY;y<=maxY;y++) for(let x=Math.floor((centerX-dx)/span);x<=Math.floor((centerX+dx)/span);x++) {
+      tiles.push(Object.freeze({z,worldX:x,requestX:((x%count)+count)%count,y}));
+    }
+    return Object.freeze(tiles);
+  }
   function transformView(view, viewport, from, to, factor = 1, baseScale = defaultScale) {
     const scale = Math.max(baseScale * zoomRange.min, Math.min(baseScale * zoomRange.max,
       view.scale * (Number.isFinite(factor) && factor > 0 ? factor : 1)));
@@ -30,7 +52,11 @@
     const extra = tunnels.flatMap(f => MapData.normalizeTileLayers({ transportation: { ...layers.transportation,
       features: [{ ...f, props: { ...f.props, brunnel: '', tunnel: '' } }] } }, tile.worldX, tile.y))
       .map(f => ({ ...f, props: { ...f.props, brunnel: 'tunnel' } }));
-    return [...features, ...extra];
+    // All renderer geometry stays in the original z14 world. Only the source
+    // tile grid changes; heights and other attributes retain their own units.
+    const z = tile.z ?? MapData.tileZoom, factor = 2 ** (MapData.tileZoom-z);
+    return [...features, ...extra].map(f => ({...f, sourceZoom:z,
+      geometry: factor === 1 ? f.geometry : f.geometry.map(path=>path.map(p=>p.map(n=>n*factor))) }));
   }
   async function boot(options = {}) {
     const canvas = document.querySelector('[data-illustrated-map]');
@@ -55,6 +81,7 @@
     const fetcher = options.fetch || global.fetch.bind(global);
     let template = FALLBACK_TILE_URL, generation = 0, merged = [], lastScene = null, locationPoint = null, renderCount = 0;
     let failedCount = 0, tileCount = 0, dataReady = false, lastGoodView = null, loading = false;
+    let sourceRange = fallbackSourceRange, dataZoom = null, lastPaint = {};
     const pointers = new Map();
     let gesture = null, commitTimer = 0, dirty = false;
     const status = (text, canRetry = false) => {
@@ -69,11 +96,14 @@
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       return { width, height, ratio };
     }
-    function publish(paint = {}) {
+    function publish(paint) {
+      if (paint) lastPaint = paint;
       const diagnostics = { styleId, mapReady: dataReady, sceneType: isFixture ? 'fictional-fixture' : 'geographic',
         renderCount, tileCount, failedTileCount: failedCount, centerX: navigation.centerX, centerY: navigation.centerY,
         scale: navigation.scale, zoom: navigation.scale / baseScale, zoomMin: zoomRange.min, zoomMax: zoomRange.max,
-        loading, interacting: pointers.size > 0 || Boolean(commitTimer), bearing: 0, ...lastScene?.stats, ...paint };
+        dataZoom, requestedDataZoom:isFixture ? null : dataZoomForScale(navigation.scale,sourceRange),
+        sourceMinZoom:sourceRange.min, sourceMaxZoom:sourceRange.max,
+        loading, interacting: pointers.size > 0 || Boolean(commitTimer), bearing: 0, ...lastScene?.stats, ...lastPaint };
       global.PixelMapIllustratedStudy = Object.freeze(diagnostics);
       root.dataset.mapReady = dataReady ? '1' : '0'; root.dataset.styleId = styleId;
       root.dataset.sceneType = diagnostics.sceneType;
@@ -92,7 +122,7 @@
       return lastScene;
     }
     async function fetchTile(tile) {
-      const key = `${tile.worldX}/${tile.y}`;
+      const key = tileKey(tile);
       if (cache.has(key)) return cache.get(key);
       if (pending.has(key)) return pending.get(key);
       const promise = (async () => {
@@ -106,6 +136,11 @@
       })().finally(() => pending.delete(key));
       pending.set(key, promise); return promise;
     }
+    function restoreLastGood() {
+      if (!lastGoodView) { dataZoom = null; return; }
+      navigation = lastGoodView.navigation; merged = lastGoodView.features; locationPoint = lastGoodView.location;
+      dataZoom = lastGoodView.dataZoom; render();
+    }
     async function loadViewport() {
       if (isFixture) {
         merged = G.mergeFeatures(fixture.features); dataReady = true; render(); return true;
@@ -113,8 +148,9 @@
       const request = ++generation;
       loading = true; publish();
       const dimensions = size();
-      const tiles = MapData.requiredTiles({ ...dimensions, centerX: navigation.centerX, centerY: navigation.centerY,
-        scale: navigation.scale, buffer: 512 });
+      const z = dataZoomForScale(navigation.scale,sourceRange);
+      const tiles = requiredTiles({ ...dimensions, centerX: navigation.centerX, centerY: navigation.centerY,
+        scale: navigation.scale, buffer: 512 },z);
       if (!dataReady) status('地図を描いています…');
       const settled = await Promise.allSettled(tiles.map(fetchTile));
       if (request !== generation) return null;
@@ -122,29 +158,32 @@
       const failed = settled.filter(r => r.status === 'rejected').length;
       const successful = settled.filter(r => r.status === 'fulfilled');
       tileCount = tiles.length; failedCount = failed;
-      if (!successful.length) {
-        if (lastGoodView) {
-          navigation = lastGoodView.navigation; merged = lastGoodView.features; locationPoint = lastGoodView.location;
-          canvas.style.transform = ''; render();
-        }
+      // A new source zoom is swapped as one complete frame. Never fill holes
+      // with polygons from another zoom, which can duplicate roads/buildings.
+      if (!successful.length || (failed && dataZoom !== null && dataZoom !== z)) {
+        restoreLastGood();
         status('地図を読み込めませんでした。再試行できます。', true); publish(); return false;
       }
-      // Keep cached geometry under missing tiles; never replace a usable map with an empty image.
-      const available = tiles.flatMap(t => cache.get(`${t.worldX}/${t.y}`) || []);
+      const available = tiles.flatMap(t => cache.get(tileKey(t)) || []);
       const area = { left: navigation.centerX - dimensions.width / 2 / navigation.scale - 256,
         right: navigation.centerX + dimensions.width / 2 / navigation.scale + 256,
         top: navigation.centerY - dimensions.height / 2 / navigation.scale - 256,
         bottom: navigation.centerY + dimensions.height / 2 / navigation.scale + 256 };
-      try { merged = G.mergeFeatures(G.featuresNear(available, area)); }
+      try {
+        merged = G.mergeFeatures(G.featuresNear(available, area)); dataZoom = z;
+        render();
+      }
       catch (error) {
+        restoreLastGood();
         status('地形を描けませんでした。再試行できます。', true);
         root.dataset.geometryError = String(error.message); publish(); return false;
       }
-      dataReady = true; render();
+      dataReady = true; delete root.dataset.geometryError;
       lastGoodView = { navigation: MapData.createNavigationState({ centerX: navigation.centerX,
-        centerY: navigation.centerY, scale: navigation.scale }), features: merged, location: locationPoint };
+        centerY: navigation.centerY, scale: navigation.scale }), features: merged, location: locationPoint, dataZoom };
+      publish();
       status(failed ? '一部の地図を読み込めませんでした。' : '', failed > 0);
-      const current = new Set(tiles.map(t => `${t.worldX}/${t.y}`));
+      const current = new Set(tiles.map(tileKey));
       for (const key of cache.keys()) if (cache.size > 36 && !current.has(key)) cache.delete(key);
       return true;
     }
@@ -265,13 +304,18 @@
     } else {
       try {
         const response = await fetcher(TILEJSON_URL, { signal: AbortSignal.timeout(8000) });
-        if (response.ok) { const data = await response.json(); if (data.tiles?.[0]) template = data.tiles[0]; }
+        if (response.ok) {
+          const data = await response.json();
+          if (data.tiles?.[0]) { template = data.tiles[0]; sourceRange = sourceZoomRange(data); }
+        }
       } catch { /* The known fallback is retried through the same visible error flow. */ }
     }
     await loadViewport();
-    return Object.freeze({ render, loadViewport, getScene: () => lastScene, getView: () => navigation, cache });
+    return Object.freeze({ render, loadViewport, getScene: () => lastScene, getFeatures: () => merged,
+      getView: () => navigation, cache, pending });
   }
-  global.PixelMapIllustratedMap = Object.freeze({ styleId, defaultScale, zoomRange, transformView, previewTransform, normalize, boot });
+  global.PixelMapIllustratedMap = Object.freeze({ styleId, defaultScale, zoomRange, sourceZoomRange,
+    dataZoomForScale, requiredTiles, tileKey, transformView, previewTransform, normalize, boot });
   if (typeof document !== 'undefined') {
     const start = () => { void boot().then(app => { global.PixelMapIllustratedApp = app; }).catch(error => {
       document.documentElement.dataset.bootError = String(error.message);
